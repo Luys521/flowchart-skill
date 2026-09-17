@@ -2,13 +2,13 @@
   "comment": "equiv 的用例清单：覆盖本包的公开命令面。用法见 tools/equiv-README.md。占位符 {side}=代码根（跑 scripts/xxx.py）、{work}=数据区（产物与 fixture 落在这里，绝不写进仓库）、{root}/{base}/{py} 由 tools/equiv.py 替换；路径用正斜杠。",
   "copy": ["scripts", "templates"],
   "setup": [
-    {"kind": "copy", "name": "铺正常表", "src": "{root}/tools/equiv-fixtures/tour.md",
+    {"kind": "copy", "name": "铺正常表", "src": "{root}/dev/tools/equiv-fixtures/tour.md",
      "dst": "{work}/out/tour/flowtable.md"},
-    {"kind": "copy", "name": "铺泳道表", "src": "{root}/tools/equiv-fixtures/lane.md",
+    {"kind": "copy", "name": "铺泳道表", "src": "{root}/dev/tools/equiv-fixtures/lane.md",
      "dst": "{work}/out/lane/flowtable.md"},
-    {"kind": "copy", "name": "铺坏表", "src": "{root}/tools/equiv-fixtures/broken.md",
+    {"kind": "copy", "name": "铺坏表", "src": "{root}/dev/tools/equiv-fixtures/broken.md",
      "dst": "{work}/out/broken/flowtable.md"},
-    {"kind": "copy", "name": "铺 sync/apply 场景的表", "src": "{root}/tools/equiv-fixtures/tour.md",
+    {"kind": "copy", "name": "铺 sync/apply 场景的表", "src": "{root}/dev/tools/equiv-fixtures/tour.md",
      "dst": "{work}/out/syncflow/flowtable.md"}
   ],
   "cases": [
@@ -132,7 +132,7 @@
     {"kind": "cli", "name": "syncflow：先 build 出图（图里 02 是「是→03 ｜ 否→03b」）",
      "argv": ["{py}", "{side}/scripts/build.py", "{work}/out/syncflow/flowtable.md"]},
     {"kind": "copy", "name": "换成与图冲突的那版表（02 的两条分支对调）",
-     "src": "{root}/tools/equiv-fixtures/tour-rewired.md",
+     "src": "{root}/dev/tools/equiv-fixtures/tour-rewired.md",
      "dst": "{work}/out/syncflow/flowtable.md"},
     {"kind": "files", "name": "换表后原表快照（记下 sha，供「被拦后」对照）",
      "paths": ["{work}/out/syncflow/flowtable.md"]},

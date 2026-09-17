@@ -379,6 +379,9 @@ def compare_cli(obs_a, obs_b):
 
 def _describe_fact(name, fa, fb):
     """一个文件的两侧指纹差异 → (same, lines)；含"一方没有"与内容差异定位。"""
+    if fa is None and fb is None:
+        # 两侧都没有 = 两侧一致（原先也判不同，会印出自相矛盾的存在性不同: 工作树无、底本无）
+        return True, [f'      {name} 两侧都不存在（一致）']
     if fa is None or fb is None:
         missing = ([f'工作树无'] if fa is None else []) + ([f'底本无'] if fb is None else [])
         return False, [f'      {name} 存在性不同: {"、".join(missing)}']
