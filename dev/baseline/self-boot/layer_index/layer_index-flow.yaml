@@ -1,0 +1,266 @@
+meta:
+  title: layer_index.py 函数流程表
+  subjects:
+    脚本:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  width: 860
+  origin_x: -160
+nodes:
+- id: '01'
+  name: 开始
+  lines:
+  - 开始
+  type: start
+  subject: 脚本
+  executor: selfboot
+  row: 0
+  col: 0
+  stage: 入口
+  route: 1→10
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→main
+- id: '02'
+  name: _rel
+  lines:
+  - _rel
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 6
+  col: 0
+  stage: 模块级
+  route: →13
+  desc: L27 · 函数
+- id: '03'
+  name: _visit_subflow
+  lines:
+  - _visit_subflow
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: 模块级
+  route: 1→02｜2→04
+  desc: ★ 深度优先走一遍 ▣ 派生树，把每张表的层级信息登记进 tables（就地修改）。 · L38 · 函数 · 分支：1→_rel 2→递归边界？
+    · ⇢ 依赖 artifact.artifact_stem、flowtable.parse_table、flowtable.split_row_cells、semantics.subflow_target
+- id: '04'
+  name: 递归边界？
+  lines:
+  - 递归边界？
+  type: decision
+  subject: 脚本
+  executor: selfboot
+  row: 4
+  col: 0
+  stage: 拆环
+  route: 是→13｜否→03
+  desc: 结构性判断（拆环）：_visit_subflow 直接递归自己。是 → 收尾（结束）；否 → 走下一跳（_visit_subflow）。
+- id: '05'
+  name: _find_orphans
+  lines:
+  - _find_orphans
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 5
+  col: 0
+  stage: 模块级
+  route: →02
+  desc: ★ 目录树里可达集之外的 .md → 孤儿表警告（生成物与说明文档不算表）。 · L67 · 函数 · ⇢ 依赖 artifact.artifact_stem
+- id: '06'
+  name: _check_identity
+  lines:
+  - _check_identity
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 7
+  col: 0
+  stage: 模块级
+  route: →13
+  desc: ★ 身份一致性（D-59）：id 全树唯一；level 声明与 ▣ 推导深度一致 → 警告列表。 · L81 · 函数
+- id: '07'
+  name: _build_order
+  lines:
+  - _build_order
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 8
+  col: 0
+  stage: 模块级
+  route: →13
+  desc: ★ 层级降序（自底向上）排构建顺序，并收集"多条路径到达"的歧义警告 → (order, notes)。 · L99 · 函数
+- id: 08
+  name: build_layer_index
+  lines:
+  - build_layer_index
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: 模块级
+  route: 1→02｜2→03｜3→05｜4→06｜5→07
+  desc: '★ 主流程表路径 → {''tables'': {相对路径: 层级信息}, ''order'': [构建顺序], ''notes'':… · L111
+    · 函数 · 分支：1→_rel 2→_visit_subflow 3→_find_orphans 4→_check_identity 5→_build_order'
+- id: 09
+  name: format_index_md
+  lines:
+  - format_index_md
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 9
+  col: 0
+  stage: 模块级
+  route: →11
+  desc: ★ 层级索引 → markdown（<流程名>-index.md 的正文）。 · L125 · 函数
+- id: '10'
+  name: main
+  lines:
+  - main
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 1
+  col: 0
+  stage: 模块级
+  route: 1→08｜2→09
+  desc: L156 · 函数 · 分支：1→build_layer_index 2→format_index_md · ⇢ 依赖 artifact.artifact_stem
+- id: '11'
+  name: format_index_md.tree
+  lines:
+  - format_index_md.tree
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 10
+  col: 0
+  stage: format_index_md
+  route: →12
+  desc: L132 · 嵌套函数
+- id: '12'
+  name: 递归边界？
+  lines:
+  - 递归边界？
+  type: decision
+  subject: 脚本
+  executor: selfboot
+  row: 11
+  col: 0
+  stage: 拆环
+  route: 是→13｜否→11
+  desc: 结构性判断（拆环）：format_index_md.tree 直接递归自己。是 → 收尾（结束）；否 → 走下一跳（format_index_md.tree）。
+- id: '13'
+  name: 结束
+  lines:
+  - 结束
+  type: end
+  subject: 脚本
+  executor: selfboot
+  row: 12
+  col: 0
+  stage: 出口
+  route: —
+  desc: 流程终点（结构性节点，不是函数）
+edges:
+- from: '01'
+  to: '10'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '02'
+  to: '13'
+  kind: jumpR
+  polarity: main
+- from: '03'
+  to: '02'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '03'
+  to: '04'
+  kind: spine
+  polarity: main
+  label: '2'
+- from: '04'
+  to: '13'
+  kind: jumpR
+  polarity: main
+  label: 是
+- from: '04'
+  to: '03'
+  kind: loop
+  polarity: negative
+  label: 否
+- from: '05'
+  to: '02'
+  kind: spine
+  polarity: main
+- from: '06'
+  to: '13'
+  kind: jumpR
+  polarity: main
+- from: '07'
+  to: '13'
+  kind: jumpR
+  polarity: main
+- from: 08
+  to: '02'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: 08
+  to: '03'
+  kind: spine
+  polarity: main
+  label: '2'
+- from: 08
+  to: '05'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: 08
+  to: '06'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: 08
+  to: '07'
+  kind: jumpR
+  polarity: main
+  label: '5'
+- from: 09
+  to: '11'
+  kind: spine
+  polarity: main
+- from: '10'
+  to: 08
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '10'
+  to: 09
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '11'
+  to: '12'
+  kind: spine
+  polarity: main
+- from: '12'
+  to: '13'
+  kind: spine
+  polarity: main
+  label: 是
+- from: '12'
+  to: '11'
+  kind: loop
+  polarity: negative
+  label: 否

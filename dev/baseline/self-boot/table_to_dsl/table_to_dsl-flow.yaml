@@ -1,0 +1,321 @@
+meta:
+  title: table_to_dsl.py 函数流程表
+  subjects:
+    脚本:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  width: 1120
+  origin_x: -60
+nodes:
+- id: '01'
+  name: 开始
+  lines:
+  - 开始
+  type: start
+  subject: 脚本
+  executor: selfboot
+  row: 0
+  col: 0
+  stage: 入口
+  route: 1→15
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→main
+- id: '02'
+  name: build_dsl_nodes
+  lines:
+  - build_dsl_nodes
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 10
+  col: 0
+  stage: 模块级
+  route: →16
+  desc: ★ 流程表节点 → DSL 节点。row/col 优先取布局提示（手调值），语义字段一律来自流程表。 · L32 · 函数
+- id: '03'
+  name: _parse_args
+  lines:
+  - _parse_args
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 4
+  col: 0
+  stage: 模块级
+  route: →16
+  desc: ★ 解析 table_to_dsl 的命令行参数。 · L52 · 函数
+- id: '04'
+  name: _load_flowtable
+  lines:
+  - _load_flowtable
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 5
+  col: 0
+  stage: 模块级
+  route: →16
+  desc: ★ 校验流程表存在与 PyYAML 可用，解析出 (标题, 元信息, 行)；任一缺失返回 None。 · L70 · 函数 · ⇢ 依赖 flowtable.parse_table
+- id: '05'
+  name: _run_checks
+  lines:
+  - _run_checks
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 6
+  col: 0
+  stage: 模块级
+  route: →16
+  desc: ★ 跑 H1–H9 结构校验与配色解析，返回 (模式, 列序, 配色, 节点, 边, 错误集, 槽位备注)。 · L86 · 函数 · ⇢ 依赖 flowtable_check.check_header、flowtable_check.run_checks、flowtable_colors.resolve_colors、flowtable_layout.parse_lane_order
+- id: '06'
+  name: _report_checks
+  lines:
+  - _report_checks
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 7
+  col: 0
+  stage: 模块级
+  route: →16
+  desc: ★ 打印校验结果（--json 走结构化，否则走人类可读文本）。 · L103 · 函数 · ⇢ 依赖 semantics.findings_receipt
+- id: '07'
+  name: _enforce_showcase
+  lines:
+  - _enforce_showcase
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 8
+  col: 0
+  stage: 模块级
+  route: →16
+  desc: ★ showcase 档要求零软提示；有软提示则阻断并返回 1。 · L128 · 函数
+- id: 08
+  name: _load_hint
+  lines:
+  - _load_hint
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: 模块级
+  route: →16
+  desc: ★ 读布局提示 yaml（泳道布局不借提示）；文件不存在时告警并返回 None。 · L137 · 函数
+- id: 09
+  name: _assemble_dsl
+  lines:
+  - _assemble_dsl
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 9
+  col: 0
+  stage: 模块级
+  route: →02
+  desc: ★ 按布局提示或泳道/流程分派组装 DSL，返回 dsl 字典。 · L149 · 函数 · ⇢ 依赖 flowtable_colors.subject_map、flowtable_layout.auto_layout、flowtable_layout.merge_parallel_branches、flowtable_layout.reuse_hint、geometry.snap
+- id: '10'
+  name: _emit_dsl
+  lines:
+  - _emit_dsl
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 11
+  col: 0
+  stage: 模块级
+  route: →16
+  desc: ★ 落盘 DSL 并打印下一步提示，返回 DSL 路径。 · L185 · 函数 · ⇢ 依赖 artifact.artifact_stem
+- id: '11'
+  name: _emit_manifest
+  lines:
+  - _emit_manifest
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 12
+  col: 0
+  stage: 模块级
+  route: →16
+  desc: ★ 与 DSL 同刻产出渲染契约（供下游渲染后反查产物，见 DECISIONS.md D-11）。 · L198 · 函数 · ⇢ 依赖 manifest.build、manifest.dsl_fingerprint、manifest.manifest_path_for、manifest.source_fingerprint、manifest.summary
+- id: '12'
+  name: _run_fresh
+  lines:
+  - _run_fresh
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 13
+  col: 0
+  stage: 模块级
+  route: →16
+  desc: ★ `--fresh`：只答一句"这张表自上次渲染后有没有被直改过"，不校验、不产出。 · L214 · 函数 · ⇢ 依赖 artifact.artifact_stem、manifest.manifest_path_for、manifest.source_fingerprint、manifest.source_stale
+- id: '13'
+  name: _center_canvas
+  lines:
+  - _center_canvas
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 14
+  col: 0
+  stage: 模块级
+  route: →16
+  desc: ★ 流程布局：把画布**贴合内容**、并让内容横向居中（泳道布局不动——它的宽度本来就由列宽算出）。 · L238 · 函数 · ⇢ 依赖 engine.Engine.label_box、engine.Engine.legend_width、engine.Engine.path、engine.Engine.rect、engine.load、geometry.ceil_to、geometry.snap
+- id: '14'
+  name: _write_dsl
+  lines:
+  - _write_dsl
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: 模块级
+  route: 1→08｜2→09｜3→10｜4→11｜5→13
+  desc: ★ --write 路径：读布局提示 → 组装 DSL → 量一次并居中画布 → 落盘 DSL 与渲染契约；返回退出码。 · L281 · 函数 ·
+    分支：1→_load_hint 2→_assemble_dsl 3→_emit_dsl 4→_emit_manifest 5→_center_canvas
+- id: '15'
+  name: main
+  lines:
+  - main
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 1
+  col: 0
+  stage: 模块级
+  route: 1→03｜2→04｜3→05｜4→06｜5→07｜6→12｜7→14
+  desc: L291 · 函数 · 分支：1→_parse_args 2→_load_flowtable 3→_run_checks 4→_report_checks
+    5→_enforce_showcase 6→_run_fresh 7→_write_dsl
+- id: '16'
+  name: 结束
+  lines:
+  - 结束
+  type: end
+  subject: 脚本
+  executor: selfboot
+  row: 15
+  col: 0
+  stage: 出口
+  route: —
+  desc: 流程终点（结构性节点，不是函数）
+edges:
+- from: '01'
+  to: '15'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '02'
+  to: '16'
+  kind: jumpR
+  polarity: main
+- from: '03'
+  to: '16'
+  kind: jumpR
+  polarity: main
+- from: '04'
+  to: '16'
+  kind: jumpR
+  polarity: main
+- from: '05'
+  to: '16'
+  kind: jumpR
+  polarity: main
+- from: '06'
+  to: '16'
+  kind: jumpR
+  polarity: main
+- from: '07'
+  to: '16'
+  kind: jumpR
+  polarity: main
+- from: 08
+  to: '16'
+  kind: jumpR
+  polarity: main
+- from: 09
+  to: '02'
+  kind: spine
+  polarity: main
+- from: '10'
+  to: '16'
+  kind: jumpR
+  polarity: main
+- from: '11'
+  to: '16'
+  kind: jumpR
+  polarity: main
+- from: '12'
+  to: '16'
+  kind: jumpR
+  polarity: main
+- from: '13'
+  to: '16'
+  kind: spine
+  polarity: main
+- from: '14'
+  to: 08
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '14'
+  to: 09
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '14'
+  to: '10'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '14'
+  to: '11'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '14'
+  to: '13'
+  kind: jumpR
+  polarity: main
+  label: '5'
+- from: '15'
+  to: '03'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '15'
+  to: '04'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '15'
+  to: '05'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '15'
+  to: '06'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '15'
+  to: '07'
+  kind: jumpR
+  polarity: main
+  label: '5'
+- from: '15'
+  to: '12'
+  kind: jumpR
+  polarity: main
+  label: '6'
+- from: '15'
+  to: '14'
+  kind: spine
+  polarity: main
+  label: '7'

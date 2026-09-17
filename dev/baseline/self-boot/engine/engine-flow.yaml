@@ -1,0 +1,570 @@
+meta:
+  title: engine.py 函数流程表
+  subjects:
+    脚本:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  width: 1640
+  origin_x: 0
+nodes:
+- id: '01'
+  name: 开始
+  lines:
+  - 开始
+  type: start
+  subject: 脚本
+  executor: selfboot
+  row: 0
+  col: 0
+  stage: 入口
+  route: 1→02｜2→03｜3→13｜4→14｜5→15｜6→16｜7→17｜8→18｜9→19｜10→20｜11→21｜12→22｜13→23｜14→24｜15→25｜16→26
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→Model.__init__ 2→Engine.__init__ 3→Engine.width 4→Engine.rect
+    5→Engine.path 6→Engine.polarity 7→Engine.ports 8→Engine.label_box 9→Engine.node_lines
+    10→Engine.route_text 11→Engine.legend_rect 12→Engine.legend_width 13→Engine.lanes
+    14→Engine.head_band 15→Engine.height 16→load
+- id: '02'
+  name: Model.__init__
+  lines:
+  - Model.__init__
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 1
+  col: 0
+  stage: Model
+  route: →27
+  desc: L22 · 方法
+- id: '03'
+  name: Engine.__init__
+  lines:
+  - Engine.__init__
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: Engine
+  route: 1→04｜2→05
+  desc: ★ 组装引擎：建模型与语法 → 暴露旧 Layout 属性接口 → 按布局建栅格与布线器。 · L36 · 方法 · 分支：1→Engine._expose_attrs
+    2→Engine._build_layout
+- id: '04'
+  name: Engine._expose_attrs
+  lines:
+  - Engine._expose_attrs
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: Engine
+  route: →28
+  desc: ★ 直接暴露旧 Layout 的属性接口。 · L44 · 方法
+- id: '05'
+  name: Engine._build_layout
+  lines:
+  - Engine._build_layout
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 4
+  col: 0
+  stage: Engine
+  route: 1→09｜2→11
+  desc: ★ 按布局建栅格与布线器：泳道走"探布 → 量走廊 → 定案"两趟，流程一趟到位。 · L52 · 方法 · 分支：1→Engine._build
+    2→Engine._reserve_left_corridor
+- id: '06'
+  name: Engine._release_router
+  lines:
+  - Engine._release_router
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 7
+  col: 0
+  stage: Engine
+  route: →28
+  desc: ★ 把上一趟写进边对象的几何改写还回去，这一趟才是干净重解。 · L60 · 方法 · ⇢ 依赖 lane_router.LaneRouter.release
+- id: '07'
+  name: Engine._make_grid_router
+  lines:
+  - Engine._make_grid_router
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 8
+  col: 0
+  stage: Engine
+  route: →28
+  desc: ★ 按布局造栅格与布线器（泳道专属参数只在泳道模式下用）。 · L66 · 方法
+- id: 08
+  name: Engine._expose_grid_metrics
+  lines:
+  - Engine._expose_grid_metrics
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 9
+  col: 0
+  stage: Engine
+  route: →28
+  desc: ★ 建标签器，并把吸附后的尺寸与列中心转发给渲染器。 · L75 · 方法
+- id: 09
+  name: Engine._build
+  lines:
+  - Engine._build
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 6
+  col: 0
+  stage: Engine
+  route: 1→06｜2→07｜3→08
+  desc: ★ 重建栅格与布线器。泳道要走"探布 → 量走廊 → 定案"两趟，流程一趟到位。 · L84 · 方法 · 分支：1→Engine._release_router
+    2→Engine._make_grid_router 3→Engine._expose_grid_metrics
+- id: '10'
+  name: Engine._corridor_users
+  lines:
+  - Engine._corridor_users
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 10
+  col: 0
+  stage: Engine
+  route: →28
+  desc: ★ 数出探布时**真落进里程碑带**的边；结构已坏（列号越界 / 类型未知）时返回 None。 · L90 · 方法
+- id: '11'
+  name: Engine._reserve_left_corridor
+  lines:
+  - Engine._reserve_left_corridor
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 5
+  col: 0
+  stage: Engine
+  route: 1→09｜2→10
+  desc: ★ 左侧走廊的宽度**量**出来，不估（DECISIONS.md D-39）。 · L98 · 方法 · 分支：1→Engine._build 2→Engine._corridor_users
+    · ⇢ 依赖 geometry.ceil_to
+- id: '12'
+  name: Engine._measure_edge_need
+  lines:
+  - Engine._measure_edge_need
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 12
+  col: 0
+  stage: Engine
+  route: →28
+  desc: ★ 量出所有折线 x 的最大值；结构已坏（如列号越界 / 节点类型未知）时返回 None。 · L117 · 方法
+- id: '13'
+  name: Engine.width
+  lines:
+  - Engine.width
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 11
+  col: 0
+  stage: Engine
+  route: →12
+  desc: ★ 画布宽 = max(配置宽, 最外侧通道 + 边距)，吸附粗格。 · L127 · 方法 · ⇢ 依赖 geometry.ceil_to
+- id: '14'
+  name: Engine.rect
+  lines:
+  - Engine.rect
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 13
+  col: 0
+  stage: Engine
+  route: →28
+  desc: L141 · 方法
+- id: '15'
+  name: Engine.path
+  lines:
+  - Engine.path
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 14
+  col: 0
+  stage: Engine
+  route: →28
+  desc: L144 · 方法
+- id: '16'
+  name: Engine.polarity
+  lines:
+  - Engine.polarity
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 15
+  col: 0
+  stage: Engine
+  route: →28
+  desc: L147 · 方法
+- id: '17'
+  name: Engine.ports
+  lines:
+  - Engine.ports
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 16
+  col: 0
+  stage: Engine
+  route: →28
+  desc: L150 · 方法
+- id: '18'
+  name: Engine.label_box
+  lines:
+  - Engine.label_box
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 17
+  col: 0
+  stage: Engine
+  route: →28
+  desc: L153 · 方法 · ⇢ 依赖 label.Labeler.label_box
+- id: '19'
+  name: Engine.node_lines
+  lines:
+  - Engine.node_lines
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 18
+  col: 0
+  stage: Engine
+  route: →28
+  desc: L156 · 方法 · ⇢ 依赖 semantics.Syntax.node_lines
+- id: '20'
+  name: Engine.route_text
+  lines:
+  - Engine.route_text
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 19
+  col: 0
+  stage: Engine
+  route: →28
+  desc: L159 · 方法 · ⇢ 依赖 semantics.Syntax.route_text
+- id: '21'
+  name: Engine.legend_rect
+  lines:
+  - Engine.legend_rect
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 20
+  col: 0
+  stage: Engine
+  route: →28
+  desc: L162 · 方法
+- id: '22'
+  name: Engine.legend_width
+  lines:
+  - Engine.legend_width
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 21
+  col: 0
+  stage: Engine
+  route: →28
+  desc: ★ 标题/图例块的**宽**（画布顶部居中那块，默认 600）。 · L165 · 方法
+- id: '23'
+  name: Engine.lanes
+  lines:
+  - Engine.lanes
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 22
+  col: 0
+  stage: Engine
+  route: →28
+  desc: ★ 泳道背景信息；流程布局返回 None（渲染器据此决定画不画泳道带）。 · L173 · 方法 · ⇢ 依赖 swimlane.SwimGrid.lanes
+- id: '24'
+  name: Engine.head_band
+  lines:
+  - Engine.head_band
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 23
+  col: 0
+  stage: Engine
+  route: →28
+  desc: ★ 画布顶部是否预留标题带（HTML 版标题在画布外，故不预留）。 · L178 · 方法 · ⇢ 依赖 geometry.RectCache.invalidate
+- id: '25'
+  name: Engine.height
+  lines:
+  - Engine.height
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 24
+  col: 0
+  stage: Engine
+  route: →28
+  desc: L192 · 方法
+- id: '26'
+  name: load
+  lines:
+  - load
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 25
+  col: 0
+  stage: 模块级
+  route: →27
+  desc: ★ 加载 DSL(yaml) + 默认字典 → Engine。 · L196 · 函数
+- id: '27'
+  name: _load_yaml
+  lines:
+  - _load_yaml
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 26
+  col: 0
+  stage: 模块级
+  route: →28
+  desc: L221 · 函数
+- id: '28'
+  name: 结束
+  lines:
+  - 结束
+  type: end
+  subject: 脚本
+  executor: selfboot
+  row: 27
+  col: 0
+  stage: 出口
+  route: —
+  desc: 流程终点（结构性节点，不是函数）
+edges:
+- from: '01'
+  to: '02'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '01'
+  to: '03'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '01'
+  to: '13'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '01'
+  to: '14'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '01'
+  to: '15'
+  kind: jumpR
+  polarity: main
+  label: '5'
+- from: '01'
+  to: '16'
+  kind: jumpR
+  polarity: main
+  label: '6'
+- from: '01'
+  to: '17'
+  kind: jumpR
+  polarity: main
+  label: '7'
+- from: '01'
+  to: '18'
+  kind: jumpR
+  polarity: main
+  label: '8'
+- from: '01'
+  to: '19'
+  kind: jumpR
+  polarity: main
+  label: '9'
+- from: '01'
+  to: '20'
+  kind: jumpR
+  polarity: main
+  label: '10'
+- from: '01'
+  to: '21'
+  kind: jumpR
+  polarity: main
+  label: '11'
+- from: '01'
+  to: '22'
+  kind: jumpR
+  polarity: main
+  label: '12'
+- from: '01'
+  to: '23'
+  kind: jumpR
+  polarity: main
+  label: '13'
+- from: '01'
+  to: '24'
+  kind: jumpR
+  polarity: main
+  label: '14'
+- from: '01'
+  to: '25'
+  kind: jumpR
+  polarity: main
+  label: '15'
+- from: '01'
+  to: '26'
+  kind: jumpR
+  polarity: main
+  label: '16'
+- from: '02'
+  to: '27'
+  kind: jumpR
+  polarity: main
+- from: '03'
+  to: '04'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '03'
+  to: '05'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '04'
+  to: '28'
+  kind: jumpR
+  polarity: main
+- from: '05'
+  to: 09
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '05'
+  to: '11'
+  kind: spine
+  polarity: main
+  label: '2'
+- from: '06'
+  to: '28'
+  kind: jumpR
+  polarity: main
+- from: '07'
+  to: '28'
+  kind: jumpR
+  polarity: main
+- from: 08
+  to: '28'
+  kind: jumpR
+  polarity: main
+- from: 09
+  to: '06'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: 09
+  to: '07'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: 09
+  to: 08
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '10'
+  to: '28'
+  kind: jumpR
+  polarity: main
+- from: '11'
+  to: 09
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '11'
+  to: '10'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '12'
+  to: '28'
+  kind: jumpR
+  polarity: main
+- from: '13'
+  to: '12'
+  kind: spine
+  polarity: main
+- from: '14'
+  to: '28'
+  kind: jumpR
+  polarity: main
+- from: '15'
+  to: '28'
+  kind: jumpR
+  polarity: main
+- from: '16'
+  to: '28'
+  kind: jumpR
+  polarity: main
+- from: '17'
+  to: '28'
+  kind: jumpR
+  polarity: main
+- from: '18'
+  to: '28'
+  kind: jumpR
+  polarity: main
+- from: '19'
+  to: '28'
+  kind: jumpR
+  polarity: main
+- from: '20'
+  to: '28'
+  kind: jumpR
+  polarity: main
+- from: '21'
+  to: '28'
+  kind: jumpR
+  polarity: main
+- from: '22'
+  to: '28'
+  kind: jumpR
+  polarity: main
+- from: '23'
+  to: '28'
+  kind: jumpR
+  polarity: main
+- from: '24'
+  to: '28'
+  kind: jumpR
+  polarity: main
+- from: '25'
+  to: '28'
+  kind: jumpR
+  polarity: main
+- from: '26'
+  to: '27'
+  kind: spine
+  polarity: main
+- from: '27'
+  to: '28'
+  kind: spine
+  polarity: main

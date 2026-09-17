@@ -1,0 +1,288 @@
+meta:
+  title: render_svg.py 函数流程表
+  subjects:
+    脚本:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  width: 1140
+  origin_x: 0
+nodes:
+- id: '01'
+  name: 开始
+  lines:
+  - 开始
+  type: start
+  subject: 脚本
+  executor: selfboot
+  row: 0
+  col: 0
+  stage: 入口
+  route: 1→12
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→main
+- id: '02'
+  name: _fmt
+  lines:
+  - _fmt
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 11
+  col: 0
+  stage: 模块级
+  route: →13
+  desc: L50 · 函数
+- id: '03'
+  name: _defs
+  lines:
+  - _defs
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: 模块级
+  route: →13
+  desc: ★ 本产物的 `<defs>`：只有箭头 marker（没有 html 那份流光模糊——这份产物不带动画）。 · L54 · 函数 · ⇢ 依赖 semantics.arrow_markers
+- id: '04'
+  name: _esc
+  lines:
+  - _esc
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 10
+  col: 0
+  stage: 模块级
+  route: →13
+  desc: L63 · 函数
+- id: '05'
+  name: _shape_xml
+  lines:
+  - _shape_xml
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 6
+  col: 0
+  stage: 模块级
+  route: →02
+  desc: ★ 形状画在**局部坐标**（以节点中心为 0,0）——`manifest._html_shape` 就是这么读的。 · L68 · 函数 · ⇢
+    依赖 geometry.arc_px
+- id: '06'
+  name: _drillable
+  lines:
+  - _drillable
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 4
+  col: 0
+  stage: 模块级
+  route: →13
+  desc: ★ 声明了 `▣` 且**子表产物真的存在**的节点 → {节点id}。 · L89 · 函数 · ⇢ 依赖 artifact.artifact_rel、semantics.subflow_target
+- id: '07'
+  name: _emit_node
+  lines:
+  - _emit_node
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 5
+  col: 0
+  stage: 模块级
+  route: 1→02｜2→04｜3→05
+  desc: L109 · 函数 · 分支：1→_fmt 2→_esc 3→_shape_xml · ⇢ 依赖 engine.Engine.node_lines、engine.Engine.rect、semantics.pending_style
+- id: 08
+  name: _emit_edge
+  lines:
+  - _emit_edge
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 7
+  col: 0
+  stage: 模块级
+  route: 1→02｜2→04｜3→09
+  desc: L149 · 函数 · 分支：1→_fmt 2→_esc 3→_emit_label · ⇢ 依赖 engine.Engine.path、engine.Engine.polarity
+- id: 09
+  name: _emit_label
+  lines:
+  - _emit_label
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 8
+  col: 0
+  stage: 模块级
+  route: 1→02｜2→04
+  desc: ★ 边标签（判断节点的分支条件）——与 `render_html.svg_label` **同元素约定**： · L165 · 函数 · 分支：1→_fmt
+    2→_esc · ⇢ 依赖 engine.Engine.label_box
+- id: '10'
+  name: _emit_lanes
+  lines:
+  - _emit_lanes
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 9
+  col: 0
+  stage: 模块级
+  route: 1→02｜2→04
+  desc: ★ 泳道底色：左走廊 + 部门列底色/表头 + 左侧里程碑带（与 `render_html.svg_lanes` 同元素约… · L184 · 函数
+    · 分支：1→_fmt 2→_esc · ⇢ 依赖 engine.Engine.height
+- id: '11'
+  name: render
+  lines:
+  - render
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: 模块级
+  route: 1→02｜2→03｜3→04｜4→06｜5→07｜6→08｜7→10
+  desc: ★ DSL → 独立 `.svg`。成功返回 0（统一契约；`ctx` 本渲染器暂不用任何键）。 · L228 · 函数 · 分支：1→_fmt 2→_defs
+    3→_esc 4→_drillable 5→_emit_node 6→_emit_edge 7→_emit_lanes · ⇢ 依赖 engine.Engine.head_band、engine.Engine.height、engine.Engine.lanes、engine.load
+- id: '12'
+  name: main
+  lines:
+  - main
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 1
+  col: 0
+  stage: 模块级
+  route: →11
+  desc: L252 · 函数
+- id: '13'
+  name: 结束
+  lines:
+  - 结束
+  type: end
+  subject: 脚本
+  executor: selfboot
+  row: 12
+  col: 0
+  stage: 出口
+  route: —
+  desc: 流程终点（结构性节点，不是函数）
+edges:
+- from: '01'
+  to: '12'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '02'
+  to: '13'
+  kind: spine
+  polarity: main
+- from: '03'
+  to: '13'
+  kind: jumpR
+  polarity: main
+- from: '04'
+  to: '13'
+  kind: jumpR
+  polarity: main
+- from: '05'
+  to: '02'
+  kind: jumpR
+  polarity: main
+- from: '06'
+  to: '13'
+  kind: jumpR
+  polarity: main
+- from: '07'
+  to: '02'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '07'
+  to: '04'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '07'
+  to: '05'
+  kind: spine
+  polarity: main
+  label: '3'
+- from: 08
+  to: '02'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: 08
+  to: '04'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: 08
+  to: 09
+  kind: spine
+  polarity: main
+  label: '3'
+- from: 09
+  to: '02'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: 09
+  to: '04'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '10'
+  to: '02'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '10'
+  to: '04'
+  kind: spine
+  polarity: main
+  label: '2'
+- from: '11'
+  to: '02'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '11'
+  to: '03'
+  kind: spine
+  polarity: main
+  label: '2'
+- from: '11'
+  to: '04'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '11'
+  to: '06'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '11'
+  to: '07'
+  kind: jumpR
+  polarity: main
+  label: '5'
+- from: '11'
+  to: 08
+  kind: jumpR
+  polarity: main
+  label: '6'
+- from: '11'
+  to: '10'
+  kind: jumpR
+  polarity: main
+  label: '7'
+- from: '12'
+  to: '11'
+  kind: spine
+  polarity: main

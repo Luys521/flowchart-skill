@@ -1,0 +1,653 @@
+meta:
+  title: flowtable_check.py 函数流程表
+  subjects:
+    脚本:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  width: 1720
+  origin_x: 0
+nodes:
+- id: '01'
+  name: 开始
+  lines:
+  - 开始
+  type: start
+  subject: 脚本
+  executor: selfboot
+  row: 0
+  col: 0
+  stage: 入口
+  route: 1→30｜2→31
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→check_header 2→run_checks
+- id: '02'
+  name: _split_row_cells
+  lines:
+  - _split_row_cells
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 16
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ 补齐到 N_COLS 并按 ICOM 序切成 · L39 · 函数 · ⇢ 依赖 flowtable.split_row_cells
+- id: '03'
+  name: _check_node_id
+  lines:
+  - _check_node_id
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 17
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ H2：编号重复与编号格式校验，合法与否都记入 seen（跨行查重）。 · L45 · 函数
+- id: '04'
+  name: _check_node_semantics
+  lines:
+  - _check_node_semantics
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 18
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ H7：名称/执行主体/节点类型/执行者/行动所需时间；类型非法兜底成「任务」并返回该类型。 · L62 · 函数
+- id: '05'
+  name: _check_basis
+  lines:
+  - _check_basis
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 19
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ 「依据」与 `⚠` 的咬合（字段登记表见 flowtable-spec §2）：判断节点要么写清判据，要么标 `⚠`。 · L81 · 函数 ·
+    ⇢ 依赖 semantics.pending_kind
+- id: '06'
+  name: check_nodes
+  lines:
+  - check_nodes
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 15
+  col: 0
+  stage: 模块级
+  route: 1→02｜2→03｜3→04｜4→05
+  desc: ★ ① 节点层：逐行检查编号与语义列，返回可进流程的节点列表。 · L93 · 函数 · 分支：1→_split_row_cells 2→_check_node_id
+    3→_check_node_semantics 4→_check_basis
+- id: '07'
+  name: _build_adjacency
+  lines:
+  - _build_adjacency
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 21
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ 按 id 建出/入边邻接表 → (out_e, in_e)，②③ 两层共用。 · L118 · 函数
+- id: 08
+  name: _check_min_count
+  lines:
+  - _check_min_count
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 22
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ H1：每种类型的节点总数不得低于 TYPE_RULES 声明的 min_count。 · L128 · 函数
+- id: 09
+  name: _check_out_rule
+  lines:
+  - _check_out_rule
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 23
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ H5/H8：单个节点的出边要求——forbid 却有出边报 H5，need 却无出边且被指过报死胡同。 · L138 · 函数 · ⇢ 依赖 flowtable.wrote_route
+- id: '10'
+  name: _check_decision_branches
+  lines:
+  - _check_decision_branches
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 24
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ H4/H8：判断节点自身——分支下限、缺标签、分支指向同一目标、分支标签重复。 · L154 · 函数
+- id: '11'
+  name: check_by_type
+  lines:
+  - check_by_type
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 20
+  col: 0
+  stage: 模块级
+  route: 1→07｜2→08｜3→09｜4→10
+  desc: ★ ② 类型层：执行文件顶部的 TYPE_RULES——只看这个节点自身与它的出边。 · L182 · 函数 · 分支：1→_build_adjacency
+    2→_check_min_count 3→_check_out_rule 4→_check_decision_branches
+- id: '12'
+  name: _check_dangling
+  lines:
+  - _check_dangling
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 25
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ H3：引用完整——「下个节点」指向的目标必须真实存在。 · L196 · 函数
+- id: '13'
+  name: _reachable_from_starts
+  lines:
+  - _reachable_from_starts
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 26
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ 从所有「开始」节点做一次可达性扩散 → 可达 id 集合。 · L203 · 函数
+- id: '14'
+  name: _check_node_reach
+  lines:
+  - _check_node_reach
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 27
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ H8：单个节点的连通判定——一个节点只报最可操作的一条（让位规则见 flowtable-spec §3）。 · L216 · 函数 · ⇢ 依赖
+    flowtable.wrote_route
+- id: '15'
+  name: check_relations
+  lines:
+  - check_relations
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 12
+  col: 0
+  stage: 模块级
+  route: 1→07｜2→12｜3→13｜4→14｜5→19
+  desc: ★ ③ 关系层：引用完整（H3）、逻辑连通（H8）、回路有出口（H6）。 · L250 · 函数 · 分支：1→_build_adjacency 2→_check_dangling
+    3→_reachable_from_starts 4→_check_node_reach 5→check_deadloop
+- id: '16'
+  name: _pruned_adjacency
+  lines:
+  - _pruned_adjacency
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 14
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ 删掉所有判断节点（及其邻接边）后的子图邻接表——只剩纯任务/起止之间的边。 · L270 · 函数
+- id: '17'
+  name: _walk_cycle
+  lines:
+  - _walk_cycle
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 28
+  col: 0
+  stage: 模块级
+  route: →18
+  desc: ★ 三色 DFS 的一步：沿 adj 下探，遇灰节点（返祖边）就报一条回路，回溯时标黑。 · L279 · 函数
+- id: '18'
+  name: 递归边界？
+  lines:
+  - 递归边界？
+  type: decision
+  subject: 脚本
+  executor: selfboot
+  row: 29
+  col: 0
+  stage: 拆环
+  route: 是→32｜否→17
+  desc: 结构性判断（拆环）：_walk_cycle 直接递归自己。是 → 收尾（结束）；否 → 走下一跳（_walk_cycle）。
+- id: '19'
+  name: check_deadloop
+  lines:
+  - check_deadloop
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 13
+  col: 0
+  stage: 模块级
+  route: 1→16｜2→17
+  desc: ★ H6：每个有向回路至少含 1 个判断节点。 · L298 · 函数 · 分支：1→_pruned_adjacency 2→_walk_cycle
+- id: '20'
+  name: check_label_length
+  lines:
+  - check_label_length
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 30
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ 分支标签过长 → 软提示。标签画在连线上，过长会撑爆徽章底框、挤占版面。 · L316 · 函数
+- id: '21'
+  name: _derived_level
+  lines:
+  - _derived_level
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 5
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ 沿 parent/▣ 链向上数跳数 → 派生层级（L0=主流程）。环与断链按已走跳数计。 · L334 · 函数 · ⇢ 依赖 flowtable.find_parent_table
+- id: '22'
+  name: _check_meta_keys
+  lines:
+  - _check_meta_keys
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ 身份区键封闭：未知键报 H9，▣ 派生量键（层级/子表/构建顺序）单独给文案（D-56）。 · L351 · 函数
+- id: '23'
+  name: _check_header_entries
+  lines:
+  - _check_header_entries
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ 表头区（frontmatter 之后、主表之前）不放 `- 条目` 式元信息（D-57）。 · L367 · 函数
+- id: '24'
+  name: _check_level
+  lines:
+  - _check_level
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 4
+  col: 0
+  stage: 模块级
+  route: →21
+  desc: ★ level：声明与 ▣ 推导双向校验（L0=主流程，D-59）——格式须为 L0/L1/L2…，且与推导一致。 · L384 · 函数
+- id: '25'
+  name: _check_parent
+  lines:
+  - _check_parent
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 6
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ parent：双向一致（D-58）——非空则文件须存在，且父表里要有 ▣ 指回本表。 · L401 · 函数 · ⇢ 依赖 flowtable._has_backref
+- id: '26'
+  name: _check_refs
+  lines:
+  - _check_refs
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 7
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ refs：依赖路径必须真实存在（单条字符串按单元素列表处理）。 · L418 · 函数
+- id: '27'
+  name: _check_meta_id
+  lines:
+  - _check_meta_id
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 8
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ id：写了却为空 → H9（缺省取文件 stem，可整行删除）。 · L430 · 函数
+- id: '28'
+  name: _check_color_dup
+  lines:
+  - _check_color_dup
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 9
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ 同一主体在「主体配色」里声明了两种不同的颜色 → H9。 · L437 · 函数
+- id: '29'
+  name: _check_table_columns
+  lines:
+  - _check_table_columns
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 10
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ H9：主表的列名必须逐字等于 `flowtable.COLUMNS`。 · L444 · 函数 · ⇢ 依赖 flowtable.header_cells
+- id: '30'
+  name: check_header
+  lines:
+  - check_header
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 1
+  col: 0
+  stage: 模块级
+  route: 1→22｜2→23｜3→24｜4→25｜5→26｜6→27｜7→28｜8→29
+  desc: ★ H9 表头规范（D-59，三区结构）：YAML=身份（键封闭、level/parent 双向校验、refs 存在）； · L467 · 函数 ·
+    分支：1→_check_meta_keys 2→_check_header_entries 3→_check_level 4→_check_parent 5→_check_refs
+    6→_check_meta_id 7→_check_color_dup 8→_check_table_columns
+- id: '31'
+  name: run_checks
+  lines:
+  - run_checks
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 11
+  col: 0
+  stage: 模块级
+  route: 1→06｜2→11｜3→15｜4→20
+  desc: ★ 按 ① → ② → ③ 跑完整套结构校验；返回 (nodes, edges, errs)。 · L490 · 函数 · 分支：1→check_nodes
+    2→check_by_type 3→check_relations 4→check_label_length · ⇢ 依赖 flowtable.build_edges、flowtable_layout.apply_swimlane、flowtable_layout.assign_slots
+- id: '32'
+  name: 结束
+  lines:
+  - 结束
+  type: end
+  subject: 脚本
+  executor: selfboot
+  row: 31
+  col: 0
+  stage: 出口
+  route: —
+  desc: 流程终点（结构性节点，不是函数）
+edges:
+- from: '01'
+  to: '30'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '01'
+  to: '31'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '02'
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: '03'
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: '04'
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: '05'
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: '06'
+  to: '02'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '06'
+  to: '03'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '06'
+  to: '04'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '06'
+  to: '05'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '07'
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: 08
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: 09
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: '10'
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: '11'
+  to: '07'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '11'
+  to: 08
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '11'
+  to: 09
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '11'
+  to: '10'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '12'
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: '13'
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: '14'
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: '15'
+  to: '07'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '15'
+  to: '12'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '15'
+  to: '13'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '15'
+  to: '14'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '15'
+  to: '19'
+  kind: spine
+  polarity: main
+  label: '5'
+- from: '16'
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: '17'
+  to: '18'
+  kind: spine
+  polarity: main
+- from: '18'
+  to: '32'
+  kind: jumpR
+  polarity: main
+  label: 是
+- from: '18'
+  to: '17'
+  kind: loop
+  polarity: negative
+  label: 否
+- from: '19'
+  to: '16'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '19'
+  to: '17'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '20'
+  to: '32'
+  kind: spine
+  polarity: main
+- from: '21'
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: '22'
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: '23'
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: '24'
+  to: '21'
+  kind: spine
+  polarity: main
+- from: '25'
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: '26'
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: '27'
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: '28'
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: '29'
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: '30'
+  to: '22'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '30'
+  to: '23'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '30'
+  to: '24'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '30'
+  to: '25'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '30'
+  to: '26'
+  kind: jumpR
+  polarity: main
+  label: '5'
+- from: '30'
+  to: '27'
+  kind: jumpR
+  polarity: main
+  label: '6'
+- from: '30'
+  to: '28'
+  kind: jumpR
+  polarity: main
+  label: '7'
+- from: '30'
+  to: '29'
+  kind: jumpR
+  polarity: main
+  label: '8'
+- from: '31'
+  to: '06'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '31'
+  to: '11'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '31'
+  to: '15'
+  kind: spine
+  polarity: main
+  label: '3'
+- from: '31'
+  to: '20'
+  kind: jumpR
+  polarity: main
+  label: '4'

@@ -1,0 +1,207 @@
+meta:
+  title: 渲染：一条命令跑六环
+  subjects:
+    用户:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+    AI:
+      fill: '#d5e8d4'
+      stroke: '#82b366'
+    脚本:
+      fill: '#ffe6cc'
+      stroke: '#d79b00'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  width: 680
+  origin_x: -80
+nodes:
+- id: 08a
+  name: build.py 入口
+  lines:
+  - build.py 入口
+  type: start
+  subject: 脚本
+  executor: build.py
+  row: 0
+  col: 0
+  stage: 入口
+  route: →08b
+  desc: 一条命令跑完六环，任一环不过即还原
+  input: 流程表路径 + 选项
+  basis: 六环定义（`references/visual-spec.md` §4.1）
+  output: 六环编排
+- id: 08b
+  name: 结构校验
+  lines:
+  - 结构校验
+  type: task
+  subject: 脚本
+  executor: table_to_dsl.py
+  row: 1
+  col: 0
+  stage: ①
+  route: →08c
+  desc: 硬错误阻断，不进下一环
+  input: 流程表
+  basis: H1–H8 + 表头 H9
+  output: '`<流程名>-flow.yaml` 与契约'
+- id: 08c
+  name: 生成 DSL
+  lines:
+  - 生成 DSL
+  type: task
+  subject: 脚本
+  executor: table_to_dsl.py
+  row: 2
+  col: 0
+  stage: ②
+  route: →08d
+  desc: 十二列 → flow.yaml，含布局模式与几何字段
+  input: 流程表 + 布局提示
+  basis: '`references/dsl-spec.md` 的字段定义'
+  output: '`<流程名>-flow.yaml`'
+- id: 08d
+  name: 八项碰撞检测
+  lines:
+  - 八项碰撞检测
+  type: task
+  subject: 脚本
+  executor: validate.py
+  row: 3
+  col: 0
+  stage: ③
+  route: →08e
+  desc: 节点重叠 / 线穿节点 / 标签压线 / 走廊冲突 / 端口没接上…
+  input: '`<流程名>-flow.yaml`'
+  basis: 八项碰撞检测判据（`references/visual-spec.md` §4.1）
+  output: 几何结论
+- id: 08e
+  name: 出首版产物
+  lines:
+  - 出首版产物
+  type: task
+  subject: 脚本
+  executor: render_html.py ｜ render_drawio.py ｜ render_svg.py
+  row: 4
+  col: 0
+  stage: ④
+  route: →08f
+  desc: 同一份 DSL 出三种视图：html 评审语义（单文件内嵌子图）/ drawio 微调几何 / svg 朴素中间态
+  input: '`<流程名>-flow.yaml`'
+  basis: 渲染器注册表
+  output: 三份产物（html / drawio / svg）
+- id: 08f
+  name: 产物审核
+  lines:
+  - 产物审核
+  type: task
+  subject: 脚本
+  executor: manifest.py
+  row: 5
+  col: 0
+  stage: ⑤
+  route: →08g
+  desc: 拿 flow.manifest.json 契约反查产物：渲染丢了什么必须被查出来
+  input: 产物 + 渲染契约
+  basis: 契约反查节点 / 边集合
+  output: 审核结论
+- id: 08g
+  name: 几何自检
+  lines:
+  - 几何自检
+  type: task
+  subject: 脚本
+  executor: build.py
+  row: 6
+  col: 0
+  stage: ⑥
+  route: →08h
+  desc: 从产物真实坐标反解端点；前两关与渲染器共用 router，这关另立视角
+  input: 三份产物
+  basis: 产物侧九项判据（`references/visual-spec.md` §4.1）
+  output: 几何复核结论
+- id: 08h
+  name: 六环全过？
+  lines:
+  - 六环全过？
+  type: decision
+  subject: 脚本
+  executor: build.py
+  row: 7
+  col: 0
+  stage: 判定
+  route: 过→08i ｜ 不过→08j
+  desc: 任一环不过即退出，不做"先交付再补"
+  input: 六环各自的结论
+  basis: 任一环不过即退出
+  output: 过 / 不过
+- id: 08i
+  name: 落盘交付
+  lines:
+  - 落盘交付
+  type: end
+  subject: 脚本
+  executor: build.py
+  row: 8
+  col: 0
+  stage: 落盘
+  route: —
+  desc: 交出去的每一份产物都审过
+  input: 六环全过的结论
+  output: 三份产物 + sha256 回执
+- id: 08j
+  name: 还原产物并 exit 1
+  lines:
+  - 还原产物并 exit 1
+  type: end
+  subject: 脚本
+  executor: build.py
+  row: 9
+  col: 0
+  stage: 还原
+  route: —
+  desc: ★ 不留没审过的交付物；同目录 .bak 可比对上一版
+  input: 上一版产物
+  basis: 不留没审过的交付物
+  output: 还原后的盘面
+edges:
+- from: 08a
+  to: 08b
+  kind: spine
+  polarity: main
+- from: 08b
+  to: 08c
+  kind: spine
+  polarity: main
+- from: 08c
+  to: 08d
+  kind: spine
+  polarity: main
+- from: 08d
+  to: 08e
+  kind: spine
+  polarity: main
+- from: 08e
+  to: 08f
+  kind: spine
+  polarity: main
+- from: 08f
+  to: 08g
+  kind: spine
+  polarity: main
+- from: 08g
+  to: 08h
+  kind: spine
+  polarity: main
+- from: 08h
+  to: 08i
+  kind: spine
+  polarity: main
+  label: 过
+- from: 08h
+  to: 08j
+  kind: jumpR
+  polarity: main
+  label: 不过

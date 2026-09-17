@@ -1,0 +1,451 @@
+meta:
+  title: flowtable_layout.py 函数流程表
+  subjects:
+    脚本:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  width: 1320
+  origin_x: 0
+nodes:
+- id: '01'
+  name: 开始
+  lines:
+  - 开始
+  type: start
+  subject: 脚本
+  executor: selfboot
+  row: 0
+  col: 0
+  stage: 入口
+  route: 1→02｜2→03｜3→09｜4→15｜5→18｜6→22
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→parse_lane_order 2→apply_swimlane 3→assign_slots 4→merge_parallel_branches
+    5→auto_layout 6→reuse_hint
+- id: '02'
+  name: parse_lane_order
+  lines:
+  - parse_lane_order
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 4
+  col: 0
+  stage: 模块级
+  route: →23
+  desc: ★ 「- 泳道列序：A → B → C」→ ['A', 'B', 'C']（兼容 `,` `，` `、` 分隔）。 · L12 · 函数
+- id: '03'
+  name: apply_swimlane
+  lines:
+  - apply_swimlane
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 5
+  col: 0
+  stage: 模块级
+  route: →23
+  desc: ★ 泳道布局：行 = 项目运作阶段、列 = 执行主体。 · L21 · 函数
+- id: '04'
+  name: _topo_order
+  lines:
+  - _topo_order
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: 模块级
+  route: →23
+  desc: ★ Kahn 拓扑序；有环（回路）返回 None，调用方退回表序（见 swimlane-spec §3.1）。 · L39 · 函数
+- id: '05'
+  name: _resolve_slot_order
+  lines:
+  - _resolve_slot_order
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: 模块级
+  route: →04
+  desc: ★ 定槽位推导用的节点顺序：Kahn 拓扑序；有环退回表序，并把提示写进 notes。 · L60 · 函数
+- id: '06'
+  name: _incoming_sources
+  lines:
+  - _incoming_sources
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 6
+  col: 0
+  stage: 模块级
+  route: →23
+  desc: '★ 每个节点的入边来源表（自环边略过）→ {id: [起点, …]}。 · L69 · 函数'
+- id: '07'
+  name: _solve_slots
+  lines:
+  - _solve_slots
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 7
+  col: 0
+  stage: 模块级
+  route: →23
+  desc: '★ DP 求每个节点的槽号 → {id: 槽号}（多入边取最深的一条）。 · L78 · 函数'
+- id: 08
+  name: _compact_slots
+  lines:
+  - _compact_slots
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 8
+  col: 0
+  stage: 模块级
+  route: →23
+  desc: ★ 分支可能跳过某个槽号 → 压缩掉空槽，层数才是真实层数。 · L95 · 函数
+- id: 09
+  name: assign_slots
+  lines:
+  - assign_slots
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 1
+  col: 0
+  stage: 模块级
+  route: 1→05｜2→06｜3→07｜4→08
+  desc: ★ 槽位求解：把 row 从「阶段号」细化为「槽位号」，返回 (slots, notes)。 · L102 · 函数 · 分支：1→_resolve_slot_order
+    2→_incoming_sources 3→_solve_slots 4→_compact_slots
+- id: '10'
+  name: _forward_successors
+  lines:
+  - _forward_successors
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 10
+  col: 0
+  stage: 模块级
+  route: →23
+  desc: '★ 只留「行号递增」的前向边 → {起点: {后继, …}}。 · L126 · 函数'
+- id: '11'
+  name: _merge_branch_group
+  lines:
+  - _merge_branch_group
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 12
+  col: 0
+  stage: 模块级
+  route: →23
+  desc: ★ 把一组汇聚到同一点的分支并到同一行的相邻列（首分支留在原位，其余向右排）。 · L135 · 函数
+- id: '12'
+  name: _merge_parallel_rows
+  lines:
+  - _merge_parallel_rows
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 11
+  col: 0
+  stage: 模块级
+  route: →11
+  desc: ★ 按「后继集合完全相同且非空」分组，逐组把并行分支并排到同一行。 · L146 · 函数
+- id: '13'
+  name: balance_arms
+  lines:
+  - balance_arms
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 13
+  col: 0
+  stage: 模块级
+  route: →23
+  desc: ★ 并行分支按**墨迹重量**分挂主轴两侧，把主轴摆到中轴上（D-92「臂」）。 · L161 · 函数
+- id: '14'
+  name: _apply_row_remap
+  lines:
+  - _apply_row_remap
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 14
+  col: 0
+  stage: 模块级
+  route: →23
+  desc: ★ 把腾空的层压掉（重排行号），并把 row/col 写回节点。 · L199 · 函数
+- id: '15'
+  name: merge_parallel_branches
+  lines:
+  - merge_parallel_branches
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 9
+  col: 0
+  stage: 模块级
+  route: 1→10｜2→12｜3→13｜4→14
+  desc: ★ 并行分支并排：同一节点分出的多条前向分支若**汇聚到同一点**，把它们并到一行、占相邻列。 · L207 · 函数 · 分支：1→_forward_successors
+    2→_merge_parallel_rows 3→balance_arms 4→_apply_row_remap
+- id: '16'
+  name: _between_in_col
+  lines:
+  - _between_in_col
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 17
+  col: 0
+  stage: 模块级
+  route: →23
+  desc: ★ 同一列里 c 之外是否已有节点夹在行 a 与 b 之间（判断两节点是否"相邻"）。 · L223 · 函数
+- id: '17'
+  name: _edge_kind
+  lines:
+  - _edge_kind
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 16
+  col: 0
+  stage: 模块级
+  route: →16
+  desc: ★ 按行列位置推导一条边的 kind：同行 horiz / 回退 loop / 同列相邻 spine / 其余 jumpR。 · L228 · 函数
+- id: '18'
+  name: auto_layout
+  lines:
+  - auto_layout
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 15
+  col: 0
+  stage: 模块级
+  route: →17
+  desc: ★ 基线布局：row=表序，col=0 单主列；由位置推导 kind；通道交 `router` 现场规划（见 dsl-sp… · L240 · 函数
+- id: '19'
+  name: _index_hints
+  lines:
+  - _index_hints
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 19
+  col: 0
+  stage: 模块级
+  route: →23
+  desc: '★ 把布局提示的边按 (from, to) 建索引 → {(from, to): [提示边, …]}。 · L260 · 函数'
+- id: '20'
+  name: _pick_hint
+  lines:
+  - _pick_hint
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 20
+  col: 0
+  stage: 模块级
+  route: →23
+  desc: ★ 按「label 相同 > kind 相同 > 任意」挑一条提示边并从池子里消耗掉它；挑不到返回 None。 · L268 · 函数
+- id: '21'
+  name: _apply_hint
+  lines:
+  - _apply_hint
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 21
+  col: 0
+  stage: 模块级
+  route: →23
+  desc: ★ 把提示边的手调 kind 与几何键借给 DSL 边（label / polarity 一律来自流程表，不被覆盖）。 · L284 · 函数
+- id: '22'
+  name: reuse_hint
+  lines:
+  - reuse_hint
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 18
+  col: 0
+  stage: 模块级
+  route: 1→19｜2→20｜3→21
+  desc: ★ --layout 提示：借用几何键（gutter / channel / gapx / dye / exit / en… · L295 · 函数
+    · 分支：1→_index_hints 2→_pick_hint 3→_apply_hint
+- id: '23'
+  name: 结束
+  lines:
+  - 结束
+  type: end
+  subject: 脚本
+  executor: selfboot
+  row: 22
+  col: 0
+  stage: 出口
+  route: —
+  desc: 流程终点（结构性节点，不是函数）
+edges:
+- from: '01'
+  to: '02'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '01'
+  to: '03'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '01'
+  to: 09
+  kind: spine
+  polarity: main
+  label: '3'
+- from: '01'
+  to: '15'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '01'
+  to: '18'
+  kind: jumpR
+  polarity: main
+  label: '5'
+- from: '01'
+  to: '22'
+  kind: jumpR
+  polarity: main
+  label: '6'
+- from: '02'
+  to: '23'
+  kind: jumpR
+  polarity: main
+- from: '03'
+  to: '23'
+  kind: jumpR
+  polarity: main
+- from: '04'
+  to: '23'
+  kind: jumpR
+  polarity: main
+- from: '05'
+  to: '04'
+  kind: spine
+  polarity: main
+- from: '06'
+  to: '23'
+  kind: jumpR
+  polarity: main
+- from: '07'
+  to: '23'
+  kind: jumpR
+  polarity: main
+- from: 08
+  to: '23'
+  kind: jumpR
+  polarity: main
+- from: 09
+  to: '05'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: 09
+  to: '06'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: 09
+  to: '07'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: 09
+  to: 08
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '10'
+  to: '23'
+  kind: jumpR
+  polarity: main
+- from: '11'
+  to: '23'
+  kind: jumpR
+  polarity: main
+- from: '12'
+  to: '11'
+  kind: spine
+  polarity: main
+- from: '13'
+  to: '23'
+  kind: jumpR
+  polarity: main
+- from: '14'
+  to: '23'
+  kind: jumpR
+  polarity: main
+- from: '15'
+  to: '10'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '15'
+  to: '12'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '15'
+  to: '13'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '15'
+  to: '14'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '16'
+  to: '23'
+  kind: jumpR
+  polarity: main
+- from: '17'
+  to: '16'
+  kind: spine
+  polarity: main
+- from: '18'
+  to: '17'
+  kind: spine
+  polarity: main
+- from: '19'
+  to: '23'
+  kind: jumpR
+  polarity: main
+- from: '20'
+  to: '23'
+  kind: jumpR
+  polarity: main
+- from: '21'
+  to: '23'
+  kind: spine
+  polarity: main
+- from: '22'
+  to: '19'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '22'
+  to: '20'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '22'
+  to: '21'
+  kind: jumpR
+  polarity: main
+  label: '3'

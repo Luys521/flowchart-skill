@@ -1,0 +1,179 @@
+meta:
+  title: 回看出处：逐行问"这条凭什么"
+  subjects:
+    用户:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+    AI:
+      fill: '#d5e8d4'
+      stroke: '#82b366'
+    脚本:
+      fill: '#ffe6cc'
+      stroke: '#d79b00'
+  layout: flow
+layout:
+  col_x: []
+  width: 1160
+  origin_x: -280
+nodes:
+- id: 05a
+  name: 开始逐行回看
+  lines:
+  - 开始逐行回看
+  type: start
+  subject: AI
+  executor: AI
+  row: 0
+  col: 1
+  stage: 取行
+  route: →05b
+  desc: 逐行过、不跳行：漏掉的那一行，就是将来被客户挑出来的那一行
+  input: 十二列流程表
+- id: 05b
+  name: 这一条来自材料吗？
+  lines:
+  - 这一条来自材料吗？
+  type: decision
+  subject: AI
+  executor: AI
+  row: 1
+  col: 1
+  stage: 判出处
+  route: 有→05c ｜ 常理→05d ｜ 推不出→05e
+  desc: 三档不是程度差别，是**来源差别**：材料说的、AI 补的、没人能定的
+  input: 一行内容
+  basis: 「依据」与 `⚠` 的分工（`references/flowtable-spec.md` §2）
+  output: 有出处 / 按常理补 / 推不出
+- id: 05c
+  name: 照写材料原话
+  lines:
+  - 照写材料原话
+  type: task
+  subject: AI
+  executor: AI
+  row: 2
+  col: 1
+  stage: 照写
+  route: →05f
+  desc: 有出处就照写，**不要顺手改写措辞**——改过的措辞再也指不回原文
+  input: 材料原文
+  output: 保留原话的该行
+- id: 05d
+  name: 标 ⚠ 并写明依据
+  lines:
+  - 标 ⚠ 并写明依据
+  type: task
+  subject: AI
+  executor: AI
+  row: 2
+  col: 0
+  stage: 留痕一档
+  route: →05f
+  desc: ★ 橙 + 疏虚线；悬浮框首行说明"此处为 AI 推断，原文未载明"
+  input: AI 补的内容
+  basis: '`⚠` = 有依据的推断（`references/flowtable-spec.md` §2）'
+  output: 带 `⚠` 的描述
+- id: 05e
+  name: 标 ⚠? 待拍板
+  lines:
+  - 标 ⚠? 待拍板
+  type: task
+  subject: AI
+  executor: AI
+  row: 2
+  col: 2
+  stage: 留痕二档
+  route: →05f
+  desc: ★ 红 + 密虚线，与 `⚠` 一眼分得开；**不同选法后果不同**的才配这一档
+  input: AI 推不出的内容
+  basis: '`⚠?` = 必须业务方拍板（`references/flowtable-spec.md` §2）'
+  output: 带 `⚠?` 的描述
+- id: 05f
+  name: 还有下一行吗？
+  lines:
+  - 还有下一行吗？
+  type: decision
+  subject: AI
+  executor: AI
+  row: 3
+  col: 1
+  stage: 循环
+  route: 有→回 05b ｜ 没有→05g
+  desc: 一次只判一行；**打标不阻断**，标完照常往下
+  input: 已回看的行
+  output: 有 / 没有
+- id: 05g
+  name: 判断节点的依据单独再过一遍
+  lines:
+  - 判断节点的依据单独再过一遍
+  type: task
+  subject: AI
+  executor: AI
+  row: 4
+  col: 1
+  stage: 补刀
+  route: →05h
+  desc: 全表最该被追问的一处：每个分支标签背后都要有一条能复述的判据
+  input: 全表的判断节点
+  basis: 判断节点的「依据」= 分支标签背后那条判据（`references/flowtable-spec.md` §2）
+  output: 补全的依据
+- id: 05h
+  name: 打标完毕，交 06
+  lines:
+  - 打标完毕，交 06
+  type: end
+  subject: AI
+  executor: AI
+  row: 5
+  col: 1
+  stage: 收尾
+  route: —
+  desc: 仍未决的照常往下走：由 06 报出、由 12 如实交付
+  input: 带留痕的流程表
+  output: 带留痕的流程表
+edges:
+- from: 05a
+  to: 05b
+  kind: spine
+  polarity: main
+- from: 05b
+  to: 05c
+  kind: spine
+  polarity: main
+  label: 有
+- from: 05b
+  to: 05d
+  kind: jumpR
+  polarity: main
+  label: 常理
+- from: 05b
+  to: 05e
+  kind: jumpR
+  polarity: main
+  label: 推不出
+- from: 05c
+  to: 05f
+  kind: spine
+  polarity: main
+- from: 05d
+  to: 05f
+  kind: jumpR
+  polarity: main
+- from: 05e
+  to: 05f
+  kind: jumpR
+  polarity: main
+- from: 05f
+  to: 05b
+  kind: loop
+  polarity: negative
+  label: 有
+- from: 05f
+  to: 05g
+  kind: spine
+  polarity: main
+  label: 没有
+- from: 05g
+  to: 05h
+  kind: spine
+  polarity: main

@@ -1,0 +1,550 @@
+meta:
+  title: build.py 函数流程表
+  subjects:
+    脚本:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  width: 1560
+  origin_x: 0
+nodes:
+- id: '01'
+  name: 开始
+  lines:
+  - 开始
+  type: start
+  subject: 脚本
+  executor: selfboot
+  row: 0
+  col: 0
+  stage: 入口
+  route: 1→21｜2→26
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→build_registry 2→main
+- id: '02'
+  name: _ids
+  lines:
+  - _ids
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 7
+  col: 0
+  stage: 模块级
+  route: →27
+  desc: ★ 读 flow.yaml 里的节点 id 集合；读不动（文件坏/不存在/缺 id 键）返回空集。 · L42 · 函数
+- id: '03'
+  name: _rollback
+  lines:
+  - _rollback
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 15
+  col: 0
+  stage: 模块级
+  route: →27
+  desc: ★ 审核未过 → 把刚写下的产物还原成审核前的样子（原本不存在的就删掉）。 · L53 · 函数
+- id: '04'
+  name: _rollback_manifest
+  lines:
+  - _rollback_manifest
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: 模块级
+  route: →27
+  desc: ★ 渲染契约跟产物**同进同退**：失败时还原成上一版（原本不存在的就删掉）。见 D-81。 · L66 · 函数 · ⇢ 依赖 manifest.manifest_path_for
+- id: '05'
+  name: _prepare_child
+  lines:
+  - _prepare_child
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 10
+  col: 0
+  stage: 模块级
+  route: →27
+  desc: ★ 给一张后代子表补上 DSL（结构校验 → 转 DSL）。见 D-52。 · L81 · 函数 · ⇢ 依赖 artifact.artifact_stem、table_to_dsl.main
+- id: '06'
+  name: _gate_child_view
+  lines:
+  - _gate_child_view
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 11
+  col: 0
+  stage: 模块级
+  route: →27
+  desc: ★ 对一张**会内嵌的子表**跑几何门禁；只警告不阻断（见 D-52）。 · L108 · 函数 · ⇢ 依赖 engine.load、validate.check
+- id: '07'
+  name: _find_parent
+  lines:
+  - _find_parent
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 25
+  col: 0
+  stage: 模块级
+  route: →27
+  desc: ★ 这张流程表是不是别人的下钻子图？是则返回 (父图相对链接, 父节点名)，不是返回 None。 · L131 · 函数 · ⇢ 依赖 artifact.artifact_stem、flowtable.find_parent_table
+- id: 08
+  name: _parse_args
+  lines:
+  - _parse_args
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 4
+  col: 0
+  stage: 模块级
+  route: →27
+  desc: ★ 解析 build 的命令行参数。 · L148 · 函数
+- id: 09
+  name: _check_structure
+  lines:
+  - _check_structure
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 5
+  col: 0
+  stage: 模块级
+  route: →27
+  desc: ★ 跑结构校验；未过则报错并返回 1。 · L164 · 函数 · ⇢ 依赖 table_to_dsl.main
+- id: '10'
+  name: _gen_dsl
+  lines:
+  - _gen_dsl
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 6
+  col: 0
+  stage: 模块级
+  route: →02
+  desc: ★ 生成 DSL（可复用已有 flow.yaml 几何）；复用时提示新增节点，失败返回 1。 · L174 · 函数 · ⇢ 依赖 table_to_dsl.main
+- id: '11'
+  name: _validate_geometry
+  lines:
+  - _validate_geometry
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 8
+  col: 0
+  stage: 模块级
+  route: →27
+  desc: ★ 跑碰撞检测；未过则报错并返回 1。 · L197 · 函数 · ⇢ 依赖 validate.main
+- id: '12'
+  name: _prepare_views
+  lines:
+  - _prepare_views
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 9
+  col: 0
+  stage: 模块级
+  route: 1→05｜2→06
+  desc: ★ 备齐后代子表的 DSL（BFS 至多 5 轮），报告内嵌/缺失并返回视图计划。 · L208 · 函数 · 分支：1→_prepare_child
+    2→_gate_child_view · ⇢ 依赖 render_html.collect_views
+- id: '13'
+  name: _render_products
+  lines:
+  - _render_products
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: 模块级
+  route: 1→03｜2→23｜3→25
+  desc: ★ 按**注册表**渲染全部产物；任一失败即还原旧产物并返回 None。 · L269 · 函数 · 分支：1→_rollback 2→_renderer
+    3→_render_ctx
+- id: '14'
+  name: _audit_contract
+  lines:
+  - _audit_contract
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 13
+  col: 0
+  stage: 模块级
+  route: 1→03｜2→22
+  desc: ★ 拿自检产出的契约反查**注册表里的每一份产物**；不过则还原产物并返回 1。 · L304 · 函数 · 分支：1→_rollback 2→_bind
+    · ⇢ 依赖 manifest.check、manifest.manifest_path_for、manifest.summary
+- id: '15'
+  name: _lane_source
+  lines:
+  - _lane_source
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 12
+  col: 0
+  stage: 模块级
+  route: →27
+  desc: ★ 底稿是不是泳道布局。 · L335 · 函数 · ⇢ 依赖 engine.load
+- id: '16'
+  name: _audit_geometry
+  lines:
+  - _audit_geometry
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 14
+  col: 0
+  stage: 模块级
+  route: 1→03｜2→22
+  desc: ★ 反解**注册表里每一份产物**的真实坐标再跑几何门禁；不过则还原产物并返回 1。 · L345 · 函数 · 分支：1→_rollback 2→_bind
+    · ⇢ 依赖 manifest.artifact_geometry、validate.check_artifact
+- id: '17'
+  name: _write_layer_index
+  lines:
+  - _write_layer_index
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 16
+  col: 0
+  stage: 模块级
+  route: →27
+  desc: ★ 从各表 ▣ 声明派生层级索引，写 <stem>-index.md 并报告表数与层级。 · L370 · 函数 · ⇢ 依赖 layer_index.build_layer_index、layer_index.format_index_md
+- id: '18'
+  name: _product_note
+  lines:
+  - _product_note
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 18
+  col: 0
+  stage: 模块级
+  route: →27
+  desc: ★ 每类产物在交付清单里那句"它是干嘛的"（与 `_render_ctx` 同理：每类一处，集中放）。 · L386 · 函数
+- id: '19'
+  name: _report_receipt
+  lines:
+  - _report_receipt
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 17
+  col: 0
+  stage: 模块级
+  route: →18
+  desc: ★ 留存被覆盖旧版为 .bak，并打印交付清单与 sha256 回执。 · L398 · 函数
+- id: '20'
+  name: _report_pending
+  lines:
+  - _report_pending
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 19
+  col: 0
+  stage: 模块级
+  route: →27
+  desc: ★ 汇总图上 AI 推断处（虚线标出），提醒用户重点核对。 · L426 · 函数 · ⇢ 依赖 semantics.is_pending、semantics.pending_kind
+- id: '21'
+  name: build_registry
+  lines:
+  - build_registry
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 20
+  col: 0
+  stage: 模块级
+  route: →27
+  desc: ★ 按**可用性**装注册表，返回 `(RENDERERS, 缺的可选件, 缺的必需件)`。 · L484 · 函数
+- id: '22'
+  name: _bind
+  lines:
+  - _bind
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 22
+  col: 0
+  stage: 模块级
+  route: →27
+  desc: ★ 按名字现查 `globals()` 取函数——渲染器与两个**反解器**都走这里。 · L507 · 函数
+- id: '23'
+  name: _renderer
+  lines:
+  - _renderer
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 21
+  col: 0
+  stage: 模块级
+  route: →22
+  desc: ★ 按注册表取渲染器实例。**调用时现查 `globals()`**（理由见上面 RENDERERS 的注释）。 · L520 · 函数
+- id: '24'
+  name: _product_paths
+  lines:
+  - _product_paths
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 23
+  col: 0
+  stage: 模块级
+  route: →27
+  desc: ★ 产物路径由注册表派生（W5）：`<流程名>-flow<ext>`。 · L525 · 函数
+- id: '25'
+  name: _render_ctx
+  lines:
+  - _render_ctx
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 24
+  col: 0
+  stage: 模块级
+  route: →07
+  desc: ★ 每类渲染器自己的私有选项（经 `ctx` 传，见 ARCHITECTURE.md 第九节）。 · L534 · 函数 · ⇢ 依赖 render_drawio.discover_pages
+- id: '26'
+  name: main
+  lines:
+  - main
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 1
+  col: 0
+  stage: 模块级
+  route: 1→04｜2→08｜3→09｜4→10｜5→11｜6→12｜7→13｜8→14｜9→15｜10→16｜11→17｜12→19｜13→20｜14→24
+  desc: L548 · 函数 · 分支：1→_rollback_manifest 2→_parse_args 3→_check_structure 4→_gen_dsl
+    5→_validate_geometry 6→_prepare_views 7→_render_products 8→_audit_contract 9→_lane_source
+    10→_audit_geometry 11→_write_layer_index 12→_report_receipt 13→_report_pending
+    14→_product_paths · ⇢ 依赖 artifact.artifact_stem、manifest.manifest_path_for
+- id: '27'
+  name: 结束
+  lines:
+  - 结束
+  type: end
+  subject: 脚本
+  executor: selfboot
+  row: 26
+  col: 0
+  stage: 出口
+  route: —
+  desc: 流程终点（结构性节点，不是函数）
+edges:
+- from: '01'
+  to: '21'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '01'
+  to: '26'
+  kind: spine
+  polarity: main
+  label: '2'
+- from: '02'
+  to: '27'
+  kind: jumpR
+  polarity: main
+- from: '03'
+  to: '27'
+  kind: jumpR
+  polarity: main
+- from: '04'
+  to: '27'
+  kind: jumpR
+  polarity: main
+- from: '05'
+  to: '27'
+  kind: jumpR
+  polarity: main
+- from: '06'
+  to: '27'
+  kind: jumpR
+  polarity: main
+- from: '07'
+  to: '27'
+  kind: spine
+  polarity: main
+- from: 08
+  to: '27'
+  kind: jumpR
+  polarity: main
+- from: 09
+  to: '27'
+  kind: jumpR
+  polarity: main
+- from: '10'
+  to: '02'
+  kind: spine
+  polarity: main
+- from: '11'
+  to: '27'
+  kind: jumpR
+  polarity: main
+- from: '12'
+  to: '05'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '12'
+  to: '06'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '13'
+  to: '03'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '13'
+  to: '23'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '13'
+  to: '25'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '14'
+  to: '03'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '14'
+  to: '22'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '15'
+  to: '27'
+  kind: jumpR
+  polarity: main
+- from: '16'
+  to: '03'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '16'
+  to: '22'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '17'
+  to: '27'
+  kind: jumpR
+  polarity: main
+- from: '18'
+  to: '27'
+  kind: jumpR
+  polarity: main
+- from: '19'
+  to: '18'
+  kind: spine
+  polarity: main
+- from: '20'
+  to: '27'
+  kind: jumpR
+  polarity: main
+- from: '21'
+  to: '27'
+  kind: jumpR
+  polarity: main
+- from: '22'
+  to: '27'
+  kind: jumpR
+  polarity: main
+- from: '23'
+  to: '22'
+  kind: spine
+  polarity: main
+- from: '24'
+  to: '27'
+  kind: jumpR
+  polarity: main
+- from: '25'
+  to: '07'
+  kind: spine
+  polarity: main
+- from: '26'
+  to: '04'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '26'
+  to: 08
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '26'
+  to: 09
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '26'
+  to: '10'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '26'
+  to: '11'
+  kind: jumpR
+  polarity: main
+  label: '5'
+- from: '26'
+  to: '12'
+  kind: jumpR
+  polarity: main
+  label: '6'
+- from: '26'
+  to: '13'
+  kind: spine
+  polarity: main
+  label: '7'
+- from: '26'
+  to: '14'
+  kind: jumpR
+  polarity: main
+  label: '8'
+- from: '26'
+  to: '15'
+  kind: jumpR
+  polarity: main
+  label: '9'
+- from: '26'
+  to: '16'
+  kind: jumpR
+  polarity: main
+  label: '10'
+- from: '26'
+  to: '17'
+  kind: jumpR
+  polarity: main
+  label: '11'
+- from: '26'
+  to: '19'
+  kind: jumpR
+  polarity: main
+  label: '12'
+- from: '26'
+  to: '20'
+  kind: jumpR
+  polarity: main
+  label: '13'
+- from: '26'
+  to: '24'
+  kind: jumpR
+  polarity: main
+  label: '14'

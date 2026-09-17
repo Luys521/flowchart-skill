@@ -1,0 +1,453 @@
+meta:
+  title: writeback.py 函数流程表
+  subjects:
+    脚本:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  width: 1220
+  origin_x: -140
+nodes:
+- id: '01'
+  name: 开始
+  lines:
+  - 开始
+  type: start
+  subject: 脚本
+  executor: selfboot
+  row: 0
+  col: 0
+  stage: 入口
+  route: 1→21｜2→22
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→compare_bytes 2→main
+- id: '02'
+  name: _cell
+  lines:
+  - _cell
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 5
+  col: 0
+  stage: 模块级
+  route: →23
+  desc: ★ 单元格文本 → 可安全落进 markdown 表格的形态：`｜` 必须转义成 `\｜`（GFM 规范）， · L27 · 函数
+- id: '03'
+  name: _is_sep_cell
+  lines:
+  - _is_sep_cell
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 15
+  col: 0
+  stage: 模块级
+  route: →23
+  desc: ★ GFM 分隔行单元格：`---` / `:---` / `:---:`（与 table_to_dsl.parse_ta… · L33 · 函数
+- id: '04'
+  name: _row_key
+  lines:
+  - _row_key
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 6
+  col: 0
+  stage: 模块级
+  route: →23
+  desc: ★ 行 → 可比对的键：占位符归一（主体/执行者 → `-`，行动所需时间/下个节点 → `—`）。 · L42 · 函数
+- id: '05'
+  name: _tail
+  lines:
+  - _tail
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 20
+  col: 0
+  stage: 模块级
+  route: →23
+  desc: ★ token 里编号之后的自由注解：`不齐全→回 01 补件` → ` 补件`。 · L59 · 函数
+- id: '06'
+  name: orig_tokens
+  lines:
+  - orig_tokens
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 19
+  col: 0
+  stage: 模块级
+  route: →05
+  desc: '★ 原流程表「下个节点」列 → {节点id: [(raw, label, tid, tail)]}（保留作者顺序与原文）。 · L73 · 函数
+    · ⇢ 依赖 flowtable.parse_next_raw、flowtable.split_row_cells'
+- id: '07'
+  name: new_token
+  lines:
+  - new_token
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 8
+  col: 0
+  stage: 模块级
+  route: →23
+  desc: ★ 生成一条分支文本（仅用于原表里没有对应项的新增/改动分支）。 · L86 · 函数
+- id: 08
+  name: build_rows
+  lines:
+  - build_rows
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 7
+  col: 0
+  stage: 模块级
+  route: →07
+  desc: L94 · 函数
+- id: 09
+  name: branch_conflicts
+  lines:
+  - branch_conflicts
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 18
+  col: 0
+  stage: 模块级
+  route: →06
+  desc: ★ 原流程表「下个节点」列 vs drawio 实际连线的**方向性冲突**清单（D-45）。 · L127 · 函数
+- id: '10'
+  name: format_conflicts
+  lines:
+  - format_conflicts
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 21
+  col: 0
+  stage: 模块级
+  route: →23
+  desc: ★ 冲突清单 → 人读文本（`sync.py` / `xml_reader.py` 共用一份文案，别两处各写一遍）。 · L175 · 函数
+- id: '11'
+  name: _read_drawio
+  lines:
+  - _read_drawio
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 9
+  col: 0
+  stage: 模块级
+  route: →23
+  desc: ★ 读回 drawio XML（utf-8-sig 兼容带 BOM 的产物）。 · L183 · 函数 · ⇢ 依赖 xml_reader.read
+- id: '12'
+  name: _read_orig_snapshot
+  lines:
+  - _read_orig_snapshot
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 10
+  col: 0
+  stage: 模块级
+  route: →23
+  desc: ★ 原流程表快照：看**字节**判换行符与 BOM，解码出全文与行列表。 · L189 · 函数
+- id: '13'
+  name: _semantic_snapshot
+  lines:
+  - _semantic_snapshot
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 11
+  col: 0
+  stage: 模块级
+  route: →23
+  desc: ★ 原流程表按 id 的语义快照（阶段/描述/主体/执行者/时间/输入/依据/输出）——id 在原表出现过，语义就以原表为… · L200 · 函数
+    · ⇢ 依赖 flowtable.split_row_cells
+- id: '14'
+  name: _orig_line_index
+  lines:
+  - _orig_line_index
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 12
+  col: 0
+  stage: 模块级
+  route: →03
+  desc: ★ 原行文本（按 id）：未改动的行**整行照抄**，免得"多/少一个空格"这种伪差异混进 diff。 · L213 · 函数 · ⇢ 依赖 semantics.split_table_row
+- id: '15'
+  name: _split_table_block
+  lines:
+  - _split_table_block
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 13
+  col: 0
+  stage: 模块级
+  route: →23
+  desc: ★ 定位标准表头与表格块边界 → (前言, 表后内容, 前言与表头之间的间隔, 尾换行)。 · L225 · 函数
+- id: '16'
+  name: _rebuild_rows
+  lines:
+  - _rebuild_rows
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 4
+  col: 0
+  stage: 模块级
+  route: 1→02｜2→04｜3→08
+  desc: ★ 逐行重建表格行与表格体（未改动整行照抄），并记下自检所需的 _resolved/_stage。 · L255 · 函数 · 分支：1→_cell
+    2→_row_key 3→build_rows · ⇢ 依赖 semantics.split_table_row
+- id: '17'
+  name: _keep_after_table
+  lines:
+  - _keep_after_table
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 14
+  col: 0
+  stage: 模块级
+  route: →03
+  desc: ★ 表后内容保留：丢掉混进来的表内散行，其余（说明章节等）逐字保留。 · L284 · 函数 · ⇢ 依赖 semantics.split_table_row
+- id: '18'
+  name: _emit_table
+  lines:
+  - _emit_table
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 16
+  col: 0
+  stage: 模块级
+  route: →23
+  desc: ★ 前言 / 表格体 / 表后内容拼回，按原换行符与编码落盘，并打印回写统计。 · L300 · 函数
+- id: '19'
+  name: _verify_written
+  lines:
+  - _verify_written
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 17
+  col: 0
+  stage: 模块级
+  route: 1→09｜2→10
+  desc: ★ 回写后自检（H1–H8），并报警分支走向冲突与缺语义的节点；返回**是否通过**。 · L311 · 函数 · 分支：1→branch_conflicts
+    2→format_conflicts · ⇢ 依赖 flowtable_check.run_checks
+- id: '20'
+  name: write
+  lines:
+  - write
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: 模块级
+  route: 1→06｜2→11｜3→12｜4→13｜5→14｜6→15｜7→16｜8→17｜9→18｜10→19
+  desc: ★ drawio 读回结果 + 原流程表 → 更新后的流程表（回写闭环主入口）。 · L347 · 函数 · 分支：1→orig_tokens 2→_read_drawio
+    3→_read_orig_snapshot 4→_semantic_snapshot 5→_orig_line_index 6→_split_table_block
+    7→_rebuild_rows 8→_keep_after_table 9→_emit_table 10→_verify_written · ⇢ 依赖 flowtable.parse_table
+- id: '21'
+  name: compare_bytes
+  lines:
+  - compare_bytes
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 1
+  col: 0
+  stage: 模块级
+  route: →23
+  desc: ★ 回写结果 vs 原文的**文件级**复核 → (是否逐字节一致, unified diff 行列表)。 · L367 · 函数
+- id: '22'
+  name: main
+  lines:
+  - main
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: 模块级
+  route: →20
+  desc: L383 · 函数
+- id: '23'
+  name: 结束
+  lines:
+  - 结束
+  type: end
+  subject: 脚本
+  executor: selfboot
+  row: 22
+  col: 0
+  stage: 出口
+  route: —
+  desc: 流程终点（结构性节点，不是函数）
+edges:
+- from: '01'
+  to: '21'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '01'
+  to: '22'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '02'
+  to: '23'
+  kind: jumpR
+  polarity: main
+- from: '03'
+  to: '23'
+  kind: jumpR
+  polarity: main
+- from: '04'
+  to: '23'
+  kind: jumpR
+  polarity: main
+- from: '05'
+  to: '23'
+  kind: jumpR
+  polarity: main
+- from: '06'
+  to: '05'
+  kind: spine
+  polarity: main
+- from: '07'
+  to: '23'
+  kind: jumpR
+  polarity: main
+- from: 08
+  to: '07'
+  kind: spine
+  polarity: main
+- from: 09
+  to: '06'
+  kind: spine
+  polarity: main
+- from: '10'
+  to: '23'
+  kind: spine
+  polarity: main
+- from: '11'
+  to: '23'
+  kind: jumpR
+  polarity: main
+- from: '12'
+  to: '23'
+  kind: jumpR
+  polarity: main
+- from: '13'
+  to: '23'
+  kind: jumpR
+  polarity: main
+- from: '14'
+  to: '03'
+  kind: jumpR
+  polarity: main
+- from: '15'
+  to: '23'
+  kind: jumpR
+  polarity: main
+- from: '16'
+  to: '02'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '16'
+  to: '04'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '16'
+  to: 08
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '17'
+  to: '03'
+  kind: spine
+  polarity: main
+- from: '18'
+  to: '23'
+  kind: jumpR
+  polarity: main
+- from: '19'
+  to: 09
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '19'
+  to: '10'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '20'
+  to: '06'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '20'
+  to: '11'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '20'
+  to: '12'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '20'
+  to: '13'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '20'
+  to: '14'
+  kind: jumpR
+  polarity: main
+  label: '5'
+- from: '20'
+  to: '15'
+  kind: jumpR
+  polarity: main
+  label: '6'
+- from: '20'
+  to: '16'
+  kind: spine
+  polarity: main
+  label: '7'
+- from: '20'
+  to: '17'
+  kind: jumpR
+  polarity: main
+  label: '8'
+- from: '20'
+  to: '18'
+  kind: jumpR
+  polarity: main
+  label: '9'
+- from: '20'
+  to: '19'
+  kind: jumpR
+  polarity: main
+  label: '10'
+- from: '21'
+  to: '23'
+  kind: jumpR
+  polarity: main
+- from: '22'
+  to: '20'
+  kind: spine
+  polarity: main

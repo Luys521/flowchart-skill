@@ -1,0 +1,240 @@
+meta:
+  title: sync.py 函数流程表
+  subjects:
+    脚本:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  width: 940
+  origin_x: -80
+nodes:
+- id: '01'
+  name: 开始
+  lines:
+  - 开始
+  type: start
+  subject: 脚本
+  executor: selfboot
+  row: 0
+  col: 0
+  stage: 入口
+  route: 1→11
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→main
+- id: '02'
+  name: build_hint
+  lines:
+  - build_hint
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 7
+  col: 0
+  stage: 模块级
+  route: →12
+  desc: ★ 把读回结果的 row/col/col_x 打包成 table_to_dsl 的布局提示 · L24 · 函数 · ⇢ 依赖 flowtable_layout.auto_layout
+- id: '03'
+  name: _parse_args
+  lines:
+  - _parse_args
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: 模块级
+  route: →12
+  desc: ★ 解析 sync 的命令行参数。 · L49 · 函数
+- id: '04'
+  name: _resolve_paths
+  lines:
+  - _resolve_paths
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: 模块级
+  route: →12
+  desc: ★ 校验 drawio 与原流程表路径，返回 (drawio, 原表, 输出表)；缺文件返回 None。 · L65 · 函数
+- id: '05'
+  name: _read_back
+  lines:
+  - _read_back
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 4
+  col: 0
+  stage: 模块级
+  route: →12
+  desc: ★ 读回 drawio（BOM 兼容）并按需打印摘要与差异；解析失败返回 None。 · L79 · 函数 · ⇢ 依赖 xml_reader.brief、xml_reader.diff、xml_reader.read
+- id: '06'
+  name: _write_back
+  lines:
+  - _write_back
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 5
+  col: 0
+  stage: 模块级
+  route: →12
+  desc: ★ 回写《流程表》到预览文件并做逐字节复核；回写失败返回 1。 · L97 · 函数 · ⇢ 依赖 writeback.compare_bytes、writeback.write
+- id: '07'
+  name: _gen_dsl
+  lines:
+  - _gen_dsl
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 6
+  col: 0
+  stage: 模块级
+  route: →02
+  desc: ★ 写布局提示临时 yaml 并转出 DSL（泳道布局另报文案）；返回 (DSL 路径, 退出码)。 · L124 · 函数 · ⇢ 依赖 artifact.artifact_stem、flowtable.parse_table、table_to_dsl.main
+- id: 08
+  name: _quality_gate
+  lines:
+  - _quality_gate
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 8
+  col: 0
+  stage: 模块级
+  route: →12
+  desc: ★ 跑质量门禁；未过则报错并返回 1。 · L150 · 函数 · ⇢ 依赖 validate.main
+- id: 09
+  name: _source_guard
+  lines:
+  - _source_guard
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 9
+  col: 0
+  stage: 模块级
+  route: →12
+  desc: ★ 《流程表》自上次渲染后是否被直改过 → `(state, 说明)`。 · L161 · 函数 · ⇢ 依赖 artifact.artifact_stem、manifest.manifest_path_for、manifest.source_stale
+- id: '10'
+  name: _apply
+  lines:
+  - _apply
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 10
+  col: 0
+  stage: 模块级
+  route: →12
+  desc: ★ --apply：两道覆盖门禁通过后覆盖原表/DSL 并重渲染，返回退出码。 · L173 · 函数 · ⇢ 依赖 artifact.artifact_stem、build.main、flowtable.parse_table、writeback.branch_conflicts、writeback.format_conflicts
+- id: '11'
+  name: main
+  lines:
+  - main
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 1
+  col: 0
+  stage: 模块级
+  route: 1→03｜2→04｜3→05｜4→06｜5→07｜6→08｜7→09｜8→10
+  desc: L227 · 函数 · 分支：1→_parse_args 2→_resolve_paths 3→_read_back 4→_write_back 5→_gen_dsl
+    6→_quality_gate 7→_source_guard 8→_apply
+- id: '12'
+  name: 结束
+  lines:
+  - 结束
+  type: end
+  subject: 脚本
+  executor: selfboot
+  row: 11
+  col: 0
+  stage: 出口
+  route: —
+  desc: 流程终点（结构性节点，不是函数）
+edges:
+- from: '01'
+  to: '11'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '02'
+  to: '12'
+  kind: jumpR
+  polarity: main
+- from: '03'
+  to: '12'
+  kind: jumpR
+  polarity: main
+- from: '04'
+  to: '12'
+  kind: jumpR
+  polarity: main
+- from: '05'
+  to: '12'
+  kind: jumpR
+  polarity: main
+- from: '06'
+  to: '12'
+  kind: jumpR
+  polarity: main
+- from: '07'
+  to: '02'
+  kind: spine
+  polarity: main
+- from: 08
+  to: '12'
+  kind: jumpR
+  polarity: main
+- from: 09
+  to: '12'
+  kind: jumpR
+  polarity: main
+- from: '10'
+  to: '12'
+  kind: spine
+  polarity: main
+- from: '11'
+  to: '03'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '11'
+  to: '04'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '11'
+  to: '05'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '11'
+  to: '06'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '11'
+  to: '07'
+  kind: jumpR
+  polarity: main
+  label: '5'
+- from: '11'
+  to: 08
+  kind: jumpR
+  polarity: main
+  label: '6'
+- from: '11'
+  to: 09
+  kind: jumpR
+  polarity: main
+  label: '7'
+- from: '11'
+  to: '10'
+  kind: jumpR
+  polarity: main
+  label: '8'

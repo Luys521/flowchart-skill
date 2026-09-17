@@ -1,0 +1,75 @@
+meta:
+  title: artifact.py 函数流程表
+  subjects:
+    脚本:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  width: 680
+  origin_x: -60
+nodes:
+- id: '01'
+  name: 开始
+  lines:
+  - 开始
+  type: start
+  subject: 脚本
+  executor: selfboot
+  row: 0
+  col: 0
+  stage: 入口
+  route: 1→03
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→artifact_rel
+- id: '02'
+  name: artifact_stem
+  lines:
+  - artifact_stem
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: 模块级
+  route: →04
+  desc: ★ 流程表 → 产物名前缀（见 D-51）。规则：**表名是约定名就用目录名，否则用表名**。 · L25 · 函数
+- id: '03'
+  name: artifact_rel
+  lines:
+  - artifact_rel
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 1
+  col: 0
+  stage: 模块级
+  route: →02
+  desc: ★ 子表流程表的相对路径 → 子图产物的相对路径（见 D-51）。 · L37 · 函数
+- id: '04'
+  name: 结束
+  lines:
+  - 结束
+  type: end
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: 出口
+  route: —
+  desc: 流程终点（结构性节点，不是函数）
+edges:
+- from: '01'
+  to: '03'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '02'
+  to: '04'
+  kind: spine
+  polarity: main
+- from: '03'
+  to: '02'
+  kind: spine
+  polarity: main

@@ -1,0 +1,149 @@
+meta:
+  title: 结构校验：三层硬错误
+  subjects:
+    用户:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+    AI:
+      fill: '#d5e8d4'
+      stroke: '#82b366'
+    脚本:
+      fill: '#ffe6cc'
+      stroke: '#d79b00'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  width: 680
+  origin_x: -80
+nodes:
+- id: 04a
+  name: 读流程表十二列
+  lines:
+  - 读流程表十二列
+  type: start
+  subject: 脚本
+  executor: table_to_dsl.py
+  row: 0
+  col: 0
+  stage: 读表
+  route: →04b
+  desc: ★ 列名或列序不对直接报 H9——列是按位置读的，串列不会自己报错
+  input: 流程表文件
+  basis: 字段登记表（`references/flowtable-spec.md` §2）的列名与列序
+  output: 解析后的行
+- id: 04b
+  name: 节点层校验
+  lines:
+  - 节点层校验
+  type: task
+  subject: 脚本
+  executor: table_to_dsl.py
+  row: 1
+  col: 0
+  stage: ① 节点层
+  route: →04c
+  desc: 只看这一行自己：编号非空且唯一（01 / 01a，`10aa` 拦下）、名称与执行主体非空、节点类型属四种之一
+  input: 解析后的行
+  basis: H2 编号 · H7 语义（`references/flowtable-spec.md` §3）
+  output: 节点列表 + 硬错误
+- id: 04c
+  name: 类型层校验
+  lines:
+  - 类型层校验
+  type: task
+  subject: 脚本
+  executor: table_to_dsl.py
+  row: 2
+  col: 0
+  stage: ② 类型层
+  route: →04d
+  desc: 四种类型各查各的：开始 ≥1、结束不许有出边、判断必须 ≥2 个带标签分支（《类型登记表》见 `flowtable-spec` §2）
+  input: 节点列表
+  basis: H1 起止 · H4 分支 · H5 出边（`references/flowtable-spec.md` §3）
+  output: 类型层结论
+- id: 04d
+  name: 关系层校验
+  lines:
+  - 关系层校验
+  type: task
+  subject: 脚本
+  executor: table_to_dsl.py
+  row: 3
+  col: 0
+  stage: ③ 关系层
+  route: →04e
+  desc: 整张图一起看：引用存在、无孤儿、无死胡同、结束可达、回路不共线反向
+  input: 节点列表 + 边
+  basis: H3 引用 · H6 回路 · H8 连通（`references/flowtable-spec.md` §3）
+  output: 关系层结论
+- id: 04e
+  name: 有硬错误？
+  lines:
+  - 有硬错误？
+  type: decision
+  subject: 脚本
+  executor: table_to_dsl.py
+  row: 4
+  col: 0
+  stage: 判定
+  route: 有→04f ｜ 没有→04g
+  desc: 只数硬错误：软提示不算，别拿提示堵住流程
+  input: 三层结论
+  basis: 硬错误与软提示的二分（`references/flowtable-spec.md` §3）
+  output: 有 / 没有
+- id: 04f
+  name: 逐条报出并 exit 1
+  lines:
+  - 逐条报出并 exit 1
+  type: end
+  subject: 脚本
+  executor: table_to_dsl.py
+  row: 5
+  col: 0
+  stage: 阻断
+  route: —
+  desc: 报清第几行第几列错在哪，改完重跑
+  input: 硬错误清单
+  output: 逐条报错（含 `subject` / `fix`）
+- id: 04g
+  name: 通过，放行渲染
+  lines:
+  - 通过，放行渲染
+  type: end
+  subject: 脚本
+  executor: table_to_dsl.py
+  row: 6
+  col: 0
+  stage: 放行
+  route: —
+  desc: 校验只保证结构合法，不保证业务对——业务对不对靠 ⚠ 留痕
+  input: 三层结论
+  output: 放行信号
+edges:
+- from: 04a
+  to: 04b
+  kind: spine
+  polarity: main
+- from: 04b
+  to: 04c
+  kind: spine
+  polarity: main
+- from: 04c
+  to: 04d
+  kind: spine
+  polarity: main
+- from: 04d
+  to: 04e
+  kind: spine
+  polarity: main
+- from: 04e
+  to: 04f
+  kind: spine
+  polarity: main
+  label: 有
+- from: 04e
+  to: 04g
+  kind: jumpR
+  polarity: main
+  label: 没有

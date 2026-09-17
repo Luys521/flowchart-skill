@@ -1,0 +1,55 @@
+{
+ "title": "结构校验：三层硬错误",
+ "layout": "flow",
+ "source": "flowtable.md",
+ "dsl_sha256": "b5826afb171f42a4",
+ "source_sha256": "5cf78aed221da3b0",
+ "counts": {
+  "nodes": 7,
+  "edges": 6,
+  "by_type": {
+   "decision": 1,
+   "end": 2,
+   "start": 1,
+   "task": 3
+  },
+  "labeled_edges": 2,
+  "loop_edges": 0,
+  "pending_nodes": 0
+ },
+ "node_ids": [
+  "04a",
+  "04b",
+  "04c",
+  "04d",
+  "04e",
+  "04f",
+  "04g"
+ ],
+ "edges": [
+  [
+   "04a",
+   "04b"
+  ],
+  [
+   "04b",
+   "04c"
+  ],
+  [
+   "04c",
+   "04d"
+  ],
+  [
+   "04d",
+   "04e"
+  ],
+  [
+   "04e",
+   "04f"
+  ],
+  [
+   "04e",
+   "04g"
+  ]
+ ]
+}

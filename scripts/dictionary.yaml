@@ -1,0 +1,102 @@
+# flowchart-skill 语义→视觉映射字典（默认配置，DSL 可按图覆盖）
+
+# 网格规范（两级刻度，见 references/visual-spec.md）
+#   细格 lattice：所有折点、通道、通道间距、非矩形形状的格位、标签徽章四边
+#   粗格 node   ：矩形类节点（任务/子流程）的四条边、画布宽
+# 所有常量都必须是格上值：细格量取 10 的倍数，节点盒取 20 的倍数。
+grid:
+  lattice: 10
+  node: 20
+
+# 画布
+canvas:
+  width: 1180
+
+# 主体配色（填充/边框）；DSL meta.subjects 可覆盖或扩展
+subjects:
+  默认: {fill: "#ffffff", stroke: "#999999"}
+
+# 形状与尺寸（同类型等尺寸；行中线对齐基于 row_base_height）
+# **形状是节点类型的可见形式**：类型只有四种，形状只有三个（见 flowtable-spec §2《类型登记表》）——
+#   矩形 = 任务；菱形 = 判断；胶囊 = 开始 / 结束（靠入边/出边分）。
+# `arc` 是 **drawio 口径的 `arcSize` 百分比**（占短边），三份产物以它为准（D-86）：
+#   drawio 原样写 `arcSize=6`；html/svg 按 `min(w,h)×arc/100` 换算成 `rx` 像素（160×60 ⇒ 3.6px）。
+# 尺寸受网格约束，会被 geometry.fit_size 吸附：
+#   矩形类(rounded/stadium)：w 取 40 的倍数、h 取 20 mod 40 → 只能 60/100/140
+#   非矩形(rhombus)：w、h 取 20 的倍数 → 60/80/100 均可
+# 胶囊(stadium) = 左右半圆、中间矩形；**几何按矩形算**（drawio 的圆角矩形本来就走矩形周长），
+# 左右半圆只是外观——端口仍落在矩形边界上，三份产物才算出同一个端点（见 D-74）。
+shapes:
+  task:     {shape: rounded, arc: 6, size: [160, 60], font: 12}
+  decision: {shape: rhombus,         size: [160, 80], font: 11}
+  start:    {shape: stadium,         size: [160, 60], font: 12}
+  end:      {shape: stadium,         size: [160, 60], font: 12}
+
+# 节点文字（一个视觉通道只承载一个语义维度）
+text:
+  name:     {size: 12, bold: true,  color: "#333333"}   # 名称（黑粗）
+  executor: {size: 10, bold: false, color: "#555555"}  # 执行人（灰小字）
+  time:     {size: 10, bold: true,  color: "#b45309"}  # 行动时间（橙粗）
+  label:    {size: 11, bold: true,  color: null}       # 边标签（跟随线色）
+
+# 连线（分支极性 → 线型；回路类 kind 自动按 negative 处理）
+edges:
+  main:     {dashed: false, color: "#666666"}
+  negative: {dashed: true,  color: "#adb5bd"}
+
+# 布局引擎参数（全部为格上值：node 粗格 20 / lattice 细格 10）
+layout:
+  legend_band: 80         # 标题带高：drawio 版在画布顶部预留放标题+图例；HTML 版画布不预留（标题模块在画布外、固定在视窗顶部）
+  legend_width: 600       # 标题/图例块的宽：居中画在画布顶部。它同时是**画布宽的下限**（见 table_to_dsl 的居中）
+  origin_y: 80            # 首行顶部相对图例带底部的间距（粗格）
+  row_base_height: 60     # 行基线高 → 中线 = 行顶 + 30，落在 20k+10 上
+  full_gap: 140           # 带标签行间距
+  shrink_gap: 100         # 无标签行间距
+  right_channel_offset: 40    # 右侧长跳通道 = 本边涉及列的最右**外沿** + 偏移（D-91：40 才有"贴列走"的效果）
+  gutter_inner: 280            # 最内侧回路通道 x（自动分配：小跨度优先占内道）
+  gutter_step: 40             # 回路通道间距（同样受标签占位约束，别低于 40）
+  col_gap_step: 40            # 列间通道间距（跨相邻列的边，在窄空隙里左右交替展开）
+  col_pitch: 460              # 列间距（D-29）：新列中心 = 上一列中心 + 此值。构成 = 节点宽 160 + 列间通道带 300
+                             # （通道带要容下 col_gap_step 的左右交替展开与右族局部基准，低于约 300 会挤爆通道带）
+  right_channel_step: 50      # 长跳(jumpR)右通道间距（D-91 实测：50 = 标签盒 40 + 细格，束距的**下界由标签占位决定**）
+  channel_margin: 40          # 通道距最外侧节点沿的最小距离，兼画布左边界安全距
+  max_channels: 8             # 单侧最多尝试的通道数
+
+# 泳道布局参数（流程表声明「输出布局：泳道」时生效）
+lane:
+  head: 60                # 顶部「职能部门」带高
+  stage: 120              # 左侧「里程碑阶段」带宽
+  pad: 60                 # 每列左右留白
+  vpad: 40                # 每行上下留白
+  gap: 60                 # 同格相邻节点间距（必须是 20+40k：否则同格多节点与单节点摞出的高度不同余，D-16）
+  pitch: 120              # 槽位模式（表里声明了「泳道列序」时）的等距层高 = 节点高 60 + 净空 60
+  route_left: 0           # 左侧里程碑带之外再留的路由走廊下限（0 = 只按"同列跨行长跳"的条数自动估）
+
+# 边标签徽章（宽高会被吸附到 20 的倍数，四边落细格）
+label_badge:
+  full_width: 12          # CJK/①② 全角字宽
+  half_width: 7            # ASCII 半角字宽
+  padding: 16             # 徽章左右内边距合计
+  height: 20               # 徽章高（保持 20 的倍数，勿填 22 这类离格值）
+
+# 端口方向默认值（DSL 未指定时按 kind 取用）
+default_ports:
+  spine: {exit: bottom, entry: top}
+  horiz: {exit: right,  entry: left}
+  loop:  {exit: left,   entry: left}
+  jumpR: {exit: right,  entry: right}
+  mix:   {exit: right,  entry: left}
+
+# 「待确认」留痕：节点描述以 ⚠ / ⚠? 开头时的视觉区分，**两档画得不一样**。
+# 用户只对最终渲染图负责，所以 AI 拿不准的地方必须画在图上，而不是只写进 checklist；
+# 但「有依据的推断」与「必须你拍板」若画成同一款，图上就分不出哪几处要人拍板（D-46 拆标记的动机）。
+pending:
+  stroke: "#d97706"                        # ⚠ 有依据的推断：醒目橙（覆盖主体色）
+  dashed: true                             # 同时改虚线，与实线节点一眼可分
+  note: "此处为 AI 推断，原文未载明"        # 悬浮框首行提示
+  verdict:                                 # ⚠? 必须业务方拍板：更重的一档
+    stroke: "#dc2626"                      # 红：这处必须有人拍板
+    dash: "2 3"                            # 更密的虚线——不只靠颜色，色弱也分得出（节奏不同）
+    note: "此处必须业务方拍板：AI 推不出，且不同选法后果不同"
+
+

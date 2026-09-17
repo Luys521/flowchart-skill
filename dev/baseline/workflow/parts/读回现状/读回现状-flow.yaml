@@ -1,0 +1,130 @@
+meta:
+  title: 读回现状：开工先看清手上有什么
+  subjects:
+    用户:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+    AI:
+      fill: '#d5e8d4'
+      stroke: '#82b366'
+    脚本:
+      fill: '#ffe6cc'
+      stroke: '#d79b00'
+  layout: flow
+layout:
+  col_x: []
+  width: 700
+  origin_x: -280
+nodes:
+- id: 02a
+  name: 开工先读现状
+  lines:
+  - 开工先读现状
+  type: start
+  subject: AI
+  executor: AI
+  row: 0
+  col: 0
+  stage: 判形态
+  route: →02b
+  desc: '**每轮开工第一件事：手上有什么就读什么**——这一步的全部意义就是它'
+  input: 原始材料
+- id: 02b
+  name: 手上有流程表吗？
+  lines:
+  - 手上有流程表吗？
+  type: decision
+  subject: AI
+  executor: AI
+  row: 1
+  col: 0
+  stage: 判形态
+  route: 有→02c ｜ 没有→02d
+  desc: ★ 只看"有没有《流程表》"这一件东西，不评它写得对不对——那是 04 的事
+  input: 原始材料
+  basis: 流程表由自身 frontmatter 认领（`id` / `level`，H9）
+  output: 有 / 没有
+- id: 02c
+  name: 读回现状（只读）
+  lines:
+  - 读回现状（只读）
+  type: task
+  subject: 脚本
+  executor: clarify.py
+  row: 2
+  col: 0
+  stage: 读回
+  route: →02e
+  desc: 报出哪些是 AI 推断、哪些还没定；**只读不写**——它不改表，也不替 06 算 frontier
+  input: 已有流程表
+  basis: '`⚠` / `⚠?` 的分拣口径（`references/flowtable-spec.md` §2）'
+  output: 推断项与未决项清单
+- id: 02d
+  name: 复述材料要点
+  lines:
+  - 复述材料要点
+  type: task
+  subject: AI
+  executor: AI
+  row: 2
+  col: 1
+  stage: 复述
+  route: →02e
+  desc: 没有表就把材料要点复述一遍：复述是**给用户挑错用的**，不是摘要
+  input: 原始材料
+  output: 要点复述
+- id: 02e
+  name: 请用户当场纠正
+  lines:
+  - 请用户当场纠正
+  type: task
+  subject: 用户
+  executor: 用户
+  row: 3
+  col: 0
+  stage: 对齐
+  route: →02f
+  desc: '**已问过并已定的不重复问**——"还剩哪些要问"由 06 独家算，这里只把现状摆出来'
+  input: 推断项与未决项 或 要点复述
+  output: 纠正后的口径
+- id: 02f
+  name: 口径已对齐
+  lines:
+  - 口径已对齐
+  type: end
+  subject: AI
+  executor: AI
+  row: 4
+  col: 0
+  stage: 对齐
+  route: —
+  desc: 首轮无表直接往下不算空转：先看清现状，再动笔
+  input: 纠正后的口径
+  output: 对齐后的口径
+edges:
+- from: 02a
+  to: 02b
+  kind: spine
+  polarity: main
+- from: 02b
+  to: 02c
+  kind: spine
+  polarity: main
+  label: 有
+- from: 02b
+  to: 02d
+  kind: jumpR
+  polarity: main
+  label: 没有
+- from: 02c
+  to: 02e
+  kind: spine
+  polarity: main
+- from: 02d
+  to: 02e
+  kind: jumpR
+  polarity: main
+- from: 02e
+  to: 02f
+  kind: spine
+  polarity: main

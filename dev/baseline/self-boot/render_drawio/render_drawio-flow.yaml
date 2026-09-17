@@ -1,0 +1,564 @@
+meta:
+  title: render_drawio.py 函数流程表
+  subjects:
+    脚本:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  width: 1540
+  origin_x: -80
+nodes:
+- id: '01'
+  name: 开始
+  lines:
+  - 开始
+  type: start
+  subject: 脚本
+  executor: selfboot
+  row: 0
+  col: 0
+  stage: 入口
+  route: 1→26
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→main
+- id: '02'
+  name: esc
+  lines:
+  - esc
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 21
+  col: 0
+  stage: 模块级
+  route: →27
+  desc: L23 · 函数
+- id: '03'
+  name: attr
+  lines:
+  - attr
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 20
+  col: 0
+  stage: 模块级
+  route: →02
+  desc: L31 · 函数
+- id: '04'
+  name: label_html
+  lines:
+  - label_html
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 11
+  col: 0
+  stage: 模块级
+  route: →02
+  desc: ★ 节点标签 HTML：名称粗体 / 执行者灰 / 行动所需时间橙 · L35 · 函数 · ⇢ 依赖 engine.Engine.node_lines
+- id: '05'
+  name: shape_style
+  lines:
+  - shape_style
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 15
+  col: 0
+  stage: 模块级
+  route: →27
+  desc: ★ 形状段——**三种形状的唯一出处**（节点本体与子流程叠影共用，别各写一份）。 · L47 · 函数
+- id: '06'
+  name: _stroke_of
+  lines:
+  - _stroke_of
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 14
+  col: 0
+  stage: 模块级
+  route: →27
+  desc: ★ 节点的描边色与线型 —— **⚠ 两档的唯一出处**（节点本体与叠影卡共用，别各算一份）。 · L60 · 函数 · ⇢ 依赖 semantics.pending_style
+- id: '07'
+  name: node_style
+  lines:
+  - node_style
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 10
+  col: 0
+  stage: 模块级
+  route: 1→05｜2→06
+  desc: L72 · 函数 · 分支：1→shape_style 2→_stroke_of
+- id: 08
+  name: sub_ring_style
+  lines:
+  - sub_ring_style
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 13
+  col: 0
+  stage: 模块级
+  route: 1→05｜2→06
+  desc: ★ 内衬线的 style（见 D-78）：同形状、**无填充**、1px、55% 不透明，落在节点框内。 · L85 · 函数 · 分支：1→shape_style
+    2→_stroke_of
+- id: 09
+  name: sub_ring_xml
+  lines:
+  - sub_ring_xml
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 12
+  col: 0
+  stage: 模块级
+  route: 1→02｜2→08
+  desc: ★ 内衬线 cell：同形状、向内缩 SUB_INSET（几何与 html/svg 同一口径）。 · L97 · 函数 · 分支：1→esc 2→sub_ring_style
+    · ⇢ 依赖 engine.Engine.rect
+- id: '10'
+  name: edge_style
+  lines:
+  - edge_style
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 18
+  col: 0
+  stage: 模块级
+  route: →27
+  desc: L107 · 函数 · ⇢ 依赖 engine.Engine.polarity、engine.Engine.ports
+- id: '11'
+  name: node_xml
+  lines:
+  - node_xml
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 9
+  col: 0
+  stage: 模块级
+  route: 1→02｜2→03｜3→04｜4→07｜5→09
+  desc: ★ 节点 → `<object>`（可下钻时**前面再压一张背面卡**，见 D-75）。`sub_pages` 是 {ni… · L129 · 函数
+    · 分支：1→esc 2→attr 3→label_html 4→node_style 5→sub_ring_xml · ⇢ 依赖 engine.Engine.rect
+- id: '12'
+  name: edge_xml
+  lines:
+  - edge_xml
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 17
+  col: 0
+  stage: 模块级
+  route: 1→02｜2→03｜3→10
+  desc: L159 · 函数 · 分支：1→esc 2→attr 3→edge_style · ⇢ 依赖 engine.Engine.path
+- id: '13'
+  name: lane_cells
+  lines:
+  - lane_cells
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 7
+  col: 0
+  stage: 模块级
+  route: →03
+  desc: ★ 泳道背景：顶部部门表头 + 角标 + 左侧阶段带 + 部门列底色。 · L180 · 函数 · ⇢ 依赖 engine.Engine.height
+- id: '14'
+  name: render
+  lines:
+  - render
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 4
+  col: 0
+  stage: 模块级
+  route: →15
+  desc: ★ DSL → `.drawio`。`ctx['pages']` 是 [(page_id, page_name, dsl_… · L231 · 函数
+- id: '15'
+  name: _page_xml
+  lines:
+  - _page_xml
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 5
+  col: 0
+  stage: 模块级
+  route: 1→13｜2→16｜3→17｜4→18｜5→19｜6→20｜7→22
+  desc: ★ 渲染**一页**（含它自己的子页），返回 (xml 全文, 节点数, 边数, 画布宽, 画布高)。 · L256 · 函数 · 分支：1→lane_cells
+    2→_build_title_cell 3→_collect_node_cells 4→_collect_edge_cells 5→_wrap_diagram
+    6→_collect_sub_diagrams 7→_sub_pages · ⇢ 依赖 engine.Engine.height、engine.Engine.lanes、engine.load
+- id: '16'
+  name: _build_title_cell
+  lines:
+  - _build_title_cell
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 6
+  col: 0
+  stage: 模块级
+  route: 1→02｜2→03
+  desc: ★ 装配「标题 + 图例说明」cell（合成一个，拖动时标题与图例不会互相错位）。 · L294 · 函数 · 分支：1→esc 2→attr ·
+    ⇢ 依赖 engine.Engine.legend_rect、engine.Engine.legend_width
+- id: '17'
+  name: _collect_node_cells
+  lines:
+  - _collect_node_cells
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 8
+  col: 0
+  stage: 模块级
+  route: →11
+  desc: ★ 按 DSL 节点顺序生成每个节点的 `<object>` cell。 · L319 · 函数
+- id: '18'
+  name: _collect_edge_cells
+  lines:
+  - _collect_edge_cells
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 16
+  col: 0
+  stage: 模块级
+  route: →12
+  desc: ★ 生成每条边的 cell；边 id 与节点/结构 id 共用命名空间，撞名则加后缀避让。 · L324 · 函数
+- id: '19'
+  name: _wrap_diagram
+  lines:
+  - _wrap_diagram
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 19
+  col: 0
+  stage: 模块级
+  route: 1→02｜2→03
+  desc: ★ 把 cells 包进 `<diagram>` / `<mxGraphModel>` / `<root>` 外壳。 · L342 · 函数 · 分支：1→esc
+    2→attr
+- id: '20'
+  name: _collect_sub_diagrams
+  lines:
+  - _collect_sub_diagrams
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 22
+  col: 0
+  stage: 模块级
+  route: →21
+  desc: ★ 递归渲染并拼接各子页的 `<diagram>` 段（本页之后，保持 pages 顺序）。 · L352 · 函数
+- id: '21'
+  name: 再入？
+  lines:
+  - 再入？
+  type: decision
+  subject: 脚本
+  executor: selfboot
+  row: 23
+  col: 0
+  stage: 拆环
+  route: 是→15｜否→27
+  desc: 结构性判断（拆环）：_page_xml→_collect_sub_diagrams→_page_xml 是互调。是 → 继续下一层（_page_xml）；否
+    → 收尾（结束）。
+- id: '22'
+  name: _sub_pages
+  lines:
+  - _sub_pages
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 24
+  col: 0
+  stage: 模块级
+  route: →27
+  desc: '★ 本页里可下钻的节点 → {nid: page_id}。键是 **dsl 路径**（`discover_pages` 产… · L366 · 函数
+    · ⇢ 依赖 artifact.artifact_rel、semantics.subflow_target'
+- id: '23'
+  name: page_id_for
+  lines:
+  - page_id_for
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: 模块级
+  route: →27
+  desc: ★ 子表 dsl 的**相对路径** → 稳定的页 id（内容无关的固定规则，父子两侧算得一样）。 · L389 · 函数
+- id: '24'
+  name: _rel_to
+  lines:
+  - _rel_to
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 25
+  col: 0
+  stage: 模块级
+  route: →27
+  desc: ★ target 相对 base 的 posix 路径；算不出（跨盘/越界）就退回绝对路径。 · L402 · 函数
+- id: '25'
+  name: discover_pages
+  lines:
+  - discover_pages
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: 模块级
+  route: 1→23｜2→24
+  desc: ★ 从本表出发，顺着 `▣` 找出**直接子表** → [(page_id, 页名, 子表 dsl 路径), …]。 · L416 · 函数 · 分支：1→page_id_for
+    2→_rel_to · ⇢ 依赖 artifact.artifact_rel、engine.load、semantics.subflow_target
+- id: '26'
+  name: main
+  lines:
+  - main
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 1
+  col: 0
+  stage: 模块级
+  route: 1→14｜2→25
+  desc: L463 · 函数 · 分支：1→render 2→discover_pages
+- id: '27'
+  name: 结束
+  lines:
+  - 结束
+  type: end
+  subject: 脚本
+  executor: selfboot
+  row: 26
+  col: 0
+  stage: 出口
+  route: —
+  desc: 流程终点（结构性节点，不是函数）
+edges:
+- from: '01'
+  to: '26'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '02'
+  to: '27'
+  kind: jumpR
+  polarity: main
+- from: '03'
+  to: '02'
+  kind: spine
+  polarity: main
+- from: '04'
+  to: '02'
+  kind: jumpR
+  polarity: main
+- from: '05'
+  to: '27'
+  kind: jumpR
+  polarity: main
+- from: '06'
+  to: '27'
+  kind: jumpR
+  polarity: main
+- from: '07'
+  to: '05'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '07'
+  to: '06'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: 08
+  to: '05'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: 08
+  to: '06'
+  kind: spine
+  polarity: main
+  label: '2'
+- from: 09
+  to: '02'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: 09
+  to: 08
+  kind: spine
+  polarity: main
+  label: '2'
+- from: '10'
+  to: '27'
+  kind: jumpR
+  polarity: main
+- from: '11'
+  to: '02'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '11'
+  to: '03'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '11'
+  to: '04'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '11'
+  to: '07'
+  kind: spine
+  polarity: main
+  label: '4'
+- from: '11'
+  to: 09
+  kind: jumpR
+  polarity: main
+  label: '5'
+- from: '12'
+  to: '02'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '12'
+  to: '03'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '12'
+  to: '10'
+  kind: spine
+  polarity: main
+  label: '3'
+- from: '13'
+  to: '03'
+  kind: jumpR
+  polarity: main
+- from: '14'
+  to: '15'
+  kind: spine
+  polarity: main
+- from: '15'
+  to: '13'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '15'
+  to: '16'
+  kind: spine
+  polarity: main
+  label: '2'
+- from: '15'
+  to: '17'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '15'
+  to: '18'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '15'
+  to: '19'
+  kind: jumpR
+  polarity: main
+  label: '5'
+- from: '15'
+  to: '20'
+  kind: jumpR
+  polarity: main
+  label: '6'
+- from: '15'
+  to: '22'
+  kind: jumpR
+  polarity: main
+  label: '7'
+- from: '16'
+  to: '02'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '16'
+  to: '03'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '17'
+  to: '11'
+  kind: spine
+  polarity: main
+- from: '18'
+  to: '12'
+  kind: spine
+  polarity: main
+- from: '19'
+  to: '02'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '19'
+  to: '03'
+  kind: spine
+  polarity: main
+  label: '2'
+- from: '20'
+  to: '21'
+  kind: spine
+  polarity: main
+- from: '21'
+  to: '15'
+  kind: loop
+  polarity: negative
+  label: 是
+- from: '21'
+  to: '27'
+  kind: jumpR
+  polarity: main
+  label: 否
+- from: '22'
+  to: '27'
+  kind: jumpR
+  polarity: main
+- from: '23'
+  to: '27'
+  kind: jumpR
+  polarity: main
+- from: '24'
+  to: '27'
+  kind: spine
+  polarity: main
+- from: '25'
+  to: '23'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '25'
+  to: '24'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '26'
+  to: '14'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '26'
+  to: '25'
+  kind: spine
+  polarity: main
+  label: '2'

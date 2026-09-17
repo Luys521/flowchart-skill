@@ -1,0 +1,194 @@
+meta:
+  title: 视觉自检：质量门禁只管几何，好不好看必须看图
+  subjects:
+    用户:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+    AI:
+      fill: '#d5e8d4'
+      stroke: '#82b366'
+    脚本:
+      fill: '#ffe6cc'
+      stroke: '#d79b00'
+  layout: flow
+layout:
+  col_x: []
+  width: 1160
+  origin_x: -280
+nodes:
+- id: 09a
+  name: 截图
+  lines:
+  - 截图
+  type: start
+  subject: 脚本
+  executor: shot.py
+  row: 0
+  col: 1
+  stage: 出图
+  route: →09b ｜ →09c ｜ →09d
+  desc: 全图或 `--crop 0:1200` 只看一段；三样一起看，不分先后
+  input: '`<流程名>-flow.html`'
+  basis: 截图规则（`SKILL.md` 看段）
+  output: 位图（自检中间物，非交付物）
+- id: 09b
+  name: 看交叉
+  lines:
+  - 看交叉
+  type: task
+  subject: AI
+  executor: AI
+  row: 1
+  col: 1
+  stage: 看
+  route: →09e
+  desc: 判据是"影响追踪"，不是"有几处交叉"——两处交叉卡在主干上也是缺陷
+  input: 位图
+  basis: 交叉是否多到**影响追踪**
+  output: 交叉结论
+- id: 09c
+  name: 看标签
+  lines:
+  - 看标签
+  type: task
+  subject: AI
+  executor: AI
+  row: 1
+  col: 0
+  stage: 看
+  route: →09e
+  desc: 压线可以（徽章白底压线是本 SKILL 的画法），**压节点**不行
+  input: 位图
+  basis: 标签是否居中压线
+  output: 标签结论
+- id: 09d
+  name: 看走向
+  lines:
+  - 看走向
+  type: task
+  subject: AI
+  executor: AI
+  row: 1
+  col: 2
+  stage: 看
+  route: →09e
+  desc: 反直觉的典型：回环画在了右边、并排分支从右往左倒着走
+  input: 位图
+  basis: 分支走向是否反直觉
+  output: 走向结论
+- id: 09e
+  name: 有问题吗？
+  lines:
+  - 有问题吗？
+  type: decision
+  subject: AI
+  executor: AI
+  row: 2
+  col: 1
+  stage: 判定
+  route: 有→09f ｜ 没有→09h
+  desc: 由 AI **看着核对**：这一关没有脚本判据，所以才必须由人来判
+  input: 三样结论
+  basis: 三样里任一不过（`SKILL.md` 看段）
+  output: 有 / 没有
+- id: 09f
+  name: 先查标签是否过长
+  lines:
+  - 先查标签是否过长
+  type: task
+  subject: AI
+  executor: AI
+  row: 3
+  col: 1
+  stage: 归因
+  route: →09g
+  desc: 先怀疑语义：多数"标签压线 / 线交叉"是标签太长挤出来的，改几何是治标
+  input: 问题清单
+  basis: 标签过长（> 6 字）先改流程表（`references/flowtable-spec.md` §2 分支标签）
+  output: 归因结论
+- id: 09g
+  name: 调几何（不手改端口）
+  lines:
+  - 调几何（不手改端口）
+  type: task
+  subject: AI
+  executor: AI
+  row: 4
+  col: 1
+  stage: 调几何
+  route: →09i
+  desc: ★ "只有线没箭头"= 端口朝向与走向矛盾：**把手写的 `gutter`/`channel`/`gapx` 删掉**让 router 重规划，别手工改端口
+  input: 归因结论
+  basis: 一次只改一个诊断项；一轮无改善即停（`SKILL.md` 看段）
+  output: 调过几何的 `<流程名>-flow.yaml`
+- id: 09h
+  name: 通过，交 10
+  lines:
+  - 通过，交 10
+  type: end
+  subject: AI
+  executor: AI
+  row: 5
+  col: 1
+  stage: 通过
+  route: —
+  desc: 质量门禁只管几何，好不好看必须看图
+  input: 三样结论
+  output: 视觉自检结论
+- id: 09i
+  name: 回 08 重出图
+  lines:
+  - 回 08 重出图
+  type: end
+  subject: AI
+  executor: AI
+  row: 6
+  col: 1
+  stage: 回炉
+  route: —
+  desc: 本表终点；"回 08"是**主表**的走向——几何改动要经 08 重渲染，再走一遍本表
+  input: 归因结论 + 调过的几何
+  output: 待重渲染的几何改动
+edges:
+- from: 09a
+  to: 09b
+  kind: spine
+  polarity: main
+- from: 09a
+  to: 09c
+  kind: jumpR
+  polarity: main
+- from: 09a
+  to: 09d
+  kind: jumpR
+  polarity: main
+- from: 09b
+  to: 09e
+  kind: spine
+  polarity: main
+- from: 09c
+  to: 09e
+  kind: jumpR
+  polarity: main
+- from: 09d
+  to: 09e
+  kind: jumpR
+  polarity: main
+- from: 09e
+  to: 09f
+  kind: spine
+  polarity: main
+  label: 有
+- from: 09e
+  to: 09h
+  kind: jumpR
+  polarity: main
+  label: 没有
+- from: 09f
+  to: 09g
+  kind: spine
+  polarity: main
+- from: 09g
+  to: 09i
+  kind: jumpR
+  polarity: main

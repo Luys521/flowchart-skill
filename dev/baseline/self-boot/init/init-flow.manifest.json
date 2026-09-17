@@ -1,0 +1,57 @@
+{
+ "title": "init.py 函数流程表",
+ "layout": "flow",
+ "source": "flowtable.md",
+ "dsl_sha256": "6c855d859d9ace16",
+ "source_sha256": "3795d3206f4b4e61",
+ "counts": {
+  "nodes": 6,
+  "edges": 7,
+  "by_type": {
+   "end": 1,
+   "start": 1,
+   "task": 4
+  },
+  "labeled_edges": 4,
+  "loop_edges": 0,
+  "pending_nodes": 0
+ },
+ "node_ids": [
+  "01",
+  "02",
+  "03",
+  "04",
+  "05",
+  "06"
+ ],
+ "edges": [
+  [
+   "01",
+   "05"
+  ],
+  [
+   "02",
+   "06"
+  ],
+  [
+   "03",
+   "06"
+  ],
+  [
+   "04",
+   "06"
+  ],
+  [
+   "05",
+   "02"
+  ],
+  [
+   "05",
+   "03"
+  ],
+  [
+   "05",
+   "04"
+  ]
+ ]
+}

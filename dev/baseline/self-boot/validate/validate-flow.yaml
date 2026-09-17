@@ -1,0 +1,853 @@
+meta:
+  title: validate.py 函数流程表
+  subjects:
+    脚本:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  width: 2280
+  origin_x: 0
+nodes:
+- id: '01'
+  name: 开始
+  lines:
+  - 开始
+  type: start
+  subject: 脚本
+  executor: selfboot
+  row: 0
+  col: 0
+  stage: 入口
+  route: 1→34｜2→36｜3→37｜4→38｜5→39
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→cli 2→_ArtifactL.__init__ 3→_ArtifactL.rect 4→_ArtifactL.path
+    5→_ArtifactL.height
+- id: '02'
+  name: check_refs
+  lines:
+  - check_refs
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 23
+  col: 0
+  stage: 模块级
+  route: →41
+  desc: ★ 1. 引用完整：端点存在、端口合法、列号与类型在字典范围内。 · L31 · 函数 · ⇢ 依赖 engine.Engine.ports
+- id: '03'
+  name: check_overlap
+  lines:
+  - check_overlap
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 21
+  col: 0
+  stage: 模块级
+  route: →41
+  desc: ★ 2. 节点互不重叠 · L64 · 函数 · ⇢ 依赖 geometry.rects_overlap
+- id: '04'
+  name: check_edge_through_nodes
+  lines:
+  - check_edge_through_nodes
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 22
+  col: 0
+  stage: 模块级
+  route: →41
+  desc: ★ 3. 边不穿过无关节点（矩形内缩 2px：贴边不算穿） · L77 · 函数 · ⇢ 依赖 geometry.seg_rect_hit
+- id: '05'
+  name: _on_border
+  lines:
+  - _on_border
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 25
+  col: 0
+  stage: 模块级
+  route: →41
+  desc: ★ 点是否落在该形状的**可视边界**上。 · L93 · 函数
+- id: '06'
+  name: _seg_in_shape
+  lines:
+  - _seg_in_shape
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 26
+  col: 0
+  stage: 模块级
+  route: →41
+  desc: ★ 折线是否穿进该形状的**内部**（按形状判，`margin` 向内收）。 · L119 · 函数
+- id: '07'
+  name: check_edge_own_nodes
+  lines:
+  - check_edge_own_nodes
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 24
+  col: 0
+  stage: 模块级
+  route: 1→05｜2→06
+  desc: ★ 4. 边的**端点必须落在源/目标节点的边框上**，且不横穿该节点内部（内缩 6px）。 · L147 · 函数 · 分支：1→_on_border
+    2→_seg_in_shape · ⇢ 依赖 geometry.seg_rect_hit
+- id: 08
+  name: _segment_paths
+  lines:
+  - _segment_paths
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 20
+  col: 0
+  stage: 模块级
+  route: →41
+  desc: ★ 每条边的折线 → 线段列表（相邻折点成段），供两两比对。 · L192 · 函数
+- id: 09
+  name: _edge_overlap_errors
+  lines:
+  - _edge_overlap_errors
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 27
+  col: 0
+  stage: 模块级
+  route: →41
+  desc: ★ 两两共线重叠的边（共享端点的分叉/合流豁免）→ 错误列表。 · L197 · 函数 · ⇢ 依赖 geometry.seg_overlap
+- id: '10'
+  name: _edge_uturn_errors
+  lines:
+  - _edge_uturn_errors
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 28
+  col: 0
+  stage: 模块级
+  route: →41
+  desc: ★ 出边把入边末段原路画回来的「掉头折返」→ 错误列表（DECISIONS.md D-15）。 · L216 · 函数 · ⇢ 依赖 geometry.seg_overlap
+- id: '11'
+  name: check_edge_overlap
+  lines:
+  - check_edge_overlap
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 19
+  col: 0
+  stage: 模块级
+  route: 1→08｜2→09｜3→10
+  desc: ★ 5. 边不重叠（允许正交交叉、允许共享端点的出/入段）。 · L243 · 函数 · 分支：1→_segment_paths 2→_edge_overlap_errors
+    3→_edge_uturn_errors
+- id: '12'
+  name: _label_box_errors
+  lines:
+  - _label_box_errors
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 30
+  col: 0
+  stage: 模块级
+  route: →41
+  desc: ★ 逐边标签盒：中心压线 / 不压节点 / 不越界 → (错误列表, 标签盒清单)。 · L252 · 函数 · ⇢ 依赖 geometry.point_seg_dist、geometry.rects_overlap
+- id: '13'
+  name: _label_pair_errors
+  lines:
+  - _label_pair_errors
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 31
+  col: 0
+  stage: 模块级
+  route: →41
+  desc: ★ 两个标签盒互相重叠 → 错误列表。 · L276 · 函数 · ⇢ 依赖 geometry.rects_overlap
+- id: '14'
+  name: check_labels
+  lines:
+  - check_labels
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 29
+  col: 0
+  stage: 模块级
+  route: 1→12｜2→13
+  desc: ★ 6. 标签：中心压线（距所属折线 < 6px）、不压节点、不越界、不压别的标签。 · L289 · 函数 · 分支：1→_label_box_errors
+    2→_label_pair_errors
+- id: '15'
+  name: check_grid
+  lines:
+  - check_grid
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 32
+  col: 0
+  stage: 模块级
+  route: →35
+  desc: ★ 8. 网格对齐：矩形类节点四边守粗格，非矩形格位与折点/通道/标签盒守细格 · L298 · 函数
+- id: '16'
+  name: check_canvas
+  lines:
+  - check_canvas
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 34
+  col: 0
+  stage: 模块级
+  route: →41
+  desc: ★ 7. 画布内 · L330 · 函数
+- id: '17'
+  name: _run_geometry_checks
+  lines:
+  - _run_geometry_checks
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 18
+  col: 0
+  stage: 模块级
+  route: 1→03｜2→04｜3→07｜4→11｜5→14｜6→15｜7→16
+  desc: ★ 按依赖顺序跑七项几何检查（引用已验通过）→ 错误列表。 · L350 · 函数 · 分支：1→check_overlap 2→check_edge_through_nodes
+    3→check_edge_own_nodes 4→check_edge_overlap 5→check_labels 6→check_grid 7→check_canvas
+    · ⇢ 依赖 engine.Engine.rect
+- id: '18'
+  name: check
+  lines:
+  - check
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 17
+  col: 0
+  stage: 模块级
+  route: 1→02｜2→17
+  desc: ★ 八项检查 → (errors, notes)。纯函数：不打印、不退出，便于被其他脚本复用。 · L359 · 函数 · 分支：1→check_refs
+    2→_run_geometry_checks
+- id: '19'
+  name: _artifact_lane_expected
+  lines:
+  - _artifact_lane_expected
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 5
+  col: 0
+  stage: 模块级
+  route: →41
+  desc: ★ 这份产物该不该有泳道底图：**调用方知道就照它判**，不知道（None）才按产物自称判。 · L414 · 函数
+- id: '20'
+  name: _artifact_band_errors
+  lines:
+  - _artifact_band_errors
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 6
+  col: 0
+  stage: 模块级
+  route: →41
+  desc: ★ 泳道左侧里程碑带：**必须存在**（没带＝底图没画），且折点不得落进标注区。 · L429 · 函数
+- id: '21'
+  name: _artifact_short_segment_errors
+  lines:
+  - _artifact_short_segment_errors
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 7
+  col: 0
+  stage: 模块级
+  route: →41
+  desc: ★ 每段至少一格粗格：更短就是"微残段"，转角挤在箭头上（D-40）。 · L445 · 函数
+- id: '22'
+  name: _artifact_lane_errors
+  lines:
+  - _artifact_lane_errors
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 8
+  col: 0
+  stage: 模块级
+  route: →41
+  desc: ★ 泳道底色**必须存在**，且必须盖住所有节点：没盖住就是"底图没铺满"（D-41）。 · L459 · 函数
+- id: '23'
+  name: check_artifact
+  lines:
+  - check_artifact
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 4
+  col: 0
+  stage: 模块级
+  route: 1→03｜2→04｜3→07｜4→11｜5→15｜6→16｜7→19｜8→20｜9→21｜10→22
+  desc: ★ 对**产物里真实写下的坐标**跑一遍几何门禁 → 错误列表（空 = 逐项通过）。 · L476 · 函数 · 分支：1→check_overlap
+    2→check_edge_through_nodes 3→check_edge_own_nodes 4→check_edge_overlap 5→check_grid
+    6→check_canvas 7→_artifact_lane_expected 8→_artifact_band_errors 9→_artifact_short_segment_errors
+    10→_artifact_lane_errors
+- id: '24'
+  name: _side_ports
+  lines:
+  - _side_ports
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 11
+  col: 0
+  stage: 模块级
+  route: →41
+  desc: ★ 可接端点：四条边的中点。菱形/椭圆的上下左右顶点与矩形边中点重合，故共用一套。 · L504 · 函数
+- id: '25'
+  name: geometry_table
+  lines:
+  - geometry_table
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 10
+  col: 0
+  stage: 模块级
+  route: 1→24｜2→40
+  desc: ★ 几何表：节点（中心 / 尺寸 / 形状 / 可接端点）+ 边（起点 / 终点 / 端口比例 / 折线）。 · L510 · 函数 · 分支：1→_side_ports
+    2→geometry_table.r
+- id: '26'
+  name: _write_geometry_dump
+  lines:
+  - _write_geometry_dump
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 9
+  col: 0
+  stage: 模块级
+  route: →25
+  desc: ★ --dump：把几何表写成 JSON；写不出去返回 1，成功返回 None。 · L541 · 函数
+- id: '27'
+  name: artifact_main
+  lines:
+  - artifact_main
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: 模块级
+  route: 1→23｜2→26
+  desc: ★ 读产物 → 几何表 → 复核。`--artifact` 的入口。 · L554 · 函数 · 分支：1→check_artifact 2→_write_geometry_dump
+    · ⇢ 依赖 manifest.artifact_geometry
+- id: '28'
+  name: report
+  lines:
+  - report
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 12
+  col: 0
+  stage: 模块级
+  route: →41
+  desc: L577 · 函数 · ⇢ 依赖 engine.Engine.height
+- id: '29'
+  name: structured
+  lines:
+  - structured
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 16
+  col: 0
+  stage: 模块级
+  route: →41
+  desc: ★ 报错列表 → 结构化回执（D-55）：subject/fix 供 AI 修复循环直接消费。 · L596 · 函数 · ⇢ 依赖 semantics.findings_receipt
+- id: '30'
+  name: _showcase_blocks
+  lines:
+  - _showcase_blocks
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 13
+  col: 0
+  stage: 模块级
+  route: →41
+  desc: ★ showcase 档门禁：网格吸附提示非零即阻断（D-55）；应阻断时返回 True。 · L601 · 函数
+- id: '31'
+  name: main
+  lines:
+  - main
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: 模块级
+  route: 1→18｜2→28｜3→30
+  desc: ★ 供 build.py / sync.py 调用：加载 → 检查 → 打印 → 退出码。 · L610 · 函数 · 分支：1→check 2→report
+    3→_showcase_blocks · ⇢ 依赖 engine.load
+- id: '32'
+  name: _cli_parser
+  lines:
+  - _cli_parser
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 14
+  col: 0
+  stage: 模块级
+  route: →41
+  desc: ★ cli 的 argparse 定义（模型侧门禁 / 产物几何自检）。 · L619 · 函数
+- id: '33'
+  name: _cli_json
+  lines:
+  - _cli_json
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 15
+  col: 0
+  stage: 模块级
+  route: 1→18｜2→29
+  desc: ★ --json：结构化结果（message/subject/fix，见 D-55）→ 退出码。 · L633 · 函数 · 分支：1→check
+    2→structured · ⇢ 依赖 engine.load
+- id: '34'
+  name: cli
+  lines:
+  - cli
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 1
+  col: 0
+  stage: 模块级
+  route: 1→27｜2→31｜3→32｜4→33
+  desc: ★ 命令行入口。**必须显式给路径**——缺参数时绝不能退回校验某个样例并报"全部通过"， · L642 · 函数 · 分支：1→artifact_main
+    2→main 3→_cli_parser 4→_cli_json
+- id: '35'
+  name: check_grid.chk
+  lines:
+  - check_grid.chk
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 33
+  col: 0
+  stage: check_grid
+  route: →41
+  desc: L305 · 嵌套函数
+- id: '36'
+  name: _ArtifactL.__init__
+  lines:
+  - _ArtifactL.__init__
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 35
+  col: 0
+  stage: _ArtifactL
+  route: →41
+  desc: L389 · 方法
+- id: '37'
+  name: _ArtifactL.rect
+  lines:
+  - _ArtifactL.rect
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 36
+  col: 0
+  stage: _ArtifactL
+  route: →41
+  desc: L404 · 方法
+- id: '38'
+  name: _ArtifactL.path
+  lines:
+  - _ArtifactL.path
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 37
+  col: 0
+  stage: _ArtifactL
+  route: →41
+  desc: L407 · 方法
+- id: '39'
+  name: _ArtifactL.height
+  lines:
+  - _ArtifactL.height
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 38
+  col: 0
+  stage: _ArtifactL
+  route: →41
+  desc: L410 · 方法
+- id: '40'
+  name: geometry_table.r
+  lines:
+  - geometry_table.r
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 39
+  col: 0
+  stage: geometry_table
+  route: →41
+  desc: L517 · 嵌套函数
+- id: '41'
+  name: 结束
+  lines:
+  - 结束
+  type: end
+  subject: 脚本
+  executor: selfboot
+  row: 40
+  col: 0
+  stage: 出口
+  route: —
+  desc: 流程终点（结构性节点，不是函数）
+edges:
+- from: '01'
+  to: '34'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '01'
+  to: '36'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '01'
+  to: '37'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '01'
+  to: '38'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '01'
+  to: '39'
+  kind: jumpR
+  polarity: main
+  label: '5'
+- from: '02'
+  to: '41'
+  kind: jumpR
+  polarity: main
+- from: '03'
+  to: '41'
+  kind: jumpR
+  polarity: main
+- from: '04'
+  to: '41'
+  kind: jumpR
+  polarity: main
+- from: '05'
+  to: '41'
+  kind: jumpR
+  polarity: main
+- from: '06'
+  to: '41'
+  kind: jumpR
+  polarity: main
+- from: '07'
+  to: '05'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '07'
+  to: '06'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: 08
+  to: '41'
+  kind: jumpR
+  polarity: main
+- from: 09
+  to: '41'
+  kind: jumpR
+  polarity: main
+- from: '10'
+  to: '41'
+  kind: jumpR
+  polarity: main
+- from: '11'
+  to: 08
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '11'
+  to: 09
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '11'
+  to: '10'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '12'
+  to: '41'
+  kind: jumpR
+  polarity: main
+- from: '13'
+  to: '41'
+  kind: jumpR
+  polarity: main
+- from: '14'
+  to: '12'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '14'
+  to: '13'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '15'
+  to: '35'
+  kind: spine
+  polarity: main
+- from: '16'
+  to: '41'
+  kind: jumpR
+  polarity: main
+- from: '17'
+  to: '03'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '17'
+  to: '04'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '17'
+  to: '07'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '17'
+  to: '11'
+  kind: spine
+  polarity: main
+  label: '4'
+- from: '17'
+  to: '14'
+  kind: jumpR
+  polarity: main
+  label: '5'
+- from: '17'
+  to: '15'
+  kind: jumpR
+  polarity: main
+  label: '6'
+- from: '17'
+  to: '16'
+  kind: jumpR
+  polarity: main
+  label: '7'
+- from: '18'
+  to: '02'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '18'
+  to: '17'
+  kind: spine
+  polarity: main
+  label: '2'
+- from: '19'
+  to: '41'
+  kind: jumpR
+  polarity: main
+- from: '20'
+  to: '41'
+  kind: jumpR
+  polarity: main
+- from: '21'
+  to: '41'
+  kind: jumpR
+  polarity: main
+- from: '22'
+  to: '41'
+  kind: jumpR
+  polarity: main
+- from: '23'
+  to: '03'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '23'
+  to: '04'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '23'
+  to: '07'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '23'
+  to: '11'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '23'
+  to: '15'
+  kind: jumpR
+  polarity: main
+  label: '5'
+- from: '23'
+  to: '16'
+  kind: jumpR
+  polarity: main
+  label: '6'
+- from: '23'
+  to: '19'
+  kind: spine
+  polarity: main
+  label: '7'
+- from: '23'
+  to: '20'
+  kind: jumpR
+  polarity: main
+  label: '8'
+- from: '23'
+  to: '21'
+  kind: jumpR
+  polarity: main
+  label: '9'
+- from: '23'
+  to: '22'
+  kind: jumpR
+  polarity: main
+  label: '10'
+- from: '24'
+  to: '41'
+  kind: jumpR
+  polarity: main
+- from: '25'
+  to: '24'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '25'
+  to: '40'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '26'
+  to: '25'
+  kind: spine
+  polarity: main
+- from: '27'
+  to: '23'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '27'
+  to: '26'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '28'
+  to: '41'
+  kind: jumpR
+  polarity: main
+- from: '29'
+  to: '41'
+  kind: jumpR
+  polarity: main
+- from: '30'
+  to: '41'
+  kind: jumpR
+  polarity: main
+- from: '31'
+  to: '18'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '31'
+  to: '28'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '31'
+  to: '30'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '32'
+  to: '41'
+  kind: jumpR
+  polarity: main
+- from: '33'
+  to: '18'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '33'
+  to: '29'
+  kind: spine
+  polarity: main
+  label: '2'
+- from: '34'
+  to: '27'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '34'
+  to: '31'
+  kind: spine
+  polarity: main
+  label: '2'
+- from: '34'
+  to: '32'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '34'
+  to: '33'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '35'
+  to: '41'
+  kind: jumpR
+  polarity: main
+- from: '36'
+  to: '41'
+  kind: jumpR
+  polarity: main
+- from: '37'
+  to: '41'
+  kind: jumpR
+  polarity: main
+- from: '38'
+  to: '41'
+  kind: jumpR
+  polarity: main
+- from: '39'
+  to: '41'
+  kind: jumpR
+  polarity: main
+- from: '40'
+  to: '41'
+  kind: spine
+  polarity: main

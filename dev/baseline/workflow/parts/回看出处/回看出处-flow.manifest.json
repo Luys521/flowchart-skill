@@ -1,0 +1,72 @@
+{
+ "title": "回看出处：逐行问\"这条凭什么\"",
+ "layout": "flow",
+ "source": "flowtable.md",
+ "dsl_sha256": "d628503c356ac9ff",
+ "source_sha256": "63c460ffa05ecc0e",
+ "counts": {
+  "nodes": 8,
+  "edges": 10,
+  "by_type": {
+   "decision": 2,
+   "end": 1,
+   "start": 1,
+   "task": 4
+  },
+  "labeled_edges": 5,
+  "loop_edges": 1,
+  "pending_nodes": 0
+ },
+ "node_ids": [
+  "05a",
+  "05b",
+  "05c",
+  "05d",
+  "05e",
+  "05f",
+  "05g",
+  "05h"
+ ],
+ "edges": [
+  [
+   "05a",
+   "05b"
+  ],
+  [
+   "05b",
+   "05c"
+  ],
+  [
+   "05b",
+   "05d"
+  ],
+  [
+   "05b",
+   "05e"
+  ],
+  [
+   "05c",
+   "05f"
+  ],
+  [
+   "05d",
+   "05f"
+  ],
+  [
+   "05e",
+   "05f"
+  ],
+  [
+   "05f",
+   "05b"
+  ],
+  [
+   "05f",
+   "05g"
+  ],
+  [
+   "05g",
+   "05h"
+  ]
+ ]
+}

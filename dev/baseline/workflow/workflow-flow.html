@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>flowchart-skill 自举：一条流程从材料到交付</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:"Microsoft YaHei","Segoe UI",sans-serif; background:#f0f2f5; padding:20px; }
+.chart-container { position:relative; margin:0 auto; width:680px; height:1590px;
+                   background:white; border:1px solid #ddd; box-shadow:0 2px 8px rgba(0,0,0,0.1); overflow:auto; }
+.node-tooltip { position:fixed; background:#fffef5; border:1px solid #d6b656; border-radius:6px;
+                padding:10px 14px; box-shadow:0 4px 16px rgba(0,0,0,0.18); z-index:2000;
+                max-width:320px; font-size:12px; line-height:1.6; pointer-events:none; display:none; }
+.node-tooltip .tt-title { font-weight:bold; color:#9673a6; margin-bottom:6px;
+                          border-bottom:1px solid #f0e6d2; padding-bottom:4px; }
+/* "这里能点"就写在**节点名右侧**（见 D-80）：悬浮框是"用户已经伸手去点"的那一刻，
+   在此处说一句最省事，也最不会跟节点内那几行语义文字抢地方。灰字、比名称小一号。 */
+.node-tooltip .tt-sub { font-weight:normal; font-size:11px; color:#999999; margin-left:8px; }
+.node-tooltip .tt-content { color:#444; white-space:pre-line; }
+svg { display:block; }
+.t1 { font-size:12px; font-weight:bold; fill:#333333; text-anchor:middle; }
+.tm { font-size:10px; fill:#555555; text-anchor:middle; }
+.tt2 { font-size:10px; font-weight:bold; fill:#b45309; text-anchor:middle; }
+.lab { font-size:11px; font-weight:bold; text-anchor:middle; }
+.lab-r { fill:#ffffff; stroke-width:1; }
+.shape { stroke-width:2; }
+/* 可下钻节点的记号是**框内一道内衬线**（同形状内缩 2px / 1px / 55%，见 D-78）：
+   它在包围盒内，所以端口、连线、相邻墨迹、包围盒与网格一样都不碰。静态可见是它的本分。
+   **它没有动画**：曾经悬停时另跑一段光沿它转一圈，与"连线上已经在跑的那道流光"重复了一遍
+   （见 D-80），撤掉了——"这里能点"改由悬浮框标题行右侧的灰字说。 */
+.ndg { cursor:default; }
+.ndg[data-sub] { cursor:pointer; }
+.ndg:hover .shape { stroke-width:3; }
+/* 子图/主图之间的面包屑：走进去要能走出来，否则下钻比不做还糟。*/
+.crumbs { position:fixed; top:0; left:0; z-index:1600; padding:6px 14px;
+          font-size:12px; color:#555555; text-decoration:none;
+          background:#ffffff; border-right:1px solid #e1d5e7; border-bottom:1px solid #e1d5e7;
+          border-bottom-right-radius:6px; }
+.crumbs:hover { color:#185FA5; background:#f5f9ff; }
+/* 标题模块与面包屑都是 fixed，左上一角会重叠——有面包屑时把标题模块整体下移一格。*/
+.headmod.has-crumbs { padding-top:34px; }
+.edge { stroke-width:2; fill:none; }
+/* 主干边上的**流光** = **两层同一道光**（见 D-79）：晕（宽 + 模糊 + 暗）+ 芯（窄 + 实 + 加深）。
+   **一律不用白色**：白只在深色底上发光（svg-flow 的默认轨道 #1a1a2e、ECharts 的深色地图），
+   我们的底是白画布与浅色填充——白在那儿只能"把线擦亮"，读作擦除而不是发光。
+   两层共用同一套 dash 与时长 ⇒ 芯和晕一起走。`.is-run` 只挂在晕上、芯用**相邻兄弟**选择器跟随：
+   JS 那套"实线边 ↔ 流光元素"的一一配对因此不用改（层数变了，配对仍是 1:1）。
+   纯装饰、不承载语义 ⇒ 「减少动态效果」时直接不画；底边仍在，信息一点不丢。 */
+.edge-flow { fill:none; stroke:#4a86c8; stroke-width:9.0;
+              stroke-opacity:0.4;
+              stroke-linecap:round; stroke-dasharray:12 18;
+              stroke-dashoffset:30;
+              opacity:0; pointer-events:none; }
+.edge-flow-core { fill:none; stroke:#2f6fb4; stroke-width:3.0;
+                   stroke-linecap:round; stroke-dasharray:12 18;
+                   stroke-dashoffset:30;
+                   opacity:0; pointer-events:none; }
+/* **悬停期间循环**：只在悬停相关节点时给叠层挂 .is-run，鼠标离开就摘掉（JS）。
+   为什么不是跑一趟：一触发就跑完即停，光一闪而过，反而像"页面抖了一下"——
+   循环才读得出"光顺着流程一条条走下去"这件事。为什么**不是常驻**：常驻会把"实线/虚线"
+   这条作者语义磨掉，也看不出这束光是在回答"我现在看着谁"（第一版就是常驻无限循环）。
+   为什么不给相关边加粗：同一个意思说两遍——边上的光已经在回答"哪儿相关"，实线/虚线的
+   线宽口径也就不必为悬停再开一个例外（见 D-80）。 */
+.edge-flow.is-run, .edge-flow.is-run + .edge-flow-core {
+                     animation:edge-flow-trace 1600ms linear infinite;
+                     animation-delay:calc(var(--step, 0) * 120ms); }
+@keyframes edge-flow-trace {
+  0%   { stroke-dashoffset:30; opacity:0; }
+  12%  { opacity:1; }
+  88%  { opacity:1; }
+  100% { stroke-dashoffset:0; opacity:0; }
+}
+/* 悬停：**只加不减**。悬停节点自己的描边加粗由 `.ndg:hover .shape` 给（静态记号，
+   「减少动态效果」下也成立），相关主干边在悬停期间循环跑流光。
+   **不压暗任何东西**：压暗（曾经 0.13）会连 ⚠ 的橙/红描边、主体配色、执行者小字一起抹掉，
+   那是**删信息**；而"哪些是相关的"已经有加法记号，不需要再来一遍减法（见 D-76）。 */
+@media (prefers-reduced-motion: reduce) {
+  .edge-flow { display:none; }
+}
+/* 标题模块：与正文模块（画布）分离的一块，固定在视窗顶部；滚动时不离视窗。
+   底部内边距由脚本按实际高度回填，长图滚到哪都看得到"这是什么图 / 颜色是谁"。*/
+.headmod { position:fixed; top:0; left:0; right:0; z-index:1500; background:#ffffff;
+           border-bottom:1px solid #e1d5e7; box-shadow:0 1px 4px rgba(0,0,0,0.08);
+           padding:10px 20px 12px; }
+.headmod h1 { font-size:16px; font-weight:bold; color:#333333; text-align:center; margin:0 0 8px; }
+.headmod .legend { display:flex; flex-wrap:wrap; justify-content:center; align-items:center;
+                    gap:6px 18px; font-size:11px; color:#555555; }
+.headmod .lg { display:inline-flex; align-items:center; gap:6px; }
+.headmod .sw { display:inline-block; width:34px; height:14px; border:1.5px solid; border-radius:3px; }
+
+/* 单文件多视图（见 D-52）：子图内嵌为视图，点下钻切视图而不是跳页。 */
+.view { display:none; }
+.view.cur { display:block; }
+.crumbs a { color:#555555; text-decoration:none; padding:2px 8px; border-radius:4px; }
+.crumbs a:hover { color:#185FA5; background:#f5f9ff; }
+.crumbs .sep { color:#aaaaaa; }
+.crumbs .here { color:#9673a6; font-weight:bold; padding:2px 8px; }
+</style>
+</head>
+<body>
+<div class="headmod" id="headmod">
+  <h1>flowchart-skill 自举：一条流程从材料到交付</h1>
+  <div class="legend"><span class="lg"><span class="sw" style="background:#dae8fc;border-color:#6c8ebf"></span>用户执行</span><span class="lg"><span class="sw" style="background:#d5e8d4;border-color:#82b366"></span>AI执行</span><span class="lg"><span class="sw" style="background:#ffe6cc;border-color:#d79b00"></span>脚本执行</span></div>
+</div>
+<div class="view cur" data-view="__main__" data-title="flowchart-skill 自举：一条流程从材料到交付">
+<div class="chart-container" style="width:680px;height:1590px">
+<svg viewBox="0 0 680 1590" xmlns="http://www.w3.org/2000/svg">
+<path class="edge-flow" style="--step:0" d="M 320 140 L 320 180" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:0" d="M 320 140 L 320 180"/><path class="edge" data-from="01" data-to="01a" d="M 320 140 L 320 180" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:1" d="M 320 240 L 320 280" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:1" d="M 320 240 L 320 280"/><path class="edge" data-from="01a" data-to="02" d="M 320 240 L 320 280" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:2" d="M 320 340 L 320 380" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:2" d="M 320 340 L 320 380"/><path class="edge" data-from="02" data-to="03" d="M 320 340 L 320 380" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:3" d="M 320 440 L 320 470" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:3" d="M 320 440 L 320 470"/><path class="edge" data-from="03" data-to="04" d="M 320 440 L 320 470" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:4" d="M 320 550 L 320 620" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:4" d="M 320 550 L 320 620"/><path class="edge" data-from="04" data-to="05" d="M 320 550 L 320 620" stroke="#666666" marker-end="url(#ar-main)"/><g class="elab"><rect class="lab-r" x="300" y="580" width="40" height="20" rx="4" stroke="#666666"/><text class="lab" x="320" y="594" fill="#666666">通过</text></g>
+<path class="edge" data-from="04" data-to="03" d="M 240 510 L 200 510 L 200 410 L 240 410" stroke="#adb5bd" stroke-dasharray="5 4" marker-end="url(#ar-negative)"/><g class="elab"><rect class="lab-r" x="170" y="450" width="60" height="20" rx="4" stroke="#adb5bd"/><text class="lab" x="200" y="464" fill="#adb5bd">不通过</text></g>
+<path class="edge-flow" style="--step:5" d="M 320 680 L 320 710" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:5" d="M 320 680 L 320 710"/><path class="edge" data-from="05" data-to="06" d="M 320 680 L 320 710" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:6" d="M 320 790 L 320 860" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:6" d="M 320 790 L 320 860"/><path class="edge" data-from="06" data-to="07" d="M 320 790 L 320 860" stroke="#666666" marker-end="url(#ar-main)"/><g class="elab"><rect class="lab-r" x="300" y="820" width="40" height="20" rx="4" stroke="#666666"/><text class="lab" x="320" y="834" fill="#666666">有</text></g>
+<path class="edge-flow" style="--step:6" d="M 400 750 L 440 750 L 440 990 L 400 990" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:6" d="M 400 750 L 440 750 L 440 990 L 400 990"/><path class="edge" data-from="06" data-to="08" d="M 400 750 L 440 750 L 440 990 L 400 990" stroke="#666666" marker-end="url(#ar-main)"/><g class="elab"><rect class="lab-r" x="420" y="860" width="40" height="20" rx="4" stroke="#666666"/><text class="lab" x="440" y="874" fill="#666666">没有</text></g>
+<path class="edge" data-from="07" data-to="01" d="M 240 890 L 150 890 L 150 110 L 240 110" stroke="#adb5bd" stroke-dasharray="5 4" marker-end="url(#ar-negative)"/>
+<path class="edge-flow" style="--step:8" d="M 320 1020 L 320 1050" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:8" d="M 320 1020 L 320 1050"/><path class="edge" data-from="08" data-to="09" d="M 320 1020 L 320 1050" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:9" d="M 320 1130 L 320 1190" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:9" d="M 320 1130 L 320 1190"/><path class="edge" data-from="09" data-to="10" d="M 320 1130 L 320 1190" stroke="#666666" marker-end="url(#ar-main)"/><g class="elab"><rect class="lab-r" x="300" y="1150" width="40" height="20" rx="4" stroke="#666666"/><text class="lab" x="320" y="1164" fill="#666666">通过</text></g>
+<path class="edge" data-from="09" data-to="08" d="M 240 1090 L 200 1090 L 200 1010 L 240 1010" stroke="#adb5bd" stroke-dasharray="5 4" marker-end="url(#ar-negative)"/><g class="elab"><rect class="lab-r" x="170" y="1040" width="60" height="20" rx="4" stroke="#adb5bd"/><text class="lab" x="200" y="1054" fill="#adb5bd">有问题</text></g>
+<path class="edge" data-from="10" data-to="03" d="M 400 1230 L 490 1230 L 490 430 L 400 430" stroke="#adb5bd" stroke-dasharray="5 4" marker-end="url(#ar-negative)"/><g class="elab"><rect class="lab-r" x="470" y="820" width="40" height="20" rx="4" stroke="#adb5bd"/><text class="lab" x="490" y="834" fill="#adb5bd">有</text></g>
+<path class="edge-flow" style="--step:10" d="M 320 1270 L 320 1340" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:10" d="M 320 1270 L 320 1340"/><path class="edge" data-from="10" data-to="11" d="M 320 1270 L 320 1340" stroke="#666666" marker-end="url(#ar-main)"/><g class="elab"><rect class="lab-r" x="300" y="1300" width="40" height="20" rx="4" stroke="#666666"/><text class="lab" x="320" y="1314" fill="#666666">没有</text></g>
+<path class="edge-flow" style="--step:11" d="M 320 1400 L 320 1480" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:11" d="M 320 1400 L 320 1480"/><path class="edge" data-from="11" data-to="12" d="M 320 1400 L 320 1480" stroke="#666666" marker-end="url(#ar-main)"/><g class="elab"><rect class="lab-r" x="290" y="1430" width="60" height="20" rx="4" stroke="#666666"/><text class="lab" x="320" y="1444" fill="#666666">都没变</text></g>
+<path class="edge" data-from="11" data-to="03" d="M 400 1370 L 540 1370 L 540 410 L 400 410" stroke="#adb5bd" stroke-dasharray="5 4" marker-end="url(#ar-negative)"/><g class="elab"><rect class="lab-r" x="500" y="880" width="80" height="20" rx="4" stroke="#adb5bd"/><text class="lab" x="540" y="894" fill="#adb5bd">改了语义</text></g>
+<path class="edge" data-from="11" data-to="08" d="M 240 1370 L 150 1370 L 150 990 L 240 990" stroke="#adb5bd" stroke-dasharray="5 4" marker-end="url(#ar-negative)"/><g class="elab"><rect class="lab-r" x="110" y="1170" width="80" height="20" rx="4" stroke="#adb5bd"/><text class="lab" x="150" y="1184" fill="#adb5bd">只动几何</text></g>
+<g class="ndg" data-id="01" data-nid="01" transform="translate(320,110)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="30" fill="#dae8fc" stroke="#dc2626" stroke-dasharray="2 3"/><text class="t1" y="-4">收到材料</text><text class="tm" y="12">用户</text></g>
+<g class="ndg" data-id="01a" data-nid="01a" transform="translate(320,210)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#ffe6cc" stroke="#d97706" stroke-dasharray="6 4"/><text class="t1" y="-12">建目录</text><text class="tm" y="4">init.py</text><text class="tt2" y="20">1-2 秒</text></g>
+<g class="ndg" data-id="02" data-nid="02" data-sub="parts/读回现状/flowtable.md" transform="translate(320,310)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#d5e8d4" stroke="#82b366"/><rect class="sub-ring" x="-78" y="-28" width="156" height="56" rx="3.4" fill="none" stroke="#82b366" stroke-width="1" opacity="0.55"/><text class="t1" y="-4">读回现状对齐口径</text><text class="tm" y="12">AI</text></g>
+<g class="ndg" data-id="03" data-nid="03" data-sub="parts/落表/flowtable.md" transform="translate(320,410)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#d5e8d4" stroke="#82b366"/><rect class="sub-ring" x="-78" y="-28" width="156" height="56" rx="3.4" fill="none" stroke="#82b366" stroke-width="1" opacity="0.55"/><text class="t1" y="-4">落流程表</text><text class="tm" y="12">AI</text></g>
+<g class="ndg" data-id="04" data-nid="04" data-sub="parts/结构校验/flowtable.md" transform="translate(320,510)"><polygon class="shape" points="0,-40 80,0 0,40 -80,0" fill="#ffe6cc" stroke="#d79b00"/><polygon class="sub-ring" points="0,-38 78,0 0,38 -78,0" fill="none" stroke="#d79b00" stroke-width="1" opacity="0.55"/><text class="t1" y="4">结构校验？</text></g>
+<g class="ndg" data-id="05" data-nid="05" data-sub="parts/回看出处/flowtable.md" transform="translate(320,650)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#d5e8d4" stroke="#82b366"/><rect class="sub-ring" x="-78" y="-28" width="156" height="56" rx="3.4" fill="none" stroke="#82b366" stroke-width="1" opacity="0.55"/><text class="t1" y="-4">逐行回看内容出处</text><text class="tm" y="12">AI</text></g>
+<g class="ndg" data-id="06" data-nid="06" transform="translate(320,750)"><polygon class="shape" points="0,-40 80,0 0,40 -80,0" fill="#ffe6cc" stroke="#d79b00"/><text class="t1" y="4">有待裁决项？</text></g>
+<g class="ndg" data-id="07" data-nid="07" transform="translate(320,890)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#dae8fc" stroke="#6c8ebf"/><text class="t1" y="-4">问并收答复</text><text class="tm" y="12">用户</text></g>
+<g class="ndg" data-id="08" data-nid="08" data-sub="parts/渲染/flowtable.md" transform="translate(320,990)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#ffe6cc" stroke="#d79b00"/><rect class="sub-ring" x="-78" y="-28" width="156" height="56" rx="3.4" fill="none" stroke="#d79b00" stroke-width="1" opacity="0.55"/><text class="t1" y="-12">渲染三份视图</text><text class="tm" y="4">build.py</text><text class="tt2" y="20">5-30 秒</text></g>
+<g class="ndg" data-id="09" data-nid="09" data-sub="parts/视觉自检/flowtable.md" transform="translate(320,1090)"><polygon class="shape" points="0,-40 80,0 0,40 -80,0" fill="#d5e8d4" stroke="#82b366"/><polygon class="sub-ring" points="0,-38 78,0 0,38 -78,0" fill="none" stroke="#82b366" stroke-width="1" opacity="0.55"/><text class="t1" y="4">视觉自检通过？</text></g>
+<g class="ndg" data-id="10" data-nid="10" transform="translate(320,1230)"><polygon class="shape" points="0,-40 80,0 0,40 -80,0" fill="#ffe6cc" stroke="#d79b00"/><text class="t1" y="4">表被直改过吗？</text></g>
+<g class="ndg" data-id="11" data-nid="11" data-sub="parts/同步回写/flowtable.md" transform="translate(320,1370)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#ffe6cc" stroke="#d79b00"/><rect class="sub-ring" x="-78" y="-28" width="156" height="56" rx="3.4" fill="none" stroke="#d79b00" stroke-width="1" opacity="0.55"/><text class="t1" y="-12">读回并分拣改动</text><text class="tm" y="4">sync.py</text><text class="tt2" y="20">2-10 秒</text></g>
+<g class="ndg" data-id="12" data-nid="12" transform="translate(320,1510)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="30" fill="#dae8fc" stroke="#6c8ebf"/><text class="t1" y="-4">交付</text><text class="tm" y="12">用户</text></g>
+</svg>
+</div>
+</div>
+<div class="view" data-view="parts/读回现状/flowtable.md" data-title="读回现状：开工先看清手上有什么">
+<div class="chart-container" style="width:700px;height:630px">
+<svg viewBox="0 0 700 630" xmlns="http://www.w3.org/2000/svg">
+<path class="edge-flow" style="--step:0" d="M 120 140 L 120 170" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:0" d="M 120 140 L 120 170"/><path class="edge" data-from="02a" data-to="02b" d="M 120 140 L 120 170" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:1" d="M 120 250 L 120 320" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:1" d="M 120 250 L 120 320"/><path class="edge" data-from="02b" data-to="02c" d="M 120 250 L 120 320" stroke="#666666" marker-end="url(#ar-main)"/><g class="elab"><rect class="lab-r" x="100" y="280" width="40" height="20" rx="4" stroke="#666666"/><text class="lab" x="120" y="294" fill="#666666">有</text></g>
+<path class="edge-flow" style="--step:1" d="M 200 210 L 580 210 L 580 320" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:1" d="M 200 210 L 580 210 L 580 320"/><path class="edge" data-from="02b" data-to="02d" d="M 200 210 L 580 210 L 580 320" stroke="#666666" marker-end="url(#ar-main)"/><g class="elab"><rect class="lab-r" x="430" y="200" width="40" height="20" rx="4" stroke="#666666"/><text class="lab" x="450" y="214" fill="#666666">没有</text></g>
+<path class="edge-flow" style="--step:2" d="M 120 380 L 120 420" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:2" d="M 120 380 L 120 420"/><path class="edge" data-from="02c" data-to="02e" d="M 120 380 L 120 420" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:2" d="M 580 380 L 580 450 L 200 450" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:2" d="M 580 380 L 580 450 L 200 450"/><path class="edge" data-from="02d" data-to="02e" d="M 580 380 L 580 450 L 200 450" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:3" d="M 120 480 L 120 520" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:3" d="M 120 480 L 120 520"/><path class="edge" data-from="02e" data-to="02f" d="M 120 480 L 120 520" stroke="#666666" marker-end="url(#ar-main)"/>
+<g class="ndg" data-id="parts/读回现状/flowtable.md::02a" data-nid="02a" transform="translate(120,110)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="30" fill="#d5e8d4" stroke="#82b366"/><text class="t1" y="-4">开工先读现状</text><text class="tm" y="12">AI</text></g>
+<g class="ndg" data-id="parts/读回现状/flowtable.md::02b" data-nid="02b" transform="translate(120,210)"><polygon class="shape" points="0,-40 80,0 0,40 -80,0" fill="#d5e8d4" stroke="#82b366"/><text class="t1" y="4">手上有流程表吗？</text></g>
+<g class="ndg" data-id="parts/读回现状/flowtable.md::02c" data-nid="02c" transform="translate(120,350)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#ffe6cc" stroke="#d79b00"/><text class="t1" y="-4">读回现状（只读）</text><text class="tm" y="12">clarify.py</text></g>
+<g class="ndg" data-id="parts/读回现状/flowtable.md::02d" data-nid="02d" transform="translate(580,350)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#d5e8d4" stroke="#82b366"/><text class="t1" y="-4">复述材料要点</text><text class="tm" y="12">AI</text></g>
+<g class="ndg" data-id="parts/读回现状/flowtable.md::02e" data-nid="02e" transform="translate(120,450)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#dae8fc" stroke="#6c8ebf"/><text class="t1" y="-4">请用户当场纠正</text><text class="tm" y="12">用户</text></g>
+<g class="ndg" data-id="parts/读回现状/flowtable.md::02f" data-nid="02f" transform="translate(120,550)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="30" fill="#d5e8d4" stroke="#82b366"/><text class="t1" y="-4">口径已对齐</text><text class="tm" y="12">AI</text></g>
+</svg>
+</div>
+</div>
+<div class="view" data-view="parts/落表/flowtable.md" data-title="落表：十二列只有这一个落笔点">
+<div class="chart-container" style="width:680px;height:830px">
+<svg viewBox="0 0 680 830" xmlns="http://www.w3.org/2000/svg">
+<path class="edge-flow" style="--step:0" d="M 320 140 L 320 180" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:0" d="M 320 140 L 320 180"/><path class="edge" data-from="03a" data-to="03b" d="M 320 140 L 320 180" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:1" d="M 320 240 L 320 280" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:1" d="M 320 240 L 320 280"/><path class="edge" data-from="03b" data-to="03c" d="M 320 240 L 320 280" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:2" d="M 320 340 L 320 370" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:2" d="M 320 340 L 320 370"/><path class="edge" data-from="03c" data-to="03d" d="M 320 340 L 320 370" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:3" d="M 320 450 L 320 520" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:3" d="M 320 450 L 320 520"/><path class="edge" data-from="03d" data-to="03e" d="M 320 450 L 320 520" stroke="#666666" marker-end="url(#ar-main)"/><g class="elab"><rect class="lab-r" x="300" y="480" width="40" height="20" rx="4" stroke="#666666"/><text class="lab" x="320" y="494" fill="#666666">有</text></g>
+<path class="edge-flow" style="--step:3" d="M 400 410 L 440 410 L 440 750 L 400 750" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:3" d="M 400 410 L 440 410 L 440 750 L 400 750"/><path class="edge" data-from="03d" data-to="03g" d="M 400 410 L 440 410 L 440 750 L 400 750" stroke="#666666" marker-end="url(#ar-main)"/><g class="elab"><rect class="lab-r" x="420" y="570" width="40" height="20" rx="4" stroke="#666666"/><text class="lab" x="440" y="584" fill="#666666">没有</text></g>
+<path class="edge-flow" style="--step:4" d="M 320 580 L 320 620" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:4" d="M 320 580 L 320 620"/><path class="edge" data-from="03e" data-to="03f" d="M 320 580 L 320 620" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:5" d="M 320 680 L 320 720" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:5" d="M 320 680 L 320 720"/><path class="edge" data-from="03f" data-to="03g" d="M 320 680 L 320 720" stroke="#666666" marker-end="url(#ar-main)"/>
+<g class="ndg" data-id="parts/落表/flowtable.md::03a" data-nid="03a" transform="translate(320,110)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="30" fill="#d5e8d4" stroke="#82b366"/><text class="t1" y="-4">读列规范</text><text class="tm" y="12">AI</text></g>
+<g class="ndg" data-id="parts/落表/flowtable.md::03b" data-nid="03b" transform="translate(320,210)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#d5e8d4" stroke="#82b366"/><text class="t1" y="-4">提骨架</text><text class="tm" y="12">AI</text></g>
+<g class="ndg" data-id="parts/落表/flowtable.md::03c" data-nid="03c" transform="translate(320,310)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#d5e8d4" stroke="#82b366"/><text class="t1" y="-4">提四支箭头</text><text class="tm" y="12">AI</text></g>
+<g class="ndg" data-id="parts/落表/flowtable.md::03d" data-nid="03d" transform="translate(320,410)"><polygon class="shape" points="0,-40 80,0 0,40 -80,0" fill="#d5e8d4" stroke="#82b366"/><text class="t1" y="4">还有填不满的列吗？</text></g>
+<g class="ndg" data-id="parts/落表/flowtable.md::03e" data-nid="03e" transform="translate(320,550)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#d5e8d4" stroke="#82b366"/><text class="t1" y="-4">提问并附候选</text><text class="tm" y="12">AI</text></g>
+<g class="ndg" data-id="parts/落表/flowtable.md::03f" data-nid="03f" transform="translate(320,650)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#d5e8d4" stroke="#82b366"/><text class="t1" y="-4">逐列落笔</text><text class="tm" y="12">AI</text></g>
+<g class="ndg" data-id="parts/落表/flowtable.md::03g" data-nid="03g" transform="translate(320,750)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="30" fill="#d5e8d4" stroke="#82b366"/><text class="t1" y="-4">十二列齐，交校验</text><text class="tm" y="12">AI</text></g>
+</svg>
+</div>
+</div>
+<div class="view" data-view="parts/结构校验/flowtable.md" data-title="结构校验：三层硬错误">
+<div class="chart-container" style="width:680px;height:830px">
+<svg viewBox="0 0 680 830" xmlns="http://www.w3.org/2000/svg">
+<path class="edge-flow" style="--step:0" d="M 320 140 L 320 180" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:0" d="M 320 140 L 320 180"/><path class="edge" data-from="04a" data-to="04b" d="M 320 140 L 320 180" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:1" d="M 320 240 L 320 280" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:1" d="M 320 240 L 320 280"/><path class="edge" data-from="04b" data-to="04c" d="M 320 240 L 320 280" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:2" d="M 320 340 L 320 380" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:2" d="M 320 340 L 320 380"/><path class="edge" data-from="04c" data-to="04d" d="M 320 340 L 320 380" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:3" d="M 320 440 L 320 470" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:3" d="M 320 440 L 320 470"/><path class="edge" data-from="04d" data-to="04e" d="M 320 440 L 320 470" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:4" d="M 320 550 L 320 620" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:4" d="M 320 550 L 320 620"/><path class="edge" data-from="04e" data-to="04f" d="M 320 550 L 320 620" stroke="#666666" marker-end="url(#ar-main)"/><g class="elab"><rect class="lab-r" x="300" y="580" width="40" height="20" rx="4" stroke="#666666"/><text class="lab" x="320" y="594" fill="#666666">有</text></g>
+<path class="edge-flow" style="--step:4" d="M 400 510 L 440 510 L 440 750 L 400 750" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:4" d="M 400 510 L 440 510 L 440 750 L 400 750"/><path class="edge" data-from="04e" data-to="04g" d="M 400 510 L 440 510 L 440 750 L 400 750" stroke="#666666" marker-end="url(#ar-main)"/><g class="elab"><rect class="lab-r" x="420" y="620" width="40" height="20" rx="4" stroke="#666666"/><text class="lab" x="440" y="634" fill="#666666">没有</text></g>
+<g class="ndg" data-id="parts/结构校验/flowtable.md::04a" data-nid="04a" transform="translate(320,110)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="30" fill="#ffe6cc" stroke="#d79b00"/><text class="t1" y="-4">读流程表十二列</text><text class="tm" y="12">table_to_dsl.py</text></g>
+<g class="ndg" data-id="parts/结构校验/flowtable.md::04b" data-nid="04b" transform="translate(320,210)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#ffe6cc" stroke="#d79b00"/><text class="t1" y="-4">节点层校验</text><text class="tm" y="12">table_to_dsl.py</text></g>
+<g class="ndg" data-id="parts/结构校验/flowtable.md::04c" data-nid="04c" transform="translate(320,310)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#ffe6cc" stroke="#d79b00"/><text class="t1" y="-4">类型层校验</text><text class="tm" y="12">table_to_dsl.py</text></g>
+<g class="ndg" data-id="parts/结构校验/flowtable.md::04d" data-nid="04d" transform="translate(320,410)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#ffe6cc" stroke="#d79b00"/><text class="t1" y="-4">关系层校验</text><text class="tm" y="12">table_to_dsl.py</text></g>
+<g class="ndg" data-id="parts/结构校验/flowtable.md::04e" data-nid="04e" transform="translate(320,510)"><polygon class="shape" points="0,-40 80,0 0,40 -80,0" fill="#ffe6cc" stroke="#d79b00"/><text class="t1" y="4">有硬错误？</text></g>
+<g class="ndg" data-id="parts/结构校验/flowtable.md::04f" data-nid="04f" transform="translate(320,650)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="30" fill="#ffe6cc" stroke="#d79b00"/><text class="t1" y="-4">逐条报出并 exit 1</text><text class="tm" y="12">table_to_dsl.py</text></g>
+<g class="ndg" data-id="parts/结构校验/flowtable.md::04g" data-nid="04g" transform="translate(320,750)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="30" fill="#ffe6cc" stroke="#d79b00"/><text class="t1" y="-4">通过，放行渲染</text><text class="tm" y="12">table_to_dsl.py</text></g>
+</svg>
+</div>
+</div>
+<div class="view" data-view="parts/回看出处/flowtable.md" data-title="回看出处：逐行问&quot;这条凭什么&quot;">
+<div class="chart-container" style="width:1160px;height:770px">
+<svg viewBox="0 0 1160 770" xmlns="http://www.w3.org/2000/svg">
+<path class="edge-flow" style="--step:0" d="M 580 140 L 580 170" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:0" d="M 580 140 L 580 170"/><path class="edge" data-from="05a" data-to="05b" d="M 580 140 L 580 170" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:1" d="M 580 250 L 580 320" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:1" d="M 580 250 L 580 320"/><path class="edge" data-from="05b" data-to="05c" d="M 580 250 L 580 320" stroke="#666666" marker-end="url(#ar-main)"/><g class="elab"><rect class="lab-r" x="560" y="280" width="40" height="20" rx="4" stroke="#666666"/><text class="lab" x="580" y="294" fill="#666666">有</text></g>
+<path class="edge-flow" style="--step:1" d="M 540 230 L 390 230 L 390 350 L 200 350" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:1" d="M 540 230 L 390 230 L 390 350 L 200 350"/><path class="edge" data-from="05b" data-to="05d" d="M 540 230 L 390 230 L 390 350 L 200 350" stroke="#666666" marker-end="url(#ar-main)"/><g class="elab"><rect class="lab-r" x="370" y="300" width="40" height="20" rx="4" stroke="#666666"/><text class="lab" x="390" y="314" fill="#666666">常理</text></g>
+<path class="edge-flow" style="--step:1" d="M 660 210 L 1040 210 L 1040 320" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:1" d="M 660 210 L 1040 210 L 1040 320"/><path class="edge" data-from="05b" data-to="05e" d="M 660 210 L 1040 210 L 1040 320" stroke="#666666" marker-end="url(#ar-main)"/><g class="elab"><rect class="lab-r" x="880" y="200" width="60" height="20" rx="4" stroke="#666666"/><text class="lab" x="910" y="214" fill="#666666">推不出</text></g>
+<path class="edge-flow" style="--step:2" d="M 580 380 L 580 410" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:2" d="M 580 380 L 580 410"/><path class="edge" data-from="05c" data-to="05f" d="M 580 380 L 580 410" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:2" d="M 200 370 L 350 370 L 350 450 L 500 450" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:2" d="M 200 370 L 350 370 L 350 450 L 500 450"/><path class="edge" data-from="05d" data-to="05f" d="M 200 370 L 350 370 L 350 450 L 500 450" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:2" d="M 1040 380 L 1040 450 L 660 450" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:2" d="M 1040 380 L 1040 450 L 660 450"/><path class="edge" data-from="05e" data-to="05f" d="M 1040 380 L 1040 450 L 660 450" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge" data-from="05f" data-to="05b" d="M 540 430 L 460 430 L 460 210 L 500 210" stroke="#adb5bd" stroke-dasharray="5 4" marker-end="url(#ar-negative)"/><g class="elab"><rect class="lab-r" x="440" y="330" width="40" height="20" rx="4" stroke="#adb5bd"/><text class="lab" x="460" y="344" fill="#adb5bd">有</text></g>
+<path class="edge-flow" style="--step:3" d="M 580 490 L 580 560" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:3" d="M 580 490 L 580 560"/><path class="edge" data-from="05f" data-to="05g" d="M 580 490 L 580 560" stroke="#666666" marker-end="url(#ar-main)"/><g class="elab"><rect class="lab-r" x="560" y="520" width="40" height="20" rx="4" stroke="#666666"/><text class="lab" x="580" y="534" fill="#666666">没有</text></g>
+<path class="edge-flow" style="--step:4" d="M 580 620 L 580 660" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:4" d="M 580 620 L 580 660"/><path class="edge" data-from="05g" data-to="05h" d="M 580 620 L 580 660" stroke="#666666" marker-end="url(#ar-main)"/>
+<g class="ndg" data-id="parts/回看出处/flowtable.md::05a" data-nid="05a" transform="translate(580,110)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="30" fill="#d5e8d4" stroke="#82b366"/><text class="t1" y="-4">开始逐行回看</text><text class="tm" y="12">AI</text></g>
+<g class="ndg" data-id="parts/回看出处/flowtable.md::05b" data-nid="05b" transform="translate(580,210)"><polygon class="shape" points="0,-40 80,0 0,40 -80,0" fill="#d5e8d4" stroke="#82b366"/><text class="t1" y="4">这一条来自材料吗？</text></g>
+<g class="ndg" data-id="parts/回看出处/flowtable.md::05c" data-nid="05c" transform="translate(580,350)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#d5e8d4" stroke="#82b366"/><text class="t1" y="-4">照写材料原话</text><text class="tm" y="12">AI</text></g>
+<g class="ndg" data-id="parts/回看出处/flowtable.md::05d" data-nid="05d" transform="translate(120,350)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#d5e8d4" stroke="#82b366"/><text class="t1" y="-4">标 ⚠ 并写明依据</text><text class="tm" y="12">AI</text></g>
+<g class="ndg" data-id="parts/回看出处/flowtable.md::05e" data-nid="05e" transform="translate(1040,350)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#d5e8d4" stroke="#82b366"/><text class="t1" y="-4">标 ⚠? 待拍板</text><text class="tm" y="12">AI</text></g>
+<g class="ndg" data-id="parts/回看出处/flowtable.md::05f" data-nid="05f" transform="translate(580,450)"><polygon class="shape" points="0,-40 80,0 0,40 -80,0" fill="#d5e8d4" stroke="#82b366"/><text class="t1" y="4">还有下一行吗？</text></g>
+<g class="ndg" data-id="parts/回看出处/flowtable.md::05g" data-nid="05g" transform="translate(580,590)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#d5e8d4" stroke="#82b366"/><text class="t1" y="-4">判断节点的依据单独再过一遍</text><text class="tm" y="12">AI</text></g>
+<g class="ndg" data-id="parts/回看出处/flowtable.md::05h" data-nid="05h" transform="translate(580,690)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="30" fill="#d5e8d4" stroke="#82b366"/><text class="t1" y="-4">打标完毕，交 06</text><text class="tm" y="12">AI</text></g>
+</svg>
+</div>
+</div>
+<div class="view" data-view="parts/渲染/flowtable.md" data-title="渲染：一条命令跑六环">
+<div class="chart-container" style="width:680px;height:1130px">
+<svg viewBox="0 0 680 1130" xmlns="http://www.w3.org/2000/svg">
+<path class="edge-flow" style="--step:0" d="M 320 140 L 320 180" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:0" d="M 320 140 L 320 180"/><path class="edge" data-from="08a" data-to="08b" d="M 320 140 L 320 180" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:1" d="M 320 240 L 320 280" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:1" d="M 320 240 L 320 280"/><path class="edge" data-from="08b" data-to="08c" d="M 320 240 L 320 280" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:2" d="M 320 340 L 320 380" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:2" d="M 320 340 L 320 380"/><path class="edge" data-from="08c" data-to="08d" d="M 320 340 L 320 380" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:3" d="M 320 440 L 320 480" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:3" d="M 320 440 L 320 480"/><path class="edge" data-from="08d" data-to="08e" d="M 320 440 L 320 480" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:4" d="M 320 540 L 320 580" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:4" d="M 320 540 L 320 580"/><path class="edge" data-from="08e" data-to="08f" d="M 320 540 L 320 580" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:5" d="M 320 640 L 320 680" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:5" d="M 320 640 L 320 680"/><path class="edge" data-from="08f" data-to="08g" d="M 320 640 L 320 680" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:6" d="M 320 740 L 320 770" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:6" d="M 320 740 L 320 770"/><path class="edge" data-from="08g" data-to="08h" d="M 320 740 L 320 770" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:7" d="M 320 850 L 320 920" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:7" d="M 320 850 L 320 920"/><path class="edge" data-from="08h" data-to="08i" d="M 320 850 L 320 920" stroke="#666666" marker-end="url(#ar-main)"/><g class="elab"><rect class="lab-r" x="300" y="880" width="40" height="20" rx="4" stroke="#666666"/><text class="lab" x="320" y="894" fill="#666666">过</text></g>
+<path class="edge-flow" style="--step:7" d="M 400 810 L 440 810 L 440 1050 L 400 1050" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:7" d="M 400 810 L 440 810 L 440 1050 L 400 1050"/><path class="edge" data-from="08h" data-to="08j" d="M 400 810 L 440 810 L 440 1050 L 400 1050" stroke="#666666" marker-end="url(#ar-main)"/><g class="elab"><rect class="lab-r" x="420" y="920" width="40" height="20" rx="4" stroke="#666666"/><text class="lab" x="440" y="934" fill="#666666">不过</text></g>
+<g class="ndg" data-id="parts/渲染/flowtable.md::08a" data-nid="08a" transform="translate(320,110)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="30" fill="#ffe6cc" stroke="#d79b00"/><text class="t1" y="-4">build.py 入口</text><text class="tm" y="12">build.py</text></g>
+<g class="ndg" data-id="parts/渲染/flowtable.md::08b" data-nid="08b" transform="translate(320,210)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#ffe6cc" stroke="#d79b00"/><text class="t1" y="-4">结构校验</text><text class="tm" y="12">table_to_dsl.py</text></g>
+<g class="ndg" data-id="parts/渲染/flowtable.md::08c" data-nid="08c" transform="translate(320,310)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#ffe6cc" stroke="#d79b00"/><text class="t1" y="-4">生成 DSL</text><text class="tm" y="12">table_to_dsl.py</text></g>
+<g class="ndg" data-id="parts/渲染/flowtable.md::08d" data-nid="08d" transform="translate(320,410)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#ffe6cc" stroke="#d79b00"/><text class="t1" y="-4">八项碰撞检测</text><text class="tm" y="12">validate.py</text></g>
+<g class="ndg" data-id="parts/渲染/flowtable.md::08e" data-nid="08e" transform="translate(320,510)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#ffe6cc" stroke="#d79b00"/><text class="t1" y="-4">出首版产物</text><text class="tm" y="12">render_html.py ｜ render_drawio.py ｜ render_svg.py</text></g>
+<g class="ndg" data-id="parts/渲染/flowtable.md::08f" data-nid="08f" transform="translate(320,610)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#ffe6cc" stroke="#d79b00"/><text class="t1" y="-4">产物审核</text><text class="tm" y="12">manifest.py</text></g>
+<g class="ndg" data-id="parts/渲染/flowtable.md::08g" data-nid="08g" transform="translate(320,710)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#ffe6cc" stroke="#d79b00"/><text class="t1" y="-4">几何自检</text><text class="tm" y="12">build.py</text></g>
+<g class="ndg" data-id="parts/渲染/flowtable.md::08h" data-nid="08h" transform="translate(320,810)"><polygon class="shape" points="0,-40 80,0 0,40 -80,0" fill="#ffe6cc" stroke="#d79b00"/><text class="t1" y="4">六环全过？</text></g>
+<g class="ndg" data-id="parts/渲染/flowtable.md::08i" data-nid="08i" transform="translate(320,950)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="30" fill="#ffe6cc" stroke="#d79b00"/><text class="t1" y="-4">落盘交付</text><text class="tm" y="12">build.py</text></g>
+<g class="ndg" data-id="parts/渲染/flowtable.md::08j" data-nid="08j" transform="translate(320,1050)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="30" fill="#ffe6cc" stroke="#d79b00"/><text class="t1" y="-4">还原产物并 exit 1</text><text class="tm" y="12">build.py</text></g>
+</svg>
+</div>
+</div>
+<div class="view" data-view="parts/视觉自检/flowtable.md" data-title="视觉自检：质量门禁只管几何，好不好看必须看图">
+<div class="chart-container" style="width:1160px;height:830px">
+<svg viewBox="0 0 1160 830" xmlns="http://www.w3.org/2000/svg">
+<path class="edge-flow" style="--step:0" d="M 580 140 L 580 180" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:0" d="M 580 140 L 580 180"/><path class="edge" data-from="09a" data-to="09b" d="M 580 140 L 580 180" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:0" d="M 500 110 L 350 110 L 350 210 L 200 210" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:0" d="M 500 110 L 350 110 L 350 210 L 200 210"/><path class="edge" data-from="09a" data-to="09c" d="M 500 110 L 350 110 L 350 210 L 200 210" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:0" d="M 660 110 L 1040 110 L 1040 180" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:0" d="M 660 110 L 1040 110 L 1040 180"/><path class="edge" data-from="09a" data-to="09d" d="M 660 110 L 1040 110 L 1040 180" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:1" d="M 580 240 L 580 270" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:1" d="M 580 240 L 580 270"/><path class="edge" data-from="09b" data-to="09e" d="M 580 240 L 580 270" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:1" d="M 200 230 L 390 230 L 390 310 L 500 310" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:1" d="M 200 230 L 390 230 L 390 310 L 500 310"/><path class="edge" data-from="09c" data-to="09e" d="M 200 230 L 390 230 L 390 310 L 500 310" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:1" d="M 1040 240 L 1040 310 L 660 310" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:1" d="M 1040 240 L 1040 310 L 660 310"/><path class="edge" data-from="09d" data-to="09e" d="M 1040 240 L 1040 310 L 660 310" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:2" d="M 580 350 L 580 420" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:2" d="M 580 350 L 580 420"/><path class="edge" data-from="09e" data-to="09f" d="M 580 350 L 580 420" stroke="#666666" marker-end="url(#ar-main)"/><g class="elab"><rect class="lab-r" x="560" y="380" width="40" height="20" rx="4" stroke="#666666"/><text class="lab" x="580" y="394" fill="#666666">有</text></g>
+<path class="edge-flow" style="--step:2" d="M 540 330 L 460 330 L 460 650 L 500 650" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:2" d="M 540 330 L 460 330 L 460 650 L 500 650"/><path class="edge" data-from="09e" data-to="09h" d="M 540 330 L 460 330 L 460 650 L 500 650" stroke="#666666" marker-end="url(#ar-main)"/><g class="elab"><rect class="lab-r" x="440" y="460" width="40" height="20" rx="4" stroke="#666666"/><text class="lab" x="460" y="474" fill="#666666">没有</text></g>
+<path class="edge-flow" style="--step:3" d="M 580 480 L 580 520" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:3" d="M 580 480 L 580 520"/><path class="edge" data-from="09f" data-to="09g" d="M 580 480 L 580 520" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:4" d="M 660 550 L 700 550 L 700 750 L 660 750" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:4" d="M 660 550 L 700 550 L 700 750 L 660 750"/><path class="edge" data-from="09g" data-to="09i" d="M 660 550 L 700 550 L 700 750 L 660 750" stroke="#666666" marker-end="url(#ar-main)"/>
+<g class="ndg" data-id="parts/视觉自检/flowtable.md::09a" data-nid="09a" transform="translate(580,110)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="30" fill="#ffe6cc" stroke="#d79b00"/><text class="t1" y="-4">截图</text><text class="tm" y="12">shot.py</text></g>
+<g class="ndg" data-id="parts/视觉自检/flowtable.md::09b" data-nid="09b" transform="translate(580,210)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#d5e8d4" stroke="#82b366"/><text class="t1" y="-4">看交叉</text><text class="tm" y="12">AI</text></g>
+<g class="ndg" data-id="parts/视觉自检/flowtable.md::09c" data-nid="09c" transform="translate(120,210)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#d5e8d4" stroke="#82b366"/><text class="t1" y="-4">看标签</text><text class="tm" y="12">AI</text></g>
+<g class="ndg" data-id="parts/视觉自检/flowtable.md::09d" data-nid="09d" transform="translate(1040,210)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#d5e8d4" stroke="#82b366"/><text class="t1" y="-4">看走向</text><text class="tm" y="12">AI</text></g>
+<g class="ndg" data-id="parts/视觉自检/flowtable.md::09e" data-nid="09e" transform="translate(580,310)"><polygon class="shape" points="0,-40 80,0 0,40 -80,0" fill="#d5e8d4" stroke="#82b366"/><text class="t1" y="4">有问题吗？</text></g>
+<g class="ndg" data-id="parts/视觉自检/flowtable.md::09f" data-nid="09f" transform="translate(580,450)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#d5e8d4" stroke="#82b366"/><text class="t1" y="-4">先查标签是否过长</text><text class="tm" y="12">AI</text></g>
+<g class="ndg" data-id="parts/视觉自检/flowtable.md::09g" data-nid="09g" transform="translate(580,550)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#d5e8d4" stroke="#82b366"/><text class="t1" y="-4">调几何（不手改端口）</text><text class="tm" y="12">AI</text></g>
+<g class="ndg" data-id="parts/视觉自检/flowtable.md::09h" data-nid="09h" transform="translate(580,650)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="30" fill="#d5e8d4" stroke="#82b366"/><text class="t1" y="-4">通过，交 10</text><text class="tm" y="12">AI</text></g>
+<g class="ndg" data-id="parts/视觉自检/flowtable.md::09i" data-nid="09i" transform="translate(580,750)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="30" fill="#d5e8d4" stroke="#82b366"/><text class="t1" y="-4">回 08 重出图</text><text class="tm" y="12">AI</text></g>
+</svg>
+</div>
+</div>
+<div class="view" data-view="parts/同步回写/flowtable.md" data-title="同步闭环：读回 → 回写 → 重渲染">
+<div class="chart-container" style="width:680px;height:630px">
+<svg viewBox="0 0 680 630" xmlns="http://www.w3.org/2000/svg">
+<path class="edge-flow" style="--step:0" d="M 320 140 L 320 180" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:0" d="M 320 140 L 320 180"/><path class="edge" data-from="11a" data-to="11b" d="M 320 140 L 320 180" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:1" d="M 320 240 L 320 270" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:1" d="M 320 240 L 320 270"/><path class="edge" data-from="11b" data-to="11c" d="M 320 240 L 320 270" stroke="#666666" marker-end="url(#ar-main)"/>
+<path class="edge-flow" style="--step:2" d="M 320 350 L 320 420" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:2" d="M 320 350 L 320 420"/><path class="edge" data-from="11c" data-to="11d" d="M 320 350 L 320 420" stroke="#666666" marker-end="url(#ar-main)"/><g class="elab"><rect class="lab-r" x="300" y="380" width="40" height="20" rx="4" stroke="#666666"/><text class="lab" x="320" y="394" fill="#666666">有</text></g>
+<path class="edge-flow" style="--step:2" d="M 400 310 L 440 310 L 440 550 L 400 550" filter="url(#soft-glow)"/><path class="edge-flow-core" style="--step:2" d="M 400 310 L 440 310 L 440 550 L 400 550"/><path class="edge" data-from="11c" data-to="11e" d="M 400 310 L 440 310 L 440 550 L 400 550" stroke="#666666" marker-end="url(#ar-main)"/><g class="elab"><rect class="lab-r" x="420" y="420" width="40" height="20" rx="4" stroke="#666666"/><text class="lab" x="440" y="434" fill="#666666">没有</text></g>
+<g class="ndg" data-id="parts/同步回写/flowtable.md::11a" data-nid="11a" transform="translate(320,110)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="30" fill="#ffe6cc" stroke="#d79b00"/><text class="t1" y="-4">读回 drawio</text><text class="tm" y="12">xml_reader.py</text></g>
+<g class="ndg" data-id="parts/同步回写/flowtable.md::11b" data-nid="11b" transform="translate(320,210)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="3.6" fill="#ffe6cc" stroke="#d79b00"/><text class="t1" y="-4">与流程表比差异</text><text class="tm" y="12">sync.py</text></g>
+<g class="ndg" data-id="parts/同步回写/flowtable.md::11c" data-nid="11c" transform="translate(320,310)"><polygon class="shape" points="0,-40 80,0 0,40 -80,0" fill="#ffe6cc" stroke="#d79b00"/><text class="t1" y="4">「下个节点」冲突？</text></g>
+<g class="ndg" data-id="parts/同步回写/flowtable.md::11d" data-nid="11d" transform="translate(320,450)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="30" fill="#ffe6cc" stroke="#d79b00"/><text class="t1" y="-4">拦下并回报</text><text class="tm" y="12">sync.py</text></g>
+<g class="ndg" data-id="parts/同步回写/flowtable.md::11e" data-nid="11e" transform="translate(320,550)"><rect class="shape" x="-80" y="-30" width="160" height="60" rx="30" fill="#ffe6cc" stroke="#d79b00"/><text class="t1" y="-4">回写流程表</text><text class="tm" y="12">sync.py</text></g>
+</svg>
+</div>
+</div>
+<div class="node-tooltip" id="nodeTooltip">
+  <div class="tt-title"><span id="ttTitle"></span><span class="tt-sub" id="ttSub"></span></div>
+  <div class="tt-content" id="ttContent"></div>
+</div>
+<svg class="vdefs" width="0" height="0" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden"><defs><marker id="ar-main" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0L10,5L0,10z" fill="#666666"/></marker><marker id="ar-negative" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0L10,5L0,10z" fill="#adb5bd"/></marker><filter id="soft-glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="2.5"/></filter></defs></svg>
+<script>
+var TIPS = {"01": {"title": "01 收到材料", "subject": "用户", "executor": "用户", "input": "原始材料、起止范围", "basis": null, "output": "原始材料（转交 01a）", "up": "07", "time": null, "route": "→建目录", "desc": "? 材料没写「从哪一步开始、到哪一步结束」时**必须问用户拍板**——起止范围不同，整张表的边界就不同（不同选法后果不同）。触发形态不限：口头需求 / 合同文档 / 表格 / 图片白板 / **已被直接改过的流程表**；**07 的答复也从这里进来**——每轮补充的信息都是新材料，这张表的入口不止开一次", "pend": "此处必须业务方拍板：AI 推不出，且不同选法后果不同", "sub": null}, "01a": {"title": "01a 建目录", "subject": "脚本", "executor": "init.py", "input": "流程名称", "basis": "两份模板与目录约定（`SKILL.md` 第 1 环）", "output": "`output/\u003c名称\u003e/` + 两份模板", "up": "01", "time": "1-2 秒", "route": "→读回现状对齐口径", "desc": "材料没给流程名时按材料主题起一个（原文未写、按惯例补）。`init.py` 建 `output/\u003c名称\u003e/` 并把 `templates/` 两份模板拷进去——**目录名就是流程身份**，产物名跟着它走", "pend": "此处为 AI 推断，原文未载明", "sub": null}, "02": {"title": "02 读回现状对齐口径", "subject": "AI", "executor": "AI", "input": "已有流程表（可无）", "basis": "`⚠` / `⚠?` 的分拣口径（`references/flowtable-spec.md` §2）", "output": "现状复述", "up": "01a", "time": null, "route": "→落流程表", "desc": "**每轮开工第一件事：手上有什么就读什么**——已有流程表就用 `clarify.py` 读回来（它只读不写），报出哪些是 AI 推断、哪些还没定；没有表就把材料要点复述一遍，给用户当场纠正的机会。**已定的不重复问**——「还剩哪些要问」由 06 独家算", "pend": null, "sub": "parts/读回现状/flowtable.md"}, "03": {"title": "03 落流程表", "subject": "AI", "executor": "AI", "input": "材料 + 缺失列的答复", "basis": "字段登记表（`references/flowtable-spec.md` §2）", "output": "十二列流程表", "up": "02、04、10、11", "time": null, "route": "→结构校验？", "desc": "★ 全流程**唯一**的语义落笔点：校验不通过、用户答复、图上的语义改动、表被直改，都回到这里改表。**列填不满的地方，就是流程没说清的地方**——主动提问、给出候选、补上缺失项", "pend": null, "sub": "parts/落表/flowtable.md"}, "04": {"title": "04 结构校验？", "subject": "脚本", "executor": "table_to_dsl.py", "input": "流程表", "basis": "H1–H8 + 表头 H9（`references/flowtable-spec.md` §3）", "output": "通过，或逐条硬错误", "up": "03", "time": null, "route": "通过→逐行回看内容出处\n不通过→回 落流程表 修正", "desc": "三层校验（① 节点：编号 / 语义 · ② 类型：起止、出边、分支 · ③ 关系：引用、连通、回路），硬错误**阻断渲染**", "pend": null, "sub": "parts/结构校验/flowtable.md"}, "05": {"title": "05 逐行回看内容出处", "subject": "AI", "executor": "AI", "input": "流程表", "basis": "依据不来自材料就标 `⚠`（`references/flowtable-spec.md` §2）", "output": "`⚠` / `⚠?` 留痕", "up": "04", "time": null, "route": "→有待裁决项？", "desc": "材料说的照写；AI 按常理补的打 `⚠` 并写明依据；推不出的打 `⚠?`。**打标不阻断**——标完照常往下，仍未决的由 06 报出", "pend": null, "sub": "parts/回看出处/flowtable.md"}, "06": {"title": "06 有待裁决项？", "subject": "脚本", "executor": "clarify.py", "input": "流程表", "basis": "frontier = 前驱已定的 `⚠?`，只问当前可问的", "output": "frontier 清单", "up": "05", "time": null, "route": "有→问并收答复\n没有→渲染三份视图", "desc": "`clarify.py` 算出 frontier（当前能问的）——这是**算出来的状态**，不是看法；**只问 frontier 里的**，上游还没定的先不问。frontier 为空即收敛", "pend": null, "sub": null}, "07": {"title": "07 问并收答复", "subject": "用户", "executor": "用户", "input": "frontier 清单", "basis": null, "output": "答复（新材料）", "up": "06", "time": null, "route": "→回 收到材料 当新材料", "desc": "每问附 AI 的推荐答案，用户只需否决。**与 03 的分工**：03 问的是「列填不满」，这里问的是「两条路都说得通、必须业务方拍板」。**答复是新材料**——收完回 01 重走一圈再落表，不在问答处就地改表。仍有未决的照常交付，但交付时如实报「仍未决 N 处」", "pend": null, "sub": null}, "08": {"title": "08 渲染三份视图", "subject": "脚本", "executor": "build.py", "input": "通过校验的流程表", "basis": "六环 + 产物侧九项判据（`references/visual-spec.md` §4.1）", "output": "三份产物 + 层级索引 + sha256 回执", "up": "06、09、11", "time": "5-30 秒", "route": "→视觉自检通过？", "desc": "一条命令跑六环，任一环不过即 exit 1 并把产物还原——盘上不留没审过的交付物", "pend": null, "sub": "parts/渲染/flowtable.md"}, "09": {"title": "09 视觉自检通过？", "subject": "AI", "executor": "AI", "input": "三份产物", "basis": "看三样：交叉多不多 / 标签压不压线 / 走向反不反直觉（`references/visual-spec.md` §2）", "output": "看过的结论", "up": "08", "time": null, "route": "通过→表被直改过吗？\n有问题→回 渲染三份视图 调几何", "desc": "用 `shot.py` 出图后**由 AI 看着核对**：交叉是否多到影响追踪、标签是否居中压线、分支走向是否反直觉。质量门禁只管几何，好不好看必须看图", "pend": null, "sub": "parts/视觉自检/flowtable.md"}, "10": {"title": "10 表被直改过吗？", "subject": "脚本", "executor": "table_to_dsl.py", "input": "流程表 + 上次渲染记进契约的指纹", "basis": "现算指纹 vs `source_sha256`（`references/dsl-spec.md` §3）", "output": "同版 / 已过期", "up": "09", "time": null, "route": "有→回 落流程表 重走\n没有→读回并分拣改动", "desc": "★ 拿 `flowtable.md` 现算指纹，对照上次渲染写进 `\u003c流程名\u003e-flow.manifest.json` 的那一份（`table_to_dsl.py --fresh`）：**变过**说明有人绕过流水线改了事实源，回 03 重走校验与出图——**不许走 11**（回灌是按图里的节点集合重建表格行的，手工加的节点会被删掉、改过的名字会被覆盖）；**没变**→11 看图上动了什么。没有基线时 `--fresh` 报「无从判断」，照样按「改过」走保守路线", "pend": null, "sub": null}, "11": {"title": "11 读回并分拣改动", "subject": "脚本", "executor": "sync.py", "input": "drawio + 流程表", "basis": "差异四分类（增删节点 / 关系变化 / 文字变化 / 坐标位移）", "output": "回写后的流程表", "up": "10", "time": "2-10 秒", "route": "都没变→交付\n改了语义→回 落流程表 重落表\n只动几何→回 渲染三份视图 重布局", "desc": "**图这一面不另存指纹——本来就要解析**：元素与关系都没变、只有坐标位移 → 几何，回 08 交算法判吸附阈值（**像素不作终值**）；**增删节点 / 改关系 / 改文字（含名称、标签、形状）→ 语义**，先回写进流程表，再回 03 重走校验与出图。两者都有时按语义走；**diff 为空即静默通过**，不许因格式噪声把人拉回 03", "pend": null, "sub": "parts/同步回写/flowtable.md"}, "12": {"title": "12 交付", "subject": "用户", "executor": "用户", "input": "11 的回写结果 + 全部产物", "basis": null, "output": "三份视图 + `flowtable.md` + `checklist.md` + `\u003c流程名\u003e-index.md`（子表在 `parts/` 下）", "up": "11", "time": null, "route": "—", "desc": "三份视图（html 评审 / drawio 协作 / svg 中间态）+ `flowtable.md`（唯一事实源）+ `checklist.md`（自检报告）+ `\u003c流程名\u003e-index.md`（层级索引，多张表时的构建顺序）。**有子表就一并发 `parts/`**——它和主表是同一份交付。产物末尾打印 sha256 回执", "pend": null, "sub": null}, "parts/读回现状/flowtable.md::02a": {"title": "02a 开工先读现状", "subject": "AI", "executor": "AI", "input": "原始材料", "basis": null, "output": null, "up": null, "time": null, "route": "→手上有流程表吗？", "desc": "**每轮开工第一件事：手上有什么就读什么**——这一步的全部意义就是它", "pend": null, "sub": null}, "parts/读回现状/flowtable.md::02b": {"title": "02b 手上有流程表吗？", "subject": "AI", "executor": "AI", "input": "原始材料", "basis": "流程表由自身 frontmatter 认领（`id` / `level`，H9）", "output": "有 / 没有", "up": "02a", "time": null, "route": "有→读回现状（只读）\n没有→复述材料要点", "desc": "★ 只看\"有没有《流程表》\"这一件东西，不评它写得对不对——那是 04 的事", "pend": null, "sub": null}, "parts/读回现状/flowtable.md::02c": {"title": "02c 读回现状（只读）", "subject": "脚本", "executor": "clarify.py", "input": "已有流程表", "basis": "`⚠` / `⚠?` 的分拣口径（`references/flowtable-spec.md` §2）", "output": "推断项与未决项清单", "up": "02b", "time": null, "route": "→请用户当场纠正", "desc": "报出哪些是 AI 推断、哪些还没定；**只读不写**——它不改表，也不替 06 算 frontier", "pend": null, "sub": null}, "parts/读回现状/flowtable.md::02d": {"title": "02d 复述材料要点", "subject": "AI", "executor": "AI", "input": "原始材料", "basis": null, "output": "要点复述", "up": "02b", "time": null, "route": "→请用户当场纠正", "desc": "没有表就把材料要点复述一遍：复述是**给用户挑错用的**，不是摘要", "pend": null, "sub": null}, "parts/读回现状/flowtable.md::02e": {"title": "02e 请用户当场纠正", "subject": "用户", "executor": "用户", "input": "推断项与未决项 或 要点复述", "basis": null, "output": "纠正后的口径", "up": "02c、02d", "time": null, "route": "→口径已对齐", "desc": "**已问过并已定的不重复问**——\"还剩哪些要问\"由 06 独家算，这里只把现状摆出来", "pend": null, "sub": null}, "parts/读回现状/flowtable.md::02f": {"title": "02f 口径已对齐", "subject": "AI", "executor": "AI", "input": "纠正后的口径", "basis": null, "output": "对齐后的口径", "up": "02e", "time": null, "route": "—", "desc": "首轮无表直接往下不算空转：先看清现状，再动笔", "pend": null, "sub": null}, "parts/落表/flowtable.md::03a": {"title": "03a 读列规范", "subject": "AI", "executor": "AI", "input": "模板与列规范", "basis": "字段登记表（`references/flowtable-spec.md` §2）", "output": "十二列的填写口径", "up": null, "time": null, "route": "→提骨架", "desc": "先看列规范再动笔；`init.py` 已把两份模板放进 `output/\u003c名称\u003e/`", "pend": null, "sub": null}, "parts/落表/flowtable.md::03b": {"title": "03b 提骨架", "subject": "AI", "executor": "AI", "input": "材料要点", "basis": "插入编号 · 类型登记表（`references/flowtable-spec.md` §2）", "output": "阶段 / 编号 / 名称 / 类型", "up": "03a", "time": null, "route": "→提四支箭头", "desc": "先立骨架后填肉：骨架错了，后面每一列都要重搬", "pend": null, "sub": null}, "parts/落表/flowtable.md::03c": {"title": "03c 提四支箭头", "subject": "AI", "executor": "AI", "input": "材料要点", "basis": "ICOM：被消耗或改变 = 输入，只决定能不能做 = 依据（`references/flowtable-spec.md` §2）", "output": "输入 / 依据 / 输出 / 执行主体与执行者", "up": "03b", "time": null, "route": "→还有填不满的列吗？", "desc": "一个节点 = 一个盒子 + 四支箭头；判据只有一句：**它被消耗或改变了吗**", "pend": null, "sub": null}, "parts/落表/flowtable.md::03d": {"title": "03d 还有填不满的列吗？", "subject": "AI", "executor": "AI", "input": "十二列草稿", "basis": "列填不满 = 流程没说清（`SKILL.md` 落表段）", "output": "有 / 没有", "up": "03c", "time": null, "route": "有→提问并附候选\n没有→十二列齐，交校验", "desc": "缺口不是\"我没查到\"，是**材料没说**——它正是该问用户的地方", "pend": null, "sub": null}, "parts/落表/flowtable.md::03e": {"title": "03e 提问并附候选", "subject": "AI", "executor": "AI", "input": "缺口清单", "basis": null, "output": "用户答复", "up": "03d", "time": null, "route": "→逐列落笔", "desc": "★ **这里问的是\"列填不满\"（缺输入 / 缺主体 / 缺依据），不是 07 的 `⚠?` 裁决**：07 问的是\"两条路都说得通、要业务方拍板\"，答复一律回 01 重走一圈；本表问完就地补上", "pend": null, "sub": null}, "parts/落表/flowtable.md::03f": {"title": "03f 逐列落笔", "subject": "AI", "executor": "AI", "input": "用户答复 + 草稿", "basis": "三类标记（`★` / `⚠` / `⊞`）写进描述列（`references/flowtable-spec.md` §2）", "output": "十二列流程表", "up": "03e", "time": null, "route": "→十二列齐，交校验", "desc": "★ 每问附候选答案，用户只需否决；写不出处就打 `⚠`，**不要在这里编**", "pend": null, "sub": null}, "parts/落表/flowtable.md::03g": {"title": "03g 十二列齐，交校验", "subject": "AI", "executor": "AI", "input": "十二列流程表", "basis": null, "output": "可校验的流程表", "up": "03d、03f", "time": null, "route": "—", "desc": "**全流程唯一的语义落笔点**：校验不通过、用户答复、图上的语义改动、表被直改，最后都回到这里改表", "pend": null, "sub": null}, "parts/结构校验/flowtable.md::04a": {"title": "04a 读流程表十二列", "subject": "脚本", "executor": "table_to_dsl.py", "input": "流程表文件", "basis": "字段登记表（`references/flowtable-spec.md` §2）的列名与列序", "output": "解析后的行", "up": null, "time": null, "route": "→节点层校验", "desc": "★ 列名或列序不对直接报 H9——列是按位置读的，串列不会自己报错", "pend": null, "sub": null}, "parts/结构校验/flowtable.md::04b": {"title": "04b 节点层校验", "subject": "脚本", "executor": "table_to_dsl.py", "input": "解析后的行", "basis": "H2 编号 · H7 语义（`references/flowtable-spec.md` §3）", "output": "节点列表 + 硬错误", "up": "04a", "time": null, "route": "→类型层校验", "desc": "只看这一行自己：编号非空且唯一（01 / 01a，`10aa` 拦下）、名称与执行主体非空、节点类型属四种之一", "pend": null, "sub": null}, "parts/结构校验/flowtable.md::04c": {"title": "04c 类型层校验", "subject": "脚本", "executor": "table_to_dsl.py", "input": "节点列表", "basis": "H1 起止 · H4 分支 · H5 出边（`references/flowtable-spec.md` §3）", "output": "类型层结论", "up": "04b", "time": null, "route": "→关系层校验", "desc": "四种类型各查各的：开始 ≥1、结束不许有出边、判断必须 ≥2 个带标签分支（《类型登记表》见 `flowtable-spec` §2）", "pend": null, "sub": null}, "parts/结构校验/flowtable.md::04d": {"title": "04d 关系层校验", "subject": "脚本", "executor": "table_to_dsl.py", "input": "节点列表 + 边", "basis": "H3 引用 · H6 回路 · H8 连通（`references/flowtable-spec.md` §3）", "output": "关系层结论", "up": "04c", "time": null, "route": "→有硬错误？", "desc": "整张图一起看：引用存在、无孤儿、无死胡同、结束可达、回路不共线反向", "pend": null, "sub": null}, "parts/结构校验/flowtable.md::04e": {"title": "04e 有硬错误？", "subject": "脚本", "executor": "table_to_dsl.py", "input": "三层结论", "basis": "硬错误与软提示的二分（`references/flowtable-spec.md` §3）", "output": "有 / 没有", "up": "04d", "time": null, "route": "有→逐条报出并 exit 1\n没有→通过，放行渲染", "desc": "只数硬错误：软提示不算，别拿提示堵住流程", "pend": null, "sub": null}, "parts/结构校验/flowtable.md::04f": {"title": "04f 逐条报出并 exit 1", "subject": "脚本", "executor": "table_to_dsl.py", "input": "硬错误清单", "basis": null, "output": "逐条报错（含 `subject` / `fix`）", "up": "04e", "time": null, "route": "—", "desc": "报清第几行第几列错在哪，改完重跑", "pend": null, "sub": null}, "parts/结构校验/flowtable.md::04g": {"title": "04g 通过，放行渲染", "subject": "脚本", "executor": "table_to_dsl.py", "input": "三层结论", "basis": null, "output": "放行信号", "up": "04e", "time": null, "route": "—", "desc": "校验只保证结构合法，不保证业务对——业务对不对靠 ⚠ 留痕", "pend": null, "sub": null}, "parts/回看出处/flowtable.md::05a": {"title": "05a 开始逐行回看", "subject": "AI", "executor": "AI", "input": "十二列流程表", "basis": null, "output": null, "up": null, "time": null, "route": "→这一条来自材料吗？", "desc": "逐行过、不跳行：漏掉的那一行，就是将来被客户挑出来的那一行", "pend": null, "sub": null}, "parts/回看出处/flowtable.md::05b": {"title": "05b 这一条来自材料吗？", "subject": "AI", "executor": "AI", "input": "一行内容", "basis": "「依据」与 `⚠` 的分工（`references/flowtable-spec.md` §2）", "output": "有出处 / 按常理补 / 推不出", "up": "05a、05f", "time": null, "route": "有→照写材料原话\n常理→标 ⚠ 并写明依据\n推不出→标 ⚠? 待拍板", "desc": "三档不是程度差别，是**来源差别**：材料说的、AI 补的、没人能定的", "pend": null, "sub": null}, "parts/回看出处/flowtable.md::05c": {"title": "05c 照写材料原话", "subject": "AI", "executor": "AI", "input": "材料原文", "basis": null, "output": "保留原话的该行", "up": "05b", "time": null, "route": "→还有下一行吗？", "desc": "有出处就照写，**不要顺手改写措辞**——改过的措辞再也指不回原文", "pend": null, "sub": null}, "parts/回看出处/flowtable.md::05d": {"title": "05d 标 ⚠ 并写明依据", "subject": "AI", "executor": "AI", "input": "AI 补的内容", "basis": "`⚠` = 有依据的推断（`references/flowtable-spec.md` §2）", "output": "带 `⚠` 的描述", "up": "05b", "time": null, "route": "→还有下一行吗？", "desc": "★ 橙 + 疏虚线；悬浮框首行说明\"此处为 AI 推断，原文未载明\"", "pend": null, "sub": null}, "parts/回看出处/flowtable.md::05e": {"title": "05e 标 ⚠? 待拍板", "subject": "AI", "executor": "AI", "input": "AI 推不出的内容", "basis": "`⚠?` = 必须业务方拍板（`references/flowtable-spec.md` §2）", "output": "带 `⚠?` 的描述", "up": "05b", "time": null, "route": "→还有下一行吗？", "desc": "★ 红 + 密虚线，与 `⚠` 一眼分得开；**不同选法后果不同**的才配这一档", "pend": null, "sub": null}, "parts/回看出处/flowtable.md::05f": {"title": "05f 还有下一行吗？", "subject": "AI", "executor": "AI", "input": "已回看的行", "basis": null, "output": "有 / 没有", "up": "05c、05d、05e", "time": null, "route": "有→回 这一条来自材料吗？\n没有→判断节点的依据单独再过一遍", "desc": "一次只判一行；**打标不阻断**，标完照常往下", "pend": null, "sub": null}, "parts/回看出处/flowtable.md::05g": {"title": "05g 判断节点的依据单独再过一遍", "subject": "AI", "executor": "AI", "input": "全表的判断节点", "basis": "判断节点的「依据」= 分支标签背后那条判据（`references/flowtable-spec.md` §2）", "output": "补全的依据", "up": "05f", "time": null, "route": "→打标完毕，交 06", "desc": "全表最该被追问的一处：每个分支标签背后都要有一条能复述的判据", "pend": null, "sub": null}, "parts/回看出处/flowtable.md::05h": {"title": "05h 打标完毕，交 06", "subject": "AI", "executor": "AI", "input": "带留痕的流程表", "basis": null, "output": "带留痕的流程表", "up": "05g", "time": null, "route": "—", "desc": "仍未决的照常往下走：由 06 报出、由 12 如实交付", "pend": null, "sub": null}, "parts/渲染/flowtable.md::08a": {"title": "08a build.py 入口", "subject": "脚本", "executor": "build.py", "input": "流程表路径 + 选项", "basis": "六环定义（`references/visual-spec.md` §4.1）", "output": "六环编排", "up": null, "time": null, "route": "→结构校验", "desc": "一条命令跑完六环，任一环不过即还原", "pend": null, "sub": null}, "parts/渲染/flowtable.md::08b": {"title": "08b 结构校验", "subject": "脚本", "executor": "table_to_dsl.py", "input": "流程表", "basis": "H1–H8 + 表头 H9", "output": "`\u003c流程名\u003e-flow.yaml` 与契约", "up": "08a", "time": null, "route": "→生成 DSL", "desc": "硬错误阻断，不进下一环", "pend": null, "sub": null}, "parts/渲染/flowtable.md::08c": {"title": "08c 生成 DSL", "subject": "脚本", "executor": "table_to_dsl.py", "input": "流程表 + 布局提示", "basis": "`references/dsl-spec.md` 的字段定义", "output": "`\u003c流程名\u003e-flow.yaml`", "up": "08b", "time": null, "route": "→八项碰撞检测", "desc": "十二列 → flow.yaml，含布局模式与几何字段", "pend": null, "sub": null}, "parts/渲染/flowtable.md::08d": {"title": "08d 八项碰撞检测", "subject": "脚本", "executor": "validate.py", "input": "`\u003c流程名\u003e-flow.yaml`", "basis": "八项碰撞检测判据（`references/visual-spec.md` §4.1）", "output": "几何结论", "up": "08c", "time": null, "route": "→出首版产物", "desc": "节点重叠 / 线穿节点 / 标签压线 / 走廊冲突 / 端口没接上…", "pend": null, "sub": null}, "parts/渲染/flowtable.md::08e": {"title": "08e 出首版产物", "subject": "脚本", "executor": "render_html.py ｜ render_drawio.py ｜ render_svg.py", "input": "`\u003c流程名\u003e-flow.yaml`", "basis": "渲染器注册表", "output": "三份产物（html / drawio / svg）", "up": "08d", "time": null, "route": "→产物审核", "desc": "同一份 DSL 出三种视图：html 评审语义（单文件内嵌子图）/ drawio 微调几何 / svg 朴素中间态", "pend": null, "sub": null}, "parts/渲染/flowtable.md::08f": {"title": "08f 产物审核", "subject": "脚本", "executor": "manifest.py", "input": "产物 + 渲染契约", "basis": "契约反查节点 / 边集合", "output": "审核结论", "up": "08e", "time": null, "route": "→几何自检", "desc": "拿 flow.manifest.json 契约反查产物：渲染丢了什么必须被查出来", "pend": null, "sub": null}, "parts/渲染/flowtable.md::08g": {"title": "08g 几何自检", "subject": "脚本", "executor": "build.py", "input": "三份产物", "basis": "产物侧九项判据（`references/visual-spec.md` §4.1）", "output": "几何复核结论", "up": "08f", "time": null, "route": "→六环全过？", "desc": "从产物真实坐标反解端点；前两关与渲染器共用 router，这关另立视角", "pend": null, "sub": null}, "parts/渲染/flowtable.md::08h": {"title": "08h 六环全过？", "subject": "脚本", "executor": "build.py", "input": "六环各自的结论", "basis": "任一环不过即退出", "output": "过 / 不过", "up": "08g", "time": null, "route": "过→落盘交付\n不过→还原产物并 exit 1", "desc": "任一环不过即退出，不做\"先交付再补\"", "pend": null, "sub": null}, "parts/渲染/flowtable.md::08i": {"title": "08i 落盘交付", "subject": "脚本", "executor": "build.py", "input": "六环全过的结论", "basis": null, "output": "三份产物 + sha256 回执", "up": "08h", "time": null, "route": "—", "desc": "交出去的每一份产物都审过", "pend": null, "sub": null}, "parts/渲染/flowtable.md::08j": {"title": "08j 还原产物并 exit 1", "subject": "脚本", "executor": "build.py", "input": "上一版产物", "basis": "不留没审过的交付物", "output": "还原后的盘面", "up": "08h", "time": null, "route": "—", "desc": "★ 不留没审过的交付物；同目录 .bak 可比对上一版", "pend": null, "sub": null}, "parts/视觉自检/flowtable.md::09a": {"title": "09a 截图", "subject": "脚本", "executor": "shot.py", "input": "`\u003c流程名\u003e-flow.html`", "basis": "截图规则（`SKILL.md` 看段）", "output": "位图（自检中间物，非交付物）", "up": null, "time": null, "route": "→看交叉\n→看标签\n→看走向", "desc": "全图或 `--crop 0:1200` 只看一段；三样一起看，不分先后", "pend": null, "sub": null}, "parts/视觉自检/flowtable.md::09b": {"title": "09b 看交叉", "subject": "AI", "executor": "AI", "input": "位图", "basis": "交叉是否多到**影响追踪**", "output": "交叉结论", "up": "09a", "time": null, "route": "→有问题吗？", "desc": "判据是\"影响追踪\"，不是\"有几处交叉\"——两处交叉卡在主干上也是缺陷", "pend": null, "sub": null}, "parts/视觉自检/flowtable.md::09c": {"title": "09c 看标签", "subject": "AI", "executor": "AI", "input": "位图", "basis": "标签是否居中压线", "output": "标签结论", "up": "09a", "time": null, "route": "→有问题吗？", "desc": "压线可以（徽章白底压线是本 SKILL 的画法），**压节点**不行", "pend": null, "sub": null}, "parts/视觉自检/flowtable.md::09d": {"title": "09d 看走向", "subject": "AI", "executor": "AI", "input": "位图", "basis": "分支走向是否反直觉", "output": "走向结论", "up": "09a", "time": null, "route": "→有问题吗？", "desc": "反直觉的典型：回环画在了右边、并排分支从右往左倒着走", "pend": null, "sub": null}, "parts/视觉自检/flowtable.md::09e": {"title": "09e 有问题吗？", "subject": "AI", "executor": "AI", "input": "三样结论", "basis": "三样里任一不过（`SKILL.md` 看段）", "output": "有 / 没有", "up": "09b、09c、09d", "time": null, "route": "有→先查标签是否过长\n没有→通过，交 10", "desc": "由 AI **看着核对**：这一关没有脚本判据，所以才必须由人来判", "pend": null, "sub": null}, "parts/视觉自检/flowtable.md::09f": {"title": "09f 先查标签是否过长", "subject": "AI", "executor": "AI", "input": "问题清单", "basis": "标签过长（\u003e 6 字）先改流程表（`references/flowtable-spec.md` §2 分支标签）", "output": "归因结论", "up": "09e", "time": null, "route": "→调几何（不手改端口）", "desc": "先怀疑语义：多数\"标签压线 / 线交叉\"是标签太长挤出来的，改几何是治标", "pend": null, "sub": null}, "parts/视觉自检/flowtable.md::09g": {"title": "09g 调几何（不手改端口）", "subject": "AI", "executor": "AI", "input": "归因结论", "basis": "一次只改一个诊断项；一轮无改善即停（`SKILL.md` 看段）", "output": "调过几何的 `\u003c流程名\u003e-flow.yaml`", "up": "09f", "time": null, "route": "→回 08 重出图", "desc": "★ \"只有线没箭头\"= 端口朝向与走向矛盾：**把手写的 `gutter`/`channel`/`gapx` 删掉**让 router 重规划，别手工改端口", "pend": null, "sub": null}, "parts/视觉自检/flowtable.md::09h": {"title": "09h 通过，交 10", "subject": "AI", "executor": "AI", "input": "三样结论", "basis": null, "output": "视觉自检结论", "up": "09e", "time": null, "route": "—", "desc": "质量门禁只管几何，好不好看必须看图", "pend": null, "sub": null}, "parts/视觉自检/flowtable.md::09i": {"title": "09i 回 08 重出图", "subject": "AI", "executor": "AI", "input": "归因结论 + 调过的几何", "basis": null, "output": "待重渲染的几何改动", "up": "09g", "time": null, "route": "—", "desc": "本表终点；\"回 08\"是**主表**的走向——几何改动要经 08 重渲染，再走一遍本表", "pend": null, "sub": null}, "parts/同步回写/flowtable.md::11a": {"title": "11a 读回 drawio", "subject": "脚本", "executor": "xml_reader.py", "input": "drawio 文件", "basis": "外部图的读回规则（`references/import-existing.md` §1）", "output": "节点 / 边 / 几何", "up": null, "time": null, "route": "→与流程表比差异", "desc": "用户在图上可以自由编辑，读回时不做限制：**能读回的只有名称、形状、连线与坐标**——语义属性图里一个都不写（见 `references/visual-spec.md` §1），所以读不回也不该读回", "pend": null, "sub": null}, "parts/同步回写/flowtable.md::11b": {"title": "11b 与流程表比差异", "subject": "脚本", "executor": "sync.py", "input": "图 + 流程表", "basis": "差异四分类（增删节点 / 关系变化 / 文字变化 / 坐标位移）", "output": "差异清单", "up": "11a", "time": null, "route": "→「下个节点」冲突？", "desc": "差异分四类：**增删节点**、**关系变化**、**文字变化**（名称 / 类型 / 标签）、**坐标位移**。前三类是语义，只有第四类是几何；**四类都空就是图上什么都没动**（主表据此直接交付）；判据是 `(标签, 目标)` 配对——没碰过的分支，回写后一字不差", "pend": null, "sub": null}, "parts/同步回写/flowtable.md::11c": {"title": "11c 「下个节点」冲突？", "subject": "脚本", "executor": "sync.py", "input": "差异清单", "basis": "`(标签, 目标)` 配对——表说 A、图说 B", "output": "有 / 没有", "up": "11b", "time": null, "route": "有→拦下并回报\n没有→回写流程表", "desc": "★ 表说某条分支去 A、图里却去 B：这是方向性冲突，不是正常增删，不能静默覆盖", "pend": null, "sub": null}, "parts/同步回写/flowtable.md::11d": {"title": "11d 拦下并回报", "subject": "脚本", "executor": "sync.py", "input": "冲突清单", "basis": null, "output": "拦截报告（退出码 1）", "up": "11c", "time": null, "route": "—", "desc": "退出码 1，流程表不动；哪边对由主表 03 裁决——表对就重跑 08 让图跟上，图对就回 03 把表改对", "pend": null, "sub": null}, "parts/同步回写/flowtable.md::11e": {"title": "11e 回写流程表", "subject": "脚本", "executor": "sync.py", "input": "差异清单 + 原表", "basis": "最小差异原则（原文一致的分支逐字回填）", "output": "更新后的流程表", "up": "11c", "time": null, "route": "—", "desc": "语义（名称 / 类型 / 标签 / 走向 / 输入 / 依据 / 输出）的落点是流程表，写回完毕即本表终点；\"接下来往哪走\"是主表的判断（都没变→交付 ｜ 改了语义→回 03 重落表 ｜ 只动几何→回 08 重布局）。几何只落进 DSL，交回算法定终值", "pend": null, "sub": null}};
+var tooltip = document.getElementById('nodeTooltip');
+var ttTitle = document.getElementById('ttTitle');
+var ttSub = document.getElementById('ttSub');
+var ttContent = document.getElementById('ttContent');
+var headmod = document.getElementById('headmod');
+var HEAD_BOTTOM = 0;
+function fitHead() {
+  var h = headmod.offsetHeight;
+  document.body.style.paddingTop = (h + 20) + 'px';   // 正文让出标题模块的位置，避免被盖住
+  HEAD_BOTTOM = h + 12;
+}
+fitHead();
+window.addEventListener('resize', fitHead);
+// 视窗位置记忆（见 D-48）：下钻进子图再返回，视窗要回到**离开时的位置**。
+// 大图看到一半点进去、回来被扔回左上角，等于把人正在盯的上下文抹掉——
+// 这比不做下钻还累：功能是"按需展开"，不是"每次重新找路"。
+// 存 sessionStorage（同一标签页有效，关掉即忘），键带上本页路径，主图与每张子图各记各的。
+// 初始键必须**带主视图后缀**：`showView()` 切走时会把键换成带视图 key 的（见 D-52），
+// 主视图的位置从此写进 `#__main__` 那个键。这里若不带后缀，页面刷新后初始键与它不同名，
+// 主视图就读回不到自己最后停的地方——"返回时视窗停在你离开时的位置"对主图失效。
+// 两个滚动层都记：`body` 是实际的滚动层（画布多高容器就多高，撑着整页滚），
+// `.chart-container` 现在不滚，但容器高度一旦改成视窗高就会变成滚动层——两个都存，不必回头改。
+var SCROLL_KEY = 'fc-scroll:' + location.pathname + '#__main__';
+var _cc = document.querySelector('.chart-container');
+function _snap() {
+  return { x: window.scrollX || document.documentElement.scrollLeft || 0,
+           y: window.scrollY || document.documentElement.scrollTop || 0,
+           cl: _cc ? _cc.scrollLeft : 0, ct: _cc ? _cc.scrollTop : 0 };
+}
+function saveScroll() {
+  try { sessionStorage.setItem(SCROLL_KEY, JSON.stringify(_snap())); } catch (e) {}
+}
+function restoreScroll() {
+  var raw = null;
+  try { raw = sessionStorage.getItem(SCROLL_KEY); } catch (e) {}
+  if (!raw) return;
+  var p; try { p = JSON.parse(raw); } catch (e) { return; }
+  if (_cc) { _cc.scrollLeft = p.cl || 0; _cc.scrollTop = p.ct || 0; }
+  window.scrollTo(p.x || 0, p.y || 0);
+}
+// 必须在 fitHead() 之后：它要按标题模块实测高度回填 body.paddingTop，
+// 布局没定就滚，滚到的位置是错的。字体加载完还会再抖一次，故 load 时补一次。
+restoreScroll();
+window.addEventListener('load', restoreScroll);
+var _st = null;
+function _onScroll() {
+  clearTimeout(_st); _st = setTimeout(saveScroll, 200);   // 节流，滚动中别狂写
+}
+window.addEventListener('scroll', _onScroll);
+// `scroll` 事件**不冒泡**，所以容器内部滚动不会冒到 window 上——必须单独挂一个。
+// 现在容器不滚（多高就多高），挂了也不写脏数据；哪天容器改成视窗高，这条就是现成的。
+if (_cc) _cc.addEventListener('scroll', _onScroll);
+window.addEventListener('beforeunload', saveScroll);      // 点进子图/走面包屑都会触发
+function positionTip(g) {
+  var r = g.getBoundingClientRect();
+  var left = r.right + 12, top = r.top;
+  if (left + tooltip.offsetWidth > window.innerWidth) left = r.left - tooltip.offsetWidth - 12;
+  if (top + tooltip.offsetHeight > window.innerHeight) top = window.innerHeight - tooltip.offsetHeight - 10;
+  if (top < HEAD_BOTTOM) top = HEAD_BOTTOM;
+  tooltip.style.left = left + 'px';
+  tooltip.style.top = top + 'px';
+}
+document.querySelectorAll('.ndg').forEach(function(g) {
+  g.addEventListener('mouseenter', function() {
+    var d = TIPS[g.dataset.id];
+    if (!d) return;
+    ttTitle.innerText = d.title;
+    // "这里能点"只在**真的内嵌了子图**的节点上说（`d.sub` 就是那个判据，见 D-80）：
+    // 描述里声明了子表、但那张表拿不到 DSL 的节点不画内衬线、不给入口，也就不该说这句话。
+    ttSub.innerText = d.sub ? '（点击查看流程详情）' : '';
+    var parts = [];
+    if (d.pend) parts.push('⚠ ' + d.pend);
+    parts.push('执行主体：' + d.subject, '执行者：' + d.executor);
+    if (d.input) parts.push('输入：' + d.input);
+    if (d.basis) parts.push('依据：' + d.basis);
+    if (d.output) parts.push('输出：' + d.output);
+    if (d.time) parts.push('行动所需时间：' + d.time);
+    parts.push('下个节点：' + (d.route.indexOf('\n') >= 0 ? '\n' + d.route : d.route));
+    parts.push('节点描述：' + d.desc);
+    if (d.sub) parts.push('Ctrl/⌘+点击：在新窗口打开（保留主图上下文便于对照）');
+    ttContent.innerText = parts.join('\n');
+    tooltip.style.display = 'block';
+    positionTip(g);
+  });
+  g.addEventListener('mousemove', function() { positionTip(g); });
+  g.addEventListener('mouseleave', function() { tooltip.style.display = 'none'; });
+  // 子流程下钻（见 D-47）：单击跳转、Ctrl/⌘+点击新标签页（保留主图上下文便于对照）。
+  // 没有 data-sub 的节点不绑行为——不弹窗、不报错，就是"点了没反应"。
+  g.addEventListener('click', function(ev) {
+    var d = TIPS[g.dataset.id];
+    if (!d || !d.sub) return;
+    if (ev.ctrlKey || ev.metaKey) window.open(location.href.split('#')[0] + '#' + encodeURIComponent(d.sub), '_blank');
+    else go(d.sub);
+  });
+});
+/* 悬停：**只加不减**。悬停节点 → 与它相连的主干边在**悬停期间循环**跑流光，鼠标离开即停。
+   相关边**不加粗**（见 D-80）：边上那道流光已经在回答"哪儿相关"，加粗是同一个意思说第二遍。
+   **不压暗任何东西**（见 D-76）：压暗会把别的节点上的 ⚠ 描边、主体配色、执行者小字一起抹掉——
+   那是删信息；而"哪些是相关的"已经有加法记号，不必再来一遍减法。 */
+(function () {
+  // **对每个 svg 分别接线**：单文件里可能内嵌多个子视图（D-52 下钻，主图 + 若干子图各一个 <svg>），
+  // 抓某一个 id 只会给主图接线、子图点了没反应；而且这些 <svg> 本来就没有 id 属性，
+  // getElementById 会返回 null，整个函数静默退出（第一版就是这么"看起来没反应"的）。
+  function wire(svg) {
+  var edges = [].slice.call(svg.querySelectorAll('path.edge'));
+  var flows = [].slice.call(svg.querySelectorAll('path.edge-flow'));
+  // 流光只给实线（主干）边生成，所以按出现顺序与实线边一一配对，不能按下标硬取。
+  var flowOf = [], fi = 0;
+  edges.forEach(function (e) {
+    flowOf.push(e.getAttribute('stroke-dasharray') ? null : (flows[fi++] || null));
+  });
+  function clear() {
+    flows.forEach(function (f) { f.classList.remove('is-run'); });
+  }
+  function focus(id) {
+    if (!id) return;
+    clear();
+    edges.forEach(function (e, i) {
+      var a = e.getAttribute('data-from'), b = e.getAttribute('data-to');
+      if (a !== id && b !== id) return;
+      var f = flowOf[i];
+      if (f) f.classList.add('is-run');     // 循环由 CSS 的 infinite 承担，这里只开关
+    });
+  }
+  [].forEach.call(svg.querySelectorAll('g.ndg'), function (g) {
+    /* 悬停配对用 **`data-nid`（DSL 的原始节点编号）**，与边的 `data-from/to` 同口径（见 D-90）：
+       `data-id` 是 TIPS 的键、子视图里带 `视图key::` 前缀（防跨表重号），拿它去比 `data-from`
+       永远不相等——子视图于是"悬停什么也不亮"（用户报的"流光效果没有"）。
+       主视图没有前缀、两者取值相同，所以这个 bug 只在子视图里显形。 */
+    g.addEventListener('mouseenter', function () { focus(g.getAttribute('data-nid')); });
+    g.addEventListener('mouseleave', clear);
+  });
+  }
+  [].forEach.call(document.querySelectorAll('svg'), wire);
+})();
+
+/* 单文件多视图（见 D-52）：子图**内嵌在本文件里**，下钻 = 切视图，不再跳页。
+   发给客户的就是这一个文件，整个层级都在里面，不依赖子目录里的任何 html。 */
+var _views = [].slice.call(document.querySelectorAll('.view'));
+var byKey = {};
+_views.forEach(function(v){ byKey[v.dataset.view] = v; });
+var _h1 = headmod ? headmod.querySelector('h1') : null;
+var _crumbs = document.getElementById('crumbs');
+var _baseCrumb = _crumbs ? _crumbs.innerHTML : '';
+var _trail = ['__main__'];
+function _esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function _ensureCrumbs(){
+  if (_crumbs) return _crumbs;
+  /* 顶层主图没有"回程路"，HTML 里不必先摆一个空条——等真下钻了再建，
+     建的时候补上 has-crumbs，让标题模块让位（两个都是 fixed，重叠就谁也看不见）。 */
+  _crumbs = document.createElement('div');
+  _crumbs.id = 'crumbs'; _crumbs.className = 'crumbs';
+  document.body.insertBefore(_crumbs, document.body.firstChild);
+  if (headmod) headmod.classList.add('has-crumbs');
+  _crumbs.addEventListener('click', function(ev){
+    var el = ev.target;
+    while (el && el !== _crumbs) {
+      var g = el.getAttribute && el.getAttribute('data-go');
+      if (g) { go(g); return; }
+      el = el.parentNode;
+    }                                /* 服务端给的"返回父图"链接没有 data-go：走浏览器默认行为 */
+  });
+  return _crumbs;
+}
+var _trail = ['__main__'];
+function vhash(k){ return '#' + encodeURIComponent(k === '__main__' ? 'main' : k); }
+function keyOfHash(){
+  var h = location.hash.replace(/^#/, '');
+  if (!h || h === 'main') return '__main__';
+  try { h = decodeURIComponent(h); } catch (e) {}
+  return byKey[h] ? h : '__main__';
+}
+function _crumbsHtml(){
+  var out = _baseCrumb, n = _trail.length;
+  if (!out && n <= 1) { if (_crumbs) _crumbs.style.display = 'none'; return; }
+  var el = _ensureCrumbs();
+  el.style.display = '';
+  _trail.forEach(function(k, i){
+    var v = byKey[k]; if (!v) return;
+    var nm = _esc(v.dataset.title || k);
+    if (i > 0 || out) out += '<span class="sep"> \u203a </span>';
+    out += (i === n - 1) ? '<span class="here">' + nm + '</span>'
+                         : '<a href="javascript:void 0" data-go="' + _esc(k) + '">' + nm + '</a>';
+  });
+  el.innerHTML = out;
+}
+function showView(key, setHash){
+  var v = byKey[key]; if (!v) return;
+  saveScroll();                      /* 先存"离开的这一层"——此时 SCROLL_KEY 还是它的 */
+  _views.forEach(function(x){ x.classList.toggle('cur', x === v); });
+  if (_h1) _h1.innerText = v.dataset.title || '';
+  /* 每层各记各的视窗位置：单文件里 location.pathname 不再区分层级，键必须带上视图 key */
+  SCROLL_KEY = 'fc-scroll:' + location.pathname + '#' + key;
+  _crumbsHtml();
+  fitHead();                         /* 换了视图，标题可能换行变高，body 顶部留白要重算 */
+  restoreScroll();
+  if (setHash && location.hash !== vhash(key)) location.hash = vhash(key);
+}
+function go(key){
+  if (!byKey[key]) return;
+  var i = _trail.indexOf(key);
+  if (i >= 0) _trail = _trail.slice(0, i + 1); else _trail.push(key);
+  showView(key, true);
+}
+window.addEventListener('hashchange', function(){
+  var k = keyOfHash();
+  if (k === _trail[_trail.length - 1]) return;
+  _trail = (k === '__main__') ? ['__main__'] : ['__main__', k];
+  showView(k, false);
+});
+_crumbsHtml();
+(function(){ var k = keyOfHash(); if (k !== '__main__') { _trail = ['__main__', k]; showView(k, false); } })();
+</script>
+</body>
+</html>

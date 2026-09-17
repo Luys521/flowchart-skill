@@ -1,0 +1,21 @@
+{
+  "files": {
+    "scripts/alpha.py": {
+      "lines": "18",
+      "doc": "夹具模块 alpha（100% 覆盖用例）",
+      "functions": [
+        {"name": "do_thing", "qualname": "do_thing", "kind": "function", "lineno": 3, "endlineno": 5},
+        {"name": "Alpha", "qualname": "Alpha", "kind": "class", "lineno": 7, "endlineno": 12},
+        {"name": "run", "qualname": "Alpha.run", "kind": "method", "lineno": 8, "endlineno": 10},
+        {"name": "main_block", "qualname": "main_block", "kind": "function", "lineno": 15, "endlineno": 16}
+      ]
+    },
+    "scripts/beta.py": {
+      "lines": "6",
+      "doc": "夹具模块 beta（100% 覆盖用例）",
+      "functions": [
+        {"name": "helper", "qualname": "helper", "kind": "function", "lineno": 2, "endlineno": 4}
+      ]
+    }
+  }
+}

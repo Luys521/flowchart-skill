@@ -1,0 +1,24 @@
+{
+  "files": {
+    "scripts/alpha.py": {
+      "lines": "20",
+      "doc": "夹具模块 alpha",
+      "functions": [
+        {"name": "do_thing", "qualname": "do_thing", "kind": "function", "lineno": 3, "endlineno": 5},
+        {"name": "Alpha", "qualname": "Alpha", "kind": "class", "lineno": 7, "endlineno": 12},
+        {"name": "run", "qualname": "Alpha.run", "kind": "method", "lineno": 8, "endlineno": 10},
+        {"name": "gone", "qualname": "gone", "kind": "function", "lineno": 14, "endlineno": 15},
+        {"name": "_parse_args", "qualname": "_parse_args", "kind": "function", "lineno": 17, "endlineno": 18}
+      ]
+    },
+    "scripts/beta.py": {
+      "lines": "12",
+      "doc": "夹具模块 beta",
+      "functions": [
+        {"name": "helper", "qualname": "helper", "kind": "function", "lineno": 2, "endlineno": 4},
+        {"name": "shared_util", "qualname": "shared_util", "kind": "function", "lineno": 6, "endlineno": 9},
+        {"name": "_parse_args", "qualname": "_parse_args", "kind": "function", "lineno": 11, "endlineno": 12}
+      ]
+    }
+  }
+}

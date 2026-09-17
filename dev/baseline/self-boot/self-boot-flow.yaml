@@ -1,0 +1,458 @@
+meta:
+  title: self-boot — 模块索引
+  subjects:
+    脚本:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  width: 680
+  origin_x: -60
+nodes:
+- id: '01'
+  name: 开始
+  lines:
+  - 开始
+  type: start
+  subject: 脚本
+  executor: selfboot
+  row: 0
+  col: 0
+  stage: 入口
+  route: →02
+  desc: 模块清单（结构性节点，不是函数）
+- id: '02'
+  name: 模块 · artifact
+  lines:
+  - 模块 · artifact
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 1
+  col: 0
+  stage: 接管与解析
+  route: →03
+  desc: 2 个函数 · ⊞ artifact/flowtable.md
+- id: '03'
+  name: 模块 · build
+  lines:
+  - 模块 · build
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: 编排入口
+  route: →04
+  desc: 25 个函数 · ⊞ build/flowtable.md
+- id: '04'
+  name: 模块 · clarify
+  lines:
+  - 模块 · clarify
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: 编排入口
+  route: →05
+  desc: 14 个函数 · ⊞ clarify/flowtable.md
+- id: '05'
+  name: 模块 · engine
+  lines:
+  - 模块 · engine
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 4
+  col: 0
+  stage: 渲染
+  route: →06
+  desc: 26 个函数 · ⊞ engine/flowtable.md
+- id: '06'
+  name: 模块 · flowtable
+  lines:
+  - 模块 · flowtable
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 5
+  col: 0
+  stage: 接管与解析
+  route: →07
+  desc: 27 个函数 · ⊞ flowtable/flowtable.md
+- id: '07'
+  name: 模块 · flowtable_check
+  lines:
+  - 模块 · flowtable_check
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 6
+  col: 0
+  stage: 结构校验
+  route: →08
+  desc: 29 个函数 · ⊞ flowtable_check/flowtable.md
+- id: 08
+  name: 模块 · flowtable_colors
+  lines:
+  - 模块 · flowtable_colors
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 7
+  col: 0
+  stage: 布局与配色
+  route: →09
+  desc: 8 个函数 · ⊞ flowtable_colors/flowtable.md
+- id: 09
+  name: 模块 · flowtable_layout
+  lines:
+  - 模块 · flowtable_layout
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 8
+  col: 0
+  stage: 布局与配色
+  route: →10
+  desc: 21 个函数 · ⊞ flowtable_layout/flowtable.md
+- id: '10'
+  name: 模块 · geometry
+  lines:
+  - 模块 · geometry
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 9
+  col: 0
+  stage: 渲染
+  route: →11
+  desc: 33 个函数 · ⊞ geometry/flowtable.md
+- id: '11'
+  name: 模块 · init
+  lines:
+  - 模块 · init
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 10
+  col: 0
+  stage: 编排入口
+  route: →12
+  desc: 4 个函数 · ⊞ init/flowtable.md
+- id: '12'
+  name: 模块 · label
+  lines:
+  - 模块 · label
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 11
+  col: 0
+  stage: 渲染
+  route: →13
+  desc: 9 个函数 · ⊞ label/flowtable.md
+- id: '13'
+  name: 模块 · lane_router
+  lines:
+  - 模块 · lane_router
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 12
+  col: 0
+  stage: 渲染
+  route: →14
+  desc: 35 个函数 · ⊞ lane_router/flowtable.md
+- id: '14'
+  name: 模块 · layer_index
+  lines:
+  - 模块 · layer_index
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 13
+  col: 0
+  stage: 层级索引
+  route: →15
+  desc: 9 个函数 · ⊞ layer_index/flowtable.md
+- id: '15'
+  name: 模块 · manifest
+  lines:
+  - 模块 · manifest
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 14
+  col: 0
+  stage: 产物审核
+  route: →16
+  desc: 29 个函数 · ⊞ manifest/flowtable.md
+- id: '16'
+  name: 模块 · render_drawio
+  lines:
+  - 模块 · render_drawio
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 15
+  col: 0
+  stage: 渲染
+  route: →17
+  desc: 24 个函数 · ⊞ render_drawio/flowtable.md
+- id: '17'
+  name: 模块 · render_html
+  lines:
+  - 模块 · render_html
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 16
+  col: 0
+  stage: 渲染
+  route: →18
+  desc: 23 个函数 · ⊞ render_html/flowtable.md
+- id: '18'
+  name: 模块 · render_svg
+  lines:
+  - 模块 · render_svg
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 17
+  col: 0
+  stage: 渲染
+  route: →19
+  desc: 11 个函数 · ⊞ render_svg/flowtable.md
+- id: '19'
+  name: 模块 · router
+  lines:
+  - 模块 · router
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 18
+  col: 0
+  stage: 渲染
+  route: →20
+  desc: 30 个函数 · ⊞ router/flowtable.md
+- id: '20'
+  name: 模块 · semantics
+  lines:
+  - 模块 · semantics
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 19
+  col: 0
+  stage: 接管与解析
+  route: →21
+  desc: 17 个函数 · ⊞ semantics/flowtable.md
+- id: '21'
+  name: 模块 · shot
+  lines:
+  - 模块 · shot
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 20
+  col: 0
+  stage: 编排入口
+  route: →22
+  desc: 8 个函数 · ⊞ shot/flowtable.md
+- id: '22'
+  name: 模块 · swimlane
+  lines:
+  - 模块 · swimlane
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 21
+  col: 0
+  stage: 渲染
+  route: →23
+  desc: 19 个函数 · ⊞ swimlane/flowtable.md
+- id: '23'
+  name: 模块 · sync
+  lines:
+  - 模块 · sync
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 22
+  col: 0
+  stage: 同步闭环
+  route: →24
+  desc: 10 个函数 · ⊞ sync/flowtable.md
+- id: '24'
+  name: 模块 · table_to_dsl
+  lines:
+  - 模块 · table_to_dsl
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 23
+  col: 0
+  stage: DSL 装配
+  route: →25
+  desc: 14 个函数 · ⊞ table_to_dsl/flowtable.md
+- id: '25'
+  name: 模块 · validate
+  lines:
+  - 模块 · validate
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 24
+  col: 0
+  stage: 产物审核
+  route: →26
+  desc: 39 个函数 · ⊞ validate/flowtable.md
+- id: '26'
+  name: 模块 · writeback
+  lines:
+  - 模块 · writeback
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 25
+  col: 0
+  stage: 同步闭环
+  route: →27
+  desc: 21 个函数 · ⊞ writeback/flowtable.md
+- id: '27'
+  name: 模块 · xml_reader
+  lines:
+  - 模块 · xml_reader
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 26
+  col: 0
+  stage: 同步闭环
+  route: →28
+  desc: 40 个函数 · ⊞ xml_reader/flowtable.md
+- id: '28'
+  name: 结束
+  lines:
+  - 结束
+  type: end
+  subject: 脚本
+  executor: selfboot
+  row: 27
+  col: 0
+  stage: 出口
+  route: —
+  desc: 流程终点（结构性节点，不是函数）
+edges:
+- from: '01'
+  to: '02'
+  kind: spine
+  polarity: main
+- from: '02'
+  to: '03'
+  kind: spine
+  polarity: main
+- from: '03'
+  to: '04'
+  kind: spine
+  polarity: main
+- from: '04'
+  to: '05'
+  kind: spine
+  polarity: main
+- from: '05'
+  to: '06'
+  kind: spine
+  polarity: main
+- from: '06'
+  to: '07'
+  kind: spine
+  polarity: main
+- from: '07'
+  to: 08
+  kind: spine
+  polarity: main
+- from: 08
+  to: 09
+  kind: spine
+  polarity: main
+- from: 09
+  to: '10'
+  kind: spine
+  polarity: main
+- from: '10'
+  to: '11'
+  kind: spine
+  polarity: main
+- from: '11'
+  to: '12'
+  kind: spine
+  polarity: main
+- from: '12'
+  to: '13'
+  kind: spine
+  polarity: main
+- from: '13'
+  to: '14'
+  kind: spine
+  polarity: main
+- from: '14'
+  to: '15'
+  kind: spine
+  polarity: main
+- from: '15'
+  to: '16'
+  kind: spine
+  polarity: main
+- from: '16'
+  to: '17'
+  kind: spine
+  polarity: main
+- from: '17'
+  to: '18'
+  kind: spine
+  polarity: main
+- from: '18'
+  to: '19'
+  kind: spine
+  polarity: main
+- from: '19'
+  to: '20'
+  kind: spine
+  polarity: main
+- from: '20'
+  to: '21'
+  kind: spine
+  polarity: main
+- from: '21'
+  to: '22'
+  kind: spine
+  polarity: main
+- from: '22'
+  to: '23'
+  kind: spine
+  polarity: main
+- from: '23'
+  to: '24'
+  kind: spine
+  polarity: main
+- from: '24'
+  to: '25'
+  kind: spine
+  polarity: main
+- from: '25'
+  to: '26'
+  kind: spine
+  polarity: main
+- from: '26'
+  to: '27'
+  kind: spine
+  polarity: main
+- from: '27'
+  to: '28'
+  kind: spine
+  polarity: main

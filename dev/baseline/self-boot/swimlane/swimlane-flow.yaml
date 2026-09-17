@@ -1,0 +1,436 @@
+meta:
+  title: swimlane.py 函数流程表
+  subjects:
+    脚本:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  width: 1360
+  origin_x: -160
+nodes:
+- id: '01'
+  name: 开始
+  lines:
+  - 开始
+  type: start
+  subject: 脚本
+  executor: selfboot
+  row: 0
+  col: 0
+  stage: 入口
+  route: 1→03｜2→14｜3→15｜4→16｜5→17｜6→18｜7→19｜8→20
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→SwimGrid.__init__ 2→SwimGrid.set_head_band 3→SwimGrid.Y
+    4→SwimGrid.MID 5→SwimGrid.height 6→SwimGrid.legend_rect 7→SwimGrid.rect 8→SwimGrid.lanes
+- id: '02'
+  name: _align_half
+  lines:
+  - _align_half
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 4
+  col: 0
+  stage: 模块级
+  route: →21
+  desc: ★ 向上取到「≡ unit/2 (mod unit·2)」的最小值（unit=20 → 20/60/100…）。 · L11 · 函数 · ⇢ 依赖
+    geometry.ceil_to
+- id: '03'
+  name: SwimGrid.__init__
+  lines:
+  - SwimGrid.__init__
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 1
+  col: 0
+  stage: SwimGrid
+  route: 1→04｜2→05｜3→06｜4→07｜5→08｜6→09｜7→10｜8→13
+  desc: ★ 建泳道栅格：读配置 → 吸附尺寸 → 定行列预算 → 算列宽与坐标 → 铺行名/泳道名。 · L24 · 方法 · 分支：1→SwimGrid._read_configs
+    2→SwimGrid._fit_sizes 3→SwimGrid._collect_cells 4→SwimGrid._solve_col_widths 5→SwimGrid._solve_row_heights
+    6→SwimGrid._solve_col_positions 7→SwimGrid._assign_lane_names 8→SwimGrid._build_rows
+- id: '04'
+  name: SwimGrid._read_configs
+  lines:
+  - SwimGrid._read_configs
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: SwimGrid
+  route: →02
+  desc: ★ 读网格刻度与泳道参数（`grid` 段 + 顶层 `lane:` 段），定下与尺寸无关的配置字段。 · L37 · 方法 · ⇢ 依赖 geometry.snap
+- id: '05'
+  name: SwimGrid._fit_sizes
+  lines:
+  - SwimGrid._fit_sizes
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 5
+  col: 0
+  stage: SwimGrid
+  route: →21
+  desc: ★ 把每个形状的宽高向上吸附到细格，并记录改动提示。 · L73 · 方法 · ⇢ 依赖 geometry.ceil_to
+- id: '06'
+  name: SwimGrid._collect_cells
+  lines:
+  - SwimGrid._collect_cells
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 6
+  col: 0
+  stage: SwimGrid
+  route: →21
+  desc: ★ 按 (行,列) 归集节点 id，并定出行数、列数与最大行号。 · L84 · 方法
+- id: '07'
+  name: SwimGrid._solve_col_widths
+  lines:
+  - SwimGrid._solve_col_widths
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 7
+  col: 0
+  stage: SwimGrid
+  route: →21
+  desc: ★ 每列宽取该列最宽节点 + 左右各 pad，向上吸细格。 · L97 · 方法 · ⇢ 依赖 geometry.ceil_to
+- id: 08
+  name: SwimGrid._solve_row_heights
+  lines:
+  - SwimGrid._solve_row_heights
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: SwimGrid
+  route: 1→02｜2→11
+  desc: ★ 每行高：槽位模式等距 pitch，阶段行模式按该行最厚摞 + 上下 vpad 取半格余数。 · L108 · 方法 · 分支：1→_align_half
+    2→SwimGrid._stack_h
+- id: 09
+  name: SwimGrid._solve_col_positions
+  lines:
+  - SwimGrid._solve_col_positions
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 8
+  col: 0
+  stage: SwimGrid
+  route: →21
+  desc: ★ 从阶段带右侧起逐列推列中心 x，画布宽取整列宽之和与下限 400 的较大者。 · L124 · 方法 · ⇢ 依赖 geometry.ceil_to、geometry.snap
+- id: '10'
+  name: SwimGrid._assign_lane_names
+  lines:
+  - SwimGrid._assign_lane_names
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 9
+  col: 0
+  stage: SwimGrid
+  route: →21
+  desc: ★ 按显式列序先铺一遍空泳道名，再由节点覆盖成行阶段名与列主体名。 · L134 · 方法
+- id: '11'
+  name: SwimGrid._stack_h
+  lines:
+  - SwimGrid._stack_h
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 12
+  col: 0
+  stage: SwimGrid
+  route: →21
+  desc: L146 · 方法
+- id: '12'
+  name: SwimGrid._snap_unit
+  lines:
+  - SwimGrid._snap_unit
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 13
+  col: 0
+  stage: SwimGrid
+  route: →21
+  desc: ★ 该格摞顶对哪一级刻度负责：含矩形类节点 → 粗格（四边守粗格）；全是非矩形 → 细格。 · L149 · 方法
+- id: '13'
+  name: SwimGrid._build_rows
+  lines:
+  - SwimGrid._build_rows
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 11
+  col: 0
+  stage: SwimGrid
+  route: 1→11｜2→12
+  desc: ★ 按标题带 + 表头带 + 逐行高重算各行顶边 y（切换标题带后调用），并预算各格的**摞顶**。 · L162 · 方法 · 分支：1→SwimGrid._stack_h
+    2→SwimGrid._snap_unit · ⇢ 依赖 geometry.snap
+- id: '14'
+  name: SwimGrid.set_head_band
+  lines:
+  - SwimGrid.set_head_band
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 10
+  col: 0
+  stage: SwimGrid
+  route: →13
+  desc: ★ 开关画布顶部的标题带（同 `geometry.Grid.set_head_band`）。 · L197 · 方法 · ⇢ 依赖 geometry.snap
+- id: '15'
+  name: SwimGrid.Y
+  lines:
+  - SwimGrid.Y
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 14
+  col: 0
+  stage: SwimGrid
+  route: →21
+  desc: L203 · 方法
+- id: '16'
+  name: SwimGrid.MID
+  lines:
+  - SwimGrid.MID
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 15
+  col: 0
+  stage: SwimGrid
+  route: →21
+  desc: ★ 阶段行的参考 y（行垂直中心）。泳道下一行有多个节点，此值只作兜底。 · L206 · 方法
+- id: '17'
+  name: SwimGrid.height
+  lines:
+  - SwimGrid.height
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 16
+  col: 0
+  stage: SwimGrid
+  route: →21
+  desc: L210 · 方法 · ⇢ 依赖 geometry.ceil_to
+- id: '18'
+  name: SwimGrid.legend_rect
+  lines:
+  - SwimGrid.legend_rect
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 17
+  col: 0
+  stage: SwimGrid
+  route: →21
+  desc: L213 · 方法
+- id: '19'
+  name: SwimGrid.rect
+  lines:
+  - SwimGrid.rect
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 18
+  col: 0
+  stage: SwimGrid
+  route: →21
+  desc: L216 · 方法
+- id: '20'
+  name: SwimGrid.lanes
+  lines:
+  - SwimGrid.lanes
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 19
+  col: 0
+  stage: SwimGrid
+  route: →21
+  desc: ★ 泳道背景信息。流程模式的 `Grid` **没有**这个方法——渲染器据此判断该画哪种背景。 · L234 · 方法
+- id: '21'
+  name: 结束
+  lines:
+  - 结束
+  type: end
+  subject: 脚本
+  executor: selfboot
+  row: 20
+  col: 0
+  stage: 出口
+  route: —
+  desc: 流程终点（结构性节点，不是函数）
+edges:
+- from: '01'
+  to: '03'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '01'
+  to: '14'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '01'
+  to: '15'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '01'
+  to: '16'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '01'
+  to: '17'
+  kind: jumpR
+  polarity: main
+  label: '5'
+- from: '01'
+  to: '18'
+  kind: jumpR
+  polarity: main
+  label: '6'
+- from: '01'
+  to: '19'
+  kind: jumpR
+  polarity: main
+  label: '7'
+- from: '01'
+  to: '20'
+  kind: jumpR
+  polarity: main
+  label: '8'
+- from: '02'
+  to: '21'
+  kind: jumpR
+  polarity: main
+- from: '03'
+  to: '04'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '03'
+  to: '05'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '03'
+  to: '06'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '03'
+  to: '07'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '03'
+  to: 08
+  kind: spine
+  polarity: main
+  label: '5'
+- from: '03'
+  to: 09
+  kind: jumpR
+  polarity: main
+  label: '6'
+- from: '03'
+  to: '10'
+  kind: jumpR
+  polarity: main
+  label: '7'
+- from: '03'
+  to: '13'
+  kind: jumpR
+  polarity: main
+  label: '8'
+- from: '04'
+  to: '02'
+  kind: spine
+  polarity: main
+- from: '05'
+  to: '21'
+  kind: jumpR
+  polarity: main
+- from: '06'
+  to: '21'
+  kind: jumpR
+  polarity: main
+- from: '07'
+  to: '21'
+  kind: jumpR
+  polarity: main
+- from: 08
+  to: '02'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: 08
+  to: '11'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: 09
+  to: '21'
+  kind: jumpR
+  polarity: main
+- from: '10'
+  to: '21'
+  kind: jumpR
+  polarity: main
+- from: '11'
+  to: '21'
+  kind: jumpR
+  polarity: main
+- from: '12'
+  to: '21'
+  kind: jumpR
+  polarity: main
+- from: '13'
+  to: '11'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '13'
+  to: '12'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '14'
+  to: '13'
+  kind: spine
+  polarity: main
+- from: '15'
+  to: '21'
+  kind: jumpR
+  polarity: main
+- from: '16'
+  to: '21'
+  kind: jumpR
+  polarity: main
+- from: '17'
+  to: '21'
+  kind: jumpR
+  polarity: main
+- from: '18'
+  to: '21'
+  kind: jumpR
+  polarity: main
+- from: '19'
+  to: '21'
+  kind: jumpR
+  polarity: main
+- from: '20'
+  to: '21'
+  kind: spine
+  polarity: main

@@ -1,0 +1,54 @@
+{
+ "title": "读回现状：开工先看清手上有什么",
+ "layout": "flow",
+ "source": "flowtable.md",
+ "dsl_sha256": "8b52ad502c658b33",
+ "source_sha256": "f1a7077775b43408",
+ "counts": {
+  "nodes": 6,
+  "edges": 6,
+  "by_type": {
+   "decision": 1,
+   "end": 1,
+   "start": 1,
+   "task": 3
+  },
+  "labeled_edges": 2,
+  "loop_edges": 0,
+  "pending_nodes": 0
+ },
+ "node_ids": [
+  "02a",
+  "02b",
+  "02c",
+  "02d",
+  "02e",
+  "02f"
+ ],
+ "edges": [
+  [
+   "02a",
+   "02b"
+  ],
+  [
+   "02b",
+   "02c"
+  ],
+  [
+   "02b",
+   "02d"
+  ],
+  [
+   "02c",
+   "02e"
+  ],
+  [
+   "02d",
+   "02e"
+  ],
+  [
+   "02e",
+   "02f"
+  ]
+ ]
+}

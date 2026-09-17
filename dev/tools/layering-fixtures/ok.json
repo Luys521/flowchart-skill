@@ -1,0 +1,16 @@
+{
+  "_comment": "反向控制夹具 · 全合法：模块层→公共层、公共层↔公共层。期望 exit 0。",
+  "files": {
+    "scripts/manifest.py": {},
+    "scripts/render_html.py": {}
+  },
+  "imports": {
+    "scripts/render_html.py": {
+      "manifest": ["MAIN_VIEW"],
+      "semantics": ["is_pending"]
+    },
+    "scripts/manifest.py": {
+      "xml_reader": ["read"]
+    }
+  }
+}

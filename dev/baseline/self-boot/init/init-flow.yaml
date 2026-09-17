@@ -1,0 +1,118 @@
+meta:
+  title: init.py 函数流程表
+  subjects:
+    脚本:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  width: 700
+  origin_x: -240
+nodes:
+- id: '01'
+  name: 开始
+  lines:
+  - 开始
+  type: start
+  subject: 脚本
+  executor: selfboot
+  row: 0
+  col: 0
+  stage: 入口
+  route: 1→05
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→main
+- id: '02'
+  name: _reject_conflict
+  lines:
+  - _reject_conflict
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: 模块级
+  route: →06
+  desc: ★ target 被同名文件或非空目录占用时打印原因并返回 True。 · L16 · 函数
+- id: '03'
+  name: _copy_templates
+  lines:
+  - _copy_templates
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: 模块级
+  route: →06
+  desc: ★ 把两份模板复制进 target；模板缺失即返回 False（调用方退 1）。 · L31 · 函数
+- id: '04'
+  name: _print_summary
+  lines:
+  - _print_summary
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 4
+  col: 0
+  stage: 模块级
+  route: →06
+  desc: ★ 打印初始化结果与下一步指引。 · L48 · 函数
+- id: '05'
+  name: main
+  lines:
+  - main
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 1
+  col: 0
+  stage: 模块级
+  route: 1→02｜2→03｜3→04
+  desc: L56 · 函数 · 分支：1→_reject_conflict 2→_copy_templates 3→_print_summary
+- id: '06'
+  name: 结束
+  lines:
+  - 结束
+  type: end
+  subject: 脚本
+  executor: selfboot
+  row: 5
+  col: 0
+  stage: 出口
+  route: —
+  desc: 流程终点（结构性节点，不是函数）
+edges:
+- from: '01'
+  to: '05'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '02'
+  to: '06'
+  kind: jumpR
+  polarity: main
+- from: '03'
+  to: '06'
+  kind: jumpR
+  polarity: main
+- from: '04'
+  to: '06'
+  kind: spine
+  polarity: main
+- from: '05'
+  to: '02'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '05'
+  to: '03'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '05'
+  to: '04'
+  kind: jumpR
+  polarity: main
+  label: '3'

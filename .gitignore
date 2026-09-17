@@ -1,0 +1,41 @@
+# 生成物与运行时产物——不进版本库。
+#
+# 判据：**只列本仓库自己生成的派生量**。
+# 夹具（dev/tools/*-fixtures/）、样例事实源（examples/workflow/）、references/、
+# **基线（dev/baseline/）** 都是一手内容，绝不在列——尤其基线，它是"产物逐字节不变"
+# 这条安全网的比对基准，丢了它就没人守得住渲染器改动。
+
+# ① 字节码缓存：`dev/verify/run.py` 靠 sys.dont_write_bytecode 自己不长这个，
+#    但按文档直接跑 `scripts/build.py` 会（实测），所以必须挡住。
+__pycache__/
+*.py[cod]
+
+# ② 出图产物目录：`scripts/init.py` 建、`build.py` 写。里面是**用户的**流程产物，不是仓库内容。
+#    `dev/verify/contract.py` 的文档扫描同样跳过它——扫它等于让产物反过来决定套件的红绿。
+output/
+
+# ②b **但两者的完整渲染结果进库**：`dev/baseline/` 是 examples 与自举树的同构镜像，
+#     放着"审过的那一版"产物（安全网的比对基准）与代码地图的完整出图成果。
+#     那是给人看的标准展示——见 D-66 与 selfboot_gen.py 的收口说明。
+
+# ③ 验证现场：`dev/verify/run.py` 全过自动删，有失败才保留（保留时正是最不该提交的时候）。
+.verify_tmp/
+
+# ③b 验收现场：`dev/tools/accept.py` 的默认基准目录（它下面还给各道门再建子目录）。
+#     为什么落在仓库内而不是系统临时目录——见 accept.py 的 `_pinned_scratch`。
+.accept_tmp/
+
+# ④ 函数依赖图快照：`dev/tools/fn_graph.py` 的产物，**是快照、代码改了要重跑**。
+#    换机器/换目录后本来就不存在，`dev/tools/accept.py` 里有一道门专门判它并给出重跑命令。
+dev/tools/fn-graph.json
+dev/tools/fn-graph.md
+dev/tools/fn-groups.json
+dev/tools/fn-deps.json
+
+# ⑤ 点开头的备份：`build.py` 覆盖产物前留的 `.flow.<ext>.bak`（见 SKILL.md 防呆）。
+#    与 `dev/tools/README.md` 的整树口径一致——本仓点开头文件一律是备份/元信息。
+.flow.*.bak
+.*.bak
+
+# ⑥ 迁移期归档：搬迁前的整仓快照（D-66）。核对无误后整个删掉，那一行也就没用了。
+old/

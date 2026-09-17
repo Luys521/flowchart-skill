@@ -1,0 +1,378 @@
+meta:
+  title: semantics.py 函数流程表
+  subjects:
+    脚本:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  width: 1200
+  origin_x: -180
+nodes:
+- id: '01'
+  name: 开始
+  lines:
+  - 开始
+  type: start
+  subject: 脚本
+  executor: selfboot
+  row: 0
+  col: 0
+  stage: 入口
+  route: 1→02｜2→03｜3→04｜4→05｜5→07｜6→09｜7→12｜8→13｜9→14｜10→15｜11→17｜12→18
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→Finding.__new__ 2→findings_receipt 3→split_table_row
+    4→arrow_markers 5→has_ambiguous_sep 6→pending_style 7→subflow_target 8→is_pending
+    9→text_width 10→Syntax.__init__ 11→Syntax.route_text 12→Syntax.node_lines
+- id: '02'
+  name: Finding.__new__
+  lines:
+  - Finding.__new__
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 1
+  col: 0
+  stage: Finding
+  route: →19
+  desc: L24 · 方法
+- id: '03'
+  name: findings_receipt
+  lines:
+  - findings_receipt
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: 模块级
+  route: →19
+  desc: ★ 报错/提示列表 → 结构化回执（纯 dict 列表，供 --json 输出）。 · L31 · 函数
+- id: '04'
+  name: split_table_row
+  lines:
+  - split_table_row
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: 模块级
+  route: →19
+  desc: ★ markdown 表格行 → 单元格列表。 · L76 · 函数
+- id: '05'
+  name: arrow_markers
+  lines:
+  - arrow_markers
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 4
+  col: 0
+  stage: 模块级
+  route: →19
+  desc: ★ 箭头 marker 串（SVG 的 `<defs>` 内容）——html 与 svg 两份产物共用一份（见 D-89）。 · L87 · 函数
+- id: '06'
+  name: split_branches
+  lines:
+  - split_branches
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 15
+  col: 0
+  stage: 模块级
+  route: →19
+  desc: ★ 「下个节点」列 → 出口文本列表（只认 `｜`，兼容 `<br>` 与真换行——见 flowtable-spec §2… · L110 · 函数
+- id: '07'
+  name: has_ambiguous_sep
+  lines:
+  - has_ambiguous_sep
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 5
+  col: 0
+  stage: 模块级
+  route: →19
+  desc: ★ 「下个节点」列里，把分号当成了分隔符用（`通过→05；不通过→06`）。 · L116 · 函数
+- id: 08
+  name: pending_kind
+  lines:
+  - pending_kind
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 11
+  col: 0
+  stage: 模块级
+  route: →19
+  desc: ★ 节点描述的标记 → None / 'inferred' / 'verdict'（判据与收敛条件见 D-46、flowt… · L124 · 函数
+- id: 09
+  name: pending_style
+  lines:
+  - pending_style
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 6
+  col: 0
+  stage: 模块级
+  route: →08
+  desc: ★ 节点描述 → 留痕外观 `{'stroke', 'dash', 'note'}`；不是 `⚠` 开头则返回 `{}`。 · L143 · 函数
+- id: '10'
+  name: _normalize_subflow_path
+  lines:
+  - _normalize_subflow_path
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 9
+  col: 0
+  stage: 模块级
+  route: →19
+  desc: ★ 子表相对路径规范化：越界（绝对路径 / 逃出目录）一律返回 None。 · L162 · 函数
+- id: '11'
+  name: subflow_ref
+  lines:
+  - subflow_ref
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 8
+  col: 0
+  stage: 模块级
+  route: →10
+  desc: ★ 节点描述 → 子表相对路径（无则 None）。见 D-47。 · L182 · 函数
+- id: '12'
+  name: subflow_target
+  lines:
+  - subflow_target
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 7
+  col: 0
+  stage: 模块级
+  route: →11
+  desc: ★ 节点描述 → **子表流程表**的相对路径（无则 None）。见 D-47 / D-51。 · L213 · 函数
+- id: '13'
+  name: is_pending
+  lines:
+  - is_pending
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 10
+  col: 0
+  stage: 模块级
+  route: →08
+  desc: ★ 节点描述**以 ⚠ 开头**（含 `⚠?`）= 留痕节点，渲染时必须画虚线（约定见 flowtable-spec §2… · L230 · 函数
+- id: '14'
+  name: text_width
+  lines:
+  - text_width
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 12
+  col: 0
+  stage: 模块级
+  route: →19
+  desc: ★ 文本宽度估算：CJK/带圈数字按全角宽，其余按半角宽（SVG 无自动排版，必须自己推进 x）。 · L240 · 函数
+- id: '15'
+  name: Syntax.__init__
+  lines:
+  - Syntax.__init__
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 13
+  col: 0
+  stage: Syntax
+  route: →19
+  desc: L247 · 方法
+- id: '16'
+  name: Syntax.route_names
+  lines:
+  - Syntax.route_names
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 16
+  col: 0
+  stage: Syntax
+  route: →19
+  desc: ★ 路由文本：节点编号→节点名（仅替换 →/回 引导的编号，避开 30日、10MW 等） · L250 · 方法
+- id: '17'
+  name: Syntax.route_text
+  lines:
+  - Syntax.route_text
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 14
+  col: 0
+  stage: Syntax
+  route: 1→06｜2→16
+  desc: ★ 路由文本：编号→名称，多个出口换成真正的换行。 · L257 · 方法 · 分支：1→split_branches 2→Syntax.route_names
+- id: '18'
+  name: Syntax.node_lines
+  lines:
+  - Syntax.node_lines
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 17
+  col: 0
+  stage: Syntax
+  route: →19
+  desc: ★ 节点显示行：判断节点只放名称；其余 名称行+执行者+行动所需时间(可选) · L266 · 方法
+- id: '19'
+  name: 结束
+  lines:
+  - 结束
+  type: end
+  subject: 脚本
+  executor: selfboot
+  row: 18
+  col: 0
+  stage: 出口
+  route: —
+  desc: 流程终点（结构性节点，不是函数）
+edges:
+- from: '01'
+  to: '02'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '01'
+  to: '03'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '01'
+  to: '04'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '01'
+  to: '05'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '01'
+  to: '07'
+  kind: jumpR
+  polarity: main
+  label: '5'
+- from: '01'
+  to: 09
+  kind: jumpR
+  polarity: main
+  label: '6'
+- from: '01'
+  to: '12'
+  kind: jumpR
+  polarity: main
+  label: '7'
+- from: '01'
+  to: '13'
+  kind: jumpR
+  polarity: main
+  label: '8'
+- from: '01'
+  to: '14'
+  kind: jumpR
+  polarity: main
+  label: '9'
+- from: '01'
+  to: '15'
+  kind: jumpR
+  polarity: main
+  label: '10'
+- from: '01'
+  to: '17'
+  kind: jumpR
+  polarity: main
+  label: '11'
+- from: '01'
+  to: '18'
+  kind: jumpR
+  polarity: main
+  label: '12'
+- from: '02'
+  to: '19'
+  kind: jumpR
+  polarity: main
+- from: '03'
+  to: '19'
+  kind: jumpR
+  polarity: main
+- from: '04'
+  to: '19'
+  kind: jumpR
+  polarity: main
+- from: '05'
+  to: '19'
+  kind: jumpR
+  polarity: main
+- from: '06'
+  to: '19'
+  kind: jumpR
+  polarity: main
+- from: '07'
+  to: '19'
+  kind: jumpR
+  polarity: main
+- from: 08
+  to: '19'
+  kind: jumpR
+  polarity: main
+- from: 09
+  to: 08
+  kind: jumpR
+  polarity: main
+- from: '10'
+  to: '19'
+  kind: jumpR
+  polarity: main
+- from: '11'
+  to: '10'
+  kind: spine
+  polarity: main
+- from: '12'
+  to: '11'
+  kind: spine
+  polarity: main
+- from: '13'
+  to: 08
+  kind: spine
+  polarity: main
+- from: '14'
+  to: '19'
+  kind: jumpR
+  polarity: main
+- from: '15'
+  to: '19'
+  kind: jumpR
+  polarity: main
+- from: '16'
+  to: '19'
+  kind: jumpR
+  polarity: main
+- from: '17'
+  to: '06'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '17'
+  to: '16'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '18'
+  to: '19'
+  kind: spine
+  polarity: main

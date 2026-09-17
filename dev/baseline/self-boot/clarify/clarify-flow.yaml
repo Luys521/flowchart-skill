@@ -1,0 +1,318 @@
+meta:
+  title: clarify.py 函数流程表
+  subjects:
+    脚本:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  width: 920
+  origin_x: -80
+nodes:
+- id: '01'
+  name: 开始
+  lines:
+  - 开始
+  type: start
+  subject: 脚本
+  executor: selfboot
+  row: 0
+  col: 0
+  stage: 入口
+  route: 1→14
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→main
+- id: '02'
+  name: load_nodes
+  lines:
+  - load_nodes
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 4
+  col: 0
+  stage: 模块级
+  route: →16
+  desc: ★ 流程表 → (title, nodes)。表有硬错误时抛 ValueError。 · L30 · 函数 · ⇢ 依赖 flowtable.parse_table、flowtable_check.check_nodes
+- id: '03'
+  name: pending
+  lines:
+  - pending
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: 模块级
+  route: →16
+  desc: '★ 节点列表 → {''inferred'': [...], ''verdict'': [...]}。 · L45 · 函数 · ⇢ 依赖 semantics.pending_kind'
+- id: '04'
+  name: _verdict_graph
+  lines:
+  - _verdict_graph
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 7
+  col: 0
+  stage: 模块级
+  route: →16
+  desc: ★ 待裁决节点之间的依赖图 → (verdict 集合, 前驱表, 环内节点集合)。 · L59 · 函数 · ⇢ 依赖 semantics.pending_kind
+- id: '05'
+  name: frontier
+  lines:
+  - frontier
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 6
+  col: 0
+  stage: 模块级
+  route: 1→04｜2→15
+  desc: ★ 当前可问的 `⚠?` 节点 id 列表（有序，按表序）。 · L95 · 函数 · 分支：1→_verdict_graph 2→frontier.ring_why
+- id: '06'
+  name: hidden
+  lines:
+  - hidden
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 5
+  col: 0
+  stage: 模块级
+  route: →05
+  desc: ★ 因上游未决而**暂时问不了**的 `⚠?` 节点 id（有序）。 · L138 · 函数 · ⇢ 依赖 semantics.pending_kind
+- id: '07'
+  name: brief
+  lines:
+  - brief
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: 模块级
+  route: 1→03｜2→04｜3→05｜4→06
+  desc: ★ 汇总：分类计数 + frontier + 暂时问不了的。纯数据，打印与 --json 共用。 · L151 · 函数 · 分支：1→pending
+    2→_verdict_graph 3→frontier 4→hidden
+- id: 08
+  name: _add_inferred
+  lines:
+  - _add_inferred
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 10
+  col: 0
+  stage: 模块级
+  route: →16
+  desc: ★ 追加「AI 推断」分节（有依据、无需提问的一类）。 · L177 · 函数
+- id: 09
+  name: _add_verdict_head
+  lines:
+  - _add_verdict_head
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 11
+  col: 0
+  stage: 模块级
+  route: →16
+  desc: ★ 追加「待你裁决」总账行（环内项单算，不并入"等上游"）。 · L185 · 函数
+- id: '10'
+  name: _add_frontier
+  lines:
+  - _add_frontier
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 12
+  col: 0
+  stage: 模块级
+  route: →16
+  desc: ★ 追加当前 frontier 及每项的走向、材料现状。 · L199 · 函数
+- id: '11'
+  name: _add_waiting
+  lines:
+  - _add_waiting
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 13
+  col: 0
+  stage: 模块级
+  route: →16
+  desc: ★ 追加「暂时问不了」两栏：等上游 / 环内互为前驱互相等待。 · L210 · 函数
+- id: '12'
+  name: render
+  lines:
+  - render
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 9
+  col: 0
+  stage: 模块级
+  route: 1→08｜2→09｜3→10｜4→11
+  desc: ★ 简报 → 人可读文本。**只报状态，不下结论**——"已收敛"不等于"已把关"（见 D-02）。 · L228 · 函数 · 分支：1→_add_inferred
+    2→_add_verdict_head 3→_add_frontier 4→_add_waiting
+- id: '13'
+  name: _emit_report
+  lines:
+  - _emit_report
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 8
+  col: 0
+  stage: 模块级
+  route: →12
+  desc: ★ 按 --json 或人可读两种口径打印简报。 · L251 · 函数
+- id: '14'
+  name: main
+  lines:
+  - main
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 1
+  col: 0
+  stage: 模块级
+  route: 1→02｜2→07｜3→13
+  desc: L261 · 函数 · 分支：1→load_nodes 2→brief 3→_emit_report · ⇢ 依赖 flowtable.build_edges
+- id: '15'
+  name: frontier.ring_why
+  lines:
+  - frontier.ring_why
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 14
+  col: 0
+  stage: frontier
+  route: →16
+  desc: ★ 环内节点的阻塞说明：点名它的环内前驱，说明是互相等、不是等上游。 · L113 · 嵌套函数
+- id: '16'
+  name: 结束
+  lines:
+  - 结束
+  type: end
+  subject: 脚本
+  executor: selfboot
+  row: 15
+  col: 0
+  stage: 出口
+  route: —
+  desc: 流程终点（结构性节点，不是函数）
+edges:
+- from: '01'
+  to: '14'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '02'
+  to: '16'
+  kind: jumpR
+  polarity: main
+- from: '03'
+  to: '16'
+  kind: jumpR
+  polarity: main
+- from: '04'
+  to: '16'
+  kind: jumpR
+  polarity: main
+- from: '05'
+  to: '04'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '05'
+  to: '15'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '06'
+  to: '05'
+  kind: spine
+  polarity: main
+- from: '07'
+  to: '03'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '07'
+  to: '04'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '07'
+  to: '05'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '07'
+  to: '06'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: 08
+  to: '16'
+  kind: jumpR
+  polarity: main
+- from: 09
+  to: '16'
+  kind: jumpR
+  polarity: main
+- from: '10'
+  to: '16'
+  kind: jumpR
+  polarity: main
+- from: '11'
+  to: '16'
+  kind: jumpR
+  polarity: main
+- from: '12'
+  to: 08
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '12'
+  to: 09
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '12'
+  to: '10'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '12'
+  to: '11'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '13'
+  to: '12'
+  kind: spine
+  polarity: main
+- from: '14'
+  to: '02'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '14'
+  to: '07'
+  kind: spine
+  polarity: main
+  label: '2'
+- from: '14'
+  to: '13'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '15'
+  to: '16'
+  kind: spine
+  polarity: main

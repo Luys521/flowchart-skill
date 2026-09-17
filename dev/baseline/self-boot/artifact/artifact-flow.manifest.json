@@ -1,0 +1,39 @@
+{
+ "title": "artifact.py 函数流程表",
+ "layout": "flow",
+ "source": "flowtable.md",
+ "dsl_sha256": "e136044bdf90bd0e",
+ "source_sha256": "7d008111744ecaa0",
+ "counts": {
+  "nodes": 4,
+  "edges": 3,
+  "by_type": {
+   "end": 1,
+   "start": 1,
+   "task": 2
+  },
+  "labeled_edges": 1,
+  "loop_edges": 0,
+  "pending_nodes": 0
+ },
+ "node_ids": [
+  "01",
+  "02",
+  "03",
+  "04"
+ ],
+ "edges": [
+  [
+   "01",
+   "03"
+  ],
+  [
+   "02",
+   "04"
+  ],
+  [
+   "03",
+   "02"
+  ]
+ ]
+}

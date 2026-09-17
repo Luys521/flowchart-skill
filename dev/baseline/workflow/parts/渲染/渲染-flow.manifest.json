@@ -1,0 +1,70 @@
+{
+ "title": "渲染：一条命令跑六环",
+ "layout": "flow",
+ "source": "flowtable.md",
+ "dsl_sha256": "7cad08260c40d401",
+ "source_sha256": "e07286352cbfbcf7",
+ "counts": {
+  "nodes": 10,
+  "edges": 9,
+  "by_type": {
+   "decision": 1,
+   "end": 2,
+   "start": 1,
+   "task": 6
+  },
+  "labeled_edges": 2,
+  "loop_edges": 0,
+  "pending_nodes": 0
+ },
+ "node_ids": [
+  "08a",
+  "08b",
+  "08c",
+  "08d",
+  "08e",
+  "08f",
+  "08g",
+  "08h",
+  "08i",
+  "08j"
+ ],
+ "edges": [
+  [
+   "08a",
+   "08b"
+  ],
+  [
+   "08b",
+   "08c"
+  ],
+  [
+   "08c",
+   "08d"
+  ],
+  [
+   "08d",
+   "08e"
+  ],
+  [
+   "08e",
+   "08f"
+  ],
+  [
+   "08f",
+   "08g"
+  ],
+  [
+   "08g",
+   "08h"
+  ],
+  [
+   "08h",
+   "08i"
+  ],
+  [
+   "08h",
+   "08j"
+  ]
+ ]
+}
