@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-r"""accept.py — **验收：一条命令跑完九道门，只给一个结论**。
+r"""accept.py — **验收：一条命令跑完十道门，只给一个结论**。
 
 **为什么**：用户只做最终环节的验收。前面四件仪器各答一个问题、各有一条命令，收口时却要人把
 五六条命令按顺序跑完再自己汇总——那不叫验收，那叫"人肉 CI"。本工具把收口清单固化成一台仪器：
 `python dev/tools/accept.py` 跑完、印一份回执、用**退出码**说结论。
 
-九道门（判据**全部从被跑命令的输出里读**，不写死任何计数——写死会在下次改动后变成假绿）：
+十道门（判据**全部从被跑命令的输出里读**，不写死任何计数——写死会在下次改动后变成假绿）：
 
 | 门 | 覆盖 | 判据来源 |
 | --- | --- | --- |
@@ -13,16 +13,18 @@ r"""accept.py — **验收：一条命令跑完九道门，只给一个结论**�
 | ② 结构 | 自举树每张 `flowtable.md` 过 H1–H8 + 表头 H9 | `table_to_dsl.py --check --json` 的 `len(hard)` / `len(soft)` |
 | ③ 覆盖 | 每个函数都画进表了吗 | `coverage.py --tables-root` 的覆盖率行 + `✓/✗` 结论行 + 退出码 |
 | ④ 几何 | 每张**模块表**的几何单独过 `validate` | `validate.py <模块>-flow.yaml` 的退出码与条目数 |
-| ⑤ 出图 | 根表能不能 build 成两份产物 | `build.py` 退出码 + `⚠` 告警**分类计数** |
+| ⑤ 出图 | 根表能不能 build 成三份产物（html / drawio / svg） | `build.py` 退出码 + `⚠` 告警**分类计数** |
 | ⑥ 回执 | 这棵树是哪一版的 | 全树 `flowtable.md` 的表文本摘要（内容口径）＋ 整树摘要（去掉点开头的构建备份，产物口径） |
 | ⑦ 分层 | 依赖方向对不对 | layering.py 退出码 + 违规清单；**先查依赖图是不是旧快照**，过期直接判仪器故障 |
 | ⑧ 卫生 | scripts/*.py 的未用 import／死函数归零 | hygiene.py 退出码（0 过 / 1 有白写 / 其它=仪器故障）；**射程只有 scripts/**，见 D-88 |
+| ⑨ 审美 | 三条审美律的读数不许退化（偏心 / 绕行 / 通道半径） | `aesthetic.py` 的读数与退出码；阈值见 `references/visual-spec.md` §0.1（当前收口值，见 G12） |
+| ⑩ 等价 | 夹具自身有效 + 工作树可观测行为与底本 tag 逐字节相同 | `table_to_dsl --check` 对 `equiv-fixtures/*.md` 的期望结果；`equiv.py make-base` / `suite` 的退出码 |
 
 **门⑤在仓库外的副本上跑**：`build.py` 会往树里写 html / drawio / `.bak` / yaml。验收**不改产物**，
 所以先把树整棵复制到临时目录再 build——副本的根目录仍叫 `self-boot`，产物名（`self-boot-flow.html`
 这类，`artifact.artifact_stem` 取的是目录名）与实际交付**逐字一致**。副本目录**每次唯一**
 （`mkdtemp`），**不用"先删再建"**（撞批量删除的安全钩子会把"门全过"变成"命令报错"）；
-跑完**只报临时目录路径、不删**——退出码只由九道门决定，清理动作不参与判分（见 `main` 收尾注释）。
+跑完**只报临时目录路径、不删**——退出码只由十道门决定，清理动作不参与判分（见 `main` 收尾注释）。
 
 **门⑥是回执型门**：摘要没有阈值，它"不过"只意味着树为空或读不了。之所以并列成一道门，是因为
 收口时**必须报出**"这份结论对应哪一版树"——否则数字和树对不上账。它印**两个口径**，因为两件事
@@ -36,7 +38,7 @@ r"""accept.py — **验收：一条命令跑完九道门，只给一个结论**�
 
 | 码 | 含义 |
 | --- | --- |
-| `0` | 九道门全过 |
+| `0` | 十道门全过 |
 | `1` | 有门未过（命令跑起来了、结论是"不过"） |
 | `2` | **仪器故障**：表树不存在 / 命令起不来 / 输出解析不了（此时树是半成品或结论不可信） |
 
@@ -55,8 +57,8 @@ r"""accept.py — **验收：一条命令跑完九道门，只给一个结论**�
 必然报 100%（**假绿**）。
 
 **这台工具盖不住什么**（诚实列，别把它当"全绿就没事"）：
-- 只验**自举树 + 套件 + build**，**不验产品 CLI 的其余命令面**（`sync` / `writeback` / `clarify` /
-  `xml_reader` 等的参数组合要靠 `verify` 的套件或 `equiv` 的用例清单覆盖）；
+- 产品 CLI 的命令面由门⑩ 的用例清单（`dev/tools/equiv-cases.json`）覆盖——**清单之外**的参数组合
+  仍等于没验（加用例要动那份 JSON，见 `dev/tools/equiv-README.md`）；
 - **不重跑生成器**（那会重写 `output/self-boot/`），所以"生成器仍确定性"要靠"连跑两次比摘要"
   在**验收之外**单独做；本工具只保证"这一版的树本身自洽"；
 - 门⑤的告警账本是**手工维护**的（`BUILD_WARNINGS`，当前 13 族）：build.py **或其调用链**
@@ -82,6 +84,11 @@ from pathlib import Path
 # dev/ 是本文件的上一级——布局假设只表述一次（见 dev/_paths.py 与 D-66）
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _paths import REPO as ROOT, SCRIPTS, TOOLS, VERIFY  # noqa: E402
+
+# 底本 tag 的**唯一出处**是 api_audit.py 的 REV_DEFAULT：门⑩ 与 api_audit 必须指同一个 tag，
+# 不许在两处各写一份（写死就会漂）。
+sys.path.insert(0, str(TOOLS))
+from api_audit import REV_DEFAULT as API_BASE  # noqa: E402
 
 DEFAULT_TABLES = ROOT / 'output' / 'self-boot'
 PY = sys.executable
@@ -599,12 +606,76 @@ def gate_hygiene(g):
         g.failed('有未用 import 或没人调的模块级函数（上面点名了具体位置）')
 
 
+# ----------------------------------------------------------------门⑩ 等价
+def gate_equiv(g, scratch):
+    """门⑩：equiv 链自身健康，且工作树的可观测行为与底本 tag 逐字节相同。
+
+    **为什么它够格当一道门**：`equiv.py` 回答「我这次改动改变可观测行为了吗」，可它**自己**此前不在
+    验收路径（`coding-spec` G8/R2 记的就是这个缺口）——后果实测过：D-66 把 `tools/` 挪进 `dev/` 时，
+    `equiv-cases.json` 里 5 处夹具路径没跟着改，`suite` 每条用例都以「源文件不存在」报仪器故障；
+    4 张夹具表还停在 9 列旧表头，`--check` 全退 1 ⇒ 成功路径**全部空跑**、两侧同失败被判「相同」。
+    两次都是「没人跑它」养出来的，所以把它接进来。
+
+    **判据三件**（缺一不可）：
+      ① 夹具自身有效：`equiv-fixtures/*.md` 里三张好表过 `--check`、`broken.md` 不过。这条专防
+         「夹具过期 ⇒ 两侧同样失败 ⇒ 假绿」——`suite` 只比两侧，夹具烂了它照样报全同；
+      ② `make-base --rev <API_BASE>` 成功（没 git / tag 不存在 / 工作树读不了 → 仪器故障）；
+      ③ `suite` 退出码 0（它的合约：0 全同 / 1 有不同 / 2 仪器故障）。
+
+    **行为有意变更时怎么放行**：重钉底本 tag（`git tag -f api-base HEAD`）——与「改渲染器要重钉
+    `dev/baseline`」同一条纪律（`coding-spec` 第 23 行）。
+    """
+    fixtures = TOOLS / 'equiv-fixtures'
+    expect = [('tour.md', 0), ('lane.md', 0), ('tour-rewired.md', 0), ('broken.md', 1)]
+    for name, want in expect:
+        p = fixtures / name
+        if not p.is_file():
+            return g.broken(f'夹具不存在：{rel(p, ROOT)}')
+        try:
+            r = run([PY, SCRIPTS / 'table_to_dsl.py', '--check', p])
+        except OSError as e:
+            return g.broken(f'table_to_dsl.py 起不来（{type(e).__name__}: {e}）')
+        got = 0 if r.returncode == 0 else 1
+        g.note(f'{"✓" if got == want else "✗"} 夹具 {name}：--check 退出码 {r.returncode}'
+               f'（期望{"过" if want == 0 else "不过"}）')
+        if got != want:
+            return g.failed(f'夹具 {name} 的校验结果与预期不符：夹具一过期，suite 就会'
+                            f'「两侧同失败仍判全同」——先修夹具再谈等价')
+
+    base = scratch / 'equiv-base'
+    try:
+        r = run([PY, TOOLS / 'equiv.py', 'make-base', '--rev', API_BASE,
+                 '--dest', base, '--all-scripts'])
+    except OSError as e:
+        return g.broken(f'equiv.py 起不来（{type(e).__name__}: {e}）')
+    if r.returncode != 0:
+        return g.broken(f'equiv.py make-base 退 {r.returncode}：底本 tag {API_BASE} 取不到'
+                        f'（没 git / tag 不存在 / 工作树读不了）——先 `git tag -l` 看一眼')
+    g.note(f'底本 tag {API_BASE} 已展开到 {rel(base, ROOT)}')
+
+    try:
+        r = run([PY, TOOLS / 'equiv.py', 'suite', '--base', base,
+                 '--scratch', scratch / 'equiv', '--cases', TOOLS / 'equiv-cases.json'])
+    except OSError as e:
+        return g.broken(f'equiv.py suite 起不来（{type(e).__name__}: {e}）')
+    tail = next((ln for ln in (r.stdout or '').splitlines() if ln.startswith('共 ')), None)
+    if tail is None:
+        return g.broken('equiv.py suite 输出里找不到「共 N 条比对」小结行（输出不可解析）')
+    g.note(tail.strip())
+    if r.returncode == 0:
+        return g.passed()
+    if r.returncode == 1:
+        return g.failed('工作树的可观测行为与底本 tag 不再逐字节相同（上面点了具体条目）；'
+                        '若是有意变更，重钉：git tag -f api-base HEAD')
+    return g.broken(f'equiv.py suite 退 {r.returncode}（它的合约是 0/1/2）')
+
+
 def main(argv=None):
     sys.stdout.reconfigure(encoding='utf-8')
     ap = argparse.ArgumentParser(
-        description='验收：一条命令跑完九道门，只给一个结论',
+        description='验收：一条命令跑完十道门，只给一个结论',
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog='退出码：0 九道门全过 / 1 有门未过 / 2 仪器故障（树不存在、命令起不来、输出解析不了）')
+        epilog='退出码：0 十道门全过 / 1 有门未过 / 2 仪器故障（树不存在、命令起不来、输出解析不了）')
     ap.add_argument('--tables-root', default=str(DEFAULT_TABLES),
                     help=f'流程表树根（默认 {rel(DEFAULT_TABLES, ROOT)}）')
     ap.add_argument('--scratch', help='临时目录（默认落在仓库内 .accept_tmp/；见下方注释）')
@@ -629,7 +700,9 @@ def main(argv=None):
             ('⑦', '分层 layering.py', lambda g: gate_layering(g)),
             ('⑧', '卫生 hygiene.py', lambda g: gate_hygiene(g)),
             ('⑨', '审美 visual-spec §0.1（偏心/绕行/通道半径）',
-             lambda g: gate_aesthetic(g, tables_root))]
+             lambda g: gate_aesthetic(g, tables_root)),
+            ('⑩', '等价 equiv（夹具 + 可观测行为逐字节）',
+             lambda g: gate_equiv(g, scratch))]
     for num, title, fn in plan:
         g = Gate(num, title)
         print(f'\n=== 门{num} {title} ===')
@@ -652,7 +725,7 @@ def main(argv=None):
     for g in gates:
         print(f'  {g.mark} 门{g.name} {g.title}'
               + (f'   {g.reason}' if g.ok is not True else ''))
-    print(f'九道门：{npass} 过 / {len(failed)} 未过 / {len(broken)} 仪器故障')
+    print(f'十道门：{npass} 过 / {len(failed)} 未过 / {len(broken)} 仪器故障')
     missing = tables_is_missing(tables_root) if broken else ''
     if missing:
         print(f'  ⚠ {len(broken)} 道门无法裁决，根因是同一件事：{missing}')
@@ -664,11 +737,11 @@ def main(argv=None):
         verdict = '有门未过，未收口'
     else:
         code = 0
-        verdict = '九道门全过'
+        verdict = '十道门全过'
     print(f'退出码 {code}：{verdict}')
     # 收尾：**只报路径、不删**。临时目录可再生，删不删都不影响结论；
     # 而"批量删除"会撞安全钩子（尤其套在自动化里跑时），一旦被拦，退出码就从 0 变成非 0——
-    # 用户看到的是"命令报错了"，而**九道门其实全过**。所以：结论先印完，退出码只由九道门决定，
+    # 用户看到的是"命令报错了"，而**十道门其实全过**。所以：结论先印完，退出码只由九道门决定，
     # 清理动作一律不许参与判分。要腾空间请用户自己删这个目录。
     # 注：默认目录**在仓库内**（见 `_pinned_scratch` 的说明——系统临时目录的子目录截不出图），
     # 已由 .gitignore 挡住，所以留着也不会进版本库；但它会占约 2 MB，跑完想清就清。
