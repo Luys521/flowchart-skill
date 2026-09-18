@@ -8,8 +8,8 @@ meta:
 layout:
   col_x:
   - 400
-  width: 1200
-  origin_x: -80
+  width: 1000
+  origin_x: -140
 nodes:
 - id: '01'
   name: 开始
@@ -21,7 +21,7 @@ nodes:
   row: 0
   col: 0
   stage: 入口
-  route: 1→16
+  route: 1→13
   desc: 流程起点（结构性节点，不是函数） · 入口：1→main
 - id: '02'
   name: _read_json
@@ -30,11 +30,11 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 6
+  row: 5
   col: 0
   stage: 模块级
-  route: →19
-  desc: ★ 读 JSON（容忍 BOM）。 · L57 · 函数
+  route: →15
+  desc: ★ 读 JSON（容忍 BOM）。 · L55 · 函数
 - id: '03'
   name: _write_notes
   lines:
@@ -42,11 +42,11 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 7
+  row: 6
   col: 0
   stage: 模块级
-  route: →19
-  desc: ★ 写材料层补注：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 `ledger.dump`… · L62 · 函数
+  route: →15
+  desc: ★ 写材料层补注：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 `ledger.dump`… · L60 · 函数
 - id: '04'
   name: other_owner
   lines:
@@ -54,11 +54,11 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 8
+  row: 4
   col: 0
   stage: 模块级
-  route: →19
-  desc: ★ 前几字节 → 该材料归谁（`'OOXML 容器'` / …）；不是别人的返回空串。 · L67 · 函数
+  route: →15
+  desc: ★ 前几字节 → 该材料归谁（`'OOXML 容器'` / …）；不是别人的返回空串。 · L65 · 函数
 - id: '05'
   name: decode_text
   lines:
@@ -66,73 +66,48 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 9
+  row: 7
   col: 0
   stage: 模块级
-  route: →19
-  desc: ★ 字节 → `(文本, 依据, 报错)`。顺序：**UTF-8（含 BOM）→ 带 BOM 的 UTF-16 → 用户给… · L75 · 函数
+  route: →15
+  desc: ★ 字节 → `(文本, 依据, 报错)`。顺序：**UTF-8（含 BOM）→ 带 BOM 的 UTF-16 → 用户给… · L73 · 函数
 - id: '06'
-  name: reader_of
+  name: kind_of
   lines:
-  - reader_of
+  - kind_of
   type: task
   subject: 脚本
   executor: selfboot
-  row: 10
+  row: 8
   col: 0
   stage: 模块级
-  route: →19
-  desc: ★ 扩展名 → 读法名（`'markdown'` / `'csv'` / `'code'` / `'plain'`）。认不… · L100 · 函数
+  route: →15
+  desc: ★ 扩展名 → `'csv'` / `'code'` / `'text'`。**只分这三类**：结构不在本脚本的射程内（见… · L99 · 函数
 - id: '07'
-  name: _cap
-  lines:
-  - _cap
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 15
-  col: 0
-  stage: 模块级
-  route: →19
-  desc: ★ 超上限就截断 → `(文本, 是否截断)`。截断处留省略标记（§2.3 不许无声变短）。 · L112 · 函数
-- id: 08
   name: _element
   lines:
   - _element
   type: task
   subject: 脚本
   executor: selfboot
-  row: 14
-  col: 0
-  stage: 模块级
-  route: →07
-  desc: ★ 造一个带正文的 element（`quote` = 原文摘录）；超上限截断并记 `degraded`（§2.4）。 · L117 · 函数
-- id: 09
-  name: _plain
-  lines:
-  - _plain
-  type: task
-  subject: 脚本
-  executor: selfboot
   row: 11
   col: 0
   stage: 模块级
-  route: →08
-  desc: ★ 纯文本 → 空行分段，一段一个 `paragraph`。 · L133 · 函数
-- id: '10'
-  name: _markdown
+  route: →15
+  desc: ★ 造一个带正文的 element（`quote` = 原文摘录）；超上限截断并记 `degraded`（§2.4）。 · L107 · 函数
+- id: 08
+  name: _blocks
   lines:
-  - _markdown
+  - _blocks
   type: task
   subject: 脚本
   executor: selfboot
-  row: 4
+  row: 9
   col: 0
   stage: 模块级
-  route: 1→08｜2→17｜3→18
-  desc: ★ Markdown → 标题 / 列表项 / 围栏代码 / 竖线表 / 段落。**标记原样留在 text 里**（见文件… · L150 · 函数
-    · 分支：1→_element 2→_markdown.flush_para 3→_markdown.flush_table
-- id: '11'
+  route: →14
+  desc: ★ 文本 → **按行打块**：空行收一块，块满 `max_chars` 也收 → 一块一个 element。 · L124 · 函数
+- id: 09
   name: _csv
   lines:
   - _csv
@@ -142,21 +117,9 @@ nodes:
   row: 12
   col: 0
   stage: 模块级
-  route: →19
-  desc: ★ CSV / TSV → **一份一个 `table`**（`rows` 承载内容，与 `parse_xlsx` 的"一… · L221 · 函数
-- id: '12'
-  name: _code
-  lines:
-  - _code
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 13
-  col: 0
-  stage: 模块级
-  route: →08
-  desc: ★ 机器格式（json / yaml / xml / html …）→ **整份一个 `code`**。结构解析是 T2 … · L243 · 函数
-- id: '13'
+  route: →15
+  desc: ★ CSV / TSV → **一份一个 `table`**（`rows` 承载内容，与 `parse_xlsx` 的"一… · L155 · 函数
+- id: '10'
   name: parse_text
   lines:
   - parse_text
@@ -166,22 +129,22 @@ nodes:
   row: 3
   col: 0
   stage: 模块级
-  route: 1→04｜2→05｜3→06｜4→09｜5→10｜6→11｜7→12
-  desc: ★ 一份材料 → `(elements, extractor, 报错, 内容为空)`。 · L249 · 函数 · 分支：1→other_owner
-    2→decode_text 3→reader_of 4→_plain 5→_markdown 6→_csv 7→_code
-- id: '14'
+  route: 1→04｜2→05｜3→06｜4→08｜5→09
+  desc: ★ 一份材料 → `(elements, extractor, 报错, 内容为空)`。 · L177 · 函数 · 分支：1→other_owner
+    2→decode_text 3→kind_of 4→_blocks 5→_csv
+- id: '11'
   name: _mark_capped
   lines:
   - _mark_capped
   type: task
   subject: 脚本
   executor: selfboot
-  row: 16
+  row: 13
   col: 0
   stage: 模块级
-  route: →19
-  desc: ★ 材料级降级说明挂到**该材料的每条**上（与 `parse_pdf` 同一口径：消费方扫任意一条就知道被裁过）。 · L284 · 函数
-- id: '15'
+  route: →15
+  desc: ★ 材料级降级说明挂到**该材料的每条**上（与 `parse_pdf` 同一口径：消费方扫任意一条就知道被裁过）。 · L208 · 函数
+- id: '12'
   name: parse_materials
   lines:
   - parse_materials
@@ -191,9 +154,9 @@ nodes:
   row: 2
   col: 0
   stage: 模块级
-  route: 1→13｜2→14
-  desc: ★ 材料层 → `(elements, 补注, 摘要, 跳过清单, 报错文案)`。 · L290 · 函数 · 分支：1→parse_text 2→_mark_capped
-- id: '16'
+  route: 1→10｜2→11
+  desc: ★ 材料层 → `(elements, 补注, 摘要, 跳过清单, 报错文案)`。 · L214 · 函数 · 分支：1→parse_text 2→_mark_capped
+- id: '13'
   name: main
   lines:
   - main
@@ -203,174 +166,125 @@ nodes:
   row: 1
   col: 0
   stage: 模块级
-  route: 1→02｜2→03｜3→15
-  desc: L332 · 函数 · 分支：1→_read_json 2→_write_notes 3→parse_materials
-- id: '17'
-  name: _markdown.flush_para
+  route: 1→02｜2→03｜3→12
+  desc: L256 · 函数 · 分支：1→_read_json 2→_write_notes 3→parse_materials
+- id: '14'
+  name: _blocks.flush
   lines:
-  - _markdown.flush_para
+  - _blocks.flush
   type: task
   subject: 脚本
   executor: selfboot
-  row: 5
+  row: 10
   col: 0
-  stage: _markdown
-  route: →08
-  desc: L155 · 嵌套函数
-- id: '18'
-  name: _markdown.flush_table
-  lines:
-  - _markdown.flush_table
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 17
-  col: 0
-  stage: _markdown
-  route: →19
-  desc: L162 · 嵌套函数
-- id: '19'
+  stage: _blocks
+  route: →07
+  desc: L136 · 嵌套函数
+- id: '15'
   name: 结束
   lines:
   - 结束
   type: end
   subject: 脚本
   executor: selfboot
-  row: 18
+  row: 14
   col: 0
   stage: 出口
   route: —
   desc: 流程终点（结构性节点，不是函数）
 edges:
 - from: '01'
-  to: '16'
-  kind: spine
-  polarity: main
-  label: '1'
-- from: '02'
-  to: '19'
-  kind: jumpR
-  polarity: main
-- from: '03'
-  to: '19'
-  kind: jumpR
-  polarity: main
-- from: '04'
-  to: '19'
-  kind: jumpR
-  polarity: main
-- from: '05'
-  to: '19'
-  kind: jumpR
-  polarity: main
-- from: '06'
-  to: '19'
-  kind: jumpR
-  polarity: main
-- from: '07'
-  to: '19'
-  kind: jumpR
-  polarity: main
-- from: 08
-  to: '07'
-  kind: spine
-  polarity: main
-- from: 09
-  to: 08
-  kind: jumpR
-  polarity: main
-- from: '10'
-  to: 08
-  kind: jumpR
-  polarity: main
-  label: '1'
-- from: '10'
-  to: '17'
-  kind: spine
-  polarity: main
-  label: '2'
-- from: '10'
-  to: '18'
-  kind: jumpR
-  polarity: main
-  label: '3'
-- from: '11'
-  to: '19'
-  kind: jumpR
-  polarity: main
-- from: '12'
-  to: 08
-  kind: spine
-  polarity: main
-- from: '13'
-  to: '04'
-  kind: jumpR
-  polarity: main
-  label: '1'
-- from: '13'
-  to: '05'
-  kind: jumpR
-  polarity: main
-  label: '2'
-- from: '13'
-  to: '06'
-  kind: jumpR
-  polarity: main
-  label: '3'
-- from: '13'
-  to: 09
-  kind: jumpR
-  polarity: main
-  label: '4'
-- from: '13'
-  to: '10'
-  kind: spine
-  polarity: main
-  label: '5'
-- from: '13'
-  to: '11'
-  kind: jumpR
-  polarity: main
-  label: '6'
-- from: '13'
-  to: '12'
-  kind: jumpR
-  polarity: main
-  label: '7'
-- from: '14'
-  to: '19'
-  kind: jumpR
-  polarity: main
-- from: '15'
   to: '13'
   kind: spine
   polarity: main
   label: '1'
-- from: '15'
+- from: '02'
+  to: '15'
+  kind: jumpR
+  polarity: main
+- from: '03'
+  to: '15'
+  kind: jumpR
+  polarity: main
+- from: '04'
+  to: '15'
+  kind: jumpR
+  polarity: main
+- from: '05'
+  to: '15'
+  kind: jumpR
+  polarity: main
+- from: '06'
+  to: '15'
+  kind: jumpR
+  polarity: main
+- from: '07'
+  to: '15'
+  kind: jumpR
+  polarity: main
+- from: 08
   to: '14'
+  kind: spine
+  polarity: main
+- from: 09
+  to: '15'
+  kind: jumpR
+  polarity: main
+- from: '10'
+  to: '04'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '10'
+  to: '05'
   kind: jumpR
   polarity: main
   label: '2'
-- from: '16'
+- from: '10'
+  to: '06'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '10'
+  to: 08
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '10'
+  to: 09
+  kind: jumpR
+  polarity: main
+  label: '5'
+- from: '11'
+  to: '15'
+  kind: spine
+  polarity: main
+- from: '12'
+  to: '10'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '12'
+  to: '11'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '13'
   to: '02'
   kind: jumpR
   polarity: main
   label: '1'
-- from: '16'
+- from: '13'
   to: '03'
   kind: jumpR
   polarity: main
   label: '2'
-- from: '16'
-  to: '15'
+- from: '13'
+  to: '12'
   kind: spine
   polarity: main
   label: '3'
-- from: '17'
-  to: 08
-  kind: jumpR
-  polarity: main
-- from: '18'
-  to: '19'
+- from: '14'
+  to: '07'
   kind: spine
   polarity: main

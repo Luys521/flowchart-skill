@@ -32,7 +32,7 @@ level: L0
 | 接管与解析 | 19 | 模块 · parse_legacy | 任务 | — | — | — | 脚本 | selfboot | — | →20 | 13 个函数 · ⊞ parse_legacy/flowtable.md |
 | 接管与解析 | 20 | 模块 · parse_ooxml | 任务 | — | — | — | 脚本 | selfboot | — | →21 | 9 个函数 · ⊞ parse_ooxml/flowtable.md |
 | 接管与解析 | 21 | 模块 · parse_pdf | 任务 | — | — | — | 脚本 | selfboot | — | →22 | 6 个函数 · ⊞ parse_pdf/flowtable.md |
-| 接管与解析 | 22 | 模块 · parse_text | 任务 | — | — | — | 脚本 | selfboot | — | →23 | 17 个函数 · ⊞ parse_text/flowtable.md |
+| 接管与解析 | 22 | 模块 · parse_text | 任务 | — | — | — | 脚本 | selfboot | — | →23 | 13 个函数 · ⊞ parse_text/flowtable.md |
 | 接管与解析 | 23 | 模块 · probe | 任务 | — | — | — | 脚本 | selfboot | — | →24 | 9 个函数 · ⊞ probe/flowtable.md |
 | 接管与解析 | 24 | 模块 · recon | 任务 | — | — | — | 脚本 | selfboot | — | →25 | 9 个函数 · ⊞ recon/flowtable.md |
 | 渲染 | 25 | 模块 · render_drawio | 任务 | — | — | — | 脚本 | selfboot | — | →26 | 24 个函数 · ⊞ render_drawio/flowtable.md |

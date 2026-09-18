@@ -117,7 +117,14 @@ notes                     → [{material_id, status?, reason?, extractor?}]   �
 | **文本型 `.pdf`（T2）** | `pdfplumber`（**纯 Python**，无外部二进制）抽文本层—一页一个 element | — | 记 T4 + **可执行提示**（装 pdfplumber） |
 | **legacy**（.doc / .xls / .ppt） | **没有纯 Python 的可靠读法** ⇒ 只用**外部转换器**（LibreOffice / soffice，若装了）：转成 OOXML 再交给 T1 适配器抽（§1.1 的 T2 定义就是"转换后可用"），`extractor` 写 `soffice+py:docx` | 宿主本地 Office SDK（若存在） | 记 T4 + 可执行提示（"请另存为 .docx" 或 "装 LibreOffice"） |
 | 图片 / 扫描件 / 截图 / 白板照 | **OCR**（tesseract / paddleocr）—依赖显式声明 | 宿主多模态模型（若可用） | 记 T4 + 进澄清 |
-| 纯文本（md / txt / csv / json …） | `parse_text.py`（**只用标准库**）：`.md` 认标题 / 列表 / 围栏 / 竖线表，`.csv` → `table` + `rows`，`.json`/`.yaml`/`.xml`/`.html` → 整份一个 `code`，其余空行分段 | — | — |
+| 纯文本（md / txt / csv / json …） | `parse_text.py`（**只用标准库**）：**解码 + 按行打块**（一块一个 element，`extractor=py:text`；标记 / 数据文件写 `py:code`）、`.csv` / `.tsv` → `table` + `rows`。**不认结构**（见下） | **宿主模型直读文本**：理解归它 | 直读不可用时仍走得通（标准库永远在） |
+
+**能直读的格式：理解归模型，记账归脚本**（这一条把"要不要给文本写解析器"定死）：
+`.md` / `.txt` / `.csv` / `.json` / `.yaml` / `.xml` / `.html` 宿主模型**能直接读**，而且比任何结构识别读得好
+——所以 `parse_text.py` **不认标题、不认列表、不抽表格语义**，它只干记账那件事（可引用 id / 可复现 /
+编码与上限）。给它加结构识别 = 与直读重复，而且**认错了会让 `kind` 撒谎**（账本是唯一事实源，撒谎代价最高）。
+反过来说：直读**只用于"理解"，不许当证据来源**——要引用就必须引账本里的 element id（§2.5 / H10），
+"我记得文件里写着…"是一条无法机器复核的引用，正是 H10 要断的链。
 
 **纯文本的编码不猜**：只认 UTF-8 与**带 BOM** 的 UTF-16；GBK 这类本地编码要读就显式 `--encoding gbk`——
 它同时**授权**去试 `probe` 判成 T4 的纯文本材料（仍限纯文本扩展名），读出来就把 `status` 改回 `ok`。
@@ -143,6 +150,7 @@ notes                     → [{material_id, status?, reason?, extractor?}]   �
 |---|---|---|
 | 本地 Office SDK | `edsdk.py` **存在** 且 `list` 子命令**能通**（退出码 0 且有工具输出） | 视为不存在 |
 | 多模态模型 | 由 AI **自报**「本会话能否直接看图」 | 视为不能 → 走 OCR / T4（**不许猜能看**） |
+| **宿主模型直读文本** | 由 AI **自报**「本会话能否直接读文本」（`.md`/`.txt`/`.csv`/`.json`/`.yaml`/`.xml`/`.html`） | **视为能**（读文本是通则）；不能时走 `parse_text.py`（标准库，永远可用） |
 | 外部转换器 | `soffice --version` 能通（PATH 或已知安装路径） | 视为没有 |
 
 **探测结论要记账**（写进账本的 `extractor` / 材料卡片的解析路径栏）——不许**默默用**、也不许**默默不用**。
@@ -441,6 +449,7 @@ heading  paragraph  list_item  table  figure  caption  code  sheet  cell
 | 材料层记账完整：`status` / `reason` / `extractor` 由解析阶段补注写入（§1.4） | `scripts/ledger.py --notes` | **已实现**（补注键封闭 / id 必须存在 / `unreadable` 必有 reason，**落完再校一次**）；**未进验收路径** |
 | 分派是查表（§1.4）：固定顺序跑适配器 · 同输入同字节 · 冲突与漏认不许静默 | `scripts/parse.py` | **已实现**（元素按 `material_id` 稳定排序；id 重复 / 补注冲突 / `status=ok` 却零证据三类都**退 1 且不落盘**，实测各路径）；**未进验收路径** |
 | 纯文本不猜编码（§1.4）：只认 UTF-8 / 带 BOM 的 UTF-16；GBK 等要显式 `--encoding` | `scripts/parse_text.py` | **已实现**（不带 `--encoding`：GBK 材料记 `unreadable` + 可执行提示；带了：读出来并把 `status` 改回 `ok`、删掉陈旧的 probe reason。兜底**不覆盖** UTF-8 材料——实测修掉"一份 GBK 把整批拖成读不动"）；**未进验收路径** |
+| 文本档只记账、不认结构（§1.4）：**理解归直读的模型**，脚本只保证"可引用 / 可复现 / 编码与上限" | `scripts/parse_text.py` | **已实现**（按行打块：行数守恒；块超上限**先收后放**，单行比块长才截断并记 `degraded`——实测第一版"先攒后收"会把整行吃掉还标假降级）；**未进验收路径** |
 | legacy 只走外部转换器：判据 `--version` 能通；缺了就记读不动 + 可执行提示，**不许假装能读** | `scripts/parse_legacy.py` | **已实现**（本机无 soffice：缺转换器分支在真实 4 份材料上实测；转换分支用**替身转换器**验过——LibreOffice 自身的转换保真度不在射程内） |
 | 幂等：同输入两次同字节 | 待定 | **未实现**（本轮人工实测：`probe → 三个适配器 → ledger` 两次同字节） |
 | 计划引用完整：`plan.md` 的 `M##` 都在 `intake.md` 里 | 待定（计划校验器） | 未实现 |
