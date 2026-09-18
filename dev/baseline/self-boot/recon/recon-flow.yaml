@@ -46,7 +46,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→04
-  desc: ★ `.docx` 字节 → `(规模描述, 大纲行, 大纲总条数, 结构说明)`。**只读结构，不物化全部文字**。 · L85 · 函数 · 分支：1→_import_dep
+  desc: ★ `.docx` → `(规模描述, 大纲行, 大纲总条数, 结构说明)`。**只读结构，不物化全部文字**。 · L85 · 函数 · 分支：1→_import_dep
     2→_is_heading
 - id: '04'
   name: _is_heading
@@ -59,7 +59,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →26
-  desc: ★ 样式名判标题（与 `parse_ooxml` 同一句判据；两边都只认 `heading` 前缀）。 · L101 · 函数
+  desc: ★ 样式名判标题（与 `parse_ooxml` 同一句判据；两边都只认 `heading` 前缀）。 · L102 · 函数
 - id: '05'
   name: _xlsx_scale
   lines:
@@ -71,7 +71,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →02
-  desc: ★ `.xlsx` 字节 → `(规模描述, 子表行, 子表数, 结构说明)`。用尺寸信息读规模，**不扫单元格**。 · L108 · 函数
+  desc: ★ `.xlsx` 字节 → `(规模描述, 子表行, 子表数, 结构说明)`。用尺寸信息读规模，**不扫单元格**。 · L109 · 函数
 - id: '06'
   name: _pptx_scale
   lines:
@@ -83,8 +83,8 @@ nodes:
   col: 0
   stage: 模块级
   route: →26
-  desc: ★ `.pptx` 字节 → `(规模描述, 大纲行, 大纲总条数, 结构说明)`。**这就是那份".pptx 解析摘要"… · L134 · 函数
-    · ⇢ 依赖 pptx_text.other_text_parts、pptx_text.slides
+  desc: ★ `.pptx` → `(规模描述, 大纲行, 大纲总条数, 结构说明)`。**这就是那份".pptx 解析摘要"**。 · L137 · 函数
+    · ⇢ 依赖 pptx_text.other_text_parts_in_file、pptx_text.slides_in_file
 - id: '07'
   name: _pdf_scale
   lines:
@@ -96,7 +96,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →26
-  desc: ★ `.pdf` 字节 → `(规模描述, 大纲行, 大纲总条数, 结构说明)`。**零依赖粗数页数**。 · L155 · 函数
+  desc: ★ `.pdf` → `(规模描述, 大纲行, 大纲总条数, 结构说明)`。**零依赖粗数页数**。 · L160 · 函数
 - id: 08
   name: _text_scale
   lines:
@@ -108,7 +108,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →26
-  desc: ★ 纯文本 / CSV 字节 → 规模。**行数 + 头几行的开头**——这是文本档唯一有意义的"结构"。 · L168 · 函数
+  desc: ★ 纯文本 / CSV → 规模。**行数 + 头几行的开头**——这是文本档唯一有意义的"结构"。 · L175 · 函数
 - id: 09
   name: _image_scale
   lines:
@@ -120,7 +120,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →26
-  desc: ★ 图片字节 → `尺寸（像素）`。**Pillow 是可选加速器**：缺了就说清，不硬造数字。 · L184 · 函数
+  desc: ★ 图片 → `尺寸（像素）`。**Pillow 是可选加速器**：缺了就说清，不硬造数字。 · L191 · 函数
 - id: '10'
   name: _ole_note
   lines:
@@ -132,7 +132,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →26
-  desc: ★ legacy（OLE 复合文档）**没有摘要可给**——这是诚实的极限，不是没做。 · L196 · 函数
+  desc: ★ legacy（OLE 复合文档）**没有摘要可给**——这是诚实的极限，不是没做。 · L203 · 函数
 - id: '11'
   name: _note_of
   lines:
@@ -144,7 +144,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →26
-  desc: ★ 异常 → 记在表里的说明。**把"材料的问题"与"我们自己的 bug"分开**： · L205 · 函数
+  desc: ★ 异常 → 记在表里的说明。**把"材料的问题"与"我们自己的 bug"分开**： · L212 · 函数
 - id: '12'
   name: sample_structure
   lines:
@@ -156,9 +156,9 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→03｜2→05｜3→06｜4→07｜5→08｜6→09｜7→10｜8→11
-  desc: ★ 按 `kind` 缩样 → `(规模描述, 结构行, 结构总条数, 说明)`。**读不了不是错**：返回说明，逐份记账。 · L225 · 函数
-    · 分支：1→_docx_scale 2→_xlsx_scale 3→_pptx_scale 4→_pdf_scale 5→_text_scale 6→_image_scale
-    7→_ole_note 8→_note_of
+  desc: ★ **收路径**按 `kind` 缩样 → `(规模描述, 结构行, 结构总条数, 说明)`。 · L232 · 函数 · 分支：1→_docx_scale
+    2→_xlsx_scale 3→_pptx_scale 4→_pdf_scale 5→_text_scale 6→_image_scale 7→_ole_note
+    8→_note_of
 - id: '13'
   name: difficulty
   lines:
@@ -170,7 +170,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →26
-  desc: ★ 难度：不参与 / 易 / 中 / 难 / 最难。**分档只看 `bytes` 与 `tier`**（kind 只影响"… · L251 · 函数
+  desc: ★ 难度：不参与 / 易 / 中 / 难 / 最难。**分档只看 `bytes` 与 `tier`**（kind 只影响"… · L266 · 函数
 - id: '14'
   name: advise_depth
   lines:
@@ -182,7 +182,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →26
-  desc: ★ 解析深度（§1.5 三选一）+ 触发它的数字。**事实与建议要能分开看**：数字随后写进「规模」列。 · L260 · 函数
+  desc: ★ 解析深度（§1.5 三选一）+ 触发它的数字。**事实与建议要能分开看**：数字随后写进「规模」列。 · L275 · 函数
 - id: '15'
   name: advise_path
   lines:
@@ -194,7 +194,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →26
-  desc: ★ 走哪条路（§1.1 档位映射）：**按 `kind` 查表**，不看扩展名（审计 F3/F6）。 · L273 · 函数
+  desc: ★ 走哪条路（§1.1 档位映射）：**按 `kind` 查表**，不看扩展名（审计 F3/F6）。 · L288 · 函数
 - id: '16'
   name: make_rows
   lines:
@@ -206,8 +206,8 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→12｜2→13
-  desc: ★ 材料层 → 侦查行 + 跳过清单。**逐份尽力而为**：结构读不了记在行里，绝不外溢成整批失败。 · L279 · 函数 · 分支：1→sample_structure
-    2→difficulty
+  desc: ★ 材料层 → 侦查行 + 跳过清单。**逐份尽力而为**：结构读不了记在行里，绝不外溢成整批失败。 · L294 · 函数 · 分支：1→sample_structure
+    2→difficulty · ⇢ 依赖 pptx_text.scan_cost
 - id: '17'
   name: render
   lines:
@@ -219,7 +219,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→14｜2→15
-  desc: ★ 侦查结论表（markdown）。**表头先写输入指纹与阈值**——不然"共 20"这类数字事后没法复核。 · L315 · 函数 · 分支：1→advise_depth
+  desc: ★ 侦查结论表（markdown）。**表头先写输入指纹与阈值**——不然"共 20"这类数字事后没法复核。 · L327 · 函数 · 分支：1→advise_depth
     2→advise_path
 - id: '18'
   name: parse_table
@@ -232,7 +232,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →26
-  desc: '★ `recon.md` → `(表头, {M##: {列: 值}}, 报错)`。表头必须逐字对得上（列规范在代码里只有这… · L343 · 函数'
+  desc: '★ `recon.md` → `(表头, {M##: {列: 值}}, 报错)`。表头必须逐字对得上（列规范在代码里只有这… · L355 · 函数'
 - id: '19'
   name: check_rows
   lines:
@@ -244,7 +244,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →26
-  desc: ★ AI 填的列 → 错误清单（空 = 过）。**只报不改**；§1.5"假设必须落盘、被推翻也要留痕"。 · L370 · 函数
+  desc: ★ AI 填的列 → 错误清单（空 = 过）。**只报不改**；§1.5"假设必须落盘、被推翻也要留痕"。 · L382 · 函数
 - id: '20'
   name: _write
   lines:
@@ -256,7 +256,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →26
-  desc: ★ 写盘：UTF-8 / LF（与账本同一套口径；本文件通篇用 `\n` 拼）。 · L401 · 函数
+  desc: ★ 写盘：UTF-8 / LF（与账本同一套口径；本文件通篇用 `\n` 拼）。 · L413 · 函数
 - id: '21'
   name: _read_json
   lines:
@@ -268,7 +268,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →26
-  desc: ★ 读 JSON（容忍 BOM）。 · L405 · 函数
+  desc: ★ 读 JSON（容忍 BOM）。 · L417 · 函数
 - id: '22'
   name: load_thresholds
   lines:
@@ -280,7 +280,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →26
-  desc: ★ 阈值 = 默认 + `dictionary.yaml` 的 `recon:` 段（读不到就用默认，**不报错**）。 · L409 · 函数
+  desc: ★ 阈值 = 默认 + `dictionary.yaml` 的 `recon:` 段（读不到就用默认，**不报错**）。 · L421 · 函数
 - id: '23'
   name: build
   lines:
@@ -292,7 +292,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→16｜2→17｜3→20｜4→21｜5→22
-  desc: ★ 出侦查结论表草稿 → 退出码。 · L427 · 函数 · 分支：1→make_rows 2→render 3→_write 4→_read_json
+  desc: ★ 出侦查结论表草稿 → 退出码。 · L439 · 函数 · 分支：1→make_rows 2→render 3→_write 4→_read_json
     5→load_thresholds
 - id: '24'
   name: check
@@ -305,7 +305,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→18｜2→19｜3→21
-  desc: ★ 校验 AI 填好的表 → 退出码 0/1/2。 · L459 · 函数 · 分支：1→parse_table 2→check_rows 3→_read_json
+  desc: ★ 校验 AI 填好的表 → 退出码 0/1/2。 · L471 · 函数 · 分支：1→parse_table 2→check_rows 3→_read_json
 - id: '25'
   name: main
   lines:
@@ -317,7 +317,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→23｜2→24
-  desc: L485 · 函数 · 分支：1→build 2→check
+  desc: L497 · 函数 · 分支：1→build 2→check
 - id: '26'
   name: 结束
   lines:

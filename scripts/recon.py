@@ -40,7 +40,7 @@ import re
 import sys
 from pathlib import Path
 
-from pptx_text import other_text_parts, slides
+from pptx_text import other_text_parts_in_file, scan_cost, slides_in_file
 
 DEP_PKG = {'docx': 'python-docx', 'openpyxl': 'openpyxl'}
 
@@ -82,17 +82,18 @@ def _import_dep(name):
         pkg = DEP_PKG[name]
         return None, f'缺依赖 {pkg}：装 `python -m pip install {pkg}`（或 `pip install -r requirements.txt`）'
 
-def _docx_scale(blob, th):
-    """`.docx` 字节 → `(规模描述, 大纲行, 大纲总条数, 结构说明)`。**只读结构，不物化全部文字**。
+def _docx_scale(path, th):
+    """`.docx` → `(规模描述, 大纲行, 大纲总条数, 结构说明)`。**只读结构，不物化全部文字**。
 
     规模 = **非空段数 + 表数**（审计 F2：原先数的是 body 子元素，把 `tbl` 算了两次、还把尾部 `sectPr`
     算成一个块 —— 量与名字不对应，人没法复核）；大纲**先数完再切**，表里写"共 K（列前 N）"，
     不许把截断后的条数写成"共 N"（那等于谎报结构数字，§2.3 同一纪律）。
+    **收路径而不是字节**：`python-docx` 只解它要的那几个部件，图多不等于贵（与 `_pptx_scale` 同一个理由）。
     """
     docx, err = _import_dep('docx')
     if err:
         return '', [], 0, err
-    doc = docx.Document(io.BytesIO(blob))
+    doc = docx.Document(str(path))
     paras = sum(1 for p in doc.paragraphs if (p.text or '').strip())
     heads = [f'{(p.style.name or "")}: {(p.text or "").strip()}' for p in doc.paragraphs
              if (p.text or '').strip() and _is_heading(p)]
@@ -108,7 +109,9 @@ def _is_heading(p):
 def _xlsx_scale(blob, th):
     """`.xlsx` 字节 → `(规模描述, 子表行, 子表数, 结构说明)`。用尺寸信息读规模，**不扫单元格**。
 
-    **无 `<dimension>` 的工作表要能活**（审计 R2：`openpyxl` 的 write-only / 第三方导出常没有这个标签，
+    **只有这一支还收字节**：`openpyxl.load_workbook` 收路径时会**按扩展名投票**（审计 F6：
+    合法 xlsx 改名 `.et` 被它拒收），所以必须从内存开、护栏也按整份字节算。
+    **无 `<dimension>` 的工作表要能活**（审计 R2：write-only / 第三方导出常没有这个标签，
     原实现直接抛 `Worksheet is unsized` 把整批带崩）：抛了就记"尺寸不可知"，**不让它决定分档**。
     """
     openpyxl, err = _import_dep('openpyxl')
@@ -131,19 +134,21 @@ def _xlsx_scale(blob, th):
     scale = f'子表 {len(rows)} · 声明合计约 {total} 行' + (f'｜{unknown} 张尺寸不可知' if unknown else '')
     return scale, rows, len(rows), ''
 
-def _pptx_scale(blob, th):
-    """`.pptx` 字节 → `(规模描述, 大纲行, 大纲总条数, 结构说明)`。**这就是那份".pptx 解析摘要"**。
+def _pptx_scale(path, th):
+    """`.pptx` → `(规模描述, 大纲行, 大纲总条数, 结构说明)`。**这就是那份".pptx 解析摘要"**。
 
     为什么它值得单独做到位（用户的真实工作方式）：一份几十上百张的演示稿，**先扫摘要看有没有线索**
     （哪一页在讲审批 / 讲分工），再决定要不要点名撬开那几页（§5.3）。没有摘要，那份材料在 AI 眼里
     就等于不存在——它体积最大、却一个字都进不来。
-    取文字用公共层 `pptx_text`（与 `parse_ooxml` 的读者**同一句判据**，免得"摘要里看得见、撬开找不到"）。
+    取文字用公共层 `pptx_text`（与 `parse_ooxml` 的读者**同一句判据**，免得"摘要里看得见、撬开找不到"），
+    并且**按路径只解压要读的那几个部件**——真样本实测：42 MB 的稿子里 `ppt/slides/*.xml` 只有几百 KB，
+    按整份字节设护栏等于"因为图多就不给摘要"，那恰好是最需要摘要的那种材料。
     """
-    got = slides(blob, th['outline_max'])            # 只读前面若干张就够当摘要；读不动返回空
+    got = slides_in_file(path, th['outline_max'])    # 只读前面若干张就够当摘要；读不动返回空
     if not got:
         return '', [], 0, 'pptx 里没抽出文字（空稿 / 全是图）'
     blank = sum(1 for _n, lines in got if not lines)
-    others = other_text_parts(blob)
+    others = other_text_parts_in_file(path)
     heads = [f'第 {n} 张：{lines[0]}' if lines else f'第 {n} 张：（纯图片，无文字）' for n, lines in got]
     scale = (f'幻灯片 {len(got)} 张'
              + (f'（前 {len(got)} 张里 {blank} 张无文字＝纯图片：那几页要视觉才读得到）' if blank else '')
@@ -152,28 +157,30 @@ def _pptx_scale(blob, th):
              + f'（按序号读前 {th["outline_max"]} 张取标题）')
     return scale, heads, len(got), ''
 
-def _pdf_scale(blob, th):
-    """`.pdf` 字节 → `(规模描述, 大纲行, 大纲总条数, 结构说明)`。**零依赖粗数页数**。
+def _pdf_scale(path, th):
+    """`.pdf` → `(规模描述, 大纲行, 大纲总条数, 结构说明)`。**零依赖粗数页数**。
 
     为什么粗数就够：侦查要的是"这份 PDF 值不值得读、要不要只取摘要"（§1.5 的分档只看 `bytes`，
     页数只是**参考数字**）。所以不引 `pdfplumber` 来数——那会把"扫一眼"变成"跑一遍解析"。
     判据是 `/Type /Page` 的出现次数（**不含** `/Pages`，故用负向断言）：导出器花样多，实测偏小是常事，
     所以文案写"**约** N 页"，不假装精确；一个都没数到时说清"页数数不出来"，不写 0（0 会被当成"空文件"）。
+    **PDF 没有"按需解压"这回事**（要扫全篇找标记），所以护栏按整份字节算是对的。
     """
+    blob = Path(path).read_bytes()
     n = len(re.findall(rb'/Type\s*/Page(?![s])', blob))
     if not n:
         return '', [], 0, 'PDF 页数数不出来（结构非标准 / 被压缩）——按体积与档位看即可'
     return f'约 {n} 页（粗数，仅供参考）', [], 0, ''
 
-def _text_scale(blob, th):
-    """纯文本 / CSV 字节 → 规模。**行数 + 头几行的开头**——这是文本档唯一有意义的"结构"。
+def _text_scale(path, th):
+    """纯文本 / CSV → 规模。**行数 + 头几行的开头**——这是文本档唯一有意义的"结构"。
 
     **不猜编码**（与 `parse_text` 同一条纪律，§1.4）：只认 UTF-8（含 BOM）；解不开就说清
     "编码不是 UTF-8，摘要不可得"并给出下一步（解析时显式 `--encoding`），**不许拿 GBK 硬解出一堆乱码当摘要**——
     那种"摘要"比没有更坏：它会让人以为材料内容就是乱码。
     """
     try:
-        text = blob.decode('utf-8-sig')
+        text = Path(path).read_bytes().decode('utf-8-sig')
     except UnicodeDecodeError:
         return '', [], 0, '编码不是 UTF-8（摘要不可得）：解析时按 §1.4 显式给 `--encoding`，或先转成 UTF-8'
     lines = text.splitlines()
@@ -181,14 +188,14 @@ def _text_scale(blob, th):
              if ln.strip()]
     return f'行 {len(lines)}', heads, len(heads), ''
 
-def _image_scale(blob, th):
-    """图片字节 → `尺寸（像素）`。**Pillow 是可选加速器**：缺了就说清，不硬造数字。"""
+def _image_scale(path, th):
+    """图片 → `尺寸（像素）`。**Pillow 是可选加速器**：缺了就说清，不硬造数字。"""
     try:
         from PIL import Image
     except ImportError:
         return '', [], 0, '缺 Pillow（读不出图片尺寸）：`python -m pip install Pillow`'
     try:
-        with Image.open(io.BytesIO(blob)) as im:
+        with Image.open(str(path)) as im:
             return f'{im.width}×{im.height} 像素 · {im.format or "?"}', [], 0, ''
     except Exception as e:                           # 图片坏了：记事实，不外溢
         return '', [], 0, f'图片读不出尺寸（{type(e).__name__}）'
@@ -222,23 +229,31 @@ def _note_of(e):
 # （`ole` 是诚实的极限；`unknown` 在探测那一步就已经记了读不动原因）。
 SCALED_KINDS = ('docx', 'xlsx', 'pptx', 'pdf-text', 'pdf-scan', 'image', 'text', 'ole')
 
-def sample_structure(blob, kind, th):
-    """按 `kind` 缩样 → `(规模描述, 结构行, 结构总条数, 说明)`。**读不了不是错**：返回说明，逐份记账。"""
+def sample_structure(path, kind, th):
+    """**收路径**按 `kind` 缩样 → `(规模描述, 结构行, 结构总条数, 说明)`。
+
+    **为什么是路径不是字节**（2026-09-18 真样本实测改的）：原来 `make_rows` 先把整份读进内存再交给这里，
+    于是"护栏"只能按整份字节判——一份 42 MB 的演示稿（媒体占 42 MB、`ppt/slides/*.xml` 只有几百 KB）
+    被判"超护栏"，**摘要直接没有**。可摘要恰恰是大材料最需要的东西。收路径之后，
+    docx/pptx 各解各要的那几个部件，护栏也按"**要读的部件**"算（`pptx_text.scan_cost`）。
+    只有 xlsx 还收字节（`openpyxl` 按扩展名投票，必须从内存开，见 `_xlsx_scale`）。
+    读不了不是错：返回说明，逐份记账。
+    """
     if kind == 'unknown':
         return '', [], 0, ''
     try:
         if kind == 'docx':
-            return _docx_scale(blob, th)
+            return _docx_scale(path, th)
         if kind == 'xlsx':
-            return _xlsx_scale(blob, th)
+            return _xlsx_scale(Path(path).read_bytes(), th)
         if kind == 'pptx':
-            return _pptx_scale(blob, th)
+            return _pptx_scale(path, th)
         if kind in ('pdf-text', 'pdf-scan'):
-            return _pdf_scale(blob, th)
+            return _pdf_scale(path, th)
         if kind == 'image':
-            return _image_scale(blob, th)
+            return _image_scale(path, th)
         if kind == 'text':
-            return _text_scale(blob, th)
+            return _text_scale(path, th)
         if kind == 'ole':
             return _ole_note()
     except Exception as e:                           # 单份坏不让整批失败（§1.4 硬要求 2）
@@ -288,23 +303,20 @@ def make_rows(materials, th):
                'scale': '', 'structure': [], 'structure_total': 0, 'note': ''}
         row['diff'] = difficulty(row, th)
         if row['status'] == 'ok' and row['kind'] in SCALED_KINDS:
-            if row['bytes'] > th['max_open_bytes']:
+            # 护栏按**要读的部件**算（zip 系）：图多不等于贵。真样本实测：42 MB 的演示稿
+            # 按整份字节判会"因为图多就不给摘要"，而摘要恰恰是那种材料最需要的（§1.5 手段 1）。
+            cost = scan_cost(row['path'], row['bytes']) if row['kind'] != 'xlsx' else row['bytes']
+            if cost > th['max_open_bytes']:
                 # **护栏事实要进表**，不能只打到 stderr：行里留白会让人以为"这份材料没被交代"
                 # （与 §2.4"降级必须留痕"同一条）。实测：夹具把护栏调到 512 字节时现形。
-                row['note'] = (f'超护栏（{row["bytes"]} 字节 > {th["max_open_bytes"]}）：'
-                               f'只记元数据，不打开结构')
+                row['note'] = (f'超护栏（要读的部件 {cost} 字节 > {th["max_open_bytes"]}'
+                               f'，整份 {row["bytes"]} 字节）：只记元数据，不打开结构')
                 skipped.append(f"{row['id']}: {row['note']}")
             else:
-                try:
-                    blob = Path(row['path']).read_bytes()
-                except OSError as e:
-                    skipped.append(f"{row['id']}: 读不动（{type(e).__name__}）")
-                    blob = None
-                if blob is not None:
-                    (row['scale'], row['structure'],
-                     row['structure_total'], row['note']) = sample_structure(blob, row['kind'], th)
-                    if row['note']:
-                        skipped.append(f"{row['id']}: {row['note']}")
+                (row['scale'], row['structure'],
+                 row['structure_total'], row['note']) = sample_structure(row['path'], row['kind'], th)
+                if row['note']:
+                    skipped.append(f"{row['id']}: {row['note']}")
         rows.append(row)
     rows.sort(key=lambda r: (DIFF_ORDER.get(r['diff'], 9), r['bytes'], r['path']))
     return rows, skipped

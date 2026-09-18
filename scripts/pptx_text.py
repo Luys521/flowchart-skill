@@ -30,21 +30,6 @@ OTHER_TEXT_PARTS = (('ppt/charts/', '图表'), ('ppt/diagrams/', 'SmartArt'),
                     ('ppt/notesSlides/', '备注页'))
 
 
-def slide_names(blob):
-    """`pptx` 字节 → `[(序号, zip 内部件名)]`，**按序号升序**。不是 pptx / zip 坏了 → `[]`（不抛）。"""
-    try:
-        with zipfile.ZipFile(io.BytesIO(blob)) as z:
-            names = z.namelist()
-    except (OSError, zipfile.BadZipFile):
-        return []
-    got = []
-    for name in names:
-        m = SLIDE_RE.match(name)
-        if m:
-            got.append((int(m.group(1)), name))
-    return sorted(got)
-
-
 def slide_lines(xml):
     """一张幻灯片的 XML → 文本行（按 `<a:p>` 切段，段内 `<a:t>` 顺序拼接，去空段）。
 
@@ -69,38 +54,95 @@ def other_text_parts(blob):
     """
     try:
         with zipfile.ZipFile(io.BytesIO(blob)) as z:
-            names = z.namelist()
-            got = {}
-            for prefix, label in OTHER_TEXT_PARTS:
-                n = 0
-                for name in names:
-                    if not (name.startswith(prefix) and name.endswith('.xml')):
-                        continue
-                    try:
-                        xml = z.read(name).decode('utf-8', 'replace')
-                    except (KeyError, OSError, zipfile.BadZipFile):
-                        continue
-                    if any(t.strip() for t in RUN_RE.findall(xml)):
-                        n += 1
-                if n:
-                    got[label] = n
+            return _other_from(z)
     except (OSError, zipfile.BadZipFile):
         return {}
+
+
+def _slides_from(z, max_slides):
+    """已打开的 zip → `[(序号, [行…])]`（`slides` 与 `slides_in_file` 共用这一份逻辑）。
+
+    **按序号升序，不按文件名字典序**：`slide10` 会排到 `slide2` 前面，那是错的。
+    （真页序其实在 `ppt/presentation.xml` 的 `sldIdLst` + rels 里；本读法假设两者一致——
+    真稿实测过两份都一致，**乱序稿仍未验**，见 `coding-spec` G14。）
+    """
+    named = []
+    for name in z.namelist():
+        m = SLIDE_RE.match(name)
+        if m:
+            named.append((int(m.group(1)), name))
+    got = []
+    for n, name in sorted(named):
+        if max_slides and len(got) >= max_slides:
+            break
+        try:
+            got.append((n, slide_lines(z.read(name).decode('utf-8', 'replace'))))
+        except (KeyError, OSError, zipfile.BadZipFile):
+            continue                                  # 单张坏不让整份失败
     return got
+
+
+def _other_from(z):
+    """已打开的 zip → `{类别: 个数}`（只统计**含文字**的那些部件）。"""
+    got = {}
+    names = z.namelist()
+    for prefix, label in OTHER_TEXT_PARTS:
+        n = 0
+        for name in names:
+            if not (name.startswith(prefix) and name.endswith('.xml')):
+                continue
+            try:
+                xml = z.read(name).decode('utf-8', 'replace')
+            except (KeyError, OSError, zipfile.BadZipFile):
+                continue
+            if any(t.strip() for t in RUN_RE.findall(xml)):
+                n += 1
+        if n:
+            got[label] = n
+    return got
+
+
+def slides_in_file(path, max_slides=0):
+    """**按路径**读幻灯片，只解开要读的那几个部件（`slides` 的路径版）。
+
+    为什么侦查器要用这一份：一份 42 MB 的演示稿里，媒体占 42 MB、`ppt/slides/*.xml` 只有几百 KB——
+    按**整份字节**设护栏，等于"因为图多就不给摘要"，而摘要恰恰是这些大材料最需要的东西（真样本实测）。
+    """
+    try:
+        with zipfile.ZipFile(path) as z:
+            return _slides_from(z, max_slides)
+    except (OSError, zipfile.BadZipFile):
+        return []
+
+
+def other_text_parts_in_file(path):
+    """**按路径**统计"我们没读但含文字"的部件（`other_text_parts` 的路径版）。"""
+    try:
+        with zipfile.ZipFile(path) as z:
+            return _other_from(z)
+    except (OSError, zipfile.BadZipFile):
+        return {}
+
+
+def scan_cost(path, total=0):
+    """这份 zip **摘要/解析要读的字节数**：算"会读的部件"，**媒体与嵌入件不算**。
+
+    护栏要挡的是"打开它会不会把内存吃光"，而 zip 系（docx/pptx）按需解压——图多不等于贵。
+    读不了 / 不是 zip → 返回 `total`（按整份算，保守）。
+    """
+    try:
+        with zipfile.ZipFile(path) as z:
+            return sum(i.file_size for i in z.infolist()
+                       if '/media/' not in i.filename and '/embeddings/' not in i.filename)
+    except (OSError, zipfile.BadZipFile):
+        return total
 
 
 def slides(blob, max_slides=0):
     """`pptx` 字节 → `[(幻灯片序号, [文本行…])]`；`max_slides > 0` 时最多读这么多张（从第 1 张起）。"""
-    out = []
     try:
         with zipfile.ZipFile(io.BytesIO(blob)) as z:
-            for n, name in slide_names(blob):
-                if max_slides and len(out) >= max_slides:
-                    break
-                try:
-                    out.append((n, slide_lines(z.read(name).decode('utf-8', 'replace'))))
-                except (KeyError, OSError, zipfile.BadZipFile):
-                    continue                          # 单张坏不让整份失败
+            return _slides_from(z, max_slides)
     except (OSError, zipfile.BadZipFile):
         return []
     return out

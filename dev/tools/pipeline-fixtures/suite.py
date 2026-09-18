@@ -572,6 +572,30 @@ def materials_paths(root):
           and '--rows 只要第 2–2 行' in (row_els[0].get('degraded') or ''))
     cases.append(('㉖ 范围收窄（--sheet + --rows）：只回那一张表的第 2 行，且带降级留痕',
                   ok, rc, (out[-200:] + str(row_els)[:200]) if not ok else ''))
+
+    # ㉘ 「图多大都不该挡住摘要」：**媒体很大、文字很小**的稿子 —— 护栏必须按"要读的部件"算。
+    # 真是这么发现的：一份 42 MB 的稿子（媒体 42 MB、slides 几百 KB）被判"超护栏"⇒ **摘要直接没有**，
+    # 而摘要恰恰是这种大材料最需要的（§1.5 手段 1）。
+    fat = root / 'fat'
+    fat.mkdir(exist_ok=True)
+    make_deck(fat / '带大图.pptx')
+    with zipfile.ZipFile(fat / '带大图.pptx', 'a') as z:
+        z.writestr('ppt/media/image1.png', b'\x00' * 20000)          # 20 KB 的"图"
+    rc, out = run([sys.executable, str(PROBE_CMD), str(fat), '--json'])
+    (fat / 'materials.json').write_text(out[out.index('['):] if '[' in out else '[]',
+                                        encoding='utf-8', newline='\n')
+    (d / 'guard4k.yaml').write_text('recon:\n  max_open_bytes: 4096\n', encoding='utf-8')
+    rc, out = run([sys.executable, str(RECON_CMD), 'build', '--materials', str(fat / 'materials.json'),
+                   '--dict', str(d / 'guard4k.yaml'), '-o', str(fat / 'r1.md')])
+    r1 = (fat / 'r1.md').read_text(encoding='utf-8') if (fat / 'r1.md').exists() else ''
+    (d / 'guard512.yaml').write_text('recon:\n  max_open_bytes: 512\n', encoding='utf-8')
+    rc2, out2 = run([sys.executable, str(RECON_CMD), 'build', '--materials', str(fat / 'materials.json'),
+                     '--dict', str(d / 'guard512.yaml'), '-o', str(fat / 'r2.md')])
+    r2 = (fat / 'r2.md').read_text(encoding='utf-8') if (fat / 'r2.md').exists() else ''
+    ok = (rc == 0 and '幻灯片' in r1 and '超护栏' not in r1        # 20 KB 媒体 + 4 KB 护栏 ⇒ 摘要照出
+          and rc2 == 0 and '超护栏' in r2)                        # 护栏收到 512 ⇒ 照样记在行里
+    cases.append(('㉘ 图大不挡摘要：护栏按*要读的部件*算（20KB 媒体 + 4KB 护栏 → 有摘要；'
+                  '收到 512 → 才记超护栏）', ok, rc, (r1[-200:] + r2[-200:]) if not ok else ''))
     return cases
 
 
