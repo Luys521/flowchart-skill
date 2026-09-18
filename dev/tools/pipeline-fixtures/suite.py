@@ -1,9 +1,14 @@
 # -*- coding: utf-8 -*-
-"""drift-fixtures/suite.py — `scripts/drift.py` 的合成夹具与路径测试（**尚未接进验收**，见 `coding-spec` G14）。
+"""pipeline-fixtures/suite.py — 材料链两台仪器的合成夹具与路径测试（**门⑪ 每轮验收都跑**）。
 
-为什么单独一个套件：这台仪器的判据有两半——**读得对不对**（D1—D5 命中什么）与
-**账查得严不严**（`check` 能不能抓住说谎与过期）。后者用真实材料造不出来（要故意标错），
-所以在这里合成一份"每条判据正反各一例"的夹具，跑完 9 条路径。
+覆盖两件东西：
+- `scripts/drift.py`（PIPELINE-SPEC §5）：判据 D1—D5 + `check` 的**账目对账**（说谎 / 过期 / 无理由都要抓住）；
+- `scripts/query.py`（§5.3）：**点名取子集**——材料 / 范围 / 关键词 / 分批 + 游标，只查不抽。
+
+为什么要有它：这两台仪器的判据都有"**读得对不对**"与"**边界守不守得住**"两半，后者用真实材料造不出来
+（要故意标错、要故意越界），只能合成。实测抓到过三件真问题，全在夹具里现形：
+`check` 原先**只查了"已修是否真修"、没查"现在的命中是否漏在账外"**；伴生表**一行少一列被静默当成"没给"**
+（D2 静默不跑而表头还写"跳过了 D2"）；`--range rows=` 只顾着裁显示、差点把命中筛成 0。
 
 夹具（`--out` 下现生成，不写进仓库）：
     7 份材料（含一份 `status=unreadable`、一份 30 条元素全没引用的合订本）
@@ -15,7 +20,7 @@
     反例：节点 04 引 `M07#p001`（vlm）但描述以 `⚠` 开头 → **不报 D1**；
           `M07` 引 3/25 = 12% ≥ 10% → **不报 D5**
 
-用法：`python dev/tools/drift-fixtures/suite.py`（退 0 = 全部符合预期）
+用法：`python dev/tools/pipeline-fixtures/suite.py`（退 0 = 全部符合预期）
 """
 import json
 import pathlib
@@ -25,9 +30,10 @@ import subprocess
 import sys
 import tempfile
 
-REPO = pathlib.Path(__file__).resolve().parents[3]        # dev/tools/drift-fixtures/ → 仓库根
+REPO = pathlib.Path(__file__).resolve().parents[3]        # dev/tools/pipeline-fixtures/ → 仓库根
 LEDGER = REPO / 'scripts' / 'ledger.py'
 DRIFT = REPO / 'scripts' / 'drift.py'
+QUERY = REPO / 'scripts' / 'query.py'
 
 FLOWTABLE = """---
 id: driftfix
@@ -208,10 +214,39 @@ def paths(root, draft):
     return cases
 
 
+def query_run(root, *args):
+    """跑一条 `query.py`（账本固定用夹具那份）。"""
+    return run([sys.executable, str(QUERY), str(root / 'evidence.json'), *args])
+
+
+def query_paths(root):
+    """点名取子集的 7 条路径：分批 + 游标 · 续批 · 行区间 · 关键词 · 只裁显示 · 语法错 · 喂错形态。"""
+    cases = []
+    rc, out = query_run(root, '--material', 'M06', '--batch', '3')
+    cases.append(('⑩ 点名 + 分批：命中 30 给 3，带游标', rc == 0 and '命中 30 条' in out
+                  and '`--skip 3`' in out, rc, out))
+    rc, out = query_run(root, '--material', 'M06', '--batch', '3', '--skip', '3')
+    cases.append(('⑪ 按游标续批：给第 4–6 条', rc == 0 and 'M06#p004' in out and 'M06#p006' in out
+                  and 'M06#p001' not in out, rc, out))
+    rc, out = query_run(root, '--material', 'M06', '--range', 'lines=2-3', '--batch', '5')
+    cases.append(('⑫ 行区间（材料内第 N 条，1 起）', rc == 0 and 'M06#p002' in out and 'M06#p003' in out
+                  and 'M06#p001' not in out, rc, out))
+    rc, out = query_run(root, '--grep', 'M07#p005', '--batch', '5')
+    cases.append(('⑬ 关键词：只回含它的那条', rc == 0 and '命中 1 条' in out and 'M07#p005' in out,
+                  rc, out))
+    rc, out = query_run(root, '--range', 'rows=1-2', '--batch', '3')
+    cases.append(('⑭ 只给 rows= 不许把命中筛成 0（它只管显示）', rc == 0 and '命中 58 条' in out, rc, out))
+    rc, out = query_run(root, '--range', 'pages=9-1')
+    cases.append(('⑮ 范围语法错 → 退 2 + 人话', rc == 2 and '上界小于下界' in out, rc, out))
+    rc, out = run([sys.executable, str(QUERY), str(root / 'intake.md')])
+    cases.append(('⑯ 喂错形态（不是账本）→ 退 2 + 人话', rc == 2 and '合法 JSON' in out, rc, out))
+    return cases
+
+
 def main(argv=None):
-    """造夹具 → 跑 `build` 比读数 → 跑 9 条路径 → 打印结论并给退出码。"""
+    """造夹具 → 比 `drift` 读数 → 跑漂移 9 条 + 取子集 7 条路径 → 打印结论并给退出码。"""
     sys.stdout.reconfigure(encoding='utf-8')
-    root = pathlib.Path(argv[0]) if argv else pathlib.Path(tempfile.mkdtemp(prefix='drift-fix-'))
+    root = pathlib.Path(argv[0]) if argv else pathlib.Path(tempfile.mkdtemp(prefix='pipeline-fix-'))
     root.mkdir(parents=True, exist_ok=True)
     print(f'夹具目录：{root}')
     make_fixture(root)
@@ -223,7 +258,7 @@ def main(argv=None):
     head = '✓ 漂移 3 条 · 缺口 3 条' in out
     print(f'{"PASS" if rc == 0 and head else "FAIL"}  ⓪ 读数：{out.splitlines()[0] if out else "（无输出）"}')
     bad = 0 if (rc == 0 and head) else 1
-    for name, good, rc, out in paths(root, draft):
+    for name, good, rc, out in paths(root, draft) + query_paths(root):
         print(f'{"PASS" if good else "FAIL"}  {name}  （rc={rc}）')
         if not good:
             print('      ' + out.strip().replace('\n', '\n      ')[:500])

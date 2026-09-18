@@ -46,7 +46,7 @@
   真实收口时：`--tables-root` 换成要裁决的流程表目录树，`--graph` 可省（默认 `dev/tools/fn-graph.json`）。
   要给循环裁决消费就加 `--json`。
 - **`--tables-root` 该指哪棵树**：**就是 `output/self-boot/`**。真实的产出结构是**两层**——
-  `output/self-boot/flowtable.md`（根表：37 个模块 + 「项目运作阶段」列）、
+  `output/self-boot/flowtable.md`（根表：每模块一行 + 「项目运作阶段」列）、
   `output/self-boot/<模块名>/flowtable.md`（每模块一张，**节点 = 该模块的函数**）。
   （曾规划过"再插一层阶段表"的三层方案，已撤销：分组信息用根表的阶段列承载即可，见 `ARCHITECTURE.md` 第七节。）
   映射规则是「**目录名即模块名**」，所以这条规则在**任意深度**都成立、递归逻辑不用为层数特判；
@@ -171,7 +171,7 @@ python dev/tools/accept.py --allow-soft        # 门②不因软提示报红（�
 | ⑧ 卫生 | `scripts/*.py` 的"白写"归零（未用 import / 没人调的模块级函数） | `hygiene.py` 的退出码（0 过 / 1 有白写 / 其它=仪器故障）。**射程只有 `scripts/`**：`dev/` 的未用 import 不改变任何产物字节，为它把 `dev/` 塞进依赖图会让门③ 分母多出上百个 dev 函数（D-88 / N31） |
 | ⑨ 审美 | 三条审美律的读数不许退化：主轴偏心 / 绕行率 / 通道半径（`references/visual-spec.md` §0.1） | `aesthetic.py` 的读数与退出码；阈值以 `references/visual-spec.md` §0.1 为准（当前收口值见 `dev/coding-spec.md` G12） |
 | ⑩ 等价 | 夹具自身有效 + 工作树可观测行为与底本 tag 逐字节相同 | `table_to_dsl --check` 对 `dev/tools/equiv-fixtures/*.md` 的期望结果；`equiv.py make-base` / `suite` 的退出码（0 全同 / 1 有不同 / 2 仪器故障） |
-| ⑪ 材料链与漂移 | 循环的发动机（`PIPELINE-SPEC` §5）：漂移判据 D1—D5 与 `check` 的**账目对账**（说谎 / 过期 / 无理由都要被抓住） | `drift-fixtures/suite.py` 的 `PASS/FAIL` 行与退出码（0 全符 / 1 有不符 / 2 夹具自身造不出来）。夹具在系统临时目录里**现造现跑现清**，不往树里写字节 |
+| ⑪ 材料链 · 漂移 · 取子集 | `PIPELINE-SPEC` §5 的循环发动机：漂移判据 D1—D5 + `check` 的**账目对账**（说谎 / 过期 / 无理由都要被抓住）；§5.3 的点名取子集（分批 + 游标 / 范围 / 关键词 / 语法错退 2） | `pipeline-fixtures/suite.py` 的 `PASS/FAIL` 行与退出码（0 全符 / 1 有不符 / 2 夹具自身造不出来）。夹具在系统临时目录里**现造现跑现清**，不往树里写字节 |
 
 **退出码**（与七件仪器同一套约定）：**0** = 十一道门全过；**1** = 有门未过；**2** = **仪器故障**
 （表树不存在 / 命令起不来 / 输出解析不了）。**1 与 2 分开**，是为了让"命令没跑起来"不被误读成"门没过"。

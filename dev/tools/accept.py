@@ -19,7 +19,7 @@ r"""accept.py — **验收：一条命令跑完十一道门，只给一个结论
 | ⑧ 卫生 | scripts/*.py 的未用 import／死函数归零 | hygiene.py 退出码（0 过 / 1 有白写 / 其它=仪器故障）；**射程只有 scripts/**，见 D-88 |
 | ⑨ 审美 | 三条审美律的读数不许退化（偏心 / 绕行 / 通道半径） | `aesthetic.py` 的读数与退出码；阈值见 `references/visual-spec.md` §0.1（当前收口值，见 G12） |
 | ⑩ 等价 | 夹具自身有效 + 工作树可观测行为与底本 tag 逐字节相同 | `table_to_dsl --check` 对 `equiv-fixtures/*.md` 的期望结果；`equiv.py make-base` / `suite` 的退出码 |
-| ⑪ 材料链与漂移 | `drift.py` 的判据 D1—D5 与 `check` 的账目对账（每条正反各一例） | `drift-fixtures/suite.py` 的 `PASS/FAIL` 行 + 退出码；夹具在系统临时目录里现造现跑 |
+| ⑪ 材料链 · 漂移 · 取子集 | `drift.py` 的判据 D1—D5 与账目对账 · `query.py` 的取子集边界（每条正反各一例） | `pipeline-fixtures/suite.py` 的 `PASS/FAIL` 行 + 退出码；夹具在系统临时目录里现造现跑 |
 
 **门⑤在仓库外的副本上跑**：`build.py` 会往树里写 html / drawio / `.bak` / yaml。验收**不改产物**，
 所以先把树整棵复制到临时目录再 build——副本的根目录仍叫 `self-boot`，产物名（`self-boot-flow.html`
@@ -318,7 +318,7 @@ def gate_aesthetic(g, tables_root):
         工具自己标「单臂」且不进均值（拿它当失败是误伤）。
       · 通道半径 ≤0.5 —— **达标**（实测 0.00~0.17）。
       · 绕行均值 ≤45%、最坏 ≤60% —— 这是**当前收口值**，不是目标：`visual-spec` §0.1 写的目标是
-        均值 ≤35%，而自举那 39 张单列函数流现在还压在 43%——那批表几十条长跳的竖直跨度互相重叠，
+        均值 ≤35%，而自举那批单列函数流现在还压在 43%——那批表几十条长跳的竖直跨度互相重叠，
         谁也借不了谁的竖道，束宽是"条数 × 束距"的硬账（两次"把档分到两侧"的尝试都更差，见 D-92）。
         要再往下走，得让**跨度**变短（把长跳拆到两列），那是生成器的事。门先把现状钉住，**不许变差**。
     """
@@ -673,30 +673,33 @@ def gate_equiv(g, scratch):
 
 # ----------------------------------------------------------------门⑪ 材料链与漂移
 def gate_drift(g):
-    """门⑪：循环的发动机（`PIPELINE-SPEC` §5）**每轮验收都跑一遍**，用合成夹具钉住判据与对账。
+    """门⑪：材料链的两台仪器（`PIPELINE-SPEC` §5 / §5.3）**每轮验收都跑一遍**，用合成夹具钉住判据与边界。
 
-    **为什么它够格当一道门**：`scripts/drift.py` 的判据有两半——「读得对不对」（D1—D5 命中什么）
-    与「账查得严不严」（`check` 能不能抓住说谎与过期）。后一半**只能用合成夹具验**（真实材料造不出
-    "故意标错"），而在这之前它只有人手动跑：`coding-spec` G14 记的就是这个缺口。
-    实测抓到的两件真问题（都在夹具里现形）：`check` 原先**只查了"已修是否真修"、没查"现在的命中是否
-    漏在账外"**；伴生表**一行少一列被静默当成"没给"**（D2 静默不跑，表头还写"跳过了 D2"）。
-    两件都是「没人跑它」养出来的，所以把它接进来。
+    覆盖：`drift.py` 的判据 D1—D5 与 `check` 的**账目对账**（说谎 / 过期 / 无理由都要被抓住）；
+    `query.py` 的点名取子集（分批 + 游标 / 范围 / 关键词 / 只裁显示不筛 / 语法错退 2）。
+
+    **为什么它够格当一道门**：这两台仪器的判据都有"读得对不对"与"边界守不守得住"两半，
+    后者**只能用合成夹具验**（真实材料造不出"故意标错"），而在这之前它只有人手动跑：
+    `coding-spec` G14 记的就是这个缺口。实测抓到的三件真问题（都在夹具里现形）：
+    `check` 原先**只查了"已修是否真修"、没查"现在的命中是否漏在账外"**；伴生表**一行少一列被静默
+    当成"没给"**（D2 静默不跑，表头还写"跳过了 D2"）；`--range rows=` 差点把命中筛成 0。
+    三件都是「没人跑它」养出来的，所以把它接进来。
 
     **夹具不进仓库的产物**：`suite.py` 在系统临时目录里现造现跑现清，验收不写任何字节到树里。
     """
     try:
-        r = run([PY, TOOLS / 'drift-fixtures' / 'suite.py'])
+        r = run([PY, TOOLS / 'pipeline-fixtures' / 'suite.py'])
     except OSError as e:
         return g.broken(f'材料链夹具起不来（{type(e).__name__}: {e}）')
     if r.returncode not in (0, 1):
-        return g.broken(f'drift 夹具退 {r.returncode}（它的合约是 0/1/2，2 = 夹具自身造不出来）')
+        return g.broken(f'材料链夹具退 {r.returncode}（它的合约是 0/1/2，2 = 夹具自身造不出来）')
     for ln in (r.stdout or '').splitlines():
         if ln.startswith(('PASS', 'FAIL', '——')):
             g.note(ln.strip())
     if r.returncode == 0:
         return g.passed()
-    return g.failed('漂移判据或账目对账与夹具预期不符（上面点了具体路径）——'
-                    '夹具是"每条判据正反各一例"，红一条就是这条判据或这条守卫坏了')
+    return g.failed('漂移判据 / 取子集边界与夹具预期不符（上面点了具体路径）——'
+                    '夹具是"每条判据与每条边界正反各一例"，红一条就是这条判据或这条守卫坏了')
 
 
 def main(argv=None):
@@ -732,7 +735,7 @@ def main(argv=None):
              lambda g: gate_aesthetic(g, tables_root)),
             ('⑩', '等价 equiv（夹具 + 可观测行为逐字节）',
              lambda g: gate_equiv(g, scratch)),
-            ('⑪', '材料链与漂移 drift-fixtures 夹具', lambda g: gate_drift(g))]
+            ('⑪', '材料链 · 漂移 · 取子集 pipeline-fixtures 夹具', lambda g: gate_drift(g))]
     for num, title, fn in plan:
         g = Gate(num, title)
         print(f'\n=== 门{num} {title} ===')
