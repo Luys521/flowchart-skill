@@ -8,8 +8,8 @@ meta:
 layout:
   col_x:
   - 400
-  width: 900
-  origin_x: -180
+  width: 840
+  origin_x: -120
 nodes:
 - id: '01'
   name: 开始
@@ -34,11 +34,11 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 前 n 字节；读不动就返回空（调用方按 T4 记账，不许崩）。 · L60 · 函数
+  desc: ★ 前 n 字节；读不动就返回空（调用方按 T4 记账，不许崩）。 · L63 · 函数
 - id: '03'
-  name: _mtime
+  name: _ooxml_kind
   lines:
-  - _mtime
+  - _ooxml_kind
   type: task
   subject: 脚本
   executor: selfboot
@@ -46,11 +46,11 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 修改时间（ISO 8601 本地时区）；取不到返回空串（不崩）—§3「替代」的末位兜底。 · L69 · 函数
+  desc: ★ PK 容器 → `docx` / `xlsx` / `pptx`；不是 OOXML 就返回 None。 · L71 · 函数
 - id: '04'
-  name: _ooxml_kind
+  name: _pdf_tier
   lines:
-  - _ooxml_kind
+  - _pdf_tier
   type: task
   subject: 脚本
   executor: selfboot
@@ -58,11 +58,11 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ PK 容器 → `docx` / `xlsx` / `pptx`；不是 OOXML 就返回 None。 · L77 · 函数
+  desc: ★ PDF：有字体标记 → 有文本层（T2），否则判扫描件（T3）。依据写成 `/Font` 计数，人可核。 · L88 · 函数
 - id: '05'
-  name: _pdf_tier
+  name: _text_tier
   lines:
-  - _pdf_tier
+  - _text_tier
   type: task
   subject: 脚本
   executor: selfboot
@@ -70,20 +70,8 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ PDF：有字体标记 → 有文本层（T2），否则判扫描件（T3）。依据写成 `/Font` 计数，人可核。 · L95 · 函数
+  desc: ★ 能按 UTF-8 解码且无 NUL 字节 → 文本（T1）；否则 None。 · L103 · 函数
 - id: '06'
-  name: _text_tier
-  lines:
-  - _text_tier
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 8
-  col: 0
-  stage: 模块级
-  route: →11
-  desc: ★ 能按 UTF-8 解码且无 NUL 字节 → 文本（T1）；否则 None。 · L111 · 函数
-- id: '07'
   name: sniff
   lines:
   - sniff
@@ -93,9 +81,21 @@ nodes:
   row: 3
   col: 0
   stage: 模块级
-  route: 1→02｜2→04｜3→05｜4→06
-  desc: ★ 一个文件 → `(tier, probe, status, reason, kind)`。`probe` 是**判据*… · L132 · 函数
+  route: 1→02｜2→03｜3→04｜4→05
+  desc: ★ 一个文件 → `(tier, probe, status, reason, kind)`。`probe` 是**判据*… · L123 · 函数
     · 分支：1→_read_head 2→_ooxml_kind 3→_pdf_tier 4→_text_tier
+- id: '07'
+  name: _mtime
+  lines:
+  - _mtime
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 8
+  col: 0
+  stage: 模块级
+  route: →11
+  desc: ★ 修改时间（ISO 8601 本地时区）；取不到返回空串（不崩）—§3「替代」的末位兜底。 · L164 · 函数
 - id: 08
   name: probe_tree
   lines:
@@ -106,9 +106,9 @@ nodes:
   row: 2
   col: 0
   stage: 模块级
-  route: 1→03｜2→07
-  desc: ★ 路径（文件或目录）→ `materials[]`；目录按**材料路径字典序**编号 `M01`…（PIPELINE-S… · L174 · 函数
-    · 分支：1→_mtime 2→sniff
+  route: 1→06｜2→07
+  desc: ★ 路径（文件或目录）→ `materials[]`；目录按**材料路径字典序**编号 `M01`…（PIPELINE-S… · L171 · 函数
+    · 分支：1→sniff 2→_mtime
 - id: 09
   name: _print_table
   lines:
@@ -120,7 +120,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 人读摘要：一行一份材料。 · L202 · 函数
+  desc: ★ 人读摘要：一行一份材料。 · L198 · 函数
 - id: '10'
   name: main
   lines:
@@ -132,7 +132,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→08｜2→09
-  desc: L212 · 函数 · 分支：1→probe_tree 2→_print_table
+  desc: L207 · 函数 · 分支：1→probe_tree 2→_print_table
 - id: '11'
   name: 结束
   lines:
@@ -168,37 +168,37 @@ edges:
   kind: jumpR
   polarity: main
 - from: '06'
-  to: '11'
-  kind: jumpR
-  polarity: main
-- from: '07'
   to: '02'
   kind: spine
   polarity: main
   label: '1'
-- from: '07'
-  to: '04'
+- from: '06'
+  to: '03'
   kind: jumpR
   polarity: main
   label: '2'
-- from: '07'
-  to: '05'
+- from: '06'
+  to: '04'
   kind: jumpR
   polarity: main
   label: '3'
-- from: '07'
-  to: '06'
+- from: '06'
+  to: '05'
   kind: jumpR
   polarity: main
   label: '4'
-- from: 08
-  to: '03'
+- from: '07'
+  to: '11'
   kind: jumpR
+  polarity: main
+- from: 08
+  to: '06'
+  kind: spine
   polarity: main
   label: '1'
 - from: 08
   to: '07'
-  kind: spine
+  kind: jumpR
   polarity: main
   label: '2'
 - from: 09

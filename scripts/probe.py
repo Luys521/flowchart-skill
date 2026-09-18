@@ -56,6 +56,9 @@ KINDS = ('docx', 'xlsx', 'pptx', 'ole', 'pdf-text', 'pdf-scan', 'image', 'text',
 # 判"是不是文本"时读多少字节：8 字节不够——中文一个字 3 字节，正好会被 8 字节的头切断（见 _text_tier）。
 TEXT_HEAD = 4096
 
+# **函数顺序按调用方向排**（判据助手紧跟 `sniff`，取元数据的紧跟 `probe_tree`）：单列函数流里
+# 一条长跳就把门⑨ 的绕行读数顶上去（G12）。实测本模块 60% → 43%。
+
 
 def _read_head(path, n=8):
     """前 n 字节；读不动就返回空（调用方按 T4 记账，不许崩）。"""
@@ -64,15 +67,6 @@ def _read_head(path, n=8):
             return f.read(n)
     except OSError:
         return b''
-
-
-def _mtime(path):
-    """修改时间（ISO 8601 本地时区）；取不到返回空串（不崩）—§3「替代」的末位兜底。"""
-    try:
-        return time.strftime('%Y-%m-%dT%H:%M:%S', time.localtime(path.stat().st_mtime))
-    except OSError:
-        return ''
-
 
 def _ooxml_kind(path):
     """PK 容器 → `docx` / `xlsx` / `pptx`；不是 OOXML 就返回 None。
@@ -91,7 +85,6 @@ def _ooxml_kind(path):
             return kind
     return None
 
-
 def _pdf_tier(path):
     """PDF：有字体标记 → 有文本层（T2），否则判扫描件（T3）。依据写成 `/Font` 计数，人可核。
 
@@ -106,7 +99,6 @@ def _pdf_tier(path):
     if fonts:
         return 'T2', f'PDF 有文本层（/Font x{fonts}）'
     return 'T3', f'PDF 无字体标记（/Font 0, /Image x{blob.count(b"/Image")}）→判扫描件'
-
 
 def _text_tier(head):
     """能按 UTF-8 解码且无 NUL 字节 → 文本（T1）；否则 None。
@@ -127,7 +119,6 @@ def _text_tier(head):
         except UnicodeDecodeError:
             continue
     return None
-
 
 def sniff(path):
     """一个文件 → `(tier, probe, status, reason, kind)`。`probe` 是**判据**（人可核），`kind` 是机器可读类型。
@@ -170,6 +161,12 @@ def sniff(path):
 
     return 'T4', f'魔数不认识（{head[:4].hex()}）', 'unreadable', '魔数不认识，且不是文本', 'unknown'
 
+def _mtime(path):
+    """修改时间（ISO 8601 本地时区）；取不到返回空串（不崩）—§3「替代」的末位兜底。"""
+    try:
+        return time.strftime('%Y-%m-%dT%H:%M:%S', time.localtime(path.stat().st_mtime))
+    except OSError:
+        return ''
 
 def probe_tree(root):
     """路径（文件或目录）→ `materials[]`；目录按**材料路径字典序**编号 `M01`…（PIPELINE-SPEC §0）。"""
@@ -198,7 +195,6 @@ def probe_tree(root):
         out.append(item)
     return out
 
-
 def _print_table(items):
     """人读摘要：一行一份材料。"""
     counts = {}
@@ -207,7 +203,6 @@ def _print_table(items):
     print('  '.join(f'{k} x{counts[k]}' for k in sorted(counts)) or '（没有材料）')
     for it in items:
         print(f"  {it['id']}  {it['tier']}  {it['kind']:<9} {it['status']:<10} {it['probe']}")
-
 
 def main(argv=None):
     sys.stdout.reconfigure(encoding='utf-8')

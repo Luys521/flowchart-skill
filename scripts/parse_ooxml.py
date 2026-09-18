@@ -25,48 +25,11 @@ from pathlib import Path
 
 from pptx_text import slides
 
+# **函数顺序按调用方向排**（助手紧跟调用者，CLI 压尾）：自举表是**单列函数流**，一条跨十个节点的
+# 调用边会把门⑨ 的绕行读数顶上去（G12）。实测：加 `parse_pptx` 后本模块绕行 66%（超 60% 阈值），
+# 按调用方向重排后 33%——**顺序是布局的输入**，改函数位置前先跑 `dev/tools/aesthetic.py`。
+
 DEP_PKG = {'docx': 'python-docx', 'openpyxl': 'openpyxl'}
-
-
-def _import_dep(name):
-    """import 一个必须依赖 → `(模块, 报错文案)`。缺了给**可执行**的提示（§1.4）。"""
-    try:
-        return importlib.import_module(name), ''
-    except ImportError:
-        pkg = DEP_PKG[name]
-        return None, (f'缺依赖 {pkg}：装 `python -m pip install {pkg}`'
-                      f'（或 `python -m pip install -r requirements.txt`）')
-
-
-def _read_json(path):
-    """读 JSON（容忍 BOM）。"""
-    return json.loads(Path(path).read_text(encoding='utf-8-sig'))
-
-
-def _write_notes(notes, path):
-    """写材料层补注：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 `ledger.dump`）。"""
-    Path(path).write_bytes((json.dumps(notes, ensure_ascii=False, indent=2) + '\n').encode('utf-8'))
-
-
-def container_kind(blob):
-    """PK 容器的**字节** → `'docx'` / `'xlsx'` / `'pptx'`；不是 OOXML 返回 None。
-
-    判据与 `probe._ooxml_kind` **同一句**（都认 `word/document.xml` / `xl/workbook.xml` / `ppt/presentation.xml`）——
-    审计抓到过精度不一致的后果：probe 按目录前缀判、这里按确切部件判，于是"有 word/ 没 document.xml"
-    的包被判 T1 可直读却没人认领，整条链判"漏认"退 1。**探测与读者的射程必须对齐。**
-    """
-    try:
-        with zipfile.ZipFile(io.BytesIO(blob)) as z:
-            names = set(z.namelist())
-    except (OSError, zipfile.BadZipFile):
-        return None
-    if 'word/document.xml' in names:
-        return 'docx'
-    if 'xl/workbook.xml' in names:
-        return 'xlsx'
-    if 'ppt/presentation.xml' in names:
-        return 'pptx'
-    return None
 
 
 def _docx_body(doc):
@@ -80,6 +43,14 @@ def _docx_body(doc):
         elif tag == 'tbl':
             yield 'tbl', Table(child, doc)
 
+def _import_dep(name):
+    """import 一个必须依赖 → `(模块, 报错文案)`。缺了给**可执行**的提示（§1.4）。"""
+    try:
+        return importlib.import_module(name), ''
+    except ImportError:
+        pkg = DEP_PKG[name]
+        return None, (f'缺依赖 {pkg}：装 `python -m pip install {pkg}`'
+                      f'（或 `python -m pip install -r requirements.txt`）')
 
 def parse_docx(blob, path, mid):
     """`.docx` **字节** → `(elements, 报错文案)`。样式名判 heading / list_item（判不出就当 paragraph）。
@@ -121,7 +92,6 @@ def parse_docx(blob, path, mid):
                         'extractor': 'py:docx', 'certainty': 'direct'})
     return out, ''
 
-
 def parse_xlsx(blob, path, mid, max_rows, max_cols):
     """`.xlsx` **字节** → `(elements, 报错文案)`。**一张 sheet 一个 element**（`rows` 承载内容，§2.1）。
 
@@ -158,7 +128,6 @@ def parse_xlsx(blob, path, mid, max_rows, max_cols):
         wb.close()
     return out, ''
 
-
 def parse_pptx(blob, path, mid, max_slides):
     """`.pptx` **字节** → `(elements, 报错文案)`。**一张幻灯片一个 element**（零依赖，见 `pptx_text`）。
 
@@ -186,6 +155,25 @@ def parse_pptx(blob, path, mid, max_slides):
             e['degraded'] = note
     return out, ''
 
+def container_kind(blob):
+    """PK 容器的**字节** → `'docx'` / `'xlsx'` / `'pptx'`；不是 OOXML 返回 None。
+
+    判据与 `probe._ooxml_kind` **同一句**（都认 `word/document.xml` / `xl/workbook.xml` / `ppt/presentation.xml`）——
+    审计抓到过精度不一致的后果：probe 按目录前缀判、这里按确切部件判，于是"有 word/ 没 document.xml"
+    的包被判 T1 可直读却没人认领，整条链判"漏认"退 1。**探测与读者的射程必须对齐。**
+    """
+    try:
+        with zipfile.ZipFile(io.BytesIO(blob)) as z:
+            names = set(z.namelist())
+    except (OSError, zipfile.BadZipFile):
+        return None
+    if 'word/document.xml' in names:
+        return 'docx'
+    if 'xl/workbook.xml' in names:
+        return 'xlsx'
+    if 'ppt/presentation.xml' in names:
+        return 'pptx'
+    return None
 
 def parse_materials(materials, max_rows, max_cols, max_slides):
     """材料层 → `(elements, 补注, 摘要, 跳过清单, 报错文案)`。非 OOXML / 非 ok 的一律**跳过并记账**。
@@ -227,6 +215,13 @@ def parse_materials(materials, max_rows, max_cols, max_slides):
             notes.append({'material_id': mid, 'extractor': f'py:{kind}'})
     return elements, notes, done, skipped, ''
 
+def _read_json(path):
+    """读 JSON（容忍 BOM）。"""
+    return json.loads(Path(path).read_text(encoding='utf-8-sig'))
+
+def _write_notes(notes, path):
+    """写材料层补注：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 `ledger.dump`）。"""
+    Path(path).write_bytes((json.dumps(notes, ensure_ascii=False, indent=2) + '\n').encode('utf-8'))
 
 def main(argv=None):
     sys.stdout.reconfigure(encoding='utf-8')
