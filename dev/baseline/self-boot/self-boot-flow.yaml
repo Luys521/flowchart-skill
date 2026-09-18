@@ -180,45 +180,45 @@ nodes:
   route: →15
   desc: 9 个函数 · ⊞ layer_index/flowtable.md
 - id: '15'
+  name: 模块 · ledger
+  lines:
+  - 模块 · ledger
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 14
+  col: 0
+  stage: 接管与解析
+  route: →16
+  desc: 7 个函数 · ⊞ ledger/flowtable.md
+- id: '16'
   name: 模块 · manifest
   lines:
   - 模块 · manifest
   type: task
   subject: 脚本
   executor: selfboot
-  row: 14
+  row: 15
   col: 0
   stage: 产物审核
-  route: →16
+  route: →17
   desc: 29 个函数 · ⊞ manifest/flowtable.md
-- id: '16'
+- id: '17'
   name: 模块 · probe
   lines:
   - 模块 · probe
   type: task
   subject: 脚本
   executor: selfboot
-  row: 15
+  row: 16
   col: 0
   stage: 接管与解析
-  route: →17
+  route: →18
   desc: 8 个函数 · ⊞ probe/flowtable.md
-- id: '17'
+- id: '18'
   name: 模块 · render_drawio
   lines:
   - 模块 · render_drawio
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 16
-  col: 0
-  stage: 渲染
-  route: →18
-  desc: 24 个函数 · ⊞ render_drawio/flowtable.md
-- id: '18'
-  name: 模块 · render_html
-  lines:
-  - 模块 · render_html
   type: task
   subject: 脚本
   executor: selfboot
@@ -226,11 +226,11 @@ nodes:
   col: 0
   stage: 渲染
   route: →19
-  desc: 23 个函数 · ⊞ render_html/flowtable.md
+  desc: 24 个函数 · ⊞ render_drawio/flowtable.md
 - id: '19'
-  name: 模块 · render_svg
+  name: 模块 · render_html
   lines:
-  - 模块 · render_svg
+  - 模块 · render_html
   type: task
   subject: 脚本
   executor: selfboot
@@ -238,11 +238,11 @@ nodes:
   col: 0
   stage: 渲染
   route: →20
-  desc: 11 个函数 · ⊞ render_svg/flowtable.md
+  desc: 23 个函数 · ⊞ render_html/flowtable.md
 - id: '20'
-  name: 模块 · router
+  name: 模块 · render_svg
   lines:
-  - 模块 · router
+  - 模块 · render_svg
   type: task
   subject: 脚本
   executor: selfboot
@@ -250,95 +250,95 @@ nodes:
   col: 0
   stage: 渲染
   route: →21
-  desc: 30 个函数 · ⊞ router/flowtable.md
+  desc: 11 个函数 · ⊞ render_svg/flowtable.md
 - id: '21'
+  name: 模块 · router
+  lines:
+  - 模块 · router
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 20
+  col: 0
+  stage: 渲染
+  route: →22
+  desc: 30 个函数 · ⊞ router/flowtable.md
+- id: '22'
   name: 模块 · semantics
   lines:
   - 模块 · semantics
   type: task
   subject: 脚本
   executor: selfboot
-  row: 20
+  row: 21
   col: 0
   stage: 接管与解析
-  route: →22
+  route: →23
   desc: 17 个函数 · ⊞ semantics/flowtable.md
-- id: '22'
+- id: '23'
   name: 模块 · shot
   lines:
   - 模块 · shot
   type: task
   subject: 脚本
   executor: selfboot
-  row: 21
+  row: 22
   col: 0
   stage: 编排入口
-  route: →23
+  route: →24
   desc: 8 个函数 · ⊞ shot/flowtable.md
-- id: '23'
+- id: '24'
   name: 模块 · swimlane
   lines:
   - 模块 · swimlane
   type: task
   subject: 脚本
   executor: selfboot
-  row: 22
+  row: 23
   col: 0
   stage: 渲染
-  route: →24
+  route: →25
   desc: 19 个函数 · ⊞ swimlane/flowtable.md
-- id: '24'
+- id: '25'
   name: 模块 · sync
   lines:
   - 模块 · sync
   type: task
   subject: 脚本
   executor: selfboot
-  row: 23
+  row: 24
   col: 0
   stage: 同步闭环
-  route: →25
+  route: →26
   desc: 10 个函数 · ⊞ sync/flowtable.md
-- id: '25'
+- id: '26'
   name: 模块 · table_to_dsl
   lines:
   - 模块 · table_to_dsl
   type: task
   subject: 脚本
   executor: selfboot
-  row: 24
+  row: 25
   col: 0
   stage: DSL 装配
-  route: →26
+  route: →27
   desc: 14 个函数 · ⊞ table_to_dsl/flowtable.md
-- id: '26'
+- id: '27'
   name: 模块 · validate
   lines:
   - 模块 · validate
   type: task
   subject: 脚本
   executor: selfboot
-  row: 25
+  row: 26
   col: 0
   stage: 产物审核
-  route: →27
+  route: →28
   desc: 39 个函数 · ⊞ validate/flowtable.md
-- id: '27'
+- id: '28'
   name: 模块 · writeback
   lines:
   - 模块 · writeback
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 26
-  col: 0
-  stage: 同步闭环
-  route: →28
-  desc: 21 个函数 · ⊞ writeback/flowtable.md
-- id: '28'
-  name: 模块 · xml_reader
-  lines:
-  - 模块 · xml_reader
   type: task
   subject: 脚本
   executor: selfboot
@@ -346,15 +346,27 @@ nodes:
   col: 0
   stage: 同步闭环
   route: →29
-  desc: 40 个函数 · ⊞ xml_reader/flowtable.md
+  desc: 21 个函数 · ⊞ writeback/flowtable.md
 - id: '29'
+  name: 模块 · xml_reader
+  lines:
+  - 模块 · xml_reader
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 28
+  col: 0
+  stage: 同步闭环
+  route: →30
+  desc: 40 个函数 · ⊞ xml_reader/flowtable.md
+- id: '30'
   name: 结束
   lines:
   - 结束
   type: end
   subject: 脚本
   executor: selfboot
-  row: 28
+  row: 29
   col: 0
   stage: 出口
   route: —
@@ -470,5 +482,9 @@ edges:
   polarity: main
 - from: '28'
   to: '29'
+  kind: spine
+  polarity: main
+- from: '29'
+  to: '30'
   kind: spine
   polarity: main

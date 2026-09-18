@@ -65,6 +65,7 @@ MODULE = {
     'validate',       # → 几何报告（stdout / --dump）
     'shot',           # → *.shot.png
     'probe',          # → materials[] 骨架（材料探测分档，PIPELINE-SPEC §1.2）
+    'ledger',         # → evidence.json（证据账本，PIPELINE-SPEC §2）
 }
 
 # 编排层：驱动整条流水线，允许依赖上面两层。

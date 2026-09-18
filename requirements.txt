@@ -1,0 +1,17 @@
+# flowchart-skill 的 Python 依赖（**自包含侧**，见 PIPELINE-SPEC 1.4）
+#
+# 装：python -m pip install -r requirements.txt
+# 缺依赖时脚本必须报**可执行**的错（说清装什么），不许静默降级。
+#
+# 必须（跑通主链）
+PyYAML>=6.0          # 流程表 frontmatter / 字典（已有）
+python-docx>=1.1     # OOXML：.docx 读取（解析适配器用）
+openpyxl>=3.1        # OOXML：.xlsx 读取（解析适配器用）
+#
+# 可选（增强，缺了该格式降级为 T4）
+# python-pptx>=0.6    # .pptx
+# pytesseract>=0.3    # 图片 OCR（需另装 tesseract 二进制）
+# paddleocr>=2.7      # 图片 OCR（备选）
+#
+# 可选外部工具（不是 Python 包；缺了 legacy 格式记 T4 + 提示用户另存为 .docx）
+# LibreOffice / soffice >= 7

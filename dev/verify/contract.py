@@ -48,7 +48,7 @@ def _mds():
     是豁免的（`DECISIONS.md` 按设计要能原样引用当年的旧词与旧举例，见 HISTORY_DOCS），
     扫进来只会把这些记录逼成不实陈述。
     """
-    skip = {'.verify_tmp', '.accept_tmp', '__pycache__', '.git', 'output', 'dev'}
+    skip = {'.verify_tmp', '.accept_tmp', '__pycache__', '.git', '.workbuddy', 'output', 'dev'}
     return {p: p.read_text(encoding='utf-8') for p in sorted(SKILL.rglob('*.md'))
             if not (set(p.relative_to(SKILL).parts) & skip)}
 
@@ -121,7 +121,7 @@ def run_face(tmp=None):
     # 指错路）。**历史文档除外**：它按设计要保留当年的旧路径与旧目录名（HISTORY_DOCS）。
     docs_all = {p: p.read_text(encoding='utf-8') for p in sorted(SKILL.rglob('*.md'))
                 if not (set(p.relative_to(SKILL).parts)
-                        & {'.verify_tmp', '.accept_tmp', '__pycache__', '.git', 'archive', 'old'})
+                        & {'.verify_tmp', '.accept_tmp', '__pycache__', '.git', '.workbuddy', 'archive', 'old'})
                 and p.name not in HISTORY_DOCS}
     seen = {}
     for p, t in docs_all.items():
