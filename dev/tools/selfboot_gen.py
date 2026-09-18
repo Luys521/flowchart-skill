@@ -192,12 +192,12 @@ MAX_DOC = 60
 SUBJECT = '脚本'
 SUBJECTS = ('AI', '用户', SUBJECT)
 
-# 流水线阶段：把 34 个模块按"它在这个项目里干什么"编成 9 组，写进根表的「项目运作阶段」列。
-# 扁平 35 张、不切三层时，**分组信息只落在这里**——不复用这一列，分组在图里就没有据可查。
+# 流水线阶段：把 35 个模块按"它在这个项目里干什么"编成 9 组，写进根表的「项目运作阶段」列。
+# 扁平 36 张、不切三层时，**分组信息只落在这里**——不复用这一列，分组在图里就没有据可查。
 # 元组顺序即流水线顺序；`_root_rows` 按模块查表，查不到就抛错（仪器失效，不静默留空）。
 PIPELINE_STAGES = (
     ('接管与解析', ('probe', 'recon', 'parse', 'parse_ooxml', 'parse_pdf', 'parse_legacy',
-                    'parse_text', 'ledger', 'flowtable', 'semantics', 'artifact')),
+                    'parse_text', 'ledger', 'intake', 'flowtable', 'semantics', 'artifact')),
     ('结构校验', ('flowtable_check',)),
     ('布局与配色', ('flowtable_layout', 'flowtable_colors')),
     ('DSL 装配', ('table_to_dsl',)),

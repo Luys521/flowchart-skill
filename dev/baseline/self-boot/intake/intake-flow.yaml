@@ -1,0 +1,222 @@
+meta:
+  title: intake.py 函数流程表
+  subjects:
+    脚本:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  width: 840
+  origin_x: -140
+nodes:
+- id: '01'
+  name: 开始
+  lines:
+  - 开始
+  type: start
+  subject: 脚本
+  executor: selfboot
+  row: 0
+  col: 0
+  stage: 入口
+  route: 1→10
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→main
+- id: '02'
+  name: escape
+  lines:
+  - escape
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 9
+  col: 0
+  stage: 模块级
+  route: →11
+  desc: ★ 单元格转义：ASCII 竖线 → 全角 `｜`（竖线是表格列分隔符，不换就**切错列**——与 `selfboot_g… · L46 · 函数
+- id: '03'
+  name: duplicate_pairs
+  lines:
+  - duplicate_pairs
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: 模块级
+  route: →11
+  desc: '★ 材料层 → `({M##: 被重复的 M##}, [(原件, 副本), …])`。**判重只看 `sha256`**（… · L51 · 函数'
+- id: '04'
+  name: _line_of
+  lines:
+  - _line_of
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 5
+  col: 0
+  stage: 模块级
+  route: →02
+  desc: ★ 一条证据 → 摘要里的一行（表格给行列数，其余给原文节选：压成单行 + 截断）。 · L67 · 函数
+- id: '05'
+  name: _digest_lines
+  lines:
+  - _digest_lines
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 4
+  col: 0
+  stage: 模块级
+  route: →04
+  desc: ★ 一份材料的线索：证据条数 / 种类分布 / 头几处可引用的原文（填「主题 / 依据」时从这里挑）。 · L81 · 函数
+- id: '06'
+  name: build_card
+  lines:
+  - build_card
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: 模块级
+  route: 1→02｜2→03｜3→05
+  desc: ★ 账本 → `intake.md` 全文。机器可算的格子已填，语义格子留 `—`（check 会把未填当错）。 · L111 · 函数 · 分支：1→escape
+    2→duplicate_pairs 3→_digest_lines
+- id: '07'
+  name: parse_cards
+  lines:
+  - parse_cards
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 6
+  col: 0
+  stage: 模块级
+  route: →11
+  desc: '★ `intake.md` → `(表头, {M##: {列: 值}}, 报错)`。表头必须逐字对得上（列规范 §3）。 · L151 · 函数'
+- id: 08
+  name: check_cards
+  lines:
+  - check_cards
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 7
+  col: 0
+  stage: 模块级
+  route: 1→02｜2→09
+  desc: ★ 卡片 vs 账本 → 错误清单（空 = 过）。**只报不改**（§3 纪律 1：清点不改账本）。 · L179 · 函数 · 分支：1→escape
+    2→_check_relation
+- id: 09
+  name: _check_relation
+  lines:
+  - _check_relation
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 8
+  col: 0
+  stage: 模块级
+  route: →11
+  desc: ★ 版本关系：取值封闭 + **双向一致**（§3 的硬要求，单向声明按错处理）。 · L209 · 函数
+- id: '10'
+  name: main
+  lines:
+  - main
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 1
+  col: 0
+  stage: 模块级
+  route: 1→03｜2→06｜3→07｜4→08
+  desc: L247 · 函数 · 分支：1→duplicate_pairs 2→build_card 3→parse_cards 4→check_cards
+- id: '11'
+  name: 结束
+  lines:
+  - 结束
+  type: end
+  subject: 脚本
+  executor: selfboot
+  row: 10
+  col: 0
+  stage: 出口
+  route: —
+  desc: 流程终点（结构性节点，不是函数）
+edges:
+- from: '01'
+  to: '10'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '02'
+  to: '11'
+  kind: spine
+  polarity: main
+- from: '03'
+  to: '11'
+  kind: jumpR
+  polarity: main
+- from: '04'
+  to: '02'
+  kind: jumpR
+  polarity: main
+- from: '05'
+  to: '04'
+  kind: spine
+  polarity: main
+- from: '06'
+  to: '02'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '06'
+  to: '03'
+  kind: spine
+  polarity: main
+  label: '2'
+- from: '06'
+  to: '05'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '07'
+  to: '11'
+  kind: jumpR
+  polarity: main
+- from: 08
+  to: '02'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: 08
+  to: 09
+  kind: spine
+  polarity: main
+  label: '2'
+- from: 09
+  to: '11'
+  kind: jumpR
+  polarity: main
+- from: '10'
+  to: '03'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '10'
+  to: '06'
+  kind: spine
+  polarity: main
+  label: '2'
+- from: '10'
+  to: '07'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '10'
+  to: 08
+  kind: jumpR
+  polarity: main
+  label: '4'
