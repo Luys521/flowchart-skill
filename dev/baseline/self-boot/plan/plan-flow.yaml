@@ -34,7 +34,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →17
-  desc: ★ 版本关系单元格 → `(kind, 对方 M##)`；取值以 `不确定` / `独立` 开头时对方为空。 · L101 · 函数
+  desc: ★ 版本关系单元格 → `(kind, 对方 M##)`；取值以 `不确定` / `独立` 开头时对方为空。 · L104 · 函数
 - id: '03'
   name: reason_of
   lines:
@@ -46,7 +46,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →17
-  desc: ★ `含流程` 单元格 → 那一句理由（`否 ⚠ 通篇参数，无步骤` → `通篇参数，无步骤`）。 · L113 · 函数
+  desc: ★ `含流程` 单元格 → 那一句理由（`否 ⚠ 通篇参数，无步骤` → `通篇参数，无步骤`）。 · L116 · 函数
 - id: '04'
   name: groups_of
   lines:
@@ -58,7 +58,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →02
-  desc: ★ §4.2 步骤 2 的**强合并**：把必并的关系连成组，返回按"最小 `M##`"排序的材料号组列表。 · L129 · 函数
+  desc: ★ §4.2 步骤 2 的**强合并**：把必并的关系连成组，返回按"最小 `M##`"排序的材料号组列表。 · L132 · 函数
 - id: '05'
   name: build_plan
   lines:
@@ -70,7 +70,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→03｜3→04
-  desc: ★ 清点卡片 → `plan.md` 全文。机器可算的格子已填，语义格子留 `—`（`check` 会把未填当错）。 · L149 · 函数 · 分支：1→rel_of
+  desc: ★ 清点卡片 → `plan.md` 全文。机器可算的格子已填，语义格子留 `—`（`check` 会把未填当错）。 · L152 · 函数 · 分支：1→rel_of
     2→reason_of 3→groups_of
 - id: '06'
   name: read_cards
@@ -83,7 +83,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →17
-  desc: '★ `intake.md` → `({M##: {''含流程'': …, ''版本关系'': …}}, 报错)`。 · L201 · 函数'
+  desc: '★ `intake.md` → `({M##: {''含流程'': …, ''版本关系'': …}}, 报错)`。 · L206 · 函数'
 - id: '07'
   name: parse_doc
   lines:
@@ -95,7 +95,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →17
-  desc: ★ `plan.md` → `(流程行, 申请行, 排除行, 报错)`。三张表各按**自己的表头**认（列规范在代码里只有… · L230 · 函数
+  desc: ★ `plan.md` → `(流程行, 申请行, 排除行, 报错)`。三张表各按**自己的表头**认（列规范在代码里只有… · L235 · 函数
 - id: 08
   name: _id_of
   lines:
@@ -107,7 +107,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →17
-  desc: ★ 单元格里的第一个 `M##` / `F##`（`prefix` 取 `'M'` / `'F'`；写不写反引号都认）。 · L261 · 函数
+  desc: ★ 单元格里的第一个 `M##` / `F##`（`prefix` 取 `'M'` / `'F'`；写不写反引号都认）。 · L266 · 函数
 - id: 09
   name: _check_links
   lines:
@@ -119,7 +119,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →08
-  desc: ★ `与其它流程` / `并行组` 两列（§4.3 的甲 / 乙 / 丙：取值的形态与后果都可机器核）。 · L271 · 函数
+  desc: ★ `与其它流程` / `并行组` 两列（§4.3 的甲 / 乙 / 丙：取值的形态与后果都可机器核）。 · L276 · 函数
 - id: '10'
   name: _check_asks
   lines:
@@ -131,7 +131,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →08
-  desc: ★ 澄清申请 ↔ 流程状态：**待澄清的必须有账**（这就是 §5.4 收敛口径里那个"澄清申请"）。 · L299 · 函数
+  desc: ★ 澄清申请 ↔ 流程状态：**待澄清的必须有账**（这就是 §5.4 收敛口径里那个"澄清申请"）。 · L304 · 函数
 - id: '11'
   name: _check_dirs
   lines:
@@ -143,7 +143,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →17
-  desc: ★ §4.4 ②：流程数 = 成果根下的 `<流程名>/` 目录数（名字逐个对，多的少的都报）。 · L341 · 函数
+  desc: ★ §4.4 ②：流程数 = 成果根下的 `<流程名>/` 目录数（名字逐个对，多的少的都报）。 · L346 · 函数
 - id: '12'
   name: _scope_of
   lines:
@@ -155,7 +155,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →17
-  desc: ★ `plan.md` 表头那一行 → `(主体, 目的)`；没有那一行就返回两个空串（`check` 会当错）。 · L358 · 函数
+  desc: ★ `plan.md` 表头那一行 → `(主体, 目的, 材料根)`；没有那一行就返回三个空串（`check` 会当错）。 · L363 · 函数
 - id: '13'
   name: check_plan
   lines:
@@ -167,7 +167,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→08｜3→09｜4→10｜5→11
-  desc: ★ 计划 vs 清点（+ 成果根）→ 错误清单（空 = 过）。**只报不改**。 · L364 · 函数 · 分支：1→rel_of 2→_id_of
+  desc: ★ 计划 vs 清点（+ 成果根）→ 错误清单（空 = 过）。**只报不改**。 · L371 · 函数 · 分支：1→rel_of 2→_id_of
     3→_check_links 4→_check_asks 5→_check_dirs
 - id: '14'
   name: cmd_build
@@ -180,7 +180,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→05｜2→06
-  desc: ★ 出草稿：机器列已填，AI 那几列留空（`—`）。拒绝覆盖已有计划（它是 AI 判断的落点）。 · L438 · 函数 · 分支：1→build_plan
+  desc: ★ 出草稿：机器列已填，AI 那几列留空（`—`）。拒绝覆盖已有计划（它是 AI 判断的落点）。 · L446 · 函数 · 分支：1→build_plan
     2→read_cards
 - id: '15'
   name: cmd_check
@@ -193,7 +193,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→06｜2→07｜3→12｜4→13
-  desc: ★ 校验收口后的计划（退 1 = 有问题）。`--root` 给了才核 §4.4 ②，**没给就打印跳过**。 · L465 · 函数 · 分支：1→read_cards
+  desc: ★ 校验收口后的计划（退 1 = 有问题）。`--root` 给了才核 §4.4 ②，**没给就打印跳过**。 · L473 · 函数 · 分支：1→read_cards
     2→parse_doc 3→_scope_of 4→check_plan
 - id: '16'
   name: main
@@ -206,7 +206,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→14｜2→15
-  desc: L502 · 函数 · 分支：1→cmd_build 2→cmd_check
+  desc: L510 · 函数 · 分支：1→cmd_build 2→cmd_check
 - id: '17'
   name: 结束
   lines:
