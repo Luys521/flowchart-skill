@@ -8,6 +8,7 @@ PyYAML>=6.0          # 流程表 frontmatter / 字典（已有）
 python-docx>=1.1     # OOXML：.docx 读取（解析适配器用）
 openpyxl>=3.1        # OOXML：.xlsx 读取（解析适配器用）
 pdfplumber>=0.11     # PDF **文本层**抽取（纯 Python，无外部二进制；scan 件不归它管）
+                     # 同一份依赖也管**渲染**：`page.to_image()` 走它声明的 pypdfium2（无外部二进制）
 #
 # 可选（增强，缺了该格式降级为 T4）
 # python-pptx>=0.6    # .pptx

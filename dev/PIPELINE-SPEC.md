@@ -71,6 +71,8 @@ N 与密度阈值属**数值**：落地时必须写进 `scripts/dictionary.yaml`
 - T1/T2：产出进证据账本，`extractor` 写具体插件名；**且必须过 §1.5 的抽取质量门**——
   抽不出来算读不动（诚实），抽出来是碎片 / 坏字符则**不许当 `direct` 证据**（污染唯一事实源，且没有仪器看得见）。
 - **T3 也必须产出证据**（element 带 bbox 与摘录）—否则流程表「依据」列会指向空，H10 断链。T3 的 `extractor` 记 `vlm`，`certainty` 一律 `inferred`（视觉推断不许伪装成直取）。
+  **产出的路**：`render_pages.py` 把材料渲成图（PDF 走 pdfplumber + pypdfium2，**自包含**；图片材料本来就是图，直接读原文件）→ AI 读图 → 填工具给的骨架（`text` / `bbox`）→ `render_pages.py check` 校验 → 交账本。
+  **引用它的节点按推断档走**（`⚠` / H10.2）：视觉读数是"我看到的"，不是"文件里逐字写着的"——**不许当逐字引用**。
 - T4：作为 materials[] 的一条记录进账本（status=unreadable + reason，见 §2.1），**不静默丢弃**；清点只读账本，不另立一份。
 - **"读没读出来"由解析阶段记账**（材料层补注，见 §1.4）：`extractor` 写走的是哪条路，读不动的写 `status=unreadable` + **可执行**原因。
   这一条不是补充说明，是**必要的一环**：`probe` 只能给档位——4 份 legacy 与"能读的 legacy"在探测阶段长得一模一样，
@@ -117,7 +119,7 @@ notes                     → [{material_id, status?, reason?, extractor?}]   �
 | OOXML（docx / xlsx / pptx） | Python 库（python-docx / openpyxl / python-pptx）—**依赖要显式声明**（见下） | 宿主本地 Office SDK（若存在） | 记 T4 + **给可执行提示**（装什么） |
 | **文本型 `.pdf`（T2）** | `pdfplumber`（**纯 Python**，无外部二进制）抽文本层—一页一个 element | — | 记 T4 + **可执行提示**（装 pdfplumber） |
 | **legacy**（.doc / .xls / .ppt） | **没有纯 Python 的可靠读法** ⇒ 只用**外部转换器**（LibreOffice / soffice，若装了）：转成 OOXML 再交给 T1 适配器抽（§1.1 的 T2 定义就是"转换后可用"），`extractor` 写 `soffice+py:docx` | 宿主本地 Office SDK（若存在） | 记 T4 + 可执行提示（"请另存为 .docx" 或 "装 LibreOffice"） |
-| 图片 / 扫描件 / 截图 / 白板照 | **OCR**（tesseract / paddleocr）—依赖显式声明 | 宿主多模态模型（若可用） | 记 T4 + 进澄清 |
+| 图片 / 扫描件 / 截图 / 白板照 | `render_pages.py` **转图片**（图片材料本来就是图，直接读原文件） | **宿主多模态模型**（判据：AI 自报本会话能否直接看图）；OCR（tesseract / paddleocr，可选依赖） | 记 T4 + 进澄清 |
 | 纯文本（md / txt / csv / json …） | `parse_text.py`（**只用标准库**）：**解码 + 按行打块**（一块一个 element，`extractor=py:text`；标记 / 数据文件写 `py:code`）、`.csv` / `.tsv` → `table` + `rows`。**不认结构**（见下） | **宿主模型直读文本**：理解归它 | 直读不可用时仍走得通（标准库永远在） |
 
 **能直读的格式：理解归模型，记账归脚本**（这一条把"要不要给文本写解析器"定死）：
@@ -194,7 +196,7 @@ notes                     → [{material_id, status?, reason?, extractor?}]   �
 |---|---|---|---|
 | 0 | **抽取质量门**（**先过这道门**） | `textquality.py`：单字行占比 · 平均行长 · 坏字符率（替换字符/控制字符/私用区）· 单一字符占比 → `ok` 照收 · `noisy` 丢**纯碎片**元素 + 留下每条挂 `degraded` · `garbled` 该材料**不入账** + 建议处置；阈值在 `dictionary.yaml` 的 `material_quality` | 可用 |
 | 1 | **结构缩样**（首选） | **自包含**：`openpyxl` 读 sheet 名与 used range、`python-docx` 读大纲；宿主 Office SDK 若存在可读更全（公式 / 透视表计数） | 可用 |
-| 2 | 转图片 → 视觉 | 只在"**结构里根本读不出内容**"时用（真扫描件 T3）—图片信息**无法逐字引用**，用了会让 H10 断链 | **自包含侧无渲染能力**，暂不可用（见 §7.2 第 4 条） |
+| 2 | 转图片 → 视觉 | `render_pages.py`：PDF → 每页 PNG（**自包含**：pdfplumber + pypdfium2，实测 0.3~1.9 秒/页）→ AI 读图 → 填骨架 → `check` 校验；图片材料直接用原文件 | **PDF / 图片可用**；Office 系要转换器（本版不做，见 §7.2） |
 
 **为什么"手段 0"必须排在"手段 1"前面**（实测，不是推演）：`probe` 说某份 PDF"有文本层"（`/Font` x161）、
 `parse_pdf` 说"抽到 1563 字"——**两边都真**，可那条文本层是竖排 / 字距碎裂的水印碎片：整份 225 行里
@@ -286,6 +288,9 @@ heading  paragraph  list_item  table  figure  caption  code  sheet  cell
 
 - UTF-8、LF、缩进 2、`ensure_ascii=false`（中文不转义）。
 - **幂等**：同输入两次 ⇒ 同字节（对齐现有"build 两次产物不变"的纪律）。
+  **具名例外**：`extractor=vlm` 的元素**由 AI 识图产出**，同材料两次不会自动同字节（§1.3）——
+  账本对**给定输入**仍然是确定的（同两份 JSON 两次同字节），不可复现的是"看图这一跳"这**上游**。
+  所以 vlm 元素的 `certainty` 一律 `inferred`；要复现就得把那次识别的产物（那份 JSON）当输入留着。
 - **键序固定**：按 §2.1 的字段序，不随解析顺序漂。
 - **超上限先侦查、再决定**（§1.5）：处置为「只取摘要」时才缩 `quote` / 丢 `rows` 明细，并写明"哪份材料被降级"—**不许静默截断**，**也不许一上来就全量灌**。
 
@@ -457,14 +462,16 @@ heading  paragraph  list_item  table  figure  caption  code  sheet  cell
 | H10 证据完整性（§5） | `scripts/flowtable_check.py` 三层校验内 | 判据已定，**未实现** |
 | 账本 schema：键封闭 / 枚举合法 / id 唯一 | `scripts/ledger.py` 写入前自检 | **已实现**（不过就不落盘，退 1）；**未进验收路径** |
 | 探测记账完整：每份材料一行、无"未判" | `scripts/probe.py` 一律给档位 | **已实现**（判不出记 T4 + 原因，不猜）；**未进验收路径** |
-| 解析器四条硬要求（只读 · 不抛裸异常 · 输出符合 §2 · 缺依赖报可执行错） | 适配器自检（待定） | `parse_ooxml` / `parse_pdf` / `parse_legacy` 已按此实现（实测：非目标材料**跳过并记账**、缺依赖退 2 并给安装命令）；**无仪器** |
+| 解析器四条硬要求（只读 · 不抛裸异常 · 输出符合 §2 · 缺依赖报可执行错） | 适配器自检（待定） | `parse_ooxml` / `parse_pdf` / `parse_legacy` / `parse_text` / `render_pages` 已按此实现（实测：非目标材料**跳过并记账**、缺依赖退 2 并给安装命令）；**无仪器** |
 | 材料层记账完整：`status` / `reason` / `extractor` 由解析阶段补注写入（§1.4） | `scripts/ledger.py --notes` | **已实现**（补注键封闭 / id 必须存在 / `unreadable` 必有 reason，**落完再校一次**）；**未进验收路径** |
 | 分派是查表（§1.4）：固定顺序跑适配器 · 同输入同字节 · 冲突与漏认不许静默 | `scripts/parse.py` | **已实现**（元素按 `material_id` 稳定排序；id 重复 / 补注冲突 / `status=ok` 却零证据三类都**退 1 且不落盘**，实测各路径）；**未进验收路径** |
 | 抽取质量门（§1.5 手段 0）：碎片 / 坏字符主导的抽取**不许当证据入账** | `scripts/textquality.py`（判据）+ `scripts/parse.py`（执行）+ `dictionary.yaml`（阈值） | **已实现**（三级判决；真数据实测 M15 单字行 62% → `noisy`：丢 10 条纯碎片、留 6 条逐条挂 `degraded`；干净材料零误判；样本 < `min_lines` 不判）；**未进验收路径** |
 | 纯文本不猜编码（§1.4）：只认 UTF-8 / 带 BOM 的 UTF-16；GBK 等要显式 `--encoding` | `scripts/parse_text.py` | **已实现**（不带 `--encoding`：GBK 材料记 `unreadable` + 可执行提示；带了：读出来并把 `status` 改回 `ok`、删掉陈旧的 probe reason。兜底**不覆盖** UTF-8 材料——实测修掉"一份 GBK 把整批拖成读不动"）；**未进验收路径** |
 | 文本档只记账、不认结构（§1.4）：**理解归直读的模型**，脚本只保证"可引用 / 可复现 / 编码与上限" | `scripts/parse_text.py` | **已实现**（按行打块：行数守恒；块超上限**先收后放**，单行比块长才截断并记 `degraded`——实测第一版"先攒后收"会把整行吃掉还标假降级）；**未进验收路径** |
 | legacy 只走外部转换器：判据 `--version` 能通；缺了就记读不动 + 可执行提示，**不许假装能读** | `scripts/parse_legacy.py` | **已实现**（本机无 soffice：缺转换器分支在真实 4 份材料上实测；转换分支用**替身转换器**验过——LibreOffice 自身的转换保真度不在射程内） |
-| 幂等：同输入两次同字节 | 待定 | **未实现**（本轮人工实测：`probe → 三个适配器 → ledger` 两次同字节） |
+| 转图片 → 视觉（§1.5 手段 2）：T3 / 质量门不过的材料，渲成图交给会看图的模型 | `scripts/render_pages.py`（渲染）+ `scripts/render_pages.py check`（校验 AI 填的骨架） | **已实现**（PDF 自包含渲染实测 0.3~1.9 秒/页；图片材料直接读原文件；Office 系不做、按不可行记账）；**未进验收路径** |
+| vlm 证据通道（§1.3）：视觉读数要带 `bbox` + 摘录、`extractor=vlm`、`certainty=inferred` 进账本 | `scripts/render_pages.py check`（写补注）+ `scripts/ledger.py`（`--elements` 可重复、**`vlm` ⇒ `inferred` 机器拦**） | **已实现**（实测：扫描件 M13 4 页 → 7 条 vlm 证据（第 4 页空白、按纪律删掉那条），材料层 `unreadable → ok` 且**覆盖被打印出来**；账本 1165 条 = 机器 1158 + 视觉 7）；**未进验收路径** |
+| 幂等：同输入两次同字节 | 待定 | **未实现**（本轮人工实测：`probe → 三个适配器 → ledger` 两次同字节；`vlm` 元素的**具名例外**见 §2.4） |
 | 计划引用完整：`plan.md` 的 `M##` 都在 `intake.md` 里 | 待定（计划校验器） | 未实现 |
 | 计划与实际一致：流程数 = `<流程名>/` 目录数；`F0x#N` 的 N 是父表真实节点 | 待定 | 未实现 |
 | 版本关系双向一致：`A 互补(B)` → `B 互补(A)`；`A 替代(B)` → `B 被替代(A)` | `scripts/intake.py check` | **已实现**（另查 `重复` 与 `sha256` 是否对得上、副本必须是编号更大那份）；**未进验收路径** |
@@ -477,11 +484,16 @@ heading  paragraph  list_item  table  figure  caption  code  sheet  cell
 ### 7.1 H10 上线清单（实现 H10 时照单执行）
 
 1. **改全仓写死的 H 范围**—`dev/verify/contract.py` 有一条**硬断言**（"flowtable-spec 里 H1—H9 齐全"，比的是 `list('123456789')`），**补了 H10 它会当场判红**。要同步的地方：`references/flowtable-spec.md` 的 H 列表 · `dev/verify/contract.py` 那条断言 · `dev/tools/accept.py` 的门② 标题 · `dev/tools/README.md` 的门表 · `dev/tools/layering.py` 的注释 · `dev/tools/equiv-fixtures/broken.md` 的用例描述。
-2. **误伤回归**：在现有全部表（自举 37 张 + 样例 8 张 = 45 张）上跑 `scripts/table_to_dsl.py --check`，要求 **0 条 hard 增量**。
+2. **误伤回归**：在现有全部表（自举 38 张 + 样例 8 张 = 46 张）上跑 `scripts/table_to_dsl.py --check`，要求 **0 条 hard 增量**。
 
 ### 7.2 已知的代码接缝（实现 L0 / L1 时必改）
 
 1. **`intake.md` / `plan.md` 会被判"孤儿表"**：`scripts/layer_index.py` 的 `_find_orphans` 扫 `root.rglob('*.md')`，白名单只有 `checklist.md` / `<stem>-index.md` / `README*` / `*.sync.md`—其余一律报 `孤儿表: xxx.md`。
 2. **父表链扫描会读它们**：`scripts/flowtable.py` 的 `_parent_by_scan` 沿目录向上 `glob('*.md')` 找 `⊞` 父表；理论上 `plan.md` 若出现 `⊞` 字符会被误判成父表。
 3. **修法（不许各写一份）**：把这类"不是表的 `.md`"集中登记一处（按既有纪律：命名只走 `scripts/artifact.py`），由 `layer_index` / `flowtable` 从那里取白名单。
-4. **宿主 Office SDK 不许当唯一路径**：它只是**加速器**（本 SKILL 必须自包含）。实测它没有 export / render / 截图类工具 ⇒ §1.5 的"视觉侦查"目前没有实现手段（自包含侧也没有），先只做结构侦查。
+4. **宿主 Office SDK 不许当唯一路径**：它只是**加速器**（本 SKILL 必须自包含）。
+   ~~实测它没有 export / render / 截图类工具 ⇒ §1.5 的"视觉侦查"目前没有实现手段~~
+   ——**这条已修正**（实现 `render_pages.py` 时实测）：**PDF 有自包含渲染能力**（`pdfplumber` 的
+   `page.to_image`，底层 `pypdfium2` 是它声明的依赖，无外部二进制）；**图片材料本来就是图**。
+   真正没有的只有 **Office 系**（docx/xlsx/pptx → 图）——那要 `soffice` 之类的转换器，按"不可行 +
+   进澄清"记账，或先人工转 PDF。

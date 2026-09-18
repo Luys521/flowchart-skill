@@ -5,7 +5,7 @@
 
 ## 层级树
 
-- **L0 主流程** `flowtable.md`——《self-boot — 模块索引》（id: selfboot-map）（38 节点）
+- **L0 主流程** `flowtable.md`——《self-boot — 模块索引》（id: selfboot-map）（39 节点）
   - **L1 子流程** `artifact/flowtable.md`——《artifact.py 函数流程表》（id: selfboot-artifact）（4 节点）
   - **L1 子流程** `build/flowtable.md`——《build.py 函数流程表》（id: selfboot-build）（27 节点）
   - **L1 子流程** `clarify/flowtable.md`——《clarify.py 函数流程表》（id: selfboot-clarify）（16 节点）
@@ -31,6 +31,7 @@
   - **L1 子流程** `recon/flowtable.md`——《recon.py 函数流程表》（id: selfboot-recon）（11 节点）
   - **L1 子流程** `render_drawio/flowtable.md`——《render_drawio.py 函数流程表》（id: selfboot-render_drawio）（27 节点）
   - **L1 子流程** `render_html/flowtable.md`——《render_html.py 函数流程表》（id: selfboot-render_html）（25 节点）
+  - **L1 子流程** `render_pages/flowtable.md`——《render_pages.py 函数流程表》（id: selfboot-render_pages）（14 节点）
   - **L1 子流程** `render_svg/flowtable.md`——《render_svg.py 函数流程表》（id: selfboot-render_svg）（13 节点）
   - **L1 子流程** `router/flowtable.md`——《router.py 函数流程表》（id: selfboot-router）（32 节点）
   - **L1 子流程** `semantics/flowtable.md`——《semantics.py 函数流程表》（id: selfboot-semantics）（19 节点）
@@ -70,15 +71,16 @@
 23. `recon/flowtable.md`（L1）
 24. `render_drawio/flowtable.md`（L1）
 25. `render_html/flowtable.md`（L1）
-26. `render_svg/flowtable.md`（L1）
-27. `router/flowtable.md`（L1）
-28. `semantics/flowtable.md`（L1）
-29. `shot/flowtable.md`（L1）
-30. `swimlane/flowtable.md`（L1）
-31. `sync/flowtable.md`（L1）
-32. `table_to_dsl/flowtable.md`（L1）
-33. `textquality/flowtable.md`（L1）
-34. `validate/flowtable.md`（L1）
-35. `writeback/flowtable.md`（L1）
-36. `xml_reader/flowtable.md`（L1）
-37. `flowtable.md`（L0）
+26. `render_pages/flowtable.md`（L1）
+27. `render_svg/flowtable.md`（L1）
+28. `router/flowtable.md`（L1）
+29. `semantics/flowtable.md`（L1）
+30. `shot/flowtable.md`（L1）
+31. `swimlane/flowtable.md`（L1）
+32. `sync/flowtable.md`（L1）
+33. `table_to_dsl/flowtable.md`（L1）
+34. `textquality/flowtable.md`（L1）
+35. `validate/flowtable.md`（L1）
+36. `writeback/flowtable.md`（L1）
+37. `xml_reader/flowtable.md`（L1）
+38. `flowtable.md`（L0）

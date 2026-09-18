@@ -16,10 +16,10 @@ parent: ../flowtable.md
 | 模块级 | 02 | _read_json | 任务 | — | — | — | 脚本 | selfboot | — | →11 | ★ 读 JSON（容忍 BOM — PowerShell 的 `Out-File -Encoding utf8` 会写 B… · L37 · 函数 |
 | 模块级 | 03 | check_materials | 任务 | — | — | — | 脚本 | selfboot | — | →11 | ★ 材料层校验 → 错误清单（空 = 过）。逐条说清**哪里错了**，不返回布尔。 · L42 · 函数 |
 | 模块级 | 04 | check_elements | 任务 | — | — | — | 脚本 | selfboot | — | →11 | ★ 证据层校验 → 错误清单。`kind` 是**封闭枚举**（§2.1），扩枚举要先改规范。 · L65 · 函数 |
-| 模块级 | 05 | degrade | 任务 | — | — | — | 脚本 | selfboot | — | →11 | ★ §2.4 的降级：`quote` 超限就截断 + 标 `degraded`（**不许静默截断**）。返回降级条数。 · L91 · 函数 |
-| 模块级 | 06 | check_notes | 任务 | — | — | — | 脚本 | selfboot | — | →11 | ★ 材料层补注校验 → 错误清单。**键封闭**：补注只许改 `status` / `reason` / `extract… · L105 · 函数 |
-| 模块级 | 07 | apply_notes | 任务 | — | — | — | 脚本 | selfboot | — | →11 | ★ 把补注落到材料层（**就地改**）→ `(改了几条, 读不动几份)`。 · L127 · 函数 |
-| 模块级 | 08 | assemble | 任务 | — | — | — | 脚本 | selfboot | — | →11 | ★ 按 §2.1 的键序组装账本：**多余的键一律丢弃**（模型封闭，不许夹带）。 · L151 · 函数 |
-| 模块级 | 09 | dump | 任务 | — | — | — | 脚本 | selfboot | — | →11 | ★ 写盘契约（§2.4）：UTF-8 / **LF** / 缩进 2 / 中文不转义 / 末尾一个换行。返回字节数。 · L167 · 函数 |
-| 模块级 | 10 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→03｜3→04｜4→05｜5→06｜6→07｜7→08｜8→09 | L175 · 函数 · 分支：1→_read_json 2→check_materials 3→check_elements 4→degrade 5→check_notes 6→apply_notes 7→assemble 8→dump |
+| 模块级 | 05 | degrade | 任务 | — | — | — | 脚本 | selfboot | — | →11 | ★ §2.4 的降级：`quote` 超限就截断 + 标 `degraded`（**不许静默截断**）。返回降级条数。 · L94 · 函数 |
+| 模块级 | 06 | check_notes | 任务 | — | — | — | 脚本 | selfboot | — | →11 | ★ 材料层补注校验 → 错误清单。**键封闭**：补注只许改 `status` / `reason` / `extract… · L108 · 函数 |
+| 模块级 | 07 | apply_notes | 任务 | — | — | — | 脚本 | selfboot | — | →11 | ★ 把补注落到材料层（**就地改**）→ `(改了几条, 读不动几份, 覆盖清单)`。 · L130 · 函数 |
+| 模块级 | 08 | assemble | 任务 | — | — | — | 脚本 | selfboot | — | →11 | ★ 按 §2.1 的键序组装账本：**多余的键一律丢弃**（模型封闭，不许夹带）。 · L164 · 函数 |
+| 模块级 | 09 | dump | 任务 | — | — | — | 脚本 | selfboot | — | →11 | ★ 写盘契约（§2.4）：UTF-8 / **LF** / 缩进 2 / 中文不转义 / 末尾一个换行。返回字节数。 · L180 · 函数 |
+| 模块级 | 10 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→03｜3→04｜4→05｜5→06｜6→07｜7→08｜8→09 | L188 · 函数 · 分支：1→_read_json 2→check_materials 3→check_elements 4→degrade 5→check_notes 6→apply_notes 7→assemble 8→dump |
 | 出口 | 11 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |

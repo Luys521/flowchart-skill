@@ -1,0 +1,282 @@
+meta:
+  title: render_pages.py 函数流程表
+  subjects:
+    脚本:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  width: 940
+  origin_x: -80
+nodes:
+- id: '01'
+  name: 开始
+  lines:
+  - 开始
+  type: start
+  subject: 脚本
+  executor: selfboot
+  row: 0
+  col: 0
+  stage: 入口
+  route: 1→13
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→main
+- id: '02'
+  name: _read_json
+  lines:
+  - _read_json
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 9
+  col: 0
+  stage: 模块级
+  route: →14
+  desc: ★ 读 JSON（容忍 BOM）。 · L45 · 函数
+- id: '03'
+  name: _write_json
+  lines:
+  - _write_json
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 10
+  col: 0
+  stage: 模块级
+  route: →14
+  desc: ★ 写 JSON：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 `ledger.dump`… · L50 · 函数
+- id: '04'
+  name: _is_pdf
+  lines:
+  - _is_pdf
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 7
+  col: 0
+  stage: 模块级
+  route: →14
+  desc: ★ 只看 4 字节魔数：**不重判档位**（档位从账本抄）。 · L55 · 函数
+- id: '05'
+  name: _skeleton
+  lines:
+  - _skeleton
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 4
+  col: 0
+  stage: 模块级
+  route: →14
+  desc: ★ 一页 → 一条**待填**的 vlm 证据骨架（`text` 空着等 AI 填）。 · L64 · 函数
+- id: '06'
+  name: render_pdf
+  lines:
+  - render_pdf
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: 模块级
+  route: 1→05｜2→07
+  desc: ★ PDF → `(骨架元素, 渲染出的 (页号, PNG 路径) 清单, 说明)`。**单页渲不出不让整份失败**。 · L78 · 函数 · 分支：1→_skeleton
+    2→_import_pdfplumber
+- id: '07'
+  name: _import_pdfplumber
+  lines:
+  - _import_pdfplumber
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 5
+  col: 0
+  stage: 模块级
+  route: →14
+  desc: ★ import 必须依赖 → `(模块, 报错文案)`。缺了给**可执行**的提示（§1.4）。 · L104 · 函数
+- id: 08
+  name: targets
+  lines:
+  - targets
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 6
+  col: 0
+  stage: 模块级
+  route: →04
+  desc: ★ 材料层 → 该渲哪些 → `(要渲染的, 已是图片的, 不归本工具管的)`。**按 `probe` 记的档位分派，不重… · L114 · 函数
+- id: 09
+  name: build
+  lines:
+  - build
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: 模块级
+  route: 1→02｜2→03｜3→05｜4→06｜5→08
+  desc: ★ 渲图 + 出骨架（`--elements` 给了才写）。返回退出码。 · L135 · 函数 · 分支：1→_read_json 2→_write_json
+    3→_skeleton 4→render_pdf 5→targets
+- id: '10'
+  name: _check_id
+  lines:
+  - _check_id
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 12
+  col: 0
+  stage: 模块级
+  route: →14
+  desc: ★ id 形态：`<M##>#v<页号3位><可选字母>`（同一页要拆多条时用字母后缀，如 `M15#v004b`）。 · L178 · 函数
+- id: '11'
+  name: check_elements
+  lines:
+  - check_elements
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 11
+  col: 0
+  stage: 模块级
+  route: →10
+  desc: ★ AI 填好的骨架 → 错误清单（空 = 过）。**"没填"必须当错**（否则空骨架也能过）。 · L189 · 函数
+- id: '12'
+  name: check
+  lines:
+  - check
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 8
+  col: 0
+  stage: 模块级
+  route: 1→02｜2→03｜3→11
+  desc: ★ 校验填好的骨架 + 写材料层补注（`status=ok` + `extractor=vlm`）。 · L225 · 函数 · 分支：1→_read_json
+    2→_write_json 3→check_elements
+- id: '13'
+  name: main
+  lines:
+  - main
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 1
+  col: 0
+  stage: 模块级
+  route: 1→09｜2→12
+  desc: L259 · 函数 · 分支：1→build 2→check
+- id: '14'
+  name: 结束
+  lines:
+  - 结束
+  type: end
+  subject: 脚本
+  executor: selfboot
+  row: 13
+  col: 0
+  stage: 出口
+  route: —
+  desc: 流程终点（结构性节点，不是函数）
+edges:
+- from: '01'
+  to: '13'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '02'
+  to: '14'
+  kind: jumpR
+  polarity: main
+- from: '03'
+  to: '14'
+  kind: jumpR
+  polarity: main
+- from: '04'
+  to: '14'
+  kind: jumpR
+  polarity: main
+- from: '05'
+  to: '14'
+  kind: jumpR
+  polarity: main
+- from: '06'
+  to: '05'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '06'
+  to: '07'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '07'
+  to: '14'
+  kind: jumpR
+  polarity: main
+- from: 08
+  to: '04'
+  kind: spine
+  polarity: main
+- from: 09
+  to: '02'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: 09
+  to: '03'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: 09
+  to: '05'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: 09
+  to: '06'
+  kind: spine
+  polarity: main
+  label: '4'
+- from: 09
+  to: 08
+  kind: jumpR
+  polarity: main
+  label: '5'
+- from: '10'
+  to: '14'
+  kind: spine
+  polarity: main
+- from: '11'
+  to: '10'
+  kind: spine
+  polarity: main
+- from: '12'
+  to: '02'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '12'
+  to: '03'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '12'
+  to: '11'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '13'
+  to: 09
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '13'
+  to: '12'
+  kind: jumpR
+  polarity: main
+  label: '2'
