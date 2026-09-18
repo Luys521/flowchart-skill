@@ -26,7 +26,7 @@ from pathlib import Path
 # **名字只在这里写一次**：凡"扫 *.md 找表"的地方（layer_index 的孤儿表检查、
 # flowtable 的父表链扫描）都必须从这里取；否则每新增一个任务级产物名，
 # 就要在多处补白名单，漏一处就冒假警告（见 PIPELINE-SPEC §8.2）。
-NON_TABLE_MD = frozenset({'checklist.md', 'intake.md', 'plan.md', 'recon.md'})
+NON_TABLE_MD = frozenset({'checklist.md', 'intake.md', 'plan.md', 'recon.md', 'drift.md'})
 
 
 def artifact_stem(table_path):

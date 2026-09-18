@@ -1,0 +1,712 @@
+meta:
+  title: drift.py 函数流程表
+  subjects:
+    脚本:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  width: 2200
+  origin_x: -40
+nodes:
+- id: '01'
+  name: 开始
+  lines:
+  - 开始
+  type: start
+  subject: 脚本
+  executor: selfboot
+  row: 0
+  col: 0
+  stage: 入口
+  route: 1→29｜2→30｜3→31
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→cmd_build 2→cmd_check 3→main
+- id: '02'
+  name: _read_text
+  lines:
+  - _read_text
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 30
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ 读文本（容忍 BOM）。 · L85 · 函数
+- id: '03'
+  name: _read_json
+  lines:
+  - _read_json
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 26
+  col: 0
+  stage: 模块级
+  route: →02
+  desc: ★ 读 JSON（容忍 BOM）。 · L90 · 函数
+- id: '04'
+  name: _writer
+  lines:
+  - _writer
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ 落盘（UTF-8、LF、末尾留一个换行——与 §2.4 的其他产物同一套）。 · L95 · 函数
+- id: '05'
+  name: _sha
+  lines:
+  - _sha
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ 输入指纹前 12 位：产物表头要打印它，事后才复核得了"这份结论是对着哪一版表算的"。 · L100 · 函数
+- id: '06'
+  name: _esc
+  lines:
+  - _esc
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 11
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ 单元格里的 `｜` 会撕表 → 换全角（与 `intake.py` 同一口径）。 · L105 · 函数
+- id: '07'
+  name: _blank
+  lines:
+  - _blank
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 24
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ 空值判据（`—` / 空 / `无` 都算没填）。 · L110 · 函数
+- id: 08
+  name: _refs
+  lines:
+  - _refs
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 18
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ 单元格 → 引用到的 id 集合（element id 与裸 `M##` 都在内）。 · L115 · 函数
+- id: 09
+  name: _mat_of
+  lines:
+  - _mat_of
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 16
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ id 集合 → 材料号集合。 · L120 · 函数
+- id: '10'
+  name: _cited
+  lines:
+  - _cited
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 17
+  col: 0
+  stage: 模块级
+  route: →08
+  desc: ★ 全表引用到的 id 集合：依据列 + 节点描述（描述里也会写"见 M05"这类引用）。 · L125 · 函数
+- id: '11'
+  name: load_thresholds
+  lines:
+  - load_thresholds
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 7
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ 阈值 = 默认 + `dictionary.yaml` 的 `drift:` 段（读不到就用默认，**不报错**）。 · L133 · 函数
+- id: '12'
+  name: load_flowtable
+  lines:
+  - load_flowtable
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 8
+  col: 0
+  stage: 模块级
+  route: →02
+  desc: ★ 流程表 → `(nodes, edges, errs)`。用的是**结构校验的唯一入口**（`run_checks`）… · L150 · 函数
+    · ⇢ 依赖 flowtable.parse_table、flowtable_check.run_checks
+- id: '13'
+  name: index_ledger
+  lines:
+  - index_ledger
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 27
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ 账本 → `(元素 id → 元素, 材料 id → 材料)`。取不到的键不硬造（下游按"没有"处理）。 · L156 · 函数
+- id: '14'
+  name: read_side_table
+  lines:
+  - read_side_table
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 29
+  col: 0
+  stage: 模块级
+  route: →02
+  desc: '★ `recon.md` / `intake.md` → `({M##: {列: 值}}, 报错)`。**列按名字取**，… · L163 · 函数'
+- id: '15'
+  name: _col
+  lines:
+  - _col
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 19
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ 按**列名前缀**取值（`状态（AI 填）` / `走哪条路` 这类名字前缀足够稳，后缀由对方决定）。 · L198 · 函数
+- id: '16'
+  name: _f
+  lines:
+  - _f
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 14
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ 一条读数 → 行（判据号 / 位置 / 事实）。**档与文案渲染时从 `RULES` 取**，不在这里抄。 · L207 · 函数
+- id: '17'
+  name: rule_d1
+  lines:
+  - rule_d1
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 10
+  col: 0
+  stage: 模块级
+  route: 1→06｜2→08｜3→16
+  desc: ★ D1 等级拔高：依据指向 `certainty=inferred`（`extractor=vlm`）或带 `degra… · L212 · 函数
+    · 分支：1→_esc 2→_refs 3→_f · ⇢ 依赖 semantics.pending_kind
+- id: '18'
+  name: rule_d2
+  lines:
+  - rule_d2
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 13
+  col: 0
+  stage: 模块级
+  route: 1→08｜2→09｜3→15｜4→16
+  desc: ★ D2 假设被推翻仍在用：假设账里 `状态 = 已推翻` 的材料，表里还有节点依据它。 · L233 · 函数 · 分支：1→_refs 2→_mat_of
+    3→_col 4→_f
+- id: '19'
+  name: rule_d3
+  lines:
+  - rule_d3
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 12
+  col: 0
+  stage: 模块级
+  route: 1→08｜2→09｜3→16
+  desc: ★ D3 建立在读不动的材料上：依据里的材料在账本里 `status=unreadable`——断言的来源不存在。 · L244 · 函数 · 分支：1→_refs
+    2→_mat_of 3→_f
+- id: '20'
+  name: rule_d4
+  lines:
+  - rule_d4
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 15
+  col: 0
+  stage: 模块级
+  route: 1→09｜2→10｜3→15
+  desc: ★ D4 含流程的材料零引用 → **缺口**：这份材料的信息没进表（漏读，或读了没落表）。 · L256 · 函数 · 分支：1→_mat_of
+    2→_cited 3→_col
+- id: '21'
+  name: rule_d5
+  lines:
+  - rule_d5
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 20
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ D5 读了没用上 → **缺口**：元素够多、被引用比例却过低（"只读了开头"）。 · L266 · 函数
+- id: '22'
+  name: collect
+  lines:
+  - collect
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 9
+  col: 0
+  stage: 模块级
+  route: 1→10｜2→17｜3→18｜4→19｜5→20｜6→21
+  desc: ★ 跑全部**启用**的判据 → `(漂移行, 缺口行)`。缺哪个输入就整条跳过（§5.2 启用条件）。 · L287 · 函数 · 分支：1→_cited
+    2→rule_d1 3→rule_d2 4→rule_d3 5→rule_d4 6→rule_d5
+- id: '23'
+  name: _enabled
+  lines:
+  - _enabled
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 4
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ 本次**跳过**了哪几条判据（打印出来：**"跳过"与"跑了没命中"必须能分辨**）。 · L309 · 函数
+- id: '24'
+  name: render
+  lines:
+  - render
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 5
+  col: 0
+  stage: 模块级
+  route: 1→06｜2→15
+  desc: ★ 漂移清单 + 缺口清单（markdown）。**表头先写输入指纹、跳过的判据与本次阈值**—— · L319 · 函数 · 分支：1→_esc
+    2→_col
+- id: '25'
+  name: parse_doc
+  lines:
+  - parse_doc
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 21
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: ★ `drift.md` → `(漂移行, 缺口行, 报错)`。两张表的表头**必须逐字对得上**（列规范在代码里只有一份… · L350 · 函数
+- id: '26'
+  name: check_drift_rows
+  lines:
+  - check_drift_rows
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 22
+  col: 0
+  stage: 模块级
+  route: →07
+  desc: ★ 漂移账 → 错误清单。**该表与"现在的读数"双向对账**： · L375 · 函数
+- id: '27'
+  name: check_gap_rows
+  lines:
+  - check_gap_rows
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 23
+  col: 0
+  stage: 模块级
+  route: →07
+  desc: ★ 缺口清单 → 错误清单（状态封闭 · `已取证` 要写清要哪一片 · `已放弃` 要写理由 · 同样双向对账）。 · L403 · 函数
+- id: '28'
+  name: inputs_of
+  lines:
+  - inputs_of
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 25
+  col: 0
+  stage: 模块级
+  route: 1→03｜2→13｜3→14
+  desc: ★ 一次运行的三份输入 → `(元素表, 材料表, 假设账, 清点, 报错)`。 · L425 · 函数 · 分支：1→_read_json 2→index_ledger
+    3→read_side_table
+- id: '29'
+  name: cmd_build
+  lines:
+  - cmd_build
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 1
+  col: 0
+  stage: 模块级
+  route: 1→02｜2→04｜3→05｜4→11｜5→12｜6→22｜7→23｜8→24｜9→28
+  desc: ★ 出草稿：机器列已填，AI 那几列留空（`待验` / `待取证`）。 · L438 · 函数 · 分支：1→_read_text 2→_writer
+    3→_sha 4→load_thresholds 5→load_flowtable 6→collect 7→_enabled 8→render 9→inputs_of
+- id: '30'
+  name: cmd_check
+  lines:
+  - cmd_check
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 6
+  col: 0
+  stage: 模块级
+  route: 1→02｜2→11｜3→12｜4→22｜5→25｜6→26｜7→27｜8→28
+  desc: ★ 查收敛：**拿当前表重跑判据**，与文件里的处置对账（§5.4）。 · L478 · 函数 · 分支：1→_read_text 2→load_thresholds
+    3→load_flowtable 4→collect 5→parse_doc 6→check_drift_rows 7→check_gap_rows 8→inputs_of
+- id: '31'
+  name: main
+  lines:
+  - main
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 28
+  col: 0
+  stage: 模块级
+  route: →32
+  desc: L510 · 函数
+- id: '32'
+  name: 结束
+  lines:
+  - 结束
+  type: end
+  subject: 脚本
+  executor: selfboot
+  row: 31
+  col: 0
+  stage: 出口
+  route: —
+  desc: 流程终点（结构性节点，不是函数）
+edges:
+- from: '01'
+  to: '29'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '01'
+  to: '30'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '01'
+  to: '31'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '02'
+  to: '32'
+  kind: spine
+  polarity: main
+- from: '03'
+  to: '02'
+  kind: jumpR
+  polarity: main
+- from: '04'
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: '05'
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: '06'
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: '07'
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: 08
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: 09
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: '10'
+  to: 08
+  kind: spine
+  polarity: main
+- from: '11'
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: '12'
+  to: '02'
+  kind: jumpR
+  polarity: main
+- from: '13'
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: '14'
+  to: '02'
+  kind: spine
+  polarity: main
+- from: '15'
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: '16'
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: '17'
+  to: '06'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '17'
+  to: 08
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '17'
+  to: '16'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '18'
+  to: 08
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '18'
+  to: 09
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '18'
+  to: '15'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '18'
+  to: '16'
+  kind: spine
+  polarity: main
+  label: '4'
+- from: '19'
+  to: 08
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '19'
+  to: 09
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '19'
+  to: '16'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '20'
+  to: 09
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '20'
+  to: '10'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '20'
+  to: '15'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '21'
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: '22'
+  to: '10'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '22'
+  to: '17'
+  kind: spine
+  polarity: main
+  label: '2'
+- from: '22'
+  to: '18'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '22'
+  to: '19'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '22'
+  to: '20'
+  kind: jumpR
+  polarity: main
+  label: '5'
+- from: '22'
+  to: '21'
+  kind: jumpR
+  polarity: main
+  label: '6'
+- from: '23'
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: '24'
+  to: '06'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '24'
+  to: '15'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '25'
+  to: '32'
+  kind: jumpR
+  polarity: main
+- from: '26'
+  to: '07'
+  kind: jumpR
+  polarity: main
+- from: '27'
+  to: '07'
+  kind: spine
+  polarity: main
+- from: '28'
+  to: '03'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '28'
+  to: '13'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '28'
+  to: '14'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '29'
+  to: '02'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '29'
+  to: '04'
+  kind: spine
+  polarity: main
+  label: '2'
+- from: '29'
+  to: '05'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '29'
+  to: '11'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '29'
+  to: '12'
+  kind: jumpR
+  polarity: main
+  label: '5'
+- from: '29'
+  to: '22'
+  kind: jumpR
+  polarity: main
+  label: '6'
+- from: '29'
+  to: '23'
+  kind: jumpR
+  polarity: main
+  label: '7'
+- from: '29'
+  to: '24'
+  kind: jumpR
+  polarity: main
+  label: '8'
+- from: '29'
+  to: '28'
+  kind: jumpR
+  polarity: main
+  label: '9'
+- from: '30'
+  to: '02'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '30'
+  to: '11'
+  kind: spine
+  polarity: main
+  label: '2'
+- from: '30'
+  to: '12'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '30'
+  to: '22'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '30'
+  to: '25'
+  kind: jumpR
+  polarity: main
+  label: '5'
+- from: '30'
+  to: '26'
+  kind: jumpR
+  polarity: main
+  label: '6'
+- from: '30'
+  to: '27'
+  kind: jumpR
+  polarity: main
+  label: '7'
+- from: '30'
+  to: '28'
+  kind: jumpR
+  polarity: main
+  label: '8'
+- from: '31'
+  to: '32'
+  kind: jumpR
+  polarity: main

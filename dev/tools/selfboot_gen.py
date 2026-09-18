@@ -193,7 +193,7 @@ SUBJECT = '脚本'
 SUBJECTS = ('AI', '用户', SUBJECT)
 
 # 流水线阶段：把 37 个模块按"它在这个项目里干什么"编成 9 组，写进根表的「项目运作阶段」列。
-# 扁平 38 张、不切三层时，**分组信息只落在这里**——不复用这一列，分组在图里就没有据可查。
+# 扁平 39 张、不切三层时，**分组信息只落在这里**——不复用这一列，分组在图里就没有据可查。
 # 元组顺序即流水线顺序；`_root_rows` 按模块查表，查不到就抛错（仪器失效，不静默留空）。
 PIPELINE_STAGES = (
     ('接管与解析', ('probe', 'recon', 'parse', 'textquality', 'parse_ooxml', 'parse_pdf',
@@ -208,6 +208,9 @@ PIPELINE_STAGES = (
     ('层级索引', ('layer_index',)),
     ('同步闭环', ('xml_reader', 'writeback', 'sync')),
     ('编排入口', ('build', 'init', 'shot', 'clarify')),
+    # 跨阶段的**外循环**（不是线性顺序里的最后一步）：读账本 + 表 → 出漂移 / 缺口，
+    # 驱动"再审 → 再定向取证 → 再落表"。排在末位只是因为它是上面所有产物的消费者（PIPELINE-SPEC §5）。
+    ('循环与漂移', ('drift',)),
 )
 STAGE_OF = {m: s for s, ms in PIPELINE_STAGES for m in ms}
 

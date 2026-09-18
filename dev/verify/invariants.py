@@ -11,13 +11,14 @@
 
 （清单与 `run_face` 的 `c.section` 一一对应；增删小节时这里要跟着改。）
 """
+import json
 import os
 import shutil
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _lib import BASE, EXAMPLES, HEAD, Case, md5, prod, row, run  # noqa: E402
+from _lib import BASE, EXAMPLES, HEAD, SKILL, Case, md5, prod, row, run  # noqa: E402
 
 import validate                                      # noqa: E402  （_lib 已把 scripts/ 挂上 sys.path）
 from engine import load                              # noqa: E402
@@ -171,16 +172,19 @@ def run_face(tmp):
     # 于是"重建"与基线全不可比（本检查的第一版就是这么假红的：54 个文件里全是 row/kind 差异）。
     # 所以：生成器重造表 → build 出图 → 与基线**整树逐字节**比。目录名必须是 `self-boot`（D-51）。
     sb = BASE / 'self-boot'
-    c.check(len(list(sb.rglob('flowtable.md'))) == 38, '自举树基线含 38 张表（1 根表 + 37 模块表）',
-            f'{len(list(sb.rglob("flowtable.md")))} 张')
+    # 张数**从依赖图现取**（一个模块一张表 + 1 根表）：手写死数在加模块时必漂（G7 抓到过五处）。
+    n_mod = len(json.loads((SKILL / 'dev' / 'tools' / 'fn-graph.json').read_text(encoding='utf-8'))
+                .get('files') or {})
+    n_tab = len(list(sb.rglob('flowtable.md')))
+    c.check(n_tab == n_mod + 1, f'自举树基线含 {n_mod + 1} 张表（1 根表 + {n_mod} 模块表）', f'{n_tab} 张')
     work = tmp / 'self-boot'
     shutil.rmtree(work, ignore_errors=True)
     work.mkdir(parents=True)
     rc, out = run(os.path.join('..', 'dev', 'tools', 'selfboot_gen.py'), '--out', work, '--quiet')
-    if c.check(rc == 0, '自举树可按生成器重造（fn-graph.json → 38 张表）',
+    if c.check(rc == 0, '自举树可按生成器重造（fn-graph.json → 全部模块表）',
                '' if rc == 0 else out.strip()[-100:]):
         rc2, out2 = run('build.py', work / 'flowtable.md')
-        if c.check(rc2 == 0, '重造的自举表可出图（38 张一次跑通）',
+        if c.check(rc2 == 0, '重造的自举表可出图（整树一次跑通）',
                    '' if rc2 == 0 else out2.strip()[-100:]):
             old = {p.relative_to(sb).as_posix(): md5(p) for p in sb.rglob('*') if p.is_file()}
             new = {p.relative_to(work).as_posix(): md5(p) for p in work.rglob('*') if p.is_file()}
