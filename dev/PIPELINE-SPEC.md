@@ -148,7 +148,7 @@ notes                     → [{material_id, status?, reason?, extractor?}]   �
 |---|---|---|---|
 | OOXML（docx / xlsx / pptx） | docx/xlsx 用 Python 库（python-docx / openpyxl）· **pptx 零依赖**（标准库 zip + `ppt/slides/*.xml`，公共层 `pptx_text`）—**依赖要显式声明**（见下）。**读者按内容开门**：从内存 `BytesIO` 打开，不让扩展名投票 | 宿主本地 Office SDK（若存在） | 记 T4 + **给可执行提示**（装什么）；**没有读取器的格式不许判 T1**（§1.2 的不变式） |
 | **文本型 `.pdf`（T2）** | `pdfplumber`（**纯 Python**，无外部二进制）抽文本层—一页一个 element | — | 记 T4 + **可执行提示**（装 pdfplumber） |
-| **legacy**（.doc / .xls / .ppt） | **没有纯 Python 的可靠读法** ⇒ 只用**外部转换器**（LibreOffice / soffice，若装了）：转成 OOXML 再交给 T1 适配器抽（§1.1 的 T2 定义就是"转换后可用"），`extractor` 写 `soffice+py:docx` | 宿主本地 Office SDK（若存在） | 记 T4 + 可执行提示（"请另存为 .docx" 或 "装 LibreOffice"） |
+| **legacy**（.doc / .xls / .ppt，以及 WPS 的 .wps/.et/.dps） | **没有纯 Python 的可靠读法** ⇒ 只用**外部转换器**（LibreOffice / soffice，若装了）：转成 OOXML 再交给 T1 适配器抽（§1.1 的 T2 定义就是"转换后可用"），`extractor` 写 `soffice+py:docx`（三种目标都算，`.ppt→.pptx` 也有人读）。**缺转换器时按族给话**：`ole_kind` 认出 `WordDocument` / `Workbook` / `PowerPoint Document` 流 ⇒ 提示**指名族与另存目标**——真样本实测（`关于韶关…告知函.wps`，WPS 产出）它其实是 **Word 97-2003 族**，最省事的动作是"**用 WPS 另存为 .docx**"，泛泛说"另存为 OOXML"等于没说 | 宿主本地 Office SDK（若存在） | 记 T4 + 可执行提示（指名族与另存目标，或"装 LibreOffice"） |
 | 图片 / 扫描件 / 截图 / 白板照 | `render_pages.py` **转图片**（图片材料本来就是图，直接读原文件） | **宿主多模态模型**（判据：AI 自报本会话能否直接看图）；OCR（tesseract / paddleocr，可选依赖） | 记 T4 + 进澄清 |
 | 纯文本（md / txt / csv / json …） | `parse_text.py`（**只用标准库**）：**解码 + 按行打块**（一块一个 element，`extractor=py:text`；标记 / 数据文件写 `py:code`）、`.csv` / `.tsv` → `table` + `rows`。**不认结构**（见下） | **宿主模型直读文本**：理解归它 | 直读不可用时仍走得通（标准库永远在） |
 
@@ -687,7 +687,7 @@ heading  paragraph  list_item  table  figure  caption  code  sheet  cell
 | 缺口清单与漂移账（§5.3 / §5.4）：状态封闭 · `已解释` / `已放弃` 必须写理由 · 收敛时不许有 `待验` / `待取证` | `scripts/drift.py check` + `artifact.NON_TABLE_MD`（产物名登记）+ **门⑪** | **已实现并进验收**（`已修` 由**重跑判据**验证，不是靠声明） |
 | 子代理摘要三条纪律（§5.5）：每个论断能指回 element id · 只回摘要不回原文 · 引用按 D1 判等级 | 无（AI / 子代理侧，与 G4 同类） | **无仪器**——它是新的失真入口，登记在 G14 || 账本 schema：键封闭 / 枚举合法 / id 唯一 | `scripts/ledger.py` 写入前自检 | **已实现**（不过就不落盘，退 1）；**未进验收路径** |
 | 探测记账完整：每份材料一行、无"未判" | `scripts/probe.py` 一律给档位 | **已实现**（判不出记 T4 + 原因，不猜）；**未进验收路径** |
-| pptx 零依赖读取（§1.4）：probe 判 T1 ⇔ `parse_ooxml` 认领 · 一张幻灯片一个 element + `location.page` 就是页码 · 摘要与读者**同一句判据**（公共层 `pptx_text`） | `scripts/pptx_text.py`（公共层）+ `parse_ooxml.parse_pptx`（读者）+ `recon._pptx_scale`（摘要）+ **门⑪** | **已实现并进验收**（夹具 3 条路径：判 T1 / 出摘要 / 按张撬开 + 超限留痕） |
+| pptx 零依赖读取（§1.4）：probe 判 T1 ⇔ `parse_ooxml` 认领 · 一张幻灯片一个 element + `location.page` 就是页码 · **纯图片页丢掉并记账**（空元素不是证据）· 摘要与读者**同一句判据**（公共层 `pptx_text`） | `scripts/pptx_text.py`（公共层）+ `parse_ooxml.parse_pptx`（读者）+ `recon._pptx_scale`（摘要）+ **门⑪** | **已实现并进验收**（夹具 3 条路径 + 真样本复验：19 张的真稿里 3 张纯图片 ⇒ 16 条元素、**0 条空元素**，每条挂"那几页要视觉"的留痕；摘要里也点明"3 张无文字"） |
 | 解析器四条硬要求（只读 · 不抛裸异常 · 输出符合 §2 · 缺依赖报可执行错） | 适配器自检（待定） | `parse_ooxml` / `parse_pdf` / `parse_legacy` / `parse_text` / `render_pages` 已按此实现（实测：非目标材料**跳过并记账**、缺依赖退 2 并给安装命令）；**无仪器** |
 | 材料层记账完整：`status` / `reason` / `extractor` 由解析阶段补注写入（§1.4） | `scripts/ledger.py --notes` | **已实现**（补注键封闭 / id 必须存在 / `unreadable` 必有 reason，**落完再校一次**）；**未进验收路径** |
 | 分派是查表（§1.4）：固定顺序跑适配器 · 同输入同字节 · 冲突与漏认不许静默 | `scripts/parse.py` | **已实现**（元素按 `material_id` 稳定排序；id 重复 / 补注冲突 / `status=ok` 却零证据三类都**退 1 且不落盘**，实测各路径）；**未进验收路径** |

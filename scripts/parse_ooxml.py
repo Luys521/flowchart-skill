@@ -158,6 +158,8 @@ def parse_pptx(blob, path, mid, max_slides, slides_span=None):
     got = slides(blob, max_slides)
     if slides_span:                                  # `--slides`：只要这几张（收窄，逐条记账）
         got = [(n, lines) for n, lines in got if slides_span[0] <= n <= slides_span[1]]
+    blank = [n for n, lines in got if not lines]     # **纯图片页**：没有 `<a:t>`，抽出来就是空
+    got = [(n, lines) for n, lines in got if lines]
     if not got:
         return [], ''                                 # 空稿 / 全是图：**由调用方统一记"没抽出文字"**，不当致命错
     out, cut = [], []
@@ -167,9 +169,15 @@ def parse_pptx(blob, path, mid, max_slides, slides_span=None):
               'text': text, 'location': {'path': path.as_posix(), 'page': n, 'quote': text},
               'extractor': 'py:pptx', 'certainty': 'direct'}
         out.append(el)
+    if blank:
+        # **空元素不是证据**（实测真稿：19 张里有 3 张是纯图片，原先被抽成 `text: ""` 的 element，
+        # 既占着账本、又让"19 张都进来了"这句话变成假的）。丢掉它们，并把这件事挂到**留下的每条**上：
+        # 那几页的内容**确实没进账本**，要它得走视觉（`render_pages`）——这正是 §1.3 那条路。
+        cut.append(f'{len(blank)} 张幻灯片没有文字层（第 {"、".join(str(n) for n in blank)} 张，纯图片）：'
+                   f'那几页的内容不在账本里，要它得走视觉（render_pages）')
     if slides_span:
         cut.append(f'本轮 --slides 只要第 {slides_span[0]}–{slides_span[1]} 张')
-    if max_slides and len(got) >= max_slides:
+    if max_slides and len(got) + len(blank) >= max_slides:
         cut.append(f'只取前 {max_slides} 张（按序号）')
     note = '；'.join(cut)
     if note:

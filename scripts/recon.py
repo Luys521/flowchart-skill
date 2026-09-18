@@ -142,8 +142,12 @@ def _pptx_scale(blob, th):
     got = slides(blob, th['outline_max'])            # 只读前面若干张就够当摘要；读不动返回空
     if not got:
         return '', [], 0, 'pptx 里没抽出文字（空稿 / 全是图）'
-    heads = [f'第 {n} 张：{lines[0]}' if lines else f'第 {n} 张：（无文字）' for n, lines in got]
-    return f'幻灯片 {len(got)} 张（按序号读前 {th["outline_max"]} 张取标题）', heads, len(got), ''
+    blank = sum(1 for _n, lines in got if not lines)
+    heads = [f'第 {n} 张：{lines[0]}' if lines else f'第 {n} 张：（纯图片，无文字）' for n, lines in got]
+    scale = (f'幻灯片 {len(got)} 张'
+             + (f'（前 {len(got)} 张里 {blank} 张无文字＝纯图片：那几页要视觉才读得到）' if blank else '')
+             + f'（按序号读前 {th["outline_max"]} 张取标题）')
+    return scale, heads, len(got), ''
 
 def _pdf_scale(blob, th):
     """`.pdf` 字节 → `(规模描述, 大纲行, 大纲总条数, 结构说明)`。**零依赖粗数页数**。

@@ -262,10 +262,12 @@ def query_paths(root):
 
 
 def make_deck(path):
-    """造一份**最小可读的 .pptx**：确切部件 `ppt/presentation.xml` + 每张一行标题一行正文。
+    """造一份**最小可读的 .pptx**：确切部件 `ppt/presentation.xml` + 每张一行标题一行正文，
+    **最后再放一张纯图片页**（没有任何 `<a:t>`）。
 
-    为什么夹具造得出来：`.pptx` 就是 zip + `ppt/slides/slideN.xml` 的 `<a:t>` 运行——
-    所以"pptx 能不能读"这件事**不需要真的 PowerPoint**，也不需要 `python-pptx`（本仓已不依赖它）。
+    为什么要有那张图片页：真稿实测（`西门子 S7-1200 …V3.0.pptx`，19 张）里有 3 张是纯图片——
+    原先被抽成 `text: ""` 的空 element：既占着账本，又让"19 张都进来了"这句话变成假的。
+    **空元素不是证据**，这条现在钉在这里。
     """
     p = 'http://schemas.openxmlformats.org/presentationml/2006/main'
     a = 'http://schemas.openxmlformats.org/drawingml/2006/main'
@@ -277,6 +279,11 @@ def make_deck(path):
                        f'<a:p><a:r><a:t>{title}</a:t></a:r></a:p>'
                        f'<a:p><a:r><a:t>正文 {i}：审批流程第 {i} 步</a:t></a:r></a:p>'
                        f'</p:spTree></p:cSld></p:sld>')
+        n = len(DECK_TITLES) + 1
+        z.writestr(f'ppt/slides/slide{n}.xml',
+                   f'<p:sld xmlns:p="{p}" xmlns:a="{a}"><p:cSld><p:spTree>'
+                   f'<p:pic><p:nvPicPr><p:cNvPr id="9" name="整页截图"/></p:nvPicPr></p:pic>'
+                   f'</p:spTree></p:cSld></p:sld>')
 
 
 def pptx_paths(root):
@@ -306,19 +313,24 @@ def pptx_paths(root):
     rc, out = run([sys.executable, str(RECON_CMD), 'build', '--materials', str(d / 'materials.json'),
                    '-o', str(d / 'recon.md')])
     rec = (d / 'recon.md').read_text(encoding='utf-8') if (d / 'recon.md').exists() else ''
-    cases.append(('⑱ recon：出 pptx 摘要（张数 + 每张标题）',
-                  rc == 0 and '幻灯片 3 张' in rec and DECK_TITLES[1] in rec, rc, out + rec[:300]))
+    cases.append(('⑱ recon：出 pptx 摘要（张数 + 每张标题 + **点明纯图片页**）',
+                  rc == 0 and f'幻灯片 {len(DECK_TITLES) + 1} 张' in rec and DECK_TITLES[1] in rec
+                  and '纯图片' in rec, rc, out + rec[:300]))
     rc, out = run([sys.executable, str(OOXML_CMD), '--materials', str(d / 'materials.json'),
-                   '-o', str(d / 'elements.json'), '--max-slides', '2'])
+                   '-o', str(d / 'elements.json'), '--max-slides', '9'])
     els = []
     if (d / 'elements.json').exists():
         try:
             els = json.loads((d / 'elements.json').read_text(encoding='utf-8'))
         except ValueError:
             els = []
-    ok = (rc == 0 and len(els) == 2 and els[0].get('location', {}).get('page') == 1
-          and DECK_TITLES[1] in els[1].get('text', '') and els[0].get('degraded'))
-    cases.append(('⑲ pptx 读者：按张出元素 + 页码坐标 + 超限留痕', ok, rc, out + str(els[:2])[:300]))
+    ok = (rc == 0 and len(els) == len(DECK_TITLES)          # 纯图片那张**不许**变成空元素
+          and els[0].get('location', {}).get('page') == 1
+          and DECK_TITLES[1] in els[1].get('text', '')
+          and not any(not (e.get('text') or '').strip() for e in els)
+          and '没有文字层' in (els[0].get('degraded') or ''))
+    cases.append(('⑲ pptx 读者：按张出元素 + 页码坐标 + **纯图片页丢掉并记账**', ok, rc,
+                  out + str(els)[:300]))
     return cases
 
 
@@ -423,7 +435,10 @@ def build_material_tree(root):
     _zip_with(d / 'm.xlsx', {'xl/workbook.xml': 'not xml at all'})         # 部件是垃圾
     (d / 'n.txt').write_bytes('第一行：中文\n第二行：中文\n'.encode('gbk'))  # GBK
     (d / 'o.txt').write_bytes(b'')                                        # 空文件
-    (d / 'p.doc').write_bytes(b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1' + b'\x00' * 64)   # 假 OLE
+    # 假 OLE，但**带上真族标记**：真样本实测 `…告知函.wps`（WPS 产出）就是 Word 97-2003 族
+    # （OLE 里有 UTF-16LE 的 `WordDocument` 流），提示必须**指名族与另存目标**，不能泛泛说"另存为 OOXML"
+    (d / 'p.doc').write_bytes(b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1' + b'\x00' * 64
+                              + 'WordDocument'.encode('utf-16-le') + b'\x00' * 64)
     _unsized_xlsx(d / 'q.xlsx')                                           # 无 <dimension> 的流式表
     return d
 
@@ -494,6 +509,22 @@ def materials_paths(root):
     rec2 = (d / 'recon-small.md').read_text(encoding='utf-8') if (d / 'recon-small.md').exists() else ''
     cases.append(('㉔ 超护栏：`max_open_bytes` 调到 512 后记在行里（不打开结构、不崩）',
                   rc == 0 and '超护栏' in rec2, rc, out[-300:] if rc != 0 else ''))
+
+    # ㉔b 缺转换器时的提示要**指名族与另存目标**（真样本 .wps 是 Word 族：该说 .docx，不该泛泛说 OOXML）
+    rc, out = run([sys.executable, str(PARSE_CMD), '--materials', str(d / 'materials.json'),
+                   '--only', 'M16', '--elements', str(d / 'e-ole.json'),
+                   '--notes', str(d / 'n-ole.json'), '--ledger', str(d / 'led-ole.json')])
+    ole_reason = ''
+    if (d / 'led-ole.json').exists():
+        try:
+            ole_reason = next((m.get('reason') or '' for m in
+                               json.loads((d / 'led-ole.json').read_text(encoding='utf-8'))['materials']
+                               if m['id'] == 'M16'), '')
+        except (ValueError, KeyError, StopIteration):
+            ole_reason = ''
+    cases.append(('㉔b legacy 提示指名族与另存目标（Word 族 → 另存为 .docx）',
+                  rc == 0 and 'Word 97-2003' in ole_reason and '.docx' in ole_reason, rc,
+                  ole_reason[:200] or out[-200:]))
 
     # ㉕ 抽取时收窄（§5.3 的执行面）：**只要两份 + 只留含关键词的片段**，其余记「本轮未取」
     rc, out = run([sys.executable, str(PARSE_CMD), '--materials', str(d / 'materials.json'),

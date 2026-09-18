@@ -43,8 +43,15 @@ OLE_STREAMS = (
 )
 # 内容标记取不到时的**兜底**（目录扇区可能在探测窗口之外）：扩展名只是先验，不作结论
 OLE_EXT = {'.doc': 'docx', '.xls': 'xlsx', '.ppt': 'pptx'}
-# 我认的转换目标：OOXML 三种；.pptx 本仓**还没有读取器**（python-pptx 是可选依赖，未落地）
-TARGET_OF = {'docx': 'docx', 'xlsx': 'xlsx'}
+# 我认的转换目标：三种 OOXML。**`.pptx` 现在也算**——本仓已有零依赖的 pptx 读取器
+# （公共层 `pptx_text` + `parse_ooxml.parse_pptx`），所以 `.ppt` 转出来有人读得动（2026-09-18 修）。
+TARGET_OF = {'docx': 'docx', 'xlsx': 'xlsx', 'pptx': 'pptx'}
+EXTRACTOR_OF = {'docx': 'py:docx', 'xlsx': 'py:openpyxl', 'pptx': 'py:pptx'}
+# 认出来的族 → 人话（**提示里要指名族**，用户才知道该另存为什么；实测真样本是 WPS 产的 .wps，
+# 它其实是 Word 97-2003 族，泛泛说"另存为 OOXML"等于没说）
+FAMILY_CN = {'docx': 'Word 97-2003（OLE 里有 `WordDocument` 流）',
+             'xlsx': 'Excel 97-2003（有 `Workbook` 流）',
+             'pptx': 'PowerPoint 97-2003（有 `PowerPoint Document` 流）'}
 STREAM_WINDOW = 2 << 20                      # 找流名只看前 2 MB（OLE 目录在最前面，够用且不整份读）
 
 CONVERTER_NAMES = ('soffice', 'soffice.exe', 'libreoffice')
@@ -55,9 +62,19 @@ CONVERTER_PATHS = (
     '/Applications/LibreOffice.app/Contents/MacOS/soffice',
 )
 NO_CONVERTER = ('legacy 二进制没有纯 Python 可靠读法，自包含侧也没探到外部转换器：'
-                '装 LibreOffice（`soffice`）后重跑，或把材料另存为 .docx / .xlsx')
-NO_PPTX = ('这里拿到的是**转换出来的临时** pptx，账本不回填它：本仓的 .pptx 读取器在 `parse_ooxml` '
-           '那条路上（材料里的 .pptx 直接走 T1）。把 .ppt 另存为 .pptx 后作为材料重投即可')
+                '装 LibreOffice（`soffice`）后重跑')
+
+
+def no_converter_reason(kind):
+    """缺转换器时的**按族给话**：这份是什么、最省事的下一步是什么。
+
+    为什么值得分开写：真样本实测（`关于韶关…告知函.wps`，WPS 产出）——它是 Word 97-2003 族，
+    用户最省事的动作是**用 WPS 直接另存为 .docx**，而不是去装一个多半不认 Kingsoft 格式的 LibreOffice。
+    泛泛的"另存为 OOXML"等于没说（用户不知道该存成哪个）。
+    """
+    fam = FAMILY_CN.get(kind, 'OLE 复合文档')
+    return (f'{NO_CONVERTER}。这份是 **{fam}**：最省事的是**用原程序另存为 .{kind}** '
+            f'（存完就是 T1，直读）；或在装了 LibreOffice 的环境里重跑本链')
 
 
 def _read_json(path):
@@ -220,10 +237,8 @@ def parse_legacy(path, mid, argv, workdir, timeout):
     kind = ole_kind(path)
     if kind is None:
         return [], None, '', ''
-    if kind not in TARGET_OF:
-        return [], {'material_id': mid, 'status': 'unreadable', 'reason': NO_PPTX}, f'{mid}: pptx', ''
     if argv is None:
-        return [], {'material_id': mid, 'status': 'unreadable', 'reason': NO_CONVERTER}, \
+        return [], {'material_id': mid, 'status': 'unreadable', 'reason': no_converter_reason(kind)}, \
             f'{mid}: 缺转换器', ''
     target = TARGET_OF[kind]
     converted, err = convert(argv, path, target, workdir, timeout)
@@ -236,7 +251,7 @@ def parse_legacy(path, mid, argv, workdir, timeout):
         return [], {'material_id': mid, 'status': 'unreadable',
                     'reason': f'转换产物读不了（{err}）：材料可能已损坏，请人工核对'}, \
             f'{mid}: 转换产物读不了', ''
-    note = {'material_id': mid, 'extractor': f'soffice+py:{"docx" if target == "docx" else "openpyxl"}'}
+    note = {'material_id': mid, 'extractor': f'soffice+{EXTRACTOR_OF.get(target, "py:?")}'}
     return got, note, f'{mid}({kind}→{target}) {len(got)}', ''
 
 

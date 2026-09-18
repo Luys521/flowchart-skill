@@ -30,7 +30,7 @@ level: L0
 | 接管与解析 | 17 | 模块 · ledger | 任务 | — | — | — | 脚本 | selfboot | — | →18 | 9 个函数 · ⊞ ledger/flowtable.md |
 | 产物审核 | 18 | 模块 · manifest | 任务 | — | — | — | 脚本 | selfboot | — | →19 | 29 个函数 · ⊞ manifest/flowtable.md |
 | 接管与解析 | 19 | 模块 · parse | 任务 | — | — | — | 脚本 | selfboot | — | →20 | 15 个函数 · ⊞ parse/flowtable.md |
-| 接管与解析 | 20 | 模块 · parse_legacy | 任务 | — | — | — | 脚本 | selfboot | — | →21 | 13 个函数 · ⊞ parse_legacy/flowtable.md |
+| 接管与解析 | 20 | 模块 · parse_legacy | 任务 | — | — | — | 脚本 | selfboot | — | →21 | 14 个函数 · ⊞ parse_legacy/flowtable.md |
 | 接管与解析 | 21 | 模块 · parse_ooxml | 任务 | — | — | — | 脚本 | selfboot | — | →22 | 11 个函数 · ⊞ parse_ooxml/flowtable.md |
 | 接管与解析 | 22 | 模块 · parse_pdf | 任务 | — | — | — | 脚本 | selfboot | — | →23 | 7 个函数 · ⊞ parse_pdf/flowtable.md |
 | 接管与解析 | 23 | 模块 · parse_text | 任务 | — | — | — | 脚本 | selfboot | — | →24 | 13 个函数 · ⊞ parse_text/flowtable.md |

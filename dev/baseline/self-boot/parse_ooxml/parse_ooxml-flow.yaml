@@ -108,7 +108,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →13
-  desc: ★ PK 容器的**字节** → `'docx'` / `'xlsx'` / `'pptx'`；不是 OOXML 返回 N… · L180 · 函数
+  desc: ★ PK 容器的**字节** → `'docx'` / `'xlsx'` / `'pptx'`；不是 OOXML 返回 N… · L188 · 函数
 - id: 09
   name: parse_materials
   lines:
@@ -120,7 +120,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→04｜2→05｜3→07｜4→08
-  desc: ★ 材料层 → `(elements, 补注, 摘要, 跳过清单, 报错文案)`。非 OOXML / 非 ok 的一律**… · L200 · 函数
+  desc: ★ 材料层 → `(elements, 补注, 摘要, 跳过清单, 报错文案)`。非 OOXML / 非 ok 的一律**… · L208 · 函数
     · 分支：1→parse_docx 2→parse_xlsx 3→parse_pptx 4→container_kind
 - id: '10'
   name: _read_json
@@ -133,7 +133,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →13
-  desc: ★ 读 JSON（容忍 BOM）。 · L251 · 函数
+  desc: ★ 读 JSON（容忍 BOM）。 · L259 · 函数
 - id: '11'
   name: _write_notes
   lines:
@@ -145,7 +145,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →13
-  desc: ★ 写材料层补注：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 `ledger.dump`… · L255 · 函数
+  desc: ★ 写材料层补注：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 `ledger.dump`… · L263 · 函数
 - id: '12'
   name: main
   lines:
@@ -157,7 +157,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→06｜2→09｜3→10｜4→11
-  desc: L259 · 函数 · 分支：1→_span 2→parse_materials 3→_read_json 4→_write_notes
+  desc: L267 · 函数 · 分支：1→_span 2→parse_materials 3→_read_json 4→_write_notes
 - id: '13'
   name: 结束
   lines:
