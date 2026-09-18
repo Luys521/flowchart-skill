@@ -482,6 +482,25 @@ def build_material_tree(root):
     return d
 
 
+def _fill_recon_card(text):
+    """把侦查表的**四个 AI 列**填成合法值（按单元格索引改）。
+
+    为什么不用字符串替换：审计里踩过一次——替换式填空"看着对"，但口径一歪就少一格，
+    于是测的其实是"列数不对"而不是想测的那条判据。列序见 `recon.CARD_COLUMNS`（12 列）：
+    0 材料 · 1 档位 · 2 修改时间 · 3 难度 · 4 规模 · 5 解析深度 · 6 走哪条路 · 7 读不动 ·
+    8 假设角色 · 9 依据 · 10 验证方式 · 11 状态。
+    """
+    out = []
+    for line in text.splitlines():
+        if line.startswith('| `M'):
+            c = [x.strip() for x in line.strip().strip('|').split('|')]
+            if len(c) == 12:
+                c[8], c[9], c[10], c[11] = '⚠ 假设一句话', '依据 x', '读大纲', '待验'
+                line = '| ' + ' | '.join(c) + ' |'
+        out.append(line)
+    return '\n'.join(out) + '\n'
+
+
 def materials_paths(root):
     """材料树 5 条路径：**探测不撒谎 · 整批不崩 · 缩样尽力而为 · 护栏记在行里**。
 
@@ -659,6 +678,60 @@ def materials_paths(root):
           and '探测说谎' not in out)
     cases.append(('㉚ 收窄读空 ⇒ skipped「本轮收窄未取」（不是 unreadable「空文档」、也不是假探谎）',
                   ok, rc, (out[-200:] + str(m3)[:150]) if not ok else ''))
+
+    # ㉛ 阈值文件**形状不对**（YAML 里给列表，常见笔误）⇒ 退回默认、照出表；阈值 ≤0 同理（不许让摘要说假话）
+    (d / 'bad-shape.yaml').write_text('recon: [1,2]\n', encoding='utf-8')
+    rc, out = run([sys.executable, str(RECON_CMD), 'build', '--materials', str(d / 'materials.json'),
+                   '--dict', str(d / 'bad-shape.yaml'), '-o', str(d / 'r-shape.md')])
+    (d / 'bad-range.yaml').write_text('recon:\n  outline_max: -1\n', encoding='utf-8')
+    rc2, out2 = run([sys.executable, str(RECON_CMD), 'build', '--materials', str(d / 'materials.json'),
+                     '--dict', str(d / 'bad-range.yaml'), '-o', str(d / 'r-range.md')])
+    r_range = (d / 'r-range.md').read_text(encoding='utf-8') if (d / 'r-range.md').exists() else ''
+    ok = (rc == 0 and (d / 'r-shape.md').exists() and rc2 == 0 and '幻灯片' in r_range)
+    cases.append(('㉛ 阈值形状不对/≤0 ⇒ 退回默认照出表（原先裸栈退 1 零产物 / 摘要谎称「空稿」）',
+                  ok, rc, (out[-160:] + r_range[:160]) if not ok else ''))
+
+    # ㉜ 材料层**形状坏** ⇒ 退 2 说人话（原先裸栈退 1、零产物：`["x"]` / `bytes:"很 大"` / `path:null`）
+    (d / 'bad-mats.json').write_text('["x"]\n', encoding='utf-8')
+    rc, out = run([sys.executable, str(RECON_CMD), 'build', '--materials', str(d / 'bad-mats.json'),
+                   '-o', str(d / 'r-bad.md')])
+    cases.append(('㉜ 材料层形状坏 ⇒ 退 2 + 人话', rc == 2 and '形状不对' in out, rc, out[-160:]))
+
+    # ㉝ `check` 的**脚本列**不许被改（原先只比档位+四个 AI 列：把「只取摘要」改成「全量解析」照样过），
+    #    重复行也不许（原先后写覆盖先写，人读第一行、校验最后一行）
+    draft = (d / 'r-range.md').read_text(encoding='utf-8')
+    filled = _fill_recon_card(draft)
+    (d / 'c-ok.md').write_text(filled, encoding='utf-8', newline='\n')
+    rc_ok, out_ok = run([sys.executable, str(RECON_CMD), 'check', str(d / 'c-ok.md'),
+                         '--materials', str(d / 'materials.json')])
+    (d / 'c-tampered.md').write_text(filled.replace('全量解析', '不参与'), encoding='utf-8', newline='\n')
+    rc_bad, out_bad = run([sys.executable, str(RECON_CMD), 'check', str(d / 'c-tampered.md'),
+                           '--materials', str(d / 'materials.json')])
+    rows = [l for l in filled.splitlines() if l.startswith('| `M')]
+    (d / 'c-dup.md').write_text(filled + rows[0] + '\n', encoding='utf-8', newline='\n')
+    rc_dup, out_dup = run([sys.executable, str(RECON_CMD), 'check', str(d / 'c-dup.md'),
+                           '--materials', str(d / 'materials.json')])
+    ok = (rc_bad == 1 and '解析深度' in out_bad and rc_dup == 2 and '两行' in out_dup)
+    cases.append(('㉝ check：改脚本列（只取摘要→全量解析）⇒ 退 1 · 重复行 ⇒ 退 2', ok, rc_bad,
+                  (out_bad[-160:] + out_dup[-120:] + f'（基线 rc={rc_ok}）') if not ok else ''))
+
+    # ㉞ probe：**头部是文本、尾部是二进制**的 `.txt` 不许判 T1（原先只看前 4 KB ⇒ 判可直读，
+    #    而 parse_text 要解整份、谁都读不动）
+    tail_d = root / 'tail'
+    tail_d.mkdir(exist_ok=True)
+    (tail_d / 'bad-tail.txt').write_bytes(b'A' * 5000 + b'\xff\xfe\xff')
+    (tail_d / 'big-cn.txt').write_text('中文内容测试。' * 2000, encoding='utf-8')   # >4KB 的中文，不许回归
+    rc, out = run([sys.executable, str(PROBE_CMD), str(tail_d), '--json'])
+    tm = {}
+    if '[' in out:
+        try:
+            tm = {pathlib.Path(m['path']).name: m for m in json.loads(out[out.index('['):])}
+        except ValueError:
+            tm = {}
+    ok = (tm.get('bad-tail.txt', {}).get('tier') == 'T4'
+          and tm.get('big-cn.txt', {}).get('tier') == 'T1')
+    cases.append(('㉞ probe：头文本尾二进制的 .txt 判 T4 · 大中文 txt 仍 T1（尾部检查不许反向误判）',
+                  ok, rc, str({k: v.get('tier') for k, v in tm.items()})))
     return cases
 
 

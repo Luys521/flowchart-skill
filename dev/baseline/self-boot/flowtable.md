@@ -35,9 +35,9 @@ level: L0
 | 接管与解析 | 22 | 模块 · parse_pdf | 任务 | — | — | — | 脚本 | selfboot | — | →23 | 7 个函数 · ⊞ parse_pdf/flowtable.md |
 | 接管与解析 | 23 | 模块 · parse_text | 任务 | — | — | — | 脚本 | selfboot | — | →24 | 13 个函数 · ⊞ parse_text/flowtable.md |
 | 接管与解析 | 24 | 模块 · pptx_text | 任务 | — | — | — | 脚本 | selfboot | — | →25 | 8 个函数 · ⊞ pptx_text/flowtable.md |
-| 接管与解析 | 25 | 模块 · probe | 任务 | — | — | — | 脚本 | selfboot | — | →26 | 9 个函数 · ⊞ probe/flowtable.md |
+| 接管与解析 | 25 | 模块 · probe | 任务 | — | — | — | 脚本 | selfboot | — | →26 | 12 个函数 · ⊞ probe/flowtable.md |
 | 循环与漂移 | 26 | 模块 · query | 任务 | — | — | — | 脚本 | selfboot | — | →27 | 9 个函数 · ⊞ query/flowtable.md |
-| 接管与解析 | 27 | 模块 · recon | 任务 | — | — | — | 脚本 | selfboot | — | →28 | 24 个函数 · ⊞ recon/flowtable.md |
+| 接管与解析 | 27 | 模块 · recon | 任务 | — | — | — | 脚本 | selfboot | — | →28 | 25 个函数 · ⊞ recon/flowtable.md |
 | 渲染 | 28 | 模块 · render_drawio | 任务 | — | — | — | 脚本 | selfboot | — | →29 | 24 个函数 · ⊞ render_drawio/flowtable.md |
 | 渲染 | 29 | 模块 · render_html | 任务 | — | — | — | 脚本 | selfboot | — | →30 | 23 个函数 · ⊞ render_html/flowtable.md |
 | 接管与解析 | 30 | 模块 · render_pages | 任务 | — | — | — | 脚本 | selfboot | — | →31 | 12 个函数 · ⊞ render_pages/flowtable.md |

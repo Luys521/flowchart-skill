@@ -180,14 +180,20 @@ def _pdf_scale(path, th):
 def _text_scale(path, th):
     """纯文本 / CSV → 规模。**行数 + 头几行的开头**——这是文本档唯一有意义的"结构"。
 
-    **不猜编码**（与 `parse_text` 同一条纪律，§1.4）：只认 UTF-8（含 BOM）；解不开就说清
-    "编码不是 UTF-8，摘要不可得"并给出下一步（解析时显式 `--encoding`），**不许拿 GBK 硬解出一堆乱码当摘要**——
-    那种"摘要"比没有更坏：它会让人以为材料内容就是乱码。
+    **不猜编码**（与 `parse_text` 同一条纪律，§1.4）：只认 UTF-8（含 BOM）**与带 BOM 的 UTF-16**
+    （后者 `probe` 也认、`parse_text` 也读得动——原先这里只认 UTF-8，于是给 UTF-16 材料写
+    "解析时显式给 `--encoding`"，**指引与读者射程矛盾**）；两种都解不开就说清"摘要不可得"，
+    **不许拿 GBK 硬解出一堆乱码当摘要**——那种"摘要"比没有更坏：它会让人以为材料内容就是乱码。
     """
+    blob = Path(path).read_bytes()
     try:
-        text = Path(path).read_bytes().decode('utf-8-sig')
+        if blob[:2] in (b'\xff\xfe', b'\xfe\xff'):
+            text = blob.decode('utf-16')
+        else:
+            text = blob.decode('utf-8-sig')
     except UnicodeDecodeError:
-        return '', [], 0, '编码不是 UTF-8（摘要不可得）：解析时按 §1.4 显式给 `--encoding`，或先转成 UTF-8'
+        return '', [], 0, ('编码既不是 UTF-8 也不是带 BOM 的 UTF-16（摘要不可得）：'
+                           '解析时按 §1.4 显式给 `--encoding`，或先转成 UTF-8')
     lines = text.splitlines()
     heads = [f'第 {i} 行：{ln.strip()[:60]}' for i, ln in enumerate(lines[:th['outline_max']], 1)
              if ln.strip()]
@@ -355,10 +361,20 @@ def render(rows, meta):
 CARD_COLUMNS = ('材料', '档位', '修改时间', '难度', '规模（依据数字）', '解析深度', '走哪条路', '读不动',
                 '假设角色（AI 填 `⚠`）', '依据（AI 填）', '验证方式（AI 填）', '状态（AI 填）')
 STATUSES = ('待验', '已验证', '已推翻')
+# **脚本列也要查**（审计实测：原先只比 `档位` + 四个 AI 列，于是把"只取摘要"改成"全量解析"照样
+# 校验通过——而那正是 §2.4 明令不许的"一上来就全量灌"）。两个驱动动作的列给封闭取值；
+# 其余（规模/修改时间/走哪条路/读不动）只要求非空——它们是抄来的事实，空着就是没交代。
+MACHINE_ENUMS = {'难度': ('易', '中', '难', '最难', '不参与'),
+                 '解析深度': ('全量解析', '只取摘要', '不参与')}
+MACHINE_FILLED = ('修改时间', '规模（依据数字）', '走哪条路', '读不动')
 MD_ID = re.compile(r'`(M\d+)`')
 
 def parse_table(text):
-    """`recon.md` → `(表头, {M##: {列: 值}}, 报错)`。表头必须逐字对得上（列规范在代码里只有这一份）。"""
+    """`recon.md` → `(表头, {M##: {列: 值}}, 报错)`。表头必须逐字对得上（列规范在代码里只有这一份）。
+
+    **重复行要报错**（审计实测）：原先 `rows[mid] = …` 后写覆盖先写，于是"坏状态在前、合法在后"
+    照样 rc 0，人读到的是第一行、校验的是最后一行——"材料一一对应"可以绕过去。
+    """
     header, rows = None, {}
     for line in text.splitlines():
         if not line.startswith('|'):
@@ -377,6 +393,8 @@ def parse_table(text):
         mid = MD_ID.search(cells[0])
         if not mid:
             return header, rows, f'「材料」列里找不到 `M##`：{cells[0][:40]}'
+        if mid.group(1) in rows:
+            return header, rows, f'{mid.group(1)} 出现了两行（材料必须一一对应，不许重复）'
         rows[mid.group(1)] = dict(zip(header, cells))
     if header is None or not rows:
         return header, rows, '没解析到侦查结论表（表头行 + 至少一行数据）'
@@ -384,18 +402,40 @@ def parse_table(text):
         return header, rows, f'表头不是本脚本的列规范：{" | ".join(header)}'
     return header, rows, ''
 
-def check_rows(materials, rows):
-    """AI 填的列 → 错误清单（空 = 过）。**只报不改**；§1.5"假设必须落盘、被推翻也要留痕"。"""
+def check_rows(materials, rows, th):
+    """AI 填的列 + 脚本列 → 错误清单（空 = 过）。**只报不改**；§1.5"假设必须落盘、被推翻也要留痕"。
+
+    **脚本列要重算再比**（审计实测的绕过路径）：原先只比 `档位`，于是把「只取摘要」改成「全量解析」
+    照样"✓ 校验通过"——而那正是 §2.4 明令不许的"一上来就全量灌"。光靠封闭枚举也不够
+    （`全量解析` → `不参与` 两个值都合法）。所以这里**用同一批函数重算**（`make_rows` +
+    `difficulty` / `advise_depth` / `advise_path`）再逐格比对：判据只有一份实现，比对而已。
+    `规模` 列不比：它是给人读的小结（含说明文案），比对它会把文案变化误报成错误。
+    """
     errs, mid_of = [], {m.get('id'): m for m in materials}
     for mid in sorted(set(mid_of) - set(rows)):
         errs.append(f'{mid}: 材料层里有，表里没有（材料必须一一对应）')
     for mid in sorted(set(rows) - set(mid_of)):
         errs.append(f'{mid}: 表里有，材料层里没有（`M##` 一律从材料层抄，不许自己编号）')
+    fresh = {r['id']: r for r in make_rows(materials, th)[0]}
+    machine = (('档位', lambda r: r['tier']), ('修改时间', lambda r: r['mtime'] or '—'),
+               ('难度', lambda r: r['diff']), ('解析深度', advise_depth),
+               ('走哪条路', advise_path), ('读不动', lambda r: r['reason'] or '—'))
     ai_cols = ('假设角色（AI 填 `⚠`）', '依据（AI 填）', '验证方式（AI 填）', '状态（AI 填）')
     for mid in sorted(set(rows) & set(mid_of)):
         cell, m = rows[mid], mid_of[mid]
-        if cell['档位'] != m.get('tier'):
-            errs.append(f'{mid}: 档位 {cell["档位"]!r} ≠ 材料层 {m.get("tier")!r}（只许抄，不许重判）')
+        r = fresh.get(mid)
+        if r:
+            for col, want_of in machine:
+                want, got = str(want_of(r)).strip(), str(cell.get(col, '')).strip()
+                if got != want:
+                    errs.append(f'{mid}: {col} 与材料层算出来的不一致（表里 {got!r} ≠ 应为 {want!r}）'
+                                f'——脚本列只许抄')
+        for col, allowed in MACHINE_ENUMS.items():          # 兜底：取值封闭（重算那步已覆盖，双保险）
+            if cell.get(col) not in allowed:
+                errs.append(f'{mid}: {col} {cell.get(col)!r} 不在 {"/".join(allowed)} 内')
+        for col in MACHINE_FILLED:                          # 其余脚本列：**不许空着**（空 = 没交代）
+            if not str(cell.get(col, '')).strip():
+                errs.append(f'{mid}: {col} 是空的（脚本列必须由 `build` 填出，不许抹掉）')
         hyp, basis, verify, status = (cell[c] for c in ai_cols)
         if status not in STATUSES:
             errs.append(f'{mid}: 状态 {status!r} 不在 {"/".join(STATUSES)} 内（必填）')
@@ -424,22 +464,49 @@ def _read_json(path):
     return json.loads(Path(path).read_text(encoding='utf-8-sig'))
 
 def load_thresholds(path=None):
-    """阈值 = 默认 + `dictionary.yaml` 的 `recon:` 段（读不到就用默认，**不报错**）。"""
+    """阈值 = 内置默认 + `dictionary.yaml` 的 `recon:` 段。**读不动 / 形状不对一律退回默认，不报错**。
+
+    审计实测的坑：原先 `try` 只包住 import/open/`safe_load`，而 `for k, v in got.items()` 在 `try` **外**——
+    于是 `recon: [1,2]`（YAML 里给列表，常见笔误）抛 `AttributeError: 'list' object has no attribute 'items'`，
+    **整批零产出退 1**（正是 §1.5 明令不许的那种失败）。现在形状不是字典就退回默认。
+    阈值还要求**正整数**：`outline_max: -1` 会让摘要谎称"没抽出文字"、`0` 被下游当成"不限"
+    （依据数字与行为不符）——收下这种值等于让摘要说假话。
+    """
     th = dict(DEFAULTS)
     p = Path(path) if path else Path(__file__).with_name(DICT_NAME)
     try:
         import yaml
         with open(p, encoding='utf-8') as fh:
             got = (yaml.safe_load(fh) or {}).get('recon') or {}
-    except Exception:                                # 缺依赖 / 缺文件 / 坏 YAML：一律退回默认
+        if not isinstance(got, dict):
+            return th
+        for k, v in got.items():
+            if k in th and isinstance(v, int) and not isinstance(v, bool) and v > 0:
+                th[k] = v
+    except Exception:                                # 缺依赖 / 缺文件 / 坏 YAML / 形状不对：一律退回默认
         return th
-    for k, v in got.items():
-        if k in th and isinstance(v, int) and not isinstance(v, bool):
-            th[k] = v
     return th
 
 
 # ----------------------------------------------------------------结构缩样（尽力而为，绝不外溢）
+
+def check_materials_shape(materials):
+    """材料层**形状体检** → 报错文案（空 = 过）。
+
+    审计实测：只有"是 JSON 数组"这一条校验，于是 `["x"]`（数组里是字符串）抛 `AttributeError`、
+    `bytes: "很 大"` 抛 `TypeError`、`path: null` 抛 `AttributeError NoneType.seek`——**全是裸栈退 1、
+    零产物**，而不是承诺的"退 2 + 人话"。形状不对是**输入的问题**，就该按输入问题报。
+    """
+    for m in materials:
+        if not isinstance(m, dict):
+            return f'有一项不是对象（是 {type(m).__name__}）'
+        mid = m.get('id', '?')
+        if not isinstance(m.get('bytes'), int) or isinstance(m.get('bytes'), bool):
+            return f'{mid}: `bytes` 不是整数（{m.get("bytes")!r}）'
+        if not isinstance(m.get('path'), str) or not m.get('path'):
+            return f'{mid}: `path` 缺失或不是字符串（{m.get("path")!r}）'
+    return ''
+
 
 def build(a):
     """出侦查结论表草稿 → 退出码。"""
@@ -451,6 +518,12 @@ def build(a):
         return 2
     if not isinstance(materials, list):
         print('⚠ 输入必须是 JSON 数组（materials[]）', file=sys.stderr)
+        return 2
+    shape = check_materials_shape(materials)          # 形状坏 ⇒ 退 2 说人话（原先裸栈退 1、零产物）
+    if shape:
+        print(f'⚠ 材料层形状不对: {shape}', file=sys.stderr)
+        print('  → 材料层应是 `probe.py --json` 的输出（每项是对象，`bytes` 是整数、`path` 是字符串）',
+              file=sys.stderr)
         return 2
     th = load_thresholds(getattr(a, 'dict', None))
     rows, skipped = make_rows(materials, th)
@@ -489,7 +562,7 @@ def check(a):
     if err:
         print(f'⚠ 侦查表解析不了（仪器故障，不是内容问题）: {err}', file=sys.stderr)
         return 2
-    errs = check_rows(materials, rows)
+    errs = check_rows(materials, rows, load_thresholds(getattr(a, 'dict', None)))
     if errs:
         print(f'✗ 侦查表校验未过（{len(errs)} 条；**只报不改**）：')
         for x in errs[:20]:

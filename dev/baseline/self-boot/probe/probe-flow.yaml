@@ -8,8 +8,8 @@ meta:
 layout:
   col_x:
   - 400
-  width: 840
-  origin_x: -120
+  width: 940
+  origin_x: -140
 nodes:
 - id: '01'
   name: 开始
@@ -21,7 +21,7 @@ nodes:
   row: 0
   col: 0
   stage: 入口
-  route: 1→10
+  route: 1→13
   desc: 流程起点（结构性节点，不是函数） · 入口：1→main
 - id: '02'
   name: _read_head
@@ -33,7 +33,7 @@ nodes:
   row: 4
   col: 0
   stage: 模块级
-  route: →11
+  route: →14
   desc: ★ 前 n 字节；读不动就返回空（调用方按 T4 记账，不许崩）。 · L63 · 函数
 - id: '03'
   name: _ooxml_kind
@@ -45,7 +45,7 @@ nodes:
   row: 5
   col: 0
   stage: 模块级
-  route: →11
+  route: →14
   desc: ★ PK 容器 → `docx` / `xlsx` / `pptx`；不是 OOXML 就返回 None。 · L71 · 函数
 - id: '04'
   name: _pdf_tier
@@ -57,9 +57,21 @@ nodes:
   row: 6
   col: 0
   stage: 模块级
-  route: →11
+  route: →14
   desc: ★ PDF：有字体标记 → 有文本层（T2），否则判扫描件（T3）。依据写成 `/Font` 计数，人可核。 · L88 · 函数
 - id: '05'
+  name: _decodes
+  lines:
+  - _decodes
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 8
+  col: 0
+  stage: 模块级
+  route: →14
+  desc: ★ 这段字节能不能解成 UTF-8。 · L103 · 函数
+- id: '06'
   name: _text_tier
   lines:
   - _text_tier
@@ -69,9 +81,9 @@ nodes:
   row: 7
   col: 0
   stage: 模块级
-  route: →11
-  desc: ★ 能按 UTF-8 解码且无 NUL 字节 → 文本（T1）；否则 None。 · L103 · 函数
-- id: '06'
+  route: →05
+  desc: ★ 能按 UTF-8 解码且无 NUL 字节 → 文本（T1）；否则 None。**头尾都要过**。 · L122 · 函数
+- id: '07'
   name: sniff
   lines:
   - sniff
@@ -81,22 +93,46 @@ nodes:
   row: 3
   col: 0
   stage: 模块级
-  route: 1→02｜2→03｜3→04｜4→05
-  desc: ★ 一个文件 → `(tier, probe, status, reason, kind)`。`probe` 是**判据*… · L123 · 函数
-    · 分支：1→_read_head 2→_ooxml_kind 3→_pdf_tier 4→_text_tier
-- id: '07'
+  route: 1→02｜2→03｜3→04｜4→06｜5→09
+  desc: ★ 一个文件 → `(tier, probe, status, reason, kind)`。`probe` 是**判据*… · L144 · 函数
+    · 分支：1→_read_head 2→_ooxml_kind 3→_pdf_tier 4→_text_tier 5→_read_tail
+- id: 08
   name: _mtime
   lines:
   - _mtime
   type: task
   subject: 脚本
   executor: selfboot
-  row: 8
+  row: 9
   col: 0
   stage: 模块级
-  route: →11
-  desc: ★ 修改时间（ISO 8601 本地时区）；取不到返回空串（不崩）—§3「替代」的末位兜底。 · L164 · 函数
-- id: 08
+  route: →14
+  desc: ★ 修改时间（ISO 8601 本地时区）；取不到返回空串（不崩）—§3「替代」的末位兜底。 · L186 · 函数
+- id: 09
+  name: _read_tail
+  lines:
+  - _read_tail
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 10
+  col: 0
+  stage: 模块级
+  route: →14
+  desc: ★ 末 n 字节（不足就全给）；读不动返回空（调用方按"没有尾部"处理，不崩）。 · L193 · 函数
+- id: '10'
+  name: _sha_and_size
+  lines:
+  - _sha_and_size
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 11
+  col: 0
+  stage: 模块级
+  route: →14
+  desc: ★ → `(sha256, 字节数)`，**分块读**（默认 1 MiB 一块）。 · L205 · 函数
+- id: '11'
   name: probe_tree
   lines:
   - probe_tree
@@ -106,22 +142,22 @@ nodes:
   row: 2
   col: 0
   stage: 模块级
-  route: 1→06｜2→07
-  desc: ★ 路径（文件或目录）→ `materials[]`；目录按**材料路径字典序**编号 `M01`…（PIPELINE-S… · L171 · 函数
-    · 分支：1→sniff 2→_mtime
-- id: 09
+  route: 1→07｜2→08｜3→10
+  desc: ★ 路径（文件或目录）→ `materials[]`；目录按**材料路径字典序**编号 `M01`…（PIPELINE-S… · L223 · 函数
+    · 分支：1→sniff 2→_mtime 3→_sha_and_size
+- id: '12'
   name: _print_table
   lines:
   - _print_table
   type: task
   subject: 脚本
   executor: selfboot
-  row: 9
+  row: 12
   col: 0
   stage: 模块级
-  route: →11
-  desc: ★ 人读摘要：一行一份材料。 · L198 · 函数
-- id: '10'
+  route: →14
+  desc: ★ 人读摘要：一行一份材料。 · L249 · 函数
+- id: '13'
   name: main
   lines:
   - main
@@ -131,87 +167,109 @@ nodes:
   row: 1
   col: 0
   stage: 模块级
-  route: 1→08｜2→09
-  desc: L207 · 函数 · 分支：1→probe_tree 2→_print_table
-- id: '11'
+  route: 1→11｜2→12
+  desc: L258 · 函数 · 分支：1→probe_tree 2→_print_table
+- id: '14'
   name: 结束
   lines:
   - 结束
   type: end
   subject: 脚本
   executor: selfboot
-  row: 10
+  row: 13
   col: 0
   stage: 出口
   route: —
   desc: 流程终点（结构性节点，不是函数）
 edges:
 - from: '01'
-  to: '10'
+  to: '13'
   kind: spine
   polarity: main
   label: '1'
 - from: '02'
-  to: '11'
+  to: '14'
   kind: jumpR
   polarity: main
 - from: '03'
-  to: '11'
+  to: '14'
   kind: jumpR
   polarity: main
 - from: '04'
-  to: '11'
+  to: '14'
   kind: jumpR
   polarity: main
 - from: '05'
-  to: '11'
+  to: '14'
   kind: jumpR
   polarity: main
 - from: '06'
+  to: '05'
+  kind: spine
+  polarity: main
+- from: '07'
   to: '02'
   kind: spine
   polarity: main
   label: '1'
-- from: '06'
+- from: '07'
   to: '03'
   kind: jumpR
   polarity: main
   label: '2'
-- from: '06'
+- from: '07'
   to: '04'
   kind: jumpR
   polarity: main
   label: '3'
-- from: '06'
-  to: '05'
+- from: '07'
+  to: '06'
   kind: jumpR
   polarity: main
   label: '4'
 - from: '07'
-  to: '11'
+  to: 09
   kind: jumpR
   polarity: main
+  label: '5'
 - from: 08
-  to: '06'
+  to: '14'
+  kind: jumpR
+  polarity: main
+- from: 09
+  to: '14'
+  kind: jumpR
+  polarity: main
+- from: '10'
+  to: '14'
+  kind: jumpR
+  polarity: main
+- from: '11'
+  to: '07'
   kind: spine
   polarity: main
   label: '1'
-- from: 08
-  to: '07'
+- from: '11'
+  to: 08
   kind: jumpR
   polarity: main
   label: '2'
-- from: 09
+- from: '11'
+  to: '10'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '12'
+  to: '14'
+  kind: spine
+  polarity: main
+- from: '13'
   to: '11'
   kind: spine
   polarity: main
-- from: '10'
-  to: 08
-  kind: spine
-  polarity: main
   label: '1'
-- from: '10'
-  to: 09
+- from: '13'
+  to: '12'
   kind: jumpR
   polarity: main
   label: '2'

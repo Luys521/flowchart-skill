@@ -100,24 +100,45 @@ def _pdf_tier(path):
         return 'T2', f'PDF 有文本层（/Font x{fonts}）'
     return 'T3', f'PDF 无字体标记（/Font 0, /Image x{blob.count(b"/Image")}）→判扫描件'
 
-def _text_tier(head):
-    """能按 UTF-8 解码且无 NUL 字节 → 文本（T1）；否则 None。
+def _decodes(seg, skip_head=0, trim_tail=True):
+    """这段字节能不能解成 UTF-8。
+
+    - `trim_tail=True`：**允许尾字节被切断**（读**头部**时必然遇到：4 KB 的块边界会切开一个汉字）；
+    - `skip_head>0`：允许**开头几字节**是半个字符（读**尾部**时必然遇到，起点落在字符中间）；
+    - 读**文件真尾部**时要 `trim_tail=False`——文件末尾没有"块边界"这个借口：那里就是文件真正的结尾，
+      末尾若还剩半个字符/二进制字节，说明这份文件不是干净的文本（`parse_text` 也解不开，两边同源）。
+    """
+    for i in range(skip_head + 1):
+        body = seg[i:]
+        for cut in range(4 if trim_tail else 1):
+            try:
+                (body[:len(body) - cut] if cut else body).decode('utf-8')
+                return True
+            except UnicodeDecodeError:
+                continue
+    return False
+
+
+def _text_tier(head, tail=b''):
+    """能按 UTF-8 解码且无 NUL 字节 → 文本（T1）；否则 None。**头尾都要过**。
 
     **截断在多字节字符中间也要认**（实测踩到的真 bug）：只看前 8 字节时，"这"（3 字节）会被正好切开，
     于是**合法的中文 `.txt` 被判 T4**（"魔数不认识，且不是文本"）——本仓的材料以中文为主，
     这条误判会成片出现。做法：整段先解一次，失败就**逐字节退**（UTF-8 单字符最多 4 字节），
     退完能解就说明只是尾字节被切断，不是二进制。
+
+    **为什么要连尾部一起看**（审计实测）：原先只看前 4 KB，于是一份"头部是纯文本、尾部是二进制垃圾"
+    的文件被判 T1「可直读」，而 `parse_text` 要解**整份** ⇒ 谁都读不动，档位语义是假的。
+    看尾部很便宜（再一次 4 KB 读），且正是这一类错配的发生处；尾部起点也可能落在字符中间，故退位。
     """
     if head[:2] in (codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE):
         return 'T1', 'UTF-16 文本（BOM）'                     # **先看 BOM**：UTF-16 正文里满是 NUL 字节
     if not head or b'\x00' in head:                           # （下面的 NUL 判据是给"没 BOM 的二进制"用的）
         return None
-    for cut in range(4):
-        try:
-            (head[:len(head) - cut] if cut else head).decode('utf-8')
-            return 'T1', 'UTF-8 文本（无 NUL 字节）'
-        except UnicodeDecodeError:
-            continue
+    if tail and (b'\x00' in tail or not _decodes(tail, skip_head=3, trim_tail=False)):
+        return None                                           # 尾部不是文本 ⇒ 整体不算"可直接读的文本"
+    if _decodes(head):
+        return 'T1', 'UTF-8 文本（无 NUL 字节）'
     return None
 
 def sniff(path):
@@ -155,7 +176,8 @@ def sniff(path):
     if head[:4] == b'RIFF' and _read_head(path, 16)[8:12] == b'WEBP':
         return 'T3', '图片魔数（webp）', 'ok', '', 'image'
 
-    text = _text_tier(_read_head(path, TEXT_HEAD))       # 判文本要看够多字节（见 _text_tier）
+    # 判文本要看够多字节（见 `_text_tier`），**而且要看尾部**：只看头部会把"头文本、尾二进制"判成可直读
+    text = _text_tier(_read_head(path, TEXT_HEAD), _read_tail(path, TEXT_HEAD))
     if text:
         return text[0], text[1], 'ok', '', 'text'
 
@@ -167,6 +189,36 @@ def _mtime(path):
         return time.strftime('%Y-%m-%dT%H:%M:%S', time.localtime(path.stat().st_mtime))
     except OSError:
         return ''
+
+def _read_tail(path, n):
+    """末 n 字节（不足就全给）；读不动返回空（调用方按"没有尾部"处理，不崩）。"""
+    try:
+        with open(path, 'rb') as f:
+            f.seek(0, 2)
+            size = f.tell()
+            f.seek(max(0, size - n))
+            return f.read(n)
+    except OSError:
+        return b''
+
+
+def _sha_and_size(path):
+    """→ `(sha256, 字节数)`，**分块读**（默认 1 MiB 一块）。
+
+    为什么要分块（审计实测）：原先 `p.read_bytes()` 只为算 sha256 就把**整份**读进内存——
+    一份 400 MiB 的材料让 `probe` 峰值工作集到 421 MiB，而"别把内存吃光"的护栏在 `recon` 侧
+    （`max_open_bytes`），根本护不到探测这一步。分块之后峰值 = 一块，sha256 与整份读**逐字节等价**。
+    """
+    h, n = hashlib.sha256(), 0
+    with open(path, 'rb') as f:
+        while True:
+            chunk = f.read(1 << 20)
+            if not chunk:
+                break
+            h.update(chunk)
+            n += len(chunk)
+    return h.hexdigest(), n
+
 
 def probe_tree(root):
     """路径（文件或目录）→ `materials[]`；目录按**材料路径字典序**编号 `M01`…（PIPELINE-SPEC §0）。"""
@@ -182,8 +234,7 @@ def probe_tree(root):
     for i, p in enumerate(files, 1):
         tier, probe, status, reason, kind = sniff(p)
         try:
-            blob = p.read_bytes()
-            sha, size = hashlib.sha256(blob).hexdigest(), len(blob)
+            sha, size = _sha_and_size(p)
         except OSError as e:
             tier, probe, status, reason, kind = ('T4', f'读不动（{type(e).__name__}）',
                                                  'unreadable', str(e), 'unknown')

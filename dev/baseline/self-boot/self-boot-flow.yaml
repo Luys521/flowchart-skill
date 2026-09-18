@@ -310,7 +310,7 @@ nodes:
   col: 0
   stage: 接管与解析
   route: →26
-  desc: 9 个函数 · ⊞ probe/flowtable.md
+  desc: 12 个函数 · ⊞ probe/flowtable.md
 - id: '26'
   name: 模块 · query
   lines:
@@ -334,7 +334,7 @@ nodes:
   col: 0
   stage: 接管与解析
   route: →28
-  desc: 24 个函数 · ⊞ recon/flowtable.md
+  desc: 25 个函数 · ⊞ recon/flowtable.md
 - id: '28'
   name: 模块 · render_drawio
   lines:
