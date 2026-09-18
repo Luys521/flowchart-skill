@@ -246,10 +246,15 @@ def main(argv=None):
         return 1
 
     n = degrade(elements, a.quote_limit)
+    total_deg = sum(1 for e in elements if e.get('degraded'))
     size = dump(assemble(a.task, materials, elements), a.out)
-    tail = f' · 降级 {n} 条' if n else ''
+    # **两个数分开报**（2026-09-18 修）：`n` 只是"本次因 quote 超限被截断"的条数，而账本里带
+    # `degraded` 留痕的元素还包括上游适配器与 vlm 通道给的（真实材料集实测：文件里 22 条，
+    # 而这一行只报 13 —— 读的人会以为"全账本只有 13 条降级"，那是**读数说谎**）。
+    tail = f' · 本次 quote 截断 {n} 条' if n else ''
     note = f' · 材料补注 {n_applied} 条（读不动 {n_unreadable} 份）' if n_applied else ''
-    print(f'→ 已写出 {a.out}：材料 {len(materials)} · 证据 {len(elements)}{tail}{note} · {size} 字节')
+    print(f'→ 已写出 {a.out}：材料 {len(materials)} · 证据 {len(elements)}'
+          f' · 带降级留痕 {total_deg} 条{tail}{note} · {size} 字节')
     for x in overrides:                             # 覆盖**必须报**：不报就等于结论取决于命令行次序
         print(f'  · 补注覆盖 {x}')
     return 0

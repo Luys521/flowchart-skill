@@ -351,10 +351,16 @@ def render(rows, meta):
             head = ' / '.join(r['structure'][:3])
             more = f' …（共 {r["structure_total"]}）' if r['structure_total'] > 3 else ''
             struct = f'{struct}｜{head}{more}'
+        # **竖线一律转义**（与 `intake` / `drift` 同一处置；2026-09-18 实测踩到）：`.md` / `.csv` 这类
+        # 文本材料的"结构缩样"会**原样回显它的头几行**，而 markdown 表格里全是 `|` —— 不转义就把这一行
+        # 的列数撑破，`check` 当场报"仪器故障"，而真正的原因在材料正文里（真实材料集实测：
+        # 一份 `.md` 的缩样让整张侦查表读不了；这不是材料的问题，是**产物把表格语法漏出去了**）。
+        struct = str(struct or '').replace('|', '｜').replace('\n', ' ')
+        reason = str(r['reason'] or '—').replace('|', '｜').replace('\n', ' ')
         lines.append(f'| `{r["id"]}` {Path(r["path"] or "").name} | {r["tier"]} | '
                      f'{r["mtime"] or "—"} | {r["diff"]} | '
                      f'{struct} | {advise_depth(r)} | {advise_path(r)} | '
-                     f'{r["reason"] or "—"} |  |  |  |  |')
+                     f'{reason} |  |  |  |  |')
     return '\n'.join(lines) + '\n'
 
 

@@ -754,6 +754,10 @@ def build_material_tree(root):
     (d / 'r.wps').write_bytes(_ole_bytes('WordDocument'))                 # WPS 后缀，真样本就是这一族
     (d / 's.dps').write_bytes(_ole_bytes('PowerPoint Document'))
     (d / 't.xls').write_bytes(_ole_bytes('Workbook'))
+    # `u.md`：**真 markdown 表格**——它的"结构缩样"会原样回显头几行，而那里全是 `|`。
+    # 不转义就把侦查表那一行的列数撑破（`check` 报"仪器故障"），而真正的原因在材料正文里
+    # （真实材料集实测：一份 `.md` 的缩样让整张侦查表读不了，2026-09-18）。
+    (d / 'u.md').write_text('| 项目 | 值 |\n| --- | --- |\n| 直流容量 | 1MW |\n', encoding='utf-8')
     return d
 
 
@@ -792,12 +796,12 @@ def materials_paths(root):
         except ValueError:
             mats = []
     by = {pathlib.Path(m['path']).name: m for m in mats}
-    ok = (len(mats) == 20 and all(m.get('tier') and m.get('kind') for m in mats)
+    ok = (len(mats) == 21 and all(m.get('tier') and m.get('kind') for m in mats)
           and by.get('i.xlsx.et', {}).get('kind') == 'xlsx'        # 改名件按内容判
           and by.get('j.pdf.png', {}).get('kind') == 'pdf-text'
           and by.get('k.docx', {}).get('kind') == 'unknown'        # 半容器不许冒充 docx
           and by.get('o.txt', {}).get('tier') == 'T4')             # 空文件记 T4，不猜
-    cases.append(('⑳ probe：20 份都有档位 + kind；改名件/半容器/空文件都按内容判', ok, rc,
+    cases.append(('⑳ probe：21 份都有档位 + kind；改名件/半容器/空文件都按内容判', ok, rc,
                   out[-300:] if not ok else ''))
     if not mats:
         return cases
@@ -828,12 +832,20 @@ def materials_paths(root):
     # 「每种 kind 都有交代」的可机器核形式：**每行的「规模」或「读不动」至少有一格非空**——
     # 空白格子 = 这一份材料没被交代（那正是审计里"摘要静默为空"的样子）。
     blank = [c[0] for c in cells if not c[4].strip('— ') and not c[7].strip('— ')]
-    ok = (rc == 0 and len(rows) == 20 and not blank
+    ok = (rc == 0 and len(rows) == 21 and not blank
           and '摘要不可得' in rec                       # legacy：说清极限
           and '尺寸不可知' in rec                        # 无 <dimension> 的流式表：记在行里而不是崩
           and '超护栏' not in rec)                      # 正常阈值下不该有护栏记账
-    cases.append(('㉓ recon：20 行 · 每行的「规模/读不动」都有交代（坏部件/半容器/流式表/GBK/空文件/OLE）',
-                  ok, rc, (out[-200:] + f'｜空白行={blank}') if not ok else ''))
+    # **产物要能被自己的 `check` 读回来**（2026-09-18 补，真材料集上现形）：`.md` / `.csv` 的
+    # "结构缩样"会原样回显材料的头几行，而那里可能有 `|`（markdown 表格）——不转义就把这一行的
+    # 列数撑破，`check` 报"仪器故障"，而真正的原因在材料正文里。此前 ㉓ 只 grep 文本，抓不到。
+    (d / 'c-tree.md').write_text(_fill_recon_card(rec), encoding='utf-8', newline='\n')
+    rc_chk, out_chk = run([sys.executable, str(RECON_CMD), 'check', str(d / 'c-tree.md'),
+                           '--materials', str(d / 'materials.json')])
+    cases.append(('㉓ recon：21 行 · 每行的「规模/读不动」都有交代 · **产物能被自己的 `check` 读回来**'
+                  '（含一份正文带 `|` 的 markdown）',
+                  ok and rc_chk == 0, rc,
+                  (out[-200:] + f'｜空白行={blank}' + out_chk[-200:]) if not (ok and rc_chk == 0) else ''))
     small = d / 'small.yaml'
     small.write_text('recon:\n  easy_max_bytes: 1024\n  max_open_bytes: 512\n'
                      '  outline_max: 50\n  outline_show: 3\n', encoding='utf-8')
