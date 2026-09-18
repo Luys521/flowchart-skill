@@ -64,6 +64,7 @@ MODULE = {
     'render_svg',     # → <流程名>-flow.svg（W7b 起；可编辑中间态）
     'validate',       # → 几何报告（stdout / --dump）
     'shot',           # → *.shot.png
+    'probe',          # → materials[] 骨架（材料探测分档，PIPELINE-SPEC §1.2）
 }
 
 # 编排层：驱动整条流水线，允许依赖上面两层。

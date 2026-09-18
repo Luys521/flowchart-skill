@@ -1,0 +1,194 @@
+meta:
+  title: probe.py 函数流程表
+  subjects:
+    脚本:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  width: 800
+  origin_x: -180
+nodes:
+- id: '01'
+  name: 开始
+  lines:
+  - 开始
+  type: start
+  subject: 脚本
+  executor: selfboot
+  row: 0
+  col: 0
+  stage: 入口
+  route: 1→09
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→main
+- id: '02'
+  name: _read_head
+  lines:
+  - _read_head
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 4
+  col: 0
+  stage: 模块级
+  route: →10
+  desc: ★ 前 n 字节；读不动就返回空（调用方按 T4 记账，不许崩）。 · L37 · 函数
+- id: '03'
+  name: _ooxml_kind
+  lines:
+  - _ooxml_kind
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 5
+  col: 0
+  stage: 模块级
+  route: →10
+  desc: ★ PK 容器 → `docx` / `xlsx` / `pptx`；不是 OOXML 就返回 None。 · L46 · 函数
+- id: '04'
+  name: _pdf_tier
+  lines:
+  - _pdf_tier
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 6
+  col: 0
+  stage: 模块级
+  route: →10
+  desc: ★ PDF：有字体标记 → 有文本层（T2），否则判扫描件（T3）。依据写成 `/Font` 计数，人可核。 · L59 · 函数
+- id: '05'
+  name: _text_tier
+  lines:
+  - _text_tier
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 7
+  col: 0
+  stage: 模块级
+  route: →10
+  desc: ★ 能按 UTF-8 解码且无 NUL 字节 → 文本（T1）；否则 None。 · L75 · 函数
+- id: '06'
+  name: sniff
+  lines:
+  - sniff
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: 模块级
+  route: 1→02｜2→03｜3→04｜4→05
+  desc: ★ 一个文件 → `(tier, probe, status, reason)`。`probe` 是**判据**（人可核）。 · L86 · 函数
+    · 分支：1→_read_head 2→_ooxml_kind 3→_pdf_tier 4→_text_tier
+- id: '07'
+  name: probe_tree
+  lines:
+  - probe_tree
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: 模块级
+  route: →06
+  desc: ★ 路径（文件或目录）→ `materials[]`；目录按**材料路径字典序**编号 `M01`…（PIPELINE-S… · L124 · 函数
+- id: 08
+  name: _print_table
+  lines:
+  - _print_table
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 8
+  col: 0
+  stage: 模块级
+  route: →10
+  desc: ★ 人读摘要：一行一份材料。 · L151 · 函数
+- id: 09
+  name: main
+  lines:
+  - main
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 1
+  col: 0
+  stage: 模块级
+  route: 1→07｜2→08
+  desc: L161 · 函数 · 分支：1→probe_tree 2→_print_table
+- id: '10'
+  name: 结束
+  lines:
+  - 结束
+  type: end
+  subject: 脚本
+  executor: selfboot
+  row: 9
+  col: 0
+  stage: 出口
+  route: —
+  desc: 流程终点（结构性节点，不是函数）
+edges:
+- from: '01'
+  to: 09
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '02'
+  to: '10'
+  kind: jumpR
+  polarity: main
+- from: '03'
+  to: '10'
+  kind: jumpR
+  polarity: main
+- from: '04'
+  to: '10'
+  kind: jumpR
+  polarity: main
+- from: '05'
+  to: '10'
+  kind: jumpR
+  polarity: main
+- from: '06'
+  to: '02'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '06'
+  to: '03'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '06'
+  to: '04'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '06'
+  to: '05'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '07'
+  to: '06'
+  kind: spine
+  polarity: main
+- from: 08
+  to: '10'
+  kind: spine
+  polarity: main
+- from: 09
+  to: '07'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: 09
+  to: 08
+  kind: jumpR
+  polarity: main
+  label: '2'

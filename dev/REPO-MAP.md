@@ -72,7 +72,7 @@ parts/<子流程名>/<子流程名>-flow.{yaml,manifest.json}     × 7
 
 ## 四、脚本接口面（机器提取）
 
-**26 个模块 = 14 个带 CLI 的入口 + 12 个纯库。**
+**27 个模块 = 15 个带 CLI 的入口 + 12 个纯库。**
 
 | 类型 | 模块 |
 |---|---|
@@ -87,8 +87,8 @@ parts/<子流程名>/<子流程名>-flow.{yaml,manifest.json}     × 7
 | **模块层**（9） | `init` `clarify` `table_to_dsl` `layer_index` `render_html` `render_drawio` `render_svg` `validate` `shot` | 各有产物；**只许依赖公共层**；彼此之间**没有代码依赖**——协作走产物 |
 | **编排层**（2） | `build` `sync` | 流水线驱动者，允许依赖上面两层 |
 
-实测（26 模块 / 77 条依赖边）：`module→public` 31 条 · `orch→module` 8 条 · `orch→orch` 1 条 ·
-`orch→public` 11 条 · `public→public` 26 条 · **违规 0 条**（数字随代码增长，现跑现取：`python dev/tools/layering.py`）。
+实测（27 模块 / 78 条依赖边）：`module→public` 31 条 · `orch→module` 8 条 · `orch→orch` 1 条 ·
+`orch→public` 11 条 · `public→public` 27 条 · **违规 0 条**（数字随代码增长，现跑现取：`python dev/tools/layering.py`）。
 
 **归层的判据不是"名字听起来像哪层"，而是"谁依赖谁"**——只被依赖、或只在公共层内互引的，才够格进公共层。三条容易看错的地方：`engine` 对外只 1 个函数（`load`）却依赖 6 个，是**装配门面**；`router`↔`lane_router`、`render_html`↔`render_drawio`↔`render_svg`、`geometry`↔`swimlane` 是**同一接口的多种实现**（按「输出布局」二选一、按产物类型三选一，不是重复代码）；`manifest` / `xml_reader` / `writeback` 看着像"工序"，但它们提供的是被多方复用的纯能力，属公共层。**模块层不许横向 import 这条曾被破过一次**：`manifest` 为了取一个字符串常量反向 import 了模块层的 `render_html`（一行函数体内的延迟 import，读代码看不见）——已修，现在由门禁守住。
 

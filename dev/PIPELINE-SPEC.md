@@ -99,6 +99,26 @@ extract(材料路径, options) → {elements[], warnings[], error?}
 
 `extractor` 必须写清**具体走了哪条路**（`sdk:edsdk` / `vlm` / `ocr:tesseract` / `py:openpyxl`）—否则 §0 的"可追溯"就是空话。
 
+**依赖清单（自包含侧的显式声明）**：
+
+| 类别 | 清单 | 缺了怎么办 |
+|---|---|---|
+| **必须**（跑通主链） | `PyYAML`（已有）+ `python-docx` + `openpyxl` | 报**可执行**的错：装什么、装完重跑 |
+| **可选**（增强） | `python-pptx`（演示稿）· `pytesseract` / `paddleocr`（图片 OCR） | 该格式降级为 T4 + 提示 |
+| **外部工具**（通用工具，不是宿主技能） | LibreOffice / `soffice`（legacy 转换） | legacy 记 T4 + 提示「另存为 .docx」或「装 LibreOffice」 |
+| **加速器**（宿主提供，**不许依赖**） | 本地 Office SDK · 多模态模型 | 探测不到就当没有，走自包含路径 |
+
+**加速器探测判据**（「探测到才用」必须可执行）：
+
+| 加速器 | 判据 | 判不出的默认 |
+|---|---|---|
+| 本地 Office SDK | `edsdk.py` **存在** 且 `list` 子命令**能通**（退出码 0 且有工具输出） | 视为不存在 |
+| 多模态模型 | 由 AI **自报**「本会话能否直接看图」 | 视为不能 → 走 OCR / T4（**不许猜能看**） |
+| 外部转换器 | `soffice --version` 能通（PATH 或已知安装路径） | 视为没有 |
+
+**探测结论要记账**（写进账本的 `extractor` / 材料卡片的解析路径栏）——不许**默默用**、也不许**默默不用**。
+
+
 **批量后台读怎么调**（无人值守读 N 份材料）：用 `open_file file_path=<绝对路径>` 在**后台**打开（纯后台、无用户预览时 `file_id` 通常就是路径字符串），再用 `doc_*` / `sheet_*` / `slide_*` 的读工具取内容；**不要**用 `present_files`（那是给用户看预览面板的界面动作）。三条约束：
 1. **路径字符串必须完全一致**：注册时用什么字符串，后续就得用什么（`./x.docx` — `/abs/x.docx`）⇒ 本流水线**统一用绝对路径**，且只允许一种分隔符写法。
 2. **pool 会累积实例**：每打开一个文件就在 pool 里留一个实例；批量读要**分批**并显式释放（`close_file` 的 schema 单独确认）—SDK 文档里"不要主动 close"是针对"用户正在看"的场景。
@@ -367,7 +387,7 @@ heading  paragraph  list_item  table  figure  caption  code  sheet  cell
 ### 7.1 H10 上线清单（实现 H10 时照单执行）
 
 1. **改全仓写死的 H 范围**—`dev/verify/contract.py` 有一条**硬断言**（"flowtable-spec 里 H1—H9 齐全"，比的是 `list('123456789')`），**补了 H10 它会当场判红**。要同步的地方：`references/flowtable-spec.md` 的 H 列表 · `dev/verify/contract.py` 那条断言 · `dev/tools/accept.py` 的门② 标题 · `dev/tools/README.md` 的门表 · `dev/tools/layering.py` 的注释 · `dev/tools/equiv-fixtures/broken.md` 的用例描述。
-2. **误伤回归**：在现有全部表（自举 27 张 + 样例 8 张 = 35 张）上跑 `scripts/table_to_dsl.py --check`，要求 **0 条 hard 增量**。
+2. **误伤回归**：在现有全部表（自举 28 张 + 样例 8 张 = 36 张）上跑 `scripts/table_to_dsl.py --check`，要求 **0 条 hard 增量**。
 
 ### 7.2 已知的代码接缝（实现 L0 / L1 时必改）
 
