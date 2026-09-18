@@ -95,7 +95,7 @@ notes                     → [{material_id, status?, reason?, extractor?}]   �
 **分派是查表，不是判断**：档位到读者的映射是固定的（T1/T2→脚本、T3→视觉、T4→只记账），没有裁量余地；
 流程图上这一步的执行主体是**脚本**，不是 AI。
 
-**分派器 `scripts/parse.py`**（编排层）：按**固定顺序**跑各适配器（`parse_ooxml → parse_pdf → parse_legacy`），
+**分派器 `scripts/parse.py`**（编排层）：按**固定顺序**跑各适配器（`parse_ooxml → parse_pdf → parse_legacy → parse_text`），
 合并产物与补注，可一并把账本写掉（一条命令 = `probe → parse → ledger`）。它这张表里**只有顺序，没有判据**——
 "什么材料归谁"由各适配器自己认领（认不出的**不记账**，留给别人）。再抄一份格式清单就是**第四份真值**
 （`probe` 的档位 + 三个适配器各自的认领判据已经在说这件事），必漂。
@@ -117,7 +117,11 @@ notes                     → [{material_id, status?, reason?, extractor?}]   �
 | **文本型 `.pdf`（T2）** | `pdfplumber`（**纯 Python**，无外部二进制）抽文本层—一页一个 element | — | 记 T4 + **可执行提示**（装 pdfplumber） |
 | **legacy**（.doc / .xls / .ppt） | **没有纯 Python 的可靠读法** ⇒ 只用**外部转换器**（LibreOffice / soffice，若装了）：转成 OOXML 再交给 T1 适配器抽（§1.1 的 T2 定义就是"转换后可用"），`extractor` 写 `soffice+py:docx` | 宿主本地 Office SDK（若存在） | 记 T4 + 可执行提示（"请另存为 .docx" 或 "装 LibreOffice"） |
 | 图片 / 扫描件 / 截图 / 白板照 | **OCR**（tesseract / paddleocr）—依赖显式声明 | 宿主多模态模型（若可用） | 记 T4 + 进澄清 |
-| 纯文本（md / txt / csv / json …） | Python 标准库 | — | — |
+| 纯文本（md / txt / csv / json …） | `parse_text.py`（**只用标准库**）：`.md` 认标题 / 列表 / 围栏 / 竖线表，`.csv` → `table` + `rows`，`.json`/`.yaml`/`.xml`/`.html` → 整份一个 `code`，其余空行分段 | — | — |
+
+**纯文本的编码不猜**：只认 UTF-8 与**带 BOM** 的 UTF-16；GBK 这类本地编码要读就显式 `--encoding gbk`——
+它同时**授权**去试 `probe` 判成 T4 的纯文本材料（仍限纯文本扩展名），读出来就把 `status` 改回 `ok`。
+为什么不能自动猜：GBK 几乎能解**任何**字节对，拿它当判据等于把二进制当文本（与 `probe` 的 NUL / UTF-8 判据同一取向）。
 
 **环境清单要显式**：新增依赖（Python 包）与**可选外部工具**（转换器）都要写成清单（如 `requirements.txt` + 一节"可选外部工具"）；
 缺依赖报的错**要可执行**（说清装什么、或改走哪条路）—不许静默降级。
@@ -424,6 +428,7 @@ heading  paragraph  list_item  table  figure  caption  code  sheet  cell
 | 解析器四条硬要求（只读 · 不抛裸异常 · 输出符合 §2 · 缺依赖报可执行错） | 适配器自检（待定） | `parse_ooxml` / `parse_pdf` / `parse_legacy` 已按此实现（实测：非目标材料**跳过并记账**、缺依赖退 2 并给安装命令）；**无仪器** |
 | 材料层记账完整：`status` / `reason` / `extractor` 由解析阶段补注写入（§1.4） | `scripts/ledger.py --notes` | **已实现**（补注键封闭 / id 必须存在 / `unreadable` 必有 reason，**落完再校一次**）；**未进验收路径** |
 | 分派是查表（§1.4）：固定顺序跑适配器 · 同输入同字节 · 冲突与漏认不许静默 | `scripts/parse.py` | **已实现**（元素按 `material_id` 稳定排序；id 重复 / 补注冲突 / `status=ok` 却零证据三类都**退 1 且不落盘**，实测各路径）；**未进验收路径** |
+| 纯文本不猜编码（§1.4）：只认 UTF-8 / 带 BOM 的 UTF-16；GBK 等要显式 `--encoding` | `scripts/parse_text.py` | **已实现**（不带 `--encoding`：GBK 材料记 `unreadable` + 可执行提示；带了：读出来并把 `status` 改回 `ok`、删掉陈旧的 probe reason。兜底**不覆盖** UTF-8 材料——实测修掉"一份 GBK 把整批拖成读不动"）；**未进验收路径** |
 | legacy 只走外部转换器：判据 `--version` 能通；缺了就记读不动 + 可执行提示，**不许假装能读** | `scripts/parse_legacy.py` | **已实现**（本机无 soffice：缺转换器分支在真实 4 份材料上实测；转换分支用**替身转换器**验过——LibreOffice 自身的转换保真度不在射程内） |
 | 幂等：同输入两次同字节 | 待定 | **未实现**（本轮人工实测：`probe → 三个适配器 → ledger` 两次同字节） |
 | 计划引用完整：`plan.md` 的 `M##` 都在 `intake.md` 里 | 待定（计划校验器） | 未实现 |
@@ -437,7 +442,7 @@ heading  paragraph  list_item  table  figure  caption  code  sheet  cell
 ### 7.1 H10 上线清单（实现 H10 时照单执行）
 
 1. **改全仓写死的 H 范围**—`dev/verify/contract.py` 有一条**硬断言**（"flowtable-spec 里 H1—H9 齐全"，比的是 `list('123456789')`），**补了 H10 它会当场判红**。要同步的地方：`references/flowtable-spec.md` 的 H 列表 · `dev/verify/contract.py` 那条断言 · `dev/tools/accept.py` 的门② 标题 · `dev/tools/README.md` 的门表 · `dev/tools/layering.py` 的注释 · `dev/tools/equiv-fixtures/broken.md` 的用例描述。
-2. **误伤回归**：在现有全部表（自举 34 张 + 样例 8 张 = 42 张）上跑 `scripts/table_to_dsl.py --check`，要求 **0 条 hard 增量**。
+2. **误伤回归**：在现有全部表（自举 35 张 + 样例 8 张 = 43 张）上跑 `scripts/table_to_dsl.py --check`，要求 **0 条 hard 增量**。
 
 ### 7.2 已知的代码接缝（实现 L0 / L1 时必改）
 

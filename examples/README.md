@@ -61,8 +61,8 @@ python scripts/build.py <基线目录里那张临时表>
 find dev/baseline -name flowtable.md -delete
 ```
 
-> 第 3 步是**全仓递归**的——`dev/baseline/self-boot/` 里那 34 张表**要留**（D-67：自举树连表带图进库）。
-> 所以顺序是：**先重钉 workflow（含第 3 步），再把 `output/self-boot/` 整树镜像过去**。反了就会被删掉 34 张表。
+> 第 3 步是**全仓递归**的——`dev/baseline/self-boot/` 里那 35 张表**要留**（D-67：自举树连表带图进库）。
+> 所以顺序是：**先重钉 workflow（含第 3 步），再把 `output/self-boot/` 整树镜像过去**。反了就会被删掉 35 张表。
 
 > 第 2 步不写那张表的字面路径：它只是构建时的临时表、盘上不长期存在，写了会被面①的
 > "文档引用的路径都必须存在"断言判成悬空引用。

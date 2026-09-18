@@ -72,11 +72,11 @@ parts/<子流程名>/<子流程名>-flow.{yaml,manifest.json}     × 7
 
 ## 四、脚本接口面（机器提取）
 
-**33 个模块 = 21 个带 CLI 的入口 + 12 个纯库。**
+**34 个模块 = 22 个带 CLI 的入口 + 12 个纯库。**
 
 | 类型 | 模块 |
 |---|---|
-| 入口命令（有 `__main__`） | `init` `table_to_dsl` `build` `validate` `shot` `sync` `xml_reader` `clarify` `layer_index` `manifest` `render_html` `render_drawio` `render_svg` `writeback` `probe` `parse` `recon` `parse_ooxml` `parse_pdf` `parse_legacy` `ledger` |
+| 入口命令（有 `__main__`） | `init` `table_to_dsl` `build` `validate` `shot` `sync` `xml_reader` `clarify` `layer_index` `manifest` `render_html` `render_drawio` `render_svg` `writeback` `probe` `parse` `recon` `parse_ooxml` `parse_pdf` `parse_legacy` `parse_text` `ledger` |
 | 纯库（无 CLI，只被 import） | `artifact` `engine` `flowtable` `flowtable_check` `flowtable_colors` `flowtable_layout` `geometry` `label` `lane_router` `router` `semantics` `swimlane` |
 
 **分层（2026-09-14 定，由 `dev/tools/layering.py` 守住）**：
@@ -84,10 +84,10 @@ parts/<子流程名>/<子流程名>-flow.{yaml,manifest.json}     × 7
 | 层 | 模块 | 规则 |
 |---|---|---|
 | **公共层**（15） | `semantics` `geometry` `artifact` `flowtable_layout` `flowtable` `flowtable_check` `flowtable_colors` `router` `lane_router` `swimlane` `label` `engine` `manifest` `xml_reader` `writeback` | 被多方复用的纯能力；**可以互相引用**，但**不许依赖上层** |
-| **模块层**（15） | `init` `clarify` `table_to_dsl` `layer_index` `render_html` `render_drawio` `render_svg` `validate` `shot` `probe` `recon` `parse_ooxml` `parse_pdf` `parse_legacy` `ledger` | 各有产物；**只许依赖公共层**；彼此之间**没有代码依赖**——协作走产物 |
+| **模块层**（16） | `init` `clarify` `table_to_dsl` `layer_index` `render_html` `render_drawio` `render_svg` `validate` `shot` `probe` `recon` `parse_ooxml` `parse_pdf` `parse_legacy` `parse_text` `ledger` | 各有产物；**只许依赖公共层**；彼此之间**没有代码依赖**——协作走产物 |
 | **编排层**（3） | `build` `sync` `parse` | 流水线驱动者，允许依赖上面两层（`parse` 按固定顺序跑各解析适配器，判据不在它那里） |
 
-实测（33 模块 / 78 条依赖边）：`module→public` 31 条 · `orch→module` 8 条 · `orch→orch` 1 条 ·
+实测（34 模块 / 78 条依赖边）：`module→public` 31 条 · `orch→module` 8 条 · `orch→orch` 1 条 ·
 `orch→public` 11 条 · `public→public` 27 条 · **违规 0 条**（数字随代码增长，现跑现取：`python dev/tools/layering.py`）。
 
 **归层的判据不是"名字听起来像哪层"，而是"谁依赖谁"**——只被依赖、或只在公共层内互引的，才够格进公共层。三条容易看错的地方：`engine` 对外只 1 个函数（`load`）却依赖 6 个，是**装配门面**；`router`↔`lane_router`、`render_html`↔`render_drawio`↔`render_svg`、`geometry`↔`swimlane` 是**同一接口的多种实现**（按「输出布局」二选一、按产物类型三选一，不是重复代码）；`manifest` / `xml_reader` / `writeback` 看着像"工序"，但它们提供的是被多方复用的纯能力，属公共层。**模块层不许横向 import 这条曾被破过一次**：`manifest` 为了取一个字符串常量反向 import 了模块层的 `render_html`（一行函数体内的延迟 import，读代码看不见）——已修，现在由门禁守住。

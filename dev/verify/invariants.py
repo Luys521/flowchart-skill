@@ -162,7 +162,7 @@ def run_face(tmp):
 
     c.section('自举树基线：改错了也要红（D-67）')
     # 上面的样例是从 `examples/*/flowtable.md` **发现**的，而 examples/ 下只有 workflow 一个
-    # （D-66）⇒ 自举那棵树（D-67：连表带产物一起进库，106 个文件）**没有任何比对仪器**：
+    # （D-66）⇒ 自举那棵树（D-67：连表带产物一起进库，109 个文件）**没有任何比对仪器**：
     # 它改错了、或者重钉顺序错了（先镜像 self-boot 再重钉 workflow，表会被删掉），都不会红，
     # 而"两份基线重钉"这句说法让人以为它被守着。
     #
@@ -171,16 +171,16 @@ def run_face(tmp):
     # 于是"重建"与基线全不可比（本检查的第一版就是这么假红的：54 个文件里全是 row/kind 差异）。
     # 所以：生成器重造表 → build 出图 → 与基线**整树逐字节**比。目录名必须是 `self-boot`（D-51）。
     sb = BASE / 'self-boot'
-    c.check(len(list(sb.rglob('flowtable.md'))) == 34, '自举树基线含 34 张表（1 根表 + 33 模块表）',
+    c.check(len(list(sb.rglob('flowtable.md'))) == 35, '自举树基线含 35 张表（1 根表 + 34 模块表）',
             f'{len(list(sb.rglob("flowtable.md")))} 张')
     work = tmp / 'self-boot'
     shutil.rmtree(work, ignore_errors=True)
     work.mkdir(parents=True)
     rc, out = run(os.path.join('..', 'dev', 'tools', 'selfboot_gen.py'), '--out', work, '--quiet')
-    if c.check(rc == 0, '自举树可按生成器重造（fn-graph.json → 34 张表）',
+    if c.check(rc == 0, '自举树可按生成器重造（fn-graph.json → 35 张表）',
                '' if rc == 0 else out.strip()[-100:]):
         rc2, out2 = run('build.py', work / 'flowtable.md')
-        if c.check(rc2 == 0, '重造的自举表可出图（34 张一次跑通）',
+        if c.check(rc2 == 0, '重造的自举表可出图（35 张一次跑通）',
                    '' if rc2 == 0 else out2.strip()[-100:]):
             old = {p.relative_to(sb).as_posix(): md5(p) for p in sb.rglob('*') if p.is_file()}
             new = {p.relative_to(work).as_posix(): md5(p) for p in work.rglob('*') if p.is_file()}

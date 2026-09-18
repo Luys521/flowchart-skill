@@ -82,7 +82,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→04
-  desc: ★ 跑一个适配器 → `(elements, notes, 摘要行, 报错文案)`。走**子进程 + 产物**（模块层不许… · L65 · 函数
+  desc: ★ 跑一个适配器 → `(elements, notes, 摘要行, 报错文案)`。走**子进程 + 产物**（模块层不许… · L69 · 函数
     · 分支：1→_read_json 2→_last_line
 - id: '07'
   name: merge_elements
@@ -95,7 +95,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →12
-  desc: ★ `[(适配器名, elements)]` → `(合并后的 elements, 冲突说明)`。 · L88 · 函数
+  desc: ★ `[(适配器名, elements)]` → `(合并后的 elements, 冲突说明)`。 · L92 · 函数
 - id: 08
   name: merge_notes
   lines:
@@ -107,7 +107,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →12
-  desc: ★ `[(适配器名, notes)]` → `(合并后的 notes, 冲突说明)`。 · L107 · 函数
+  desc: ★ `[(适配器名, notes)]` → `(合并后的 notes, 冲突说明)`。 · L111 · 函数
 - id: 09
   name: survey
   lines:
@@ -119,7 +119,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →12
-  desc: ★ 材料层 × 证据 × 补注 → `(每份材料一行, 漏认清单)`。**漏认 = status=ok 却既无元素也无补注… · L125 · 函数
+  desc: ★ 材料层 × 证据 × 补注 → `(每份材料一行, 漏认清单)`。**漏认 = status=ok 却既无元素也无补注… · L129 · 函数
 - id: '10'
   name: _print_survey
   lines:
@@ -131,7 +131,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →12
-  desc: ★ 人读摘要：一份材料一行。**没有证据也没有补注的当场标出来**（那是漏认，不是"空材料"）。 · L145 · 函数
+  desc: ★ 人读摘要：一份材料一行。**没有证据也没有补注的当场标出来**（那是漏认，不是"空材料"）。 · L152 · 函数
 - id: '11'
   name: main
   lines:
@@ -143,7 +143,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→03｜3→04｜4→05｜5→06｜6→07｜7→08｜8→09｜9→10
-  desc: L159 · 函数 · 分支：1→_read_json 2→_write_json 3→_last_line 4→_adapter_args 5→run_adapter
+  desc: L166 · 函数 · 分支：1→_read_json 2→_write_json 3→_last_line 4→_adapter_args 5→run_adapter
     6→merge_elements 7→merge_notes 8→survey 9→_print_survey
 - id: '12'
   name: 结束

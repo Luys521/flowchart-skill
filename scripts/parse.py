@@ -31,7 +31,7 @@ SCRIPTS = Path(__file__).resolve().parent
 
 # 分派表：**只有顺序，没有判据**（判据在各适配器内部，它们各自认领、各自跳过）。
 # 顺序 = 产物顺序的一部分，改它等于改账本字节，所以它是常量、不随环境变。
-ADAPTERS = ('parse_ooxml', 'parse_pdf', 'parse_legacy')
+ADAPTERS = ('parse_ooxml', 'parse_pdf', 'parse_legacy', 'parse_text')
 
 
 def _read_json(path):
@@ -59,6 +59,10 @@ def _adapter_args(name, a):
     if name == 'parse_legacy':
         args = ['--timeout', str(a.timeout)]
         return args + (['--soffice', a.soffice] if a.soffice else [])
+    if name == 'parse_text':
+        args = ['--max-chars', str(a.max_chars), '--max-rows', str(a.max_rows),
+                '--max-cols', str(a.max_cols)]
+        return args + (['--encoding', a.encoding] if a.encoding else [])
     return []
 
 
@@ -133,9 +137,12 @@ def survey(materials, elements, notes):
     for m in materials:
         mid, n = m.get('id'), note_of.get(m.get('id'), {})
         status = n.get('status') or m.get('status')
+        # 状态已改成 ok 时**不许再回落到 probe 的旧 reason**：那是陈旧真值（补注说了能读，
+        # 表上却还印着"魔数不认识"——ledger 落补注时会把这条 reason 删掉，两处必须一致）
+        reason = n.get('reason') or (m.get('reason') if status != 'ok' else '') or ''
         row = {'id': mid, 'tier': m.get('tier'), 'status': status,
                'extractor': n.get('extractor') or m.get('extractor') or '',
-               'elements': counts.get(mid, 0), 'reason': n.get('reason') or m.get('reason') or ''}
+               'elements': counts.get(mid, 0), 'reason': reason}
         rows.append(row)
         if status == 'ok' and not row['elements'] and not note_of.get(mid):
             gaps.append(mid)
@@ -172,6 +179,7 @@ def main(argv=None):
     ap.add_argument('--max-chars', type=int, default=4000, help='[parse_pdf] 单页最多多少字')
     ap.add_argument('--soffice', help='[parse_legacy] 显式指定转换器命令')
     ap.add_argument('--timeout', type=int, default=180, help='[parse_legacy] 单份材料转换 / 抽取超时秒数')
+    ap.add_argument('--encoding', default='', help='[parse_text] 显式指定编码（如 gbk）；默认只认 UTF-8 / UTF-16')
     ap.add_argument('--verbose', action='store_true', help='把各适配器的完整输出也打出来')
     a = ap.parse_args(argv)
 
