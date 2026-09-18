@@ -22,7 +22,12 @@ from xml.sax.saxutils import unescape
 
 SLIDE_RE = re.compile(r'^ppt/slides/slide(\d+)\.xml$')
 PARA_RE = re.compile(r'<a:p[ >].*?</a:p>', re.S)
-RUN_RE = re.compile(r'<a:t[^>]*>(.*?)</a:t>', re.S)
+# 文字运行：`<a:t>` 或 `<a:t xml:space="preserve">`——**必须紧跟空格或 `>`**。
+# 原先写 `<a:t[^>]*>`（`[^>]*` 允许零个字符）会把**同前缀的别的标签**当开标签：
+# `<a:tab pos="914400" algn="l"/>`、`<a:tabLst>`、`<a:tbl>` 全部命中，于是 `(.*?)</a:t>`
+# 一路吃到下一个真 `</a:t>`，把**原始 XML 当正文**写进账本（还标 `certainty=direct`）。
+# 真样本造得出这种稿（段落设制表位很常见），这是"最坏的一种"：污染唯一事实源且没有仪器看得见。
+RUN_RE = re.compile(r'<a:t(?:\s[^>]*)?>(.*?)</a:t>', re.S)
 
 # **幻灯片之外、但可能装着文字**的部件（2026-09-18 实测：它们会被静默漏掉）。
 # 这份清单是"我们**没**读什么"的口径来源——`other_text_parts` 按它统计，调用方据此记账。
@@ -60,26 +65,31 @@ def other_text_parts(blob):
 
 
 def _slides_from(z, max_slides):
-    """已打开的 zip → `[(序号, [行…])]`（`slides` 与 `slides_in_file` 共用这一份逻辑）。
+    """已打开的 zip → `([(序号, [行…])], [读不动的部件名])`（`slides` 与 `slides_in_file` 共用）。
 
     **按序号升序，不按文件名字典序**：`slide10` 会排到 `slide2` 前面，那是错的。
     （真页序其实在 `ppt/presentation.xml` 的 `sldIdLst` + rels 里；本读法假设两者一致——
     真稿实测过两份都一致，**乱序稿仍未验**，见 `coding-spec` G14。）
+
+    **读不动的部件要报出来，不许静默少一页**：原先只接 `(KeyError, OSError, BadZipFile)`，
+    于是"加密条目"（`RuntimeError`）、"未知压缩法"（`NotImplementedError`）会**穿透出去**
+    把整份材料判成读不动（其余页的文字一起丢）；而 CRC 坏的页被这三种接住、**无声消失**、
+    摘要还把它写成"这份稿子本来就没文字"。两个方向都错，所以：**宽接 + 记账**。
     """
     named = []
     for name in z.namelist():
         m = SLIDE_RE.match(name)
         if m:
             named.append((int(m.group(1)), name))
-    got = []
+    got, failed = [], []
     for n, name in sorted(named):
         if max_slides and len(got) >= max_slides:
             break
         try:
             got.append((n, slide_lines(z.read(name).decode('utf-8', 'replace'))))
-        except (KeyError, OSError, zipfile.BadZipFile):
-            continue                                  # 单张坏不让整份失败
-    return got
+        except Exception as e:                        # 宽接：任何单张的毛病都不许掀翻整份
+            failed.append((n, name, type(e).__name__, str(e)[:60]))
+    return got, failed
 
 
 def _other_from(z):
@@ -103,7 +113,7 @@ def _other_from(z):
 
 
 def slides_in_file(path, max_slides=0):
-    """**按路径**读幻灯片，只解开要读的那几个部件（`slides` 的路径版）。
+    """**按路径**读幻灯片，只解开要读的那几个部件（`slides` 的路径版）→ `([(序号, 行)], [读不动])`。
 
     为什么侦查器要用这一份：一份 42 MB 的演示稿里，媒体占 42 MB、`ppt/slides/*.xml` 只有几百 KB——
     按**整份字节**设护栏，等于"因为图多就不给摘要"，而摘要恰恰是这些大材料最需要的东西（真样本实测）。
@@ -112,7 +122,7 @@ def slides_in_file(path, max_slides=0):
         with zipfile.ZipFile(path) as z:
             return _slides_from(z, max_slides)
     except (OSError, zipfile.BadZipFile):
-        return []
+        return [], []
 
 
 def other_text_parts_in_file(path):
@@ -139,10 +149,9 @@ def scan_cost(path, total=0):
 
 
 def slides(blob, max_slides=0):
-    """`pptx` 字节 → `[(幻灯片序号, [文本行…])]`；`max_slides > 0` 时最多读这么多张（从第 1 张起）。"""
+    """`pptx` 字节 → `([(序号, 行…)], [读不动])`；`max_slides > 0` 时最多读这么多张（从第 1 张起）。"""
     try:
         with zipfile.ZipFile(io.BytesIO(blob)) as z:
             return _slides_from(z, max_slides)
     except (OSError, zipfile.BadZipFile):
-        return []
-    return out
+        return [], []

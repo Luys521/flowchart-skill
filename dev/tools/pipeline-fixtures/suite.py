@@ -44,6 +44,7 @@ PARSE_CMD = REPO / 'scripts' / 'parse.py'
 DECK_TITLES = ('第 1 章 项目概况', '第 2 章 审批与分工', '第 3 章 结算与付款')
 # 幻灯片**之外**的文字（图表 / SmartArt / 备注）：读者不读，但必须报出来（不许静默漏掉）
 DECK_OUTSIDE = ('CHARTONLY词', 'SMARTARTONLY词', 'NOTESONLY词')
+DECK_SLIDES = len(DECK_TITLES) + 1        # 3 张有字 + 1 张纯图片
 
 FLOWTABLE = """---
 id: driftfix
@@ -276,9 +277,12 @@ def make_deck(path):
     with zipfile.ZipFile(path, 'w') as z:
         z.writestr('ppt/presentation.xml', f'<p:presentation xmlns:p="{p}"/>')
         for i, title in enumerate(DECK_TITLES, 1):
+            # 标题段落里**故意放一个制表位**（`<a:tabLst>` / `<a:tab pos=…>`，真稿常见）：
+            # 它是 `<a:t` 前缀家族的标签，正则写松了就会被当开标签、把原始 XML 吃进正文。
             z.writestr(f'ppt/slides/slide{i}.xml',
                        f'<p:sld xmlns:p="{p}" xmlns:a="{a}"><p:cSld><p:spTree>'
-                       f'<a:p><a:r><a:t>{title}</a:t></a:r></a:p>'
+                       f'<a:p><a:pPr><a:tabLst><a:tab pos="914400" algn="l"/></a:tabLst></a:pPr>'
+                       f'<a:r><a:t>{title}</a:t></a:r></a:p>'
                        f'<a:p><a:r><a:t>正文 {i}：审批流程第 {i} 步</a:t></a:r></a:p>'
                        f'</p:spTree></p:cSld></p:sld>')
         n = len(DECK_TITLES) + 1
@@ -292,6 +296,21 @@ def make_deck(path):
                            ('ppt/diagrams/data1.xml', DECK_OUTSIDE[1]),
                            ('ppt/notesSlides/notesSlide1.xml', DECK_OUTSIDE[2])):
             z.writestr(part, f'<x xmlns:a="{a}"><a:p><a:r><a:t>{word}</a:t></a:r></a:p></x>')
+
+
+def _broken_zip(path, bad_name):
+    """打开一个 zip，但让**指定那一条**读的时候抛 `RuntimeError`（模拟加密条目 / 未知压缩法）。
+
+    为什么要造这个桩：原实现要么让别的异常穿透出去（**整份材料被判读不动**、其余页文字一起丢），
+    要么把 CRC 坏的页静默吞掉（**无声少一页**，摘要还写成"这份稿子本来就没文字"）。
+    真实改法（改中央目录的加密位 / file_size）要动二进制，桩能测到同一条机制且更清楚。
+    """
+    class _Broken(zipfile.ZipFile):
+        def read(self, name, *a, **k):
+            if name == bad_name:
+                raise RuntimeError('File is encrypted')
+            return super().read(name, *a, **k)
+    return _Broken(path)
 
 
 def pptx_paths(root):
@@ -322,7 +341,7 @@ def pptx_paths(root):
                    '-o', str(d / 'recon.md')])
     rec = (d / 'recon.md').read_text(encoding='utf-8') if (d / 'recon.md').exists() else ''
     cases.append(('⑱ recon：出 pptx 摘要（张数 + 每张标题 + **点明纯图片页**）',
-                  rc == 0 and f'幻灯片 {len(DECK_TITLES) + 1} 张' in rec and DECK_TITLES[1] in rec
+                  rc == 0 and f'幻灯片 {DECK_SLIDES} 张' in rec and DECK_TITLES[1] in rec
                   and '纯图片' in rec, rc, out + rec[:300]))
     rc, out = run([sys.executable, str(OOXML_CMD), '--materials', str(d / 'materials.json'),
                    '-o', str(d / 'elements.json'), '--max-slides', '9'])
@@ -336,11 +355,21 @@ def pptx_paths(root):
           and els[0].get('location', {}).get('page') == 1
           and DECK_TITLES[1] in els[1].get('text', '')
           and not any(not (e.get('text') or '').strip() for e in els)
+          and not any('<a:' in str(e.get('text') or '') for e in els)   # **原始 XML 不许进正文**
           and '没有文字层' in (els[0].get('degraded') or '')
           and '本读者不读' in (els[0].get('degraded') or '')     # 图表/SmartArt/备注：报出来
           and not any(w in str(e.get('text') or '') for e in els for w in DECK_OUTSIDE))
     cases.append(('⑲ pptx 读者：按张出元素 + 页码坐标 + **纯图片页丢掉并记账** + '
-                  '**幻灯片之外的文字报出来**（不静默漏）', ok, rc, out + str(els)[:300]))
+                  '**原始 XML 不进正文** + **幻灯片外文字报出来**', ok, rc, out + str(els)[:300]))
+
+    # ⑲b 单张读不动：**不许掀翻整份，也不许静默少一页**（拿桩把 zip 的一条读坏）
+    sys.path.insert(0, str(REPO / 'scripts'))
+    import pptx_text                                     # noqa: E402  （夹具内部用，测的是这条机制）
+    with _broken_zip(d / '大演示稿.pptx', 'ppt/slides/slide2.xml') as z:
+        got, failed = pptx_text._slides_from(z, 0)
+    ok = (len(got) == DECK_SLIDES - 1 and len(failed) == 1 and failed[0][2] == 'RuntimeError')
+    cases.append(('⑲b 单张读不动：不掀翻整份 + 逐页记账（原先是"穿透"或"静默消失"二选一）',
+                  ok, 0, f'got={len(got)} failed={failed}'))
     return cases
 
 

@@ -144,14 +144,19 @@ def _pptx_scale(path, th):
     并且**按路径只解压要读的那几个部件**——真样本实测：42 MB 的稿子里 `ppt/slides/*.xml` 只有几百 KB，
     按整份字节设护栏等于"因为图多就不给摘要"，那恰好是最需要摘要的那种材料。
     """
-    got = slides_in_file(path, th['outline_max'])    # 只读前面若干张就够当摘要；读不动返回空
-    if not got:
+    got, failed = slides_in_file(path, th['outline_max'])   # 只读前面若干张就够当摘要；读不动逐页报
+    if not got and not failed:
         return '', [], 0, 'pptx 里没抽出文字（空稿 / 全是图）'
+    if not got and failed:
+        return '', [], 0, (f'{len(failed)} 张幻灯片**全部读不动**（{failed[0][2]}：{failed[0][3]}）'
+                           f'——不是"空稿"，请核对文件是否损坏 / 加密')
     blank = sum(1 for _n, lines in got if not lines)
     others = other_text_parts_in_file(path)
     heads = [f'第 {n} 张：{lines[0]}' if lines else f'第 {n} 张：（纯图片，无文字）' for n, lines in got]
     scale = (f'幻灯片 {len(got)} 张'
              + (f'（前 {len(got)} 张里 {blank} 张无文字＝纯图片：那几页要视觉才读得到）' if blank else '')
+             + (f'（另有 {len(failed)} 张读不动：第 '
+                + '、'.join(str(n) for n, _p, _w, _m in failed[:5]) + ' 张）' if failed else '')
              + (f'（另有含文字的部件本摘要不覆盖：' + ' · '.join(f'{k} {v}' for k, v in others.items())
                 + '）' if others else '')
              + f'（按序号读前 {th["outline_max"]} 张取标题）')

@@ -35,7 +35,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →10
-  desc: ★ 一张幻灯片的 XML → 文本行（按 `<a:p>` 切段，段内 `<a:t>` 顺序拼接，去空段）。 · L33 · 函数
+  desc: ★ 一张幻灯片的 XML → 文本行（按 `<a:p>` 切段，段内 `<a:t>` 顺序拼接，去空段）。 · L38 · 函数
 - id: '03'
   name: other_text_parts
   lines:
@@ -47,7 +47,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →05
-  desc: '★ **我们没读**、但里面确实有文字的那些部件 → `{''图表'': 1, ''SmartArt'': 2}`（没有就不出现在… · L46
+  desc: '★ **我们没读**、但里面确实有文字的那些部件 → `{''图表'': 1, ''SmartArt'': 2}`（没有就不出现在… · L51
     · 函数'
 - id: '04'
   name: _slides_from
@@ -60,7 +60,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →02
-  desc: ★ 已打开的 zip → `[(序号, [行…])]`（`slides` 与 `slides_in_file` 共用这一份… · L62 · 函数
+  desc: ★ 已打开的 zip → `([(序号, [行…])], [读不动的部件名])`（`slides` 与 `slides_i… · L67 · 函数
 - id: '05'
   name: _other_from
   lines:
@@ -72,7 +72,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →10
-  desc: '★ 已打开的 zip → `{类别: 个数}`（只统计**含文字**的那些部件）。 · L85 · 函数'
+  desc: '★ 已打开的 zip → `{类别: 个数}`（只统计**含文字**的那些部件）。 · L95 · 函数'
 - id: '06'
   name: slides_in_file
   lines:
@@ -84,7 +84,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →04
-  desc: ★ **按路径**读幻灯片，只解开要读的那几个部件（`slides` 的路径版）。 · L105 · 函数
+  desc: ★ **按路径**读幻灯片，只解开要读的那几个部件（`slides` 的路径版）→ `([(序号, 行)], [读不动])… · L115 · 函数
 - id: '07'
   name: other_text_parts_in_file
   lines:
@@ -96,7 +96,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →05
-  desc: ★ **按路径**统计"我们没读但含文字"的部件（`other_text_parts` 的路径版）。 · L118 · 函数
+  desc: ★ **按路径**统计"我们没读但含文字"的部件（`other_text_parts` 的路径版）。 · L128 · 函数
 - id: 08
   name: scan_cost
   lines:
@@ -108,7 +108,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →10
-  desc: ★ 这份 zip **摘要/解析要读的字节数**：算"会读的部件"，**媒体与嵌入件不算**。 · L127 · 函数
+  desc: ★ 这份 zip **摘要/解析要读的字节数**：算"会读的部件"，**媒体与嵌入件不算**。 · L137 · 函数
 - id: 09
   name: slides
   lines:
@@ -120,7 +120,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →04
-  desc: ★ `pptx` 字节 → `[(幻灯片序号, [文本行…])]`；`max_slides > 0` 时最多读这么多张（从… · L141 · 函数
+  desc: ★ `pptx` 字节 → `([(序号, 行…)], [读不动])`；`max_slides > 0` 时最多读这么多张… · L151 · 函数
 - id: '10'
   name: 结束
   lines:

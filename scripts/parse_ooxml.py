@@ -155,13 +155,13 @@ def parse_pptx(blob, path, mid, max_slides, slides_span=None):
     超上限先记账（`degraded` 写在**抽到的每条**上，与 `parse_pdf` 同一套做法）：不吭声地少几页，
     下游只会以为"这份材料本来就这么点内容"（§2.4）。
     """
-    got = slides(blob, max_slides)
+    got, failed = slides(blob, max_slides)
     if slides_span:                                  # `--slides`：只要这几张（收窄，逐条记账）
         got = [(n, lines) for n, lines in got if slides_span[0] <= n <= slides_span[1]]
     blank = [n for n, lines in got if not lines]     # **纯图片页**：没有 `<a:t>`，抽出来就是空
     got = [(n, lines) for n, lines in got if lines]
-    if not got:
-        return [], ''                                 # 空稿 / 全是图：**由调用方统一记"没抽出文字"**，不当致命错
+    if not got and not failed:
+        return [], ''                                 # 真空稿：**由调用方统一记"没抽出文字"**，不当致命错
     out, cut = [], []
     for n, lines in got:
         text = ' / '.join(lines)
@@ -175,6 +175,12 @@ def parse_pptx(blob, path, mid, max_slides, slides_span=None):
     if others:
         cut.append('另有含文字的部件**本读者不读**（' + ' · '.join(f'{k} {v}' for k, v in others.items())
                    + '）：那几处的文字不在账本里')
+    if failed:
+        # **读不动的页要报出来**（原先是两个方向都错：别的异常穿透出去把整份判成读不动、
+        # 或 CRC 坏的页被静默吞掉）。这里逐页记名 + 原因，挂到**留下的每条**上。
+        cut.append(f'{len(failed)} 张幻灯片读不动（第 '
+                   + '、'.join(f'{n}（{why}）' for n, _name, why, _msg in failed[:5])
+                   + '）：那几页的内容不在账本里')
     if blank:
         # **空元素不是证据**（实测真稿：19 张里有 3 张是纯图片，原先被抽成 `text: ""` 的 element，
         # 既占着账本、又让"19 张都进来了"这句话变成假的）。丢掉它们，并把这件事挂到**留下的每条**上：
