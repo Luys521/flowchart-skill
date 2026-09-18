@@ -39,8 +39,8 @@ CSV_EXTS = ('csv', 'tsv')                             # 这两种出 `table` + `
 CODE_KINDS = ('json', 'yaml', 'yml', 'xml', 'html', 'htm')   # 这两种只影响 `kind` 标签，不解析内容
 
 # **只在用户显式给 `--encoding` 时**才会用到的一张表：允许去试那些 `probe` 判成 T4 的材料。
-# 为什么需要它：GBK 材料在 `probe` 眼里是"魔数不认识，且不是文本"（UTF-8 解不开），于是它进不了
-# 本适配器的 T1 门槛 ⇒ `--encoding gbk` 等于没用。而为什么**不能**只凭 `--encoding` 就什么文件都试：
+# 为什么需要它：GBK 材料在 `probe` 眼里是"魔数不认识、也不是 UTF-8 / UTF-16 文本"（解不开），
+# 于是它进不了本适配器的 T1 门槛 ⇒ `--encoding gbk` 等于没用。而为什么**不能**只凭 `--encoding` 就什么文件都试：
 # GBK 几乎能解任何字节对，`.mp3` 也能"解"成一篇乱码——那不是证据，是垃圾。
 # 所以这条路的两道门缺一不可：**用户显式认领编码** + **扩展名属于纯文本那一族**。
 TEXT_EXTS = ('.md', '.markdown', '.txt', '.text', '.csv', '.tsv', '.json', '.yaml', '.yml',

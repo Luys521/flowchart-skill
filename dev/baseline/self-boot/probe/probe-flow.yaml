@@ -107,7 +107,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →14
-  desc: ★ 修改时间（ISO 8601 本地时区）；取不到返回空串（不崩）—§3「替代」的末位兜底。 · L186 · 函数
+  desc: ★ 修改时间（ISO 8601 本地时区）；取不到返回空串（不崩）—§3「替代」的末位兜底。 · L193 · 函数
 - id: 09
   name: _read_tail
   lines:
@@ -119,7 +119,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →14
-  desc: ★ 末 n 字节（不足就全给）；读不动返回空（调用方按"没有尾部"处理，不崩）。 · L193 · 函数
+  desc: ★ 末 n 字节（不足就全给）；读不动返回空（调用方按"没有尾部"处理，不崩）。 · L200 · 函数
 - id: '10'
   name: _sha_and_size
   lines:
@@ -131,7 +131,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →14
-  desc: ★ → `(sha256, 字节数)`，**分块读**（默认 1 MiB 一块）。 · L205 · 函数
+  desc: ★ → `(sha256, 字节数)`，**分块读**（默认 1 MiB 一块）。 · L212 · 函数
 - id: '11'
   name: probe_tree
   lines:
@@ -143,7 +143,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→07｜2→08｜3→10
-  desc: ★ 路径（文件或目录）→ `materials[]`；目录按**材料路径字典序**编号 `M01`…（PIPELINE-S… · L223 · 函数
+  desc: ★ 路径（文件或目录）→ `materials[]`；目录按**材料路径字典序**编号 `M01`…（PIPELINE-S… · L230 · 函数
     · 分支：1→sniff 2→_mtime 3→_sha_and_size
 - id: '12'
   name: _print_table
@@ -156,7 +156,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →14
-  desc: ★ 人读摘要：一行一份材料。 · L249 · 函数
+  desc: ★ 人读摘要：一行一份材料。 · L256 · 函数
 - id: '13'
   name: main
   lines:
@@ -168,7 +168,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→11｜2→12
-  desc: L258 · 函数 · 分支：1→probe_tree 2→_print_table
+  desc: L265 · 函数 · 分支：1→probe_tree 2→_print_table
 - id: '14'
   name: 结束
   lines:
