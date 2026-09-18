@@ -67,6 +67,7 @@ MODULE = {
     'probe',          # → materials[] 骨架（材料探测分档，PIPELINE-SPEC §1.2）
     'ledger',         # → evidence.json（证据账本，PIPELINE-SPEC §2）
     'parse_ooxml',    # → elements[] JSON（OOXML 解析适配器，PIPELINE-SPEC §1.4）
+    'recon',          # → 侦查结论表草稿（难度排序 + 结构缩样，PIPELINE-SPEC §1.5）
 }
 
 # 编排层：驱动整条流水线，允许依赖上面两层。

@@ -8,7 +8,7 @@ legacy `.doc` / `.xls` 与 `.docx` / `.xlsx` 扩展名像、容器完全不同�
 宿主加速器（本地 Office SDK / 多模态模型）不在这里探测 — 那是解析阶段的事。
 
 只做一件事：把一个路径（文件或目录）变成 `materials[]` 骨架
-（`id` / `path` / `sha256` / `bytes` / `tier` / `probe` / `status` / `reason`），
+（`id` / `path` / `sha256` / `bytes` / `mtime` / `tier` / `probe` / `status` / `reason`），
 供账本写入器消费。**不读内容、不抽 element、不做语义判断**（那是 L1 清点的事）。
 
 退出码：0 = 探测完成（即使有 T4）；2 = 输入读不了（路径不存在）。
@@ -16,6 +16,7 @@ legacy `.doc` / `.xls` 与 `.docx` / `.xlsx` 扩展名像、容器完全不同�
 import argparse
 import hashlib
 import sys
+import time
 import zipfile
 from pathlib import Path
 
@@ -41,6 +42,14 @@ def _read_head(path, n=8):
             return f.read(n)
     except OSError:
         return b''
+
+
+def _mtime(path):
+    """修改时间（ISO 8601 本地时区）；取不到返回空串（不崩）—§3「替代」的末位兜底。"""
+    try:
+        return time.strftime('%Y-%m-%dT%H:%M:%S', time.localtime(path.stat().st_mtime))
+    except OSError:
+        return ''
 
 
 def _ooxml_kind(path):
@@ -141,7 +150,7 @@ def probe_tree(root):
             tier, probe, status, reason = 'T4', f'读不动（{type(e).__name__}）', 'unreadable', str(e)
             sha, size = '', 0
         item = {'id': f'M{i:02d}', 'path': p.as_posix(), 'sha256': sha, 'bytes': size,
-                'tier': tier, 'probe': probe, 'status': status}
+                'mtime': _mtime(p), 'tier': tier, 'probe': probe, 'status': status}
         if reason:
             item['reason'] = reason
         out.append(item)

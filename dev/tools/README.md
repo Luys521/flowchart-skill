@@ -46,7 +46,7 @@
   真实收口时：`--tables-root` 换成要裁决的流程表目录树，`--graph` 可省（默认 `dev/tools/fn-graph.json`）。
   要给循环裁决消费就加 `--json`。
 - **`--tables-root` 该指哪棵树**：**就是 `output/self-boot/`**。真实的产出结构是**两层**——
-  `output/self-boot/flowtable.md`（根表：29 个模块 + 「项目运作阶段」列）、
+  `output/self-boot/flowtable.md`（根表：30 个模块 + 「项目运作阶段」列）、
   `output/self-boot/<模块名>/flowtable.md`（每模块一张，**节点 = 该模块的函数**）。
   （曾规划过"再插一层阶段表"的三层方案，已撤销：分组信息用根表的阶段列承载即可，见 `ARCHITECTURE.md` 第七节。）
   映射规则是「**目录名即模块名**」，所以这条规则在**任意深度**都成立、递归逻辑不用为层数特判；

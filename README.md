@@ -29,7 +29,7 @@ AI 拿不准的地方不写在中间产物里（用户不会打开），而是�
 
 ```text
 SKILL.md              主入口：触发方式、标准处理流程、防呆、目录表
-scripts/              渲染与校验脚本（29 模块 = 17 个带 CLI 的入口 + 12 个纯库）
+scripts/              渲染与校验脚本（30 模块 = 18 个带 CLI 的入口 + 12 个纯库）
   dictionary.yaml     布局/配色/文字的数值字典
 references/           出图时按需读的规范（6 份）
 templates/            2 份模板（init.py 拷进 output/<名称>/）

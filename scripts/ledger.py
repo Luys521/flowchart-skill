@@ -21,7 +21,7 @@ STATUSES = ('ok', 'unreadable', 'skipped')
 CERTAINTIES = ('direct', 'inferred')
 
 # §2.1 的键序**写死在这里**：键序固定是"幂等"的一半（另一半是不依赖输入顺序做决策）。
-MATERIAL_KEYS = ('id', 'path', 'sha256', 'bytes', 'tier', 'probe', 'status', 'reason', 'extractor')
+MATERIAL_KEYS = ('id', 'path', 'sha256', 'bytes', 'mtime', 'tier', 'probe', 'status', 'reason', 'extractor')
 ELEMENT_KEYS = ('id', 'material_id', 'kind', 'text', 'rows', 'location', 'extractor', 'certainty', 'degraded')
 LOCATION_KEYS = ('path', 'page', 'sheet', 'cell', 'bbox', 'quote')
 
@@ -39,7 +39,7 @@ def check_materials(items):
             errs.append(f'materials[{i}]: 不是对象')
             continue
         where = m.get('id') or f'materials[{i}]'
-        for k in ('id', 'path', 'sha256', 'bytes', 'tier', 'probe', 'status'):
+        for k in ('id', 'path', 'sha256', 'bytes', 'mtime', 'tier', 'probe', 'status'):
             if k not in m:
                 errs.append(f'{where}: 缺必填字段 {k}')
         if m.get('id') in seen:

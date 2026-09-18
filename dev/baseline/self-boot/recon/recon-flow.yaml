@@ -1,5 +1,5 @@
 meta:
-  title: probe.py 函数流程表
+  title: recon.py 函数流程表
   subjects:
     脚本:
       fill: '#dae8fc'
@@ -8,8 +8,8 @@ meta:
 layout:
   col_x:
   - 400
-  width: 900
-  origin_x: -180
+  width: 920
+  origin_x: -120
 nodes:
 - id: '01'
   name: 开始
@@ -24,33 +24,9 @@ nodes:
   route: 1→10
   desc: 流程起点（结构性节点，不是函数） · 入口：1→main
 - id: '02'
-  name: _read_head
+  name: _import_dep
   lines:
-  - _read_head
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 4
-  col: 0
-  stage: 模块级
-  route: →11
-  desc: ★ 前 n 字节；读不动就返回空（调用方按 T4 记账，不许崩）。 · L38 · 函数
-- id: '03'
-  name: _mtime
-  lines:
-  - _mtime
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 5
-  col: 0
-  stage: 模块级
-  route: →11
-  desc: ★ 修改时间（ISO 8601 本地时区）；取不到返回空串（不崩）—§3「替代」的末位兜底。 · L47 · 函数
-- id: '04'
-  name: _ooxml_kind
-  lines:
-  - _ooxml_kind
+  - _import_dep
   type: task
   subject: 脚本
   executor: selfboot
@@ -58,11 +34,47 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ PK 容器 → `docx` / `xlsx` / `pptx`；不是 OOXML 就返回 None。 · L55 · 函数
-- id: '05'
-  name: _pdf_tier
+  desc: ★ import 一个必须依赖 → `(模块, 报错文案)`（缺了给可执行的提示）。 · L29 · 函数
+- id: '03'
+  name: _read_json
   lines:
-  - _pdf_tier
+  - _read_json
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 4
+  col: 0
+  stage: 模块级
+  route: →11
+  desc: ★ 读 JSON（容忍 BOM）。 · L38 · 函数
+- id: '04'
+  name: _scale_docx
+  lines:
+  - _scale_docx
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: 模块级
+  route: →02
+  desc: ★ `.docx` → `(规模描述, 大纲行, 报错文案)`：只读结构，不物化全部文字。 · L43 · 函数
+- id: '05'
+  name: _scale_xlsx
+  lines:
+  - _scale_xlsx
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 5
+  col: 0
+  stage: 模块级
+  route: →02
+  desc: ★ `.xlsx` → `(规模描述, 子表行, 报错文案)`：只用 `calculate_dimension()` 读尺… · L66 · 函数
+- id: '06'
+  name: make_rows
+  lines:
+  - make_rows
   type: task
   subject: 脚本
   executor: selfboot
@@ -70,49 +82,11 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ PDF：有字体标记 → 有文本层（T2），否则判扫描件（T3）。依据写成 `/Font` 计数，人可核。 · L68 · 函数
-- id: '06'
-  name: _text_tier
-  lines:
-  - _text_tier
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 8
-  col: 0
-  stage: 模块级
-  route: →11
-  desc: ★ 能按 UTF-8 解码且无 NUL 字节 → 文本（T1）；否则 None。 · L84 · 函数
+  desc: ★ 材料层 → 侦查行（**先不判断**：难度 / 规模 / 建议由 run 填）。 · L85 · 函数
 - id: '07'
-  name: sniff
+  name: advise
   lines:
-  - sniff
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 3
-  col: 0
-  stage: 模块级
-  route: 1→02｜2→04｜3→05｜4→06
-  desc: ★ 一个文件 → `(tier, probe, status, reason)`。`probe` 是**判据**（人可核）。 · L95 · 函数
-    · 分支：1→_read_head 2→_ooxml_kind 3→_pdf_tier 4→_text_tier
-- id: 08
-  name: probe_tree
-  lines:
-  - probe_tree
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 2
-  col: 0
-  stage: 模块级
-  route: 1→03｜2→07
-  desc: ★ 路径（文件或目录）→ `materials[]`；目录按**材料路径字典序**编号 `M01`…（PIPELINE-S… · L133 · 函数
-    · 分支：1→_mtime 2→sniff
-- id: 09
-  name: _print_table
-  lines:
-  - _print_table
+  - advise
   type: task
   subject: 脚本
   executor: selfboot
@@ -120,7 +94,32 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 人读摘要：一行一份材料。 · L160 · 函数
+  desc: ★ 机器建议处置（§1.5 的"处置三选一"）：**只看档位与内容量**，不做语义判断。 · L93 · 函数
+- id: 08
+  name: render
+  lines:
+  - render
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 8
+  col: 0
+  stage: 模块级
+  route: →07
+  desc: ★ 侦查结论表草稿（markdown）：机器列已填，**假设角色留给 AI**（§1.5 要求落盘）。 · L109 · 函数
+- id: 09
+  name: run
+  lines:
+  - run
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: 模块级
+  route: 1→04｜2→05｜3→06｜4→07
+  desc: ★ 结构缩样 → 算难度 → 排序 → 填建议 → `(rows, 跳过清单, 报错文案)`。 · L124 · 函数 · 分支：1→_scale_docx
+    2→_scale_xlsx 3→make_rows 4→advise
 - id: '10'
   name: main
   lines:
@@ -131,8 +130,8 @@ nodes:
   row: 1
   col: 0
   stage: 模块级
-  route: 1→08｜2→09
-  desc: L170 · 函数 · 分支：1→probe_tree 2→_print_table
+  route: 1→03｜2→08｜3→09
+  desc: L156 · 函数 · 分支：1→_read_json 2→render 3→run
 - id: '11'
   name: 结束
   lines:
@@ -160,58 +159,57 @@ edges:
   kind: jumpR
   polarity: main
 - from: '04'
-  to: '11'
+  to: '02'
   kind: jumpR
   polarity: main
 - from: '05'
-  to: '11'
-  kind: jumpR
+  to: '02'
+  kind: spine
   polarity: main
 - from: '06'
   to: '11'
   kind: jumpR
   polarity: main
 - from: '07'
-  to: '02'
+  to: '11'
   kind: spine
   polarity: main
-  label: '1'
-- from: '07'
-  to: '04'
-  kind: jumpR
-  polarity: main
-  label: '2'
-- from: '07'
-  to: '05'
-  kind: jumpR
-  polarity: main
-  label: '3'
-- from: '07'
-  to: '06'
-  kind: jumpR
-  polarity: main
-  label: '4'
-- from: 08
-  to: '03'
-  kind: jumpR
-  polarity: main
-  label: '1'
 - from: 08
   to: '07'
   kind: spine
   polarity: main
-  label: '2'
 - from: 09
-  to: '11'
-  kind: spine
-  polarity: main
-- from: '10'
-  to: 08
+  to: '04'
   kind: spine
   polarity: main
   label: '1'
-- from: '10'
-  to: 09
+- from: 09
+  to: '05'
   kind: jumpR
   polarity: main
   label: '2'
+- from: 09
+  to: '06'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: 09
+  to: '07'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '10'
+  to: '03'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '10'
+  to: 08
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '10'
+  to: 09
+  kind: spine
+  polarity: main
+  label: '3'
