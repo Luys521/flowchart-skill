@@ -43,3 +43,17 @@ dev/tools/fn-deps.json
 
 # ⑥ 迁移期归档：搬迁前的整仓快照（D-66）。核对无误后整个删掉，那一行也就没用了。
 old/
+
+# ⑧ **材料链的默认产物名**（`scripts/` 那几支工具不带参数跑时的落点）。
+#    为什么单列：它们是**产物**，而且里面装着**用户材料的原文**——实测吃过一次教训（2026-09-18）：
+#    在仓库根跑一次 `parse.py`（没给 `--elements/--notes`），默认名就把 `<仓库根>/elements.json`
+#    写了出来；下一次 `git add -A` 顺手把它连同真实材料正文一起提交了（1.3 MB）。
+#    只锚定**仓库根**（前导 `/`）：`dev/baseline/` 与 fixtures 里的同名文件不受影响。
+/elements.json
+/notes.json
+/materials.json
+/evidence.json
+/recon.md
+/intake.md
+/plan.md
+/drift.md
