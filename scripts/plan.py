@@ -189,7 +189,8 @@ def build_plan(cards):
               '|' + '---|' * len(ASK_COLUMNS)]
     for i, m in enumerate(unsure, 1):
         lines.append(f'| `Q{i:02d}` | {NO} | {NO} | `{m}` |')
-    lines += ['', '## ③ 排除清单（从清点的「含流程 = 否」抄）', '',
+    lines += ['', '## ③ 排除清单（两支：`含流程 = 否` · 有流程但按 §4.0 在本次范围外——后者理由以'
+                  '「`范围外`」开头）', '',
               '| ' + ' | '.join(EXCL_COLUMNS) + ' |',
               '|' + '---|' * len(EXCL_COLUMNS)]
     for m in excl:
@@ -490,7 +491,8 @@ def cmd_check(a):
         return 1
     print(f'✓ 计划校验通过：{len(rows)} 条流程 · 材料集都能在清点里核到'
           + (' · 流程目录一一对上' if a.root else '')
-          + f' · 排除清单与"含流程 = 否"双向一致 · `待澄清` 都有账（当前 {waiting} 条）')
+          + f' · 排除清单两支都对（"含流程 = 否"抄全 · 范围外的写明了）'
+            f' · `待澄清` 都有账（当前 {waiting} 条）')
     if waiting:                    # **过程状态，不是错误**：要不要接着问是 AI 的判断（§5.4 收敛口径）
         print(f'  · 收敛还差这一步：§5.4 要求 `待澄清` = 0（现在 {waiting} 条）'
               f'——把澄清申请问完并把状态改成 `可落表`，再落流程表。')
