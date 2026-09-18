@@ -21,10 +21,11 @@
     而"D4 语法互斥"那条阻断就是被它藏住的）。
 
 期望读数（`--out` 下的 `drift.md`）：
-    漂移 3 条：D1 节点 02（依据带 `degraded`）· D2 节点 03（`M05` 已推翻仍在用）· D3 节点 03（`M02` 读不动）
+    漂移 3 条：D1 节点 02（依据带**抽取质量**降级）· D2 节点 03（`M05` 已推翻仍在用）· D3 节点 03（`M02` 读不动）
     缺口 3 条：D4 `M04`（零引用）· D4 `M06`（零引用）· D5 `M06`（30 条元素只引 0 条）
     反例：节点 04 引 `M07#p001`（vlm）但描述以 `⚠` 开头 → **不报 D1**；
-          `M07` 引 3/25 = 12% ≥ 10% → **不报 D5**
+          `M07` 引 3/25 = 12% ≥ 10% → **不报 D5**；
+          节点 03 还引了 `M01#p002`（只有**浏览摘录**截断）→ **不报 D1**（摘录短了 ≠ 证据弱了）
 
 用法：`python dev/tools/pipeline-fixtures/suite.py`（退 0 = 全部符合预期）
 """
@@ -75,7 +76,7 @@ description: drift.py 判据夹具（每条判据正反各一例）
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 阶段 | 01 | 收到材料 | 开始 | 材料 | — | — | 甲方 | 甲 | — | →02 | |
 | 阶段 | 02 | 受理 | 任务 | 材料 | `M01#p001` | 受理回执 | 甲方 | 甲 | 1 天 | →03 | |
-| 阶段 | 03 | 核验 | 任务 | 受理回执 | `M02`、`M05` | 核验结论 | 甲方 | 甲 | 1 天 | →04 | |
+| 阶段 | 03 | 核验 | 任务 | 受理回执 | `M02`、`M05`、`M01#p002` | 核验结论 | 甲方 | 甲 | 1 天 | →04 | |
 | 阶段 | 04 | 视觉复核 | 任务 | 核验结论 | `M07#p001`、`M07#p002`、`M07#p003` | 复核结论 | 甲方 | 甲 | 1 天 | →05 | ⚠ 依据是看图的读数（`vlm`） |
 | 阶段 | 05 | 交付 | 结束 | 复核结论 | — | — | 甲方 | 甲 | — | — | |
 """
@@ -122,7 +123,12 @@ def make_fixture(root):
         {'id': 'M07', 'path': '材料/庚-白板.png', 'sha256': '0' * 64, 'bytes': 7168,
          'mtime': '2026-09-01T10:00:00', 'tier': 'T3', 'kind': 'image', 'probe': '夹具', 'status': 'ok'},
     ]
-    elements = [_elem('M01#p001', degraded='quote 截断到 200 字'), _elem('M03#p001', sheet='短名单'),
+    # `M01#p001` 挂**抽取质量**降级（D1 该命中）；`M01#p002` 只挂**浏览摘录**截断（D1 **不许**命中——
+    # 那是 §2.3 的写盘契约，摘录短了不等于证据弱了；2026-09-18 真材料集上实测：不分这两类时，
+    # 一份每个节点都规矩引条款的表被报成 23 条"等级拔高"）。
+    elements = [_elem('M01#p001', degraded='抽取质量有保留：单字行 62%（140/225）'),
+                _elem('M01#p002', degraded='quote 截断到 200 字'),
+                _elem('M03#p001', sheet='短名单'),
                 _elem('M05#p001'),
                 _elem('M07#p001', 'vlm', 'inferred'), _elem('M07#p002'), _elem('M07#p003')]
     # M06 的 30 条**带上页码**：`query.py --range pages=` 才有正例可测（原先夹具里 `page` 全是 `None`，
@@ -549,7 +555,7 @@ def query_paths(root):
     cases.append(('⑬ 关键词：只回含它的那条', rc == 0 and '命中 1 条' in out and 'M07#p005' in out,
                   rc, out))
     rc, out = query_run(root, '--range', 'rows=1-2', '--batch', '3')
-    cases.append(('⑭ 只给 rows= 不许把命中筛成 0（它只管显示）', rc == 0 and '命中 58 条' in out, rc, out))
+    cases.append(('⑭ 只给 rows= 不许把命中筛成 0（它只管显示）', rc == 0 and '命中 59 条' in out, rc, out))
     rc, out = query_run(root, '--range', 'pages=9-1')
     cases.append(('⑮ 范围语法错 → 退 2 + 人话', rc == 2 and '上界小于下界' in out, rc, out))
     rc, out = run([sys.executable, str(QUERY), str(root / 'intake.md')])
@@ -1119,6 +1125,12 @@ def main(argv=None):
     head = '✓ 漂移 3 条 · 缺口 3 条' in out
     print(f'{"PASS" if rc == 0 and head else "FAIL"}  ⓪ 读数：{out.splitlines()[0] if out else "（无输出）"}')
     bad = 0 if (rc == 0 and head) else 1
+    # ⓪b D1 **只认"证据被削弱"的降级**：`M01#p001`（抽取质量）该报，`M01#p002`（只有浏览摘录截断）
+    # 不该报——2026-09-18 真材料集上实测：不分类时，一份每个节点都规矩引条款的表被报成 23 条"等级拔高"。
+    d1_ok = 'M01#p001' in (root / 'drift.md').read_text(encoding='utf-8') \
+        and 'M01#p002' not in (root / 'drift.md').read_text(encoding='utf-8')
+    print(f'{"PASS" if d1_ok else "FAIL"}  ⓪b D1 不把"浏览摘录截断"当等级拔高（`M01#p002` 不许出现）')
+    bad += 0 if d1_ok else 1
     for name, good, rc, out in (paths(root, draft) + intake_paths(root) + plan_paths(root)
                                 + query_paths(root) + pptx_paths(root) + materials_paths(root)
                                 + spec_paths()):

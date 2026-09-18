@@ -87,6 +87,9 @@ GAP_COLUMNS = ('缺口', '触发', '需要哪份材料', '要哪一片（AI 填�
                '状态（AI 填）', '说明（AI 填）')
 DISPOSITIONS = ('已修', '已解释', '待验')
 GAP_STATES = ('待取证', '已取证', '已放弃')
+# **只算"浏览摘录"的那一类降级**（D1 要跳过它，见 `rule_d1`）：`ledger.degrade` 给每条摘录超限的
+# 元素挂 `quote 截断到 N 字`——那是 §2.3 的写盘契约，正文与逐字引用都不受影响。
+DISPLAY_ONLY_DEGRADED = 'quote 截断'
 # 「AI 要填的格子」的登记（两张表）：cells.py fill 按**列名**回写（AI 不再手改表格）。
 TODO_TABLES = (cells.table('漂移清单', '漂移', {
     '处置': {'列': '处置（AI 填）'},
@@ -135,6 +138,16 @@ def rule_d1(nodes, els):
 
     而该节点的描述**没有** `⚠` 留痕——把"我看到的 / 被截断的"当成"文件里逐字写着的"（§1.3 / §2.3）。
     （这里不转义 `|`：整条「事实」在 `render` 里统一转义一次，转两次是白做。）
+
+    **只看"证据本身被削弱"的那几类降级**（2026-09-18 在真材料集上修）：`ledger.degrade` 给每条
+    浏览摘录超限的元素都挂 `quote 截断到 N 字`，而 `degraded` 是**一个字段装三类事**——
+    ① 浏览摘录上限（`quote 截断`，§2.3 的写盘契约，正文与逐字引用都不受影响）；
+    ② 收窄留痕（`本轮收窄未取` / `--rows 只要…`）；③ 抽取质量降级（质量门 `noisy` / 碎片）。
+    **① 不该算等级拔高**（摘录短了不等于证据弱了），②③ 才算。原先不分类，于是真表上
+    **23 条漂移全是 ①**——一份每个节点都规规矩矩引条款的表被判成"通篇拔高"，
+    这正是 §5.2 那条纪律（**精度太低的判据整条砍掉**）要防的：**读数说谎比不报更坏**。
+    判据：`degraded` **以**「quote 截断」**开头** ⇒ 只有这一类降级（`ledger.degrade` 是**追加**写，
+    所以"先有质量降级、后被截断"的那种仍以质量降级开头，照样判）。
     """
     out = []
     for nd in nodes:
@@ -145,6 +158,8 @@ def rule_d1(nodes, els):
                 continue
             if e.get('extractor') == 'vlm' or e.get('certainty') == 'inferred':
                 why.append(f'`{i}` 是视觉推断（`certainty=inferred`）')
+            elif str(e.get('degraded') or '').startswith(DISPLAY_ONLY_DEGRADED):
+                continue                                    # 只是浏览摘录短了（见上面那段）
             elif e.get('degraded'):
                 why.append(f'`{i}` 带降级留痕（{str(e.get("degraded") or "")[:40]}）')
         if why and pending_kind(nd.get('desc')) is None:
