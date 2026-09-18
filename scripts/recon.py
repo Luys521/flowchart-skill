@@ -74,11 +74,6 @@ DEFAULTS = {                     # 兜底值；`dictionary.yaml` 的 `recon:` �
 DICT_NAME = 'dictionary.yaml'
 
 
-def _read_json(path):
-    """读 JSON（容忍 BOM）。"""
-    return json.loads(Path(path).read_text(encoding='utf-8-sig'))
-
-
 def _import_dep(name):
     """import 一个必须依赖 → `(模块, 报错文案)`（缺了给可执行的提示）。"""
     try:
@@ -87,24 +82,6 @@ def _import_dep(name):
         pkg = DEP_PKG[name]
         return None, f'缺依赖 {pkg}：装 `python -m pip install {pkg}`（或 `pip install -r requirements.txt`）'
 
-
-def load_thresholds(path=None):
-    """阈值 = 默认 + `dictionary.yaml` 的 `recon:` 段（读不到就用默认，**不报错**）。"""
-    th = dict(DEFAULTS)
-    p = Path(path) if path else Path(__file__).with_name(DICT_NAME)
-    try:
-        import yaml
-        with open(p, encoding='utf-8') as fh:
-            got = (yaml.safe_load(fh) or {}).get('recon') or {}
-    except Exception:                                # 缺依赖 / 缺文件 / 坏 YAML：一律退回默认
-        return th
-    for k, v in got.items():
-        if k in th and isinstance(v, int) and not isinstance(v, bool):
-            th[k] = v
-    return th
-
-
-# ----------------------------------------------------------------结构缩样（尽力而为，绝不外溢）
 def _docx_scale(blob, th):
     """`.docx` 字节 → `(规模描述, 大纲行, 大纲总条数, 结构说明)`。**只读结构，不物化全部文字**。
 
@@ -121,14 +98,12 @@ def _docx_scale(blob, th):
              if (p.text or '').strip() and _is_heading(p)]
     return (f'非空段 {paras} · 表格 {len(doc.tables)}', heads[:th['outline_max']], len(heads), '')
 
-
 def _is_heading(p):
     """样式名判标题（与 `parse_ooxml` 同一句判据；两边都只认 `heading` 前缀）。"""
     try:
         return (p.style.name or '').lower().startswith('heading')
     except Exception:                                # 样式表坏了的文档：判不出就当正文（不猜）
         return False
-
 
 def _xlsx_scale(blob, th):
     """`.xlsx` 字节 → `(规模描述, 子表行, 子表数, 结构说明)`。用尺寸信息读规模，**不扫单元格**。
@@ -156,7 +131,6 @@ def _xlsx_scale(blob, th):
     scale = f'子表 {len(rows)} · 声明合计约 {total} 行' + (f'｜{unknown} 张尺寸不可知' if unknown else '')
     return scale, rows, len(rows), ''
 
-
 def _pptx_scale(blob, th):
     """`.pptx` 字节 → `(规模描述, 大纲行, 大纲总条数, 结构说明)`。**这就是那份".pptx 解析摘要"**。
 
@@ -171,6 +145,55 @@ def _pptx_scale(blob, th):
     heads = [f'第 {n} 张：{lines[0]}' if lines else f'第 {n} 张：（无文字）' for n, lines in got]
     return f'幻灯片 {len(got)} 张（按序号读前 {th["outline_max"]} 张取标题）', heads, len(got), ''
 
+def _pdf_scale(blob, th):
+    """`.pdf` 字节 → `(规模描述, 大纲行, 大纲总条数, 结构说明)`。**零依赖粗数页数**。
+
+    为什么粗数就够：侦查要的是"这份 PDF 值不值得读、要不要只取摘要"（§1.5 的分档只看 `bytes`，
+    页数只是**参考数字**）。所以不引 `pdfplumber` 来数——那会把"扫一眼"变成"跑一遍解析"。
+    判据是 `/Type /Page` 的出现次数（**不含** `/Pages`，故用负向断言）：导出器花样多，实测偏小是常事，
+    所以文案写"**约** N 页"，不假装精确；一个都没数到时说清"页数数不出来"，不写 0（0 会被当成"空文件"）。
+    """
+    n = len(re.findall(rb'/Type\s*/Page(?![s])', blob))
+    if not n:
+        return '', [], 0, 'PDF 页数数不出来（结构非标准 / 被压缩）——按体积与档位看即可'
+    return f'约 {n} 页（粗数，仅供参考）', [], 0, ''
+
+def _text_scale(blob, th):
+    """纯文本 / CSV 字节 → 规模。**行数 + 头几行的开头**——这是文本档唯一有意义的"结构"。
+
+    **不猜编码**（与 `parse_text` 同一条纪律，§1.4）：只认 UTF-8（含 BOM）；解不开就说清
+    "编码不是 UTF-8，摘要不可得"并给出下一步（解析时显式 `--encoding`），**不许拿 GBK 硬解出一堆乱码当摘要**——
+    那种"摘要"比没有更坏：它会让人以为材料内容就是乱码。
+    """
+    try:
+        text = blob.decode('utf-8-sig')
+    except UnicodeDecodeError:
+        return '', [], 0, '编码不是 UTF-8（摘要不可得）：解析时按 §1.4 显式给 `--encoding`，或先转成 UTF-8'
+    lines = text.splitlines()
+    heads = [f'第 {i} 行：{ln.strip()[:60]}' for i, ln in enumerate(lines[:th['outline_max']], 1)
+             if ln.strip()]
+    return f'行 {len(lines)}', heads, len(heads), ''
+
+def _image_scale(blob, th):
+    """图片字节 → `尺寸（像素）`。**Pillow 是可选加速器**：缺了就说清，不硬造数字。"""
+    try:
+        from PIL import Image
+    except ImportError:
+        return '', [], 0, '缺 Pillow（读不出图片尺寸）：`python -m pip install Pillow`'
+    try:
+        with Image.open(io.BytesIO(blob)) as im:
+            return f'{im.width}×{im.height} 像素 · {im.format or "?"}', [], 0, ''
+    except Exception as e:                           # 图片坏了：记事实，不外溢
+        return '', [], 0, f'图片读不出尺寸（{type(e).__name__}）'
+
+def _ole_note():
+    """legacy（OLE 复合文档）**没有摘要可给**——这是诚实的极限，不是没做。
+
+    流式读 OLE 里的 Word/Excel 正文等于重写一个解析器（§1.4 明确"没有纯 Python 的可靠读法"），
+    所以侦查对它只能给"**走哪条路**"（外部转换器）与"读不动 + 可执行提示"，两条都已在表里。
+    这里返回一句说明，好过留一个空格子让人以为"忘了做"。
+    """
+    return '', [], 0, 'legacy（OLE）：摘要不可得——正文要外部转换器，见「走哪条路」列'
 
 def _note_of(e):
     """异常 → 记在表里的说明。**把"材料的问题"与"我们自己的 bug"分开**：
@@ -188,13 +211,14 @@ def _note_of(e):
 # 有"结构缩样"的 kind：**这份清单只在这里写一次**（`sample_structure` 的分支与 `make_rows` 的开门判据都从它取）。
 # 审计教训（2026-09-18 实测踩到）：原先 `make_rows` 里另写了一份 `('docx','xlsx')`，于是给
 # `sample_structure` 补上 pptx 之后，**摘要照样是空的**——"支持了"与"用上了"之间隔着一份重复的清单。
-SCALED_KINDS = ('docx', 'xlsx', 'pptx')
-
+# 覆盖面（2026-09-18 收官）：**每一种 kind 都有交代**——能缩样的缩样，缩不了的**说清为什么**
+# （`ole` 是诚实的极限；`unknown` 在探测那一步就已经记了读不动原因）。
+SCALED_KINDS = ('docx', 'xlsx', 'pptx', 'pdf-text', 'pdf-scan', 'image', 'text', 'ole')
 
 def sample_structure(blob, kind, th):
     """按 `kind` 缩样 → `(规模描述, 结构行, 结构总条数, 说明)`。**读不了不是错**：返回说明，逐份记账。"""
-    if kind not in SCALED_KINDS:
-        return '', [], 0, ''                         # 别的 kind 没有"结构缩样"这回事（不是失败）
+    if kind == 'unknown':
+        return '', [], 0, ''
     try:
         if kind == 'docx':
             return _docx_scale(blob, th)
@@ -202,12 +226,21 @@ def sample_structure(blob, kind, th):
             return _xlsx_scale(blob, th)
         if kind == 'pptx':
             return _pptx_scale(blob, th)
+        if kind in ('pdf-text', 'pdf-scan'):
+            return _pdf_scale(blob, th)
+        if kind == 'image':
+            return _image_scale(blob, th)
+        if kind == 'text':
+            return _text_scale(blob, th)
+        if kind == 'ole':
+            return _ole_note()
     except Exception as e:                           # 单份坏不让整批失败（§1.4 硬要求 2）
         return '', [], 0, _note_of(e)
     return '', [], 0, ''
 
 
 # ----------------------------------------------------------------分档与建议（纯查表，不猜）
+
 def difficulty(row, th):
     """难度：不参与 / 易 / 中 / 难 / 最难。**分档只看 `bytes` 与 `tier`**（kind 只影响"走哪条路"）。"""
     if row['status'] != 'ok' or row['tier'] == 'T4':
@@ -217,22 +250,24 @@ def difficulty(row, th):
         return '中'                                  # T1 但体积大 → 别一上来就全量灌（§2.4）
     return base
 
-
 def advise_depth(row):
-    """解析深度（§1.5 三选一）+ 触发它的数字。**事实与建议要能分开看**：数字随后写进「规模」列。"""
+    """解析深度（§1.5 三选一）+ 触发它的数字。**事实与建议要能分开看**：数字随后写进「规模」列。
+
+    **判据是体积，不是档位**（2026-09-18 修）：原先只有"T1 但很大"才降成「只取摘要」，
+    于是 T2/T3 走另一条路——一份 50MB 的 legacy 也会被建议"全量解析"，那等于**一上来就全量灌**
+    （§2.4 明令不许）。档位说的是"走哪条路"，体积说的才是"读多少"，两个轴不该互相顶替。
+    """
     if row['diff'] == '不参与':
         return DEPTH_SKIP
     if row['tier'] == 'T1' and row['kind'] not in T1_WITH_READER:
         return '未定（probe 判 T1 但没有对应 reader —— 属探测说谎，先修 probe）'
-    return DEPTH_SUMMARY if row['diff'] == '中' else DEPTH_FULL
-
+    return DEPTH_SUMMARY if row['bytes'] > row['full_max_bytes'] else DEPTH_FULL
 
 def advise_path(row):
     """走哪条路（§1.1 档位映射）：**按 `kind` 查表**，不看扩展名（审计 F3/F6）。"""
     if row['status'] != 'ok':
         return '不解析（status=%s）' % row['status']
     return PATH_OF_KIND.get(row['kind'], '未定（kind 不在封闭枚举内）')
-
 
 def make_rows(materials, th):
     """材料层 → 侦查行 + 跳过清单。**逐份尽力而为**：结构读不了记在行里，绝不外溢成整批失败。"""
@@ -242,6 +277,7 @@ def make_rows(materials, th):
                'kind': m.get('kind', '?'), 'status': m.get('status', '?'),
                'bytes': m.get('bytes', 0), 'mtime': m.get('mtime', ''),
                'probe': m.get('probe', ''), 'reason': m.get('reason', ''),
+               'full_max_bytes': th['easy_max_bytes'],      # 阈值随行带（数值仍只有 dictionary.yaml 一个家）
                'scale': '', 'structure': [], 'structure_total': 0, 'note': ''}
         row['diff'] = difficulty(row, th)
         if row['status'] == 'ok' and row['kind'] in SCALED_KINDS:
@@ -265,6 +301,7 @@ def make_rows(materials, th):
 
 
 # ----------------------------------------------------------------渲染与校验
+
 def render(rows, meta):
     """侦查结论表（markdown）。**表头先写输入指纹与阈值**——不然"共 20"这类数字事后没法复核。"""
     lines = [f'> 由 `scripts/recon.py` 从 `{meta["input"]}`（sha256 {meta["sha256"][:12]}）生成：'
@@ -272,26 +309,26 @@ def render(rows, meta):
              f'> 本次阈值：`easy_max_bytes={meta["easy_max_bytes"]}`（超过它 → 只取摘要）· '
              f'`max_open_bytes={meta["max_open_bytes"]}`（超过它不打开结构）· '
              f'`outline_max={meta["outline_max"]}`。改阈值请改 `dictionary.yaml` 的 `recon:` 段。', '',
-             '| 材料 | 档位 | 难度 | 规模（依据数字） | 解析深度 | 走哪条路 | 读不动 | '
+             '| 材料 | 档位 | 修改时间 | 难度 | 规模（依据数字） | 解析深度 | 走哪条路 | 读不动 | '
              '假设角色（AI 填 `⚠`） | 依据（AI 填） | 验证方式（AI 填） | 状态（AI 填） |',
-             '|---|---|---|---|---|---|---|---|---|---|---|']
+             '|---|---|---|---|---|---|---|---|---|---|---|---|']
     for r in rows:
         struct = r['scale'] or ('—' if not r['note'] else r['note'])
         if r['structure']:
             head = ' / '.join(r['structure'][:3])
             more = f' …（共 {r["structure_total"]}）' if r['structure_total'] > 3 else ''
             struct = f'{struct}｜{head}{more}'
-        lines.append(f'| `{r["id"]}` {Path(r["path"] or "").name} | {r["tier"]} | {r["diff"]} | '
+        lines.append(f'| `{r["id"]}` {Path(r["path"] or "").name} | {r["tier"]} | '
+                     f'{r["mtime"] or "—"} | {r["diff"]} | '
                      f'{struct} | {advise_depth(r)} | {advise_path(r)} | '
-                     f'{r["reason"] or r["note"] or "—"} |  |  |  |  |')
+                     f'{r["reason"] or "—"} |  |  |  |  |')
     return '\n'.join(lines) + '\n'
 
 
-CARD_COLUMNS = ('材料', '档位', '难度', '规模（依据数字）', '解析深度', '走哪条路', '读不动',
+CARD_COLUMNS = ('材料', '档位', '修改时间', '难度', '规模（依据数字）', '解析深度', '走哪条路', '读不动',
                 '假设角色（AI 填 `⚠`）', '依据（AI 填）', '验证方式（AI 填）', '状态（AI 填）')
 STATUSES = ('待验', '已验证', '已推翻')
 MD_ID = re.compile(r'`(M\d+)`')
-
 
 def parse_table(text):
     """`recon.md` → `(表头, {M##: {列: 值}}, 报错)`。表头必须逐字对得上（列规范在代码里只有这一份）。"""
@@ -319,7 +356,6 @@ def parse_table(text):
     if tuple(header) != CARD_COLUMNS:
         return header, rows, f'表头不是本脚本的列规范：{" | ".join(header)}'
     return header, rows, ''
-
 
 def check_rows(materials, rows):
     """AI 填的列 → 错误清单（空 = 过）。**只报不改**；§1.5"假设必须落盘、被推翻也要留痕"。"""
@@ -351,10 +387,32 @@ def check_rows(materials, rows):
 
 
 # ----------------------------------------------------------------入口
+
 def _write(text, path):
     """写盘：UTF-8 / LF（与账本同一套口径；本文件通篇用 `\\n` 拼）。"""
     Path(path).write_bytes(text.encode('utf-8'))
 
+def _read_json(path):
+    """读 JSON（容忍 BOM）。"""
+    return json.loads(Path(path).read_text(encoding='utf-8-sig'))
+
+def load_thresholds(path=None):
+    """阈值 = 默认 + `dictionary.yaml` 的 `recon:` 段（读不到就用默认，**不报错**）。"""
+    th = dict(DEFAULTS)
+    p = Path(path) if path else Path(__file__).with_name(DICT_NAME)
+    try:
+        import yaml
+        with open(p, encoding='utf-8') as fh:
+            got = (yaml.safe_load(fh) or {}).get('recon') or {}
+    except Exception:                                # 缺依赖 / 缺文件 / 坏 YAML：一律退回默认
+        return th
+    for k, v in got.items():
+        if k in th and isinstance(v, int) and not isinstance(v, bool):
+            th[k] = v
+    return th
+
+
+# ----------------------------------------------------------------结构缩样（尽力而为，绝不外溢）
 
 def build(a):
     """出侦查结论表草稿 → 退出码。"""
@@ -388,7 +446,6 @@ def build(a):
           f'--materials {Path(a.materials).name}`', file=sys.stderr)
     return 0
 
-
 def check(a):
     """校验 AI 填好的表 → 退出码 0/1/2。"""
     try:
@@ -414,7 +471,6 @@ def check(a):
     print(f'✓ 侦查表校验通过：{len(rows)} 份 · 档位逐字等于材料层 · 假设/依据/验证方式都填了 · '
           f'状态取值合法 · 被推翻的留了痕')
     return 0
-
 
 def main(argv=None):
     sys.stdout.reconfigure(encoding='utf-8')
