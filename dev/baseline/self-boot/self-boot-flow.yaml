@@ -70,7 +70,7 @@ nodes:
   col: 0
   stage: 循环与漂移
   route: →06
-  desc: 30 个函数 · ⊞ drift/flowtable.md
+  desc: 25 个函数 · ⊞ drift/flowtable.md
 - id: '06'
   name: 模块 · engine
   lines:

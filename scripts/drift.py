@@ -24,16 +24,27 @@ D1—D3 是"**表写错了**"，D4 / D5 是"**还有东西没看**"——后者�
 **启用条件按输入可用性分档**（与 §6 的 H10 同一条纪律：**没有输入就不启用，绝不误伤合法的旧表**）：
 没给 `--ledger` 就跳过 D1 / D3 / D4 / D5；没给 `--recon` 跳过 D2；没给 `--intake` 跳过 D4。
 
-**分工**：脚本填机器可判的（判据 / 档 / 位置 / 事实，以及缺口的材料与现状）；
+**分工**：脚本填机器可判的（判据 / 位置 / 事实，以及缺口的材料与现状）；
 `处置` / `依据`（漂移）与 `要哪一片` / `状态` / `说明`（缺口）**留给 AI**。
 
 **为什么必须配 `check`**：`build` 每次重出的草稿都是"未处置"，光看它永远不知道收没收敛。
 `check` 拿**当前表重跑一遍判据**，于是两件机器判得死的事就成立了：
 ① 文件里标 `已修` 的，判据**必须不再命中**（说谎会被抓住）；② 判据现在命中的，**文件里必须都有**
-（文件过期会被抓住）。收敛口径见 §5.4：**硬漂移 0 且缺口清单空**。
+（文件过期会被抓住）。收敛口径见 §5.4：**漂移 0 且缺口清单空**。
 
 **为什么 `build` 拒绝覆盖已有的产物**：`drift.md` 同时是**漂移账**（发现 → 处置 → 依据），
 AI 填过的格子被"重跑一次 build"静默抹掉，就是丢账。要重来就显式 `--force`（§2.4 不许静默降级同一条）。
+
+**三处"看着多余"的写法，各有理由**（改动前先读，别顺手"优化"）：
+
+1. **读文件一律写 `utf-8-sig`**（容忍 BOM），不设 `_read_text` 那种一层壳：四个读点各写一行，
+   省掉"晚段函数都要跳回文件头"的长跳。
+2. **函数顺序按调用方向排**（助手在前、用户在后、CLI 压尾）：自举表是**单列函数流**，
+   一条跨 20 个节点的调用边会直接推高绕行读数（门⑨ 卡 45% / 60%，见 G12）。
+   所以 `_esc` 与 `render` 排在判据**之后**——它们只被 `render` 用，早放就是自找长跳。
+3. **`prepare` 只写一份**：`build` 与 `check` 需要的准备步骤完全一样（读表 → 读三份输入 → 跑判据），
+   分成两处必然漂——一处改了启用条件、另一处不知道。这与 `flowtable_check.run_checks`
+   "顺序只写一份，否则出现 build 拦得住、回写拦不住"是同一条理由。
 
 用法：
     python scripts/drift.py build output/<流程名>/flowtable.md --ledger evidence.json \
@@ -82,54 +93,136 @@ ID_RE = re.compile(r'M\d{2,}(?:#[0-9A-Za-z_]+)?')
 MID_RE = re.compile(r'M\d{2,}')
 
 
-def _read_text(path):
-    """读文本（容忍 BOM）。"""
-    return Path(path).read_text(encoding='utf-8-sig')
+# ----------------------------------------------------------------纯文本助手（紧挨判据：它们只服务判据）
+def _col(row, prefix):
+    """按**列名前缀**取值（`状态（AI 填）` / `走哪条路` 这类名字前缀足够稳，后缀由对方决定）。"""
+    for k, v in (row or {}).items():
+        if str(k).startswith(prefix):
+            return v
+    return ''
 
 
-def _read_json(path):
-    """读 JSON（容忍 BOM）。"""
-    return json.loads(_read_text(path))
-
-
-def _writer(path, text):
-    """落盘（UTF-8、LF、末尾留一个换行——与 §2.4 的其他产物同一套）。"""
-    Path(path).write_text(text, encoding='utf-8', newline='\n')
-
-
-def _sha(text):
-    """输入指纹前 12 位：产物表头要打印它，事后才复核得了"这份结论是对着哪一版表算的"。"""
-    return hashlib.sha256(text.encode('utf-8')).hexdigest()[:12]
-
-
-def _esc(s):
-    """单元格里的 `|` 会撕表 → 换全角（与 `intake.py` 同一口径）。"""
-    return str(s if s is not None else '').replace('|', '｜').replace('\n', ' ').strip()
-
-
-def _blank(s):
-    """空值判据（`—` / 空 / `无` 都算没填）。"""
-    return str(s or '').strip() in BLANK
-
-
-def _refs(text):
+def _ids(text):
     """单元格 → 引用到的 id 集合（element id 与裸 `M##` 都在内）。"""
     return set(ID_RE.findall(str(text or '')))
 
 
-def _mat_of(ids):
-    """id 集合 → 材料号集合。"""
-    return {i.split('#')[0] for i in ids}
+def _mats(text):
+    """单元格 → 引用到的**材料号**集合（`M03#p012` → `M03`）。"""
+    return {i.split('#')[0] for i in _ids(text)}
 
 
 def _cited(nodes):
     """全表引用到的 id 集合：依据列 + 节点描述（描述里也会写"见 M05"这类引用）。"""
     got = set()
     for nd in nodes:
-        got |= _refs(nd.get('basis')) | _refs(nd.get('desc'))
+        got |= _ids(nd.get('basis')) | _ids(nd.get('desc'))
     return got
 
 
+# ----------------------------------------------------------------判据（口径在 §5.2）
+def rule_d1(nodes, els):
+    """D1 等级拔高：依据指向 `certainty=inferred`（`extractor=vlm`）或带 `degraded` 的证据，
+
+    而该节点的描述**没有** `⚠` 留痕——把"我看到的 / 被截断的"当成"文件里逐字写着的"（§1.3 / §2.3）。
+    （这里不转义 `|`：整条「事实」在 `render` 里统一转义一次，转两次是白做。）
+    """
+    out = []
+    for nd in nodes:
+        why = []
+        for i in sorted(_ids(nd.get('basis'))):
+            e = els.get(i)
+            if not e:
+                continue
+            if e.get('extractor') == 'vlm' or e.get('certainty') == 'inferred':
+                why.append(f'`{i}` 是视觉推断（`certainty=inferred`）')
+            elif e.get('degraded'):
+                why.append(f'`{i}` 带降级留痕（{str(e.get("degraded") or "")[:40]}）')
+        if why and pending_kind(nd.get('desc')) is None:
+            out.append({'rule': 'D1', 'pos': f'节点 {nd["id"]}', 'fact': '；'.join(why[:3])})
+    return out
+
+
+def rule_d2(nodes, recon):
+    """D2 假设被推翻仍在用：假设账里 `状态 = 已推翻` 的材料，表里还有节点依据它。"""
+    out = []
+    for mid in sorted(mid for mid, r in recon.items() if _col(r, '状态') == '已推翻'):
+        hits = sorted(nd['id'] for nd in nodes if mid in _mats(nd.get('basis')))
+        if hits:
+            out.append({'rule': 'D2', 'pos': f'节点 {"、".join(hits)}',
+                        'fact': f'假设账里 `{mid}` 记「已推翻」，而 {len(hits)} 个节点的「依据」仍指向它'})
+    return out
+
+
+def rule_d3(nodes, mats):
+    """D3 建立在读不动的材料上：依据里的材料在账本里 `status=unreadable`——断言的来源不存在。"""
+    out = []
+    bad = {mid for mid, m in mats.items() if m.get('status') == 'unreadable'}
+    for nd in nodes:
+        hit = sorted(_mats(nd.get('basis')) & bad)
+        if hit:
+            out.append({'rule': 'D3', 'pos': f'节点 {nd["id"]}',
+                        'fact': '依据里的 ' + '、'.join(f'`{x}`' for x in hit)
+                                + ' 在账本里 `status=unreadable`'})
+    return out
+
+
+def rule_d4(nodes, intake, recon):
+    """D4 含流程的材料零引用 → **缺口**：这份材料的信息没进表（漏读，或读了没落表）。"""
+    cited = {i.split('#')[0] for i in _cited(nodes)}
+    out = []
+    for mid in sorted(intake):
+        if _col(intake[mid], '含流程') == '是' and mid not in cited:
+            out.append(('D4', mid, '表里没有任何节点引用它的证据'))
+    return [(r, m, n, _col(recon.get(m, {}), '走哪条路') or '—') for r, m, n in out]
+
+
+def rule_d5(els, cited, recon, th):
+    """D5 读了没用上 → **缺口**：元素够多、被引用比例却过低（"只读了开头"）。
+
+    阈值存在的理由（§5.2）：一份 300 条元素的合订本，表里引 5 条可能正好够——
+    所以它出的是**缺口**（"还有 295 条没看，要不要看由 AI 判"），不是"表写错了"。
+    """
+    total = {}
+    for e in els.values():
+        mid = e.get('material_id')
+        total[mid] = total.get(mid, 0) + 1
+    out = []
+    for mid in sorted(total):
+        n = total[mid]
+        if not mid or n < th['coverage_min_elements']:
+            continue
+        used = len({i for i in cited if i.startswith(mid + '#')})
+        if used / n < th['coverage_min_ratio']:
+            out.append(('D5', mid, f'账本里 {n} 条元素，表里只引用 {used} 条（{used / n:.0%}）',
+                        _col(recon.get(mid, {}), '走哪条路') or '—'))
+    return out
+
+
+def collect(nodes, _edges, els, mats, recon, intake, th):
+    """跑全部**启用**的判据 → `(漂移行, 缺口行)`。缺哪个输入就整条跳过（§5.2 启用条件）。
+
+    缺口行是 `(判据号, 材料号, 事实, 走哪条路)`：**同一份材料可以被两条判据各报一次**
+    （如"含流程零引用"与"读了没用上"），所以它按 `(判据, 材料)` 去重，**不按材料去重**——
+    后者会把一条发现静默吃掉。`走哪条路` 从 `recon.md` 抄（不另立一份），在这里一并带上，
+    免得 `render` 为了取一格又跳回文件头那批函数。
+
+    `_edges` 只是与 `load_flowtable` 的返回形状对齐（曾经有一条判据要看边，实测被砍，见 §5.2）。
+    """
+    drift, gaps = [], []
+    if els:
+        drift += rule_d1(nodes, els)
+        drift += rule_d3(nodes, mats)
+        gaps += rule_d5(els, _cited(nodes), recon, th)
+    if els and recon:
+        drift += rule_d2(nodes, recon)
+    if els and intake:
+        gaps += rule_d4(nodes, intake, recon)
+    drift.sort(key=lambda r: (r['rule'], r['pos']))
+    return drift, sorted(set(gaps))
+
+
+# ----------------------------------------------------------------读入（表 / 账本 / 两张伴生表）
 def load_thresholds(path=None):
     """阈值 = 默认 + `dictionary.yaml` 的 `drift:` 段（读不到就用默认，**不报错**）。"""
     th = dict(DEFAULTS)
@@ -146,10 +239,9 @@ def load_thresholds(path=None):
     return th
 
 
-# ----------------------------------------------------------------读入（表 / 账本 / 两张伴生表）
 def load_flowtable(path):
     """流程表 → `(nodes, edges, errs)`。用的是**结构校验的唯一入口**（`run_checks`），不另写一份解析。"""
-    _, _, rows = parse_table(_read_text(path))
+    _, _, rows = parse_table(Path(path).read_text(encoding='utf-8-sig'))
     return run_checks(rows, mode='flow', errs=Errors())
 
 
@@ -172,8 +264,9 @@ def read_side_table(path):
     """
     if not path or not Path(path).exists():
         return {}, ''
+    text = Path(path).read_text(encoding='utf-8-sig')
     header, out, err = None, {}, ''
-    for line in _read_text(path).splitlines():
+    for line in text.splitlines():
         if not line.startswith('|'):
             continue
         cells = [c.strip() for c in line.strip().strip('|').split('|')]
@@ -195,158 +288,35 @@ def read_side_table(path):
     return out, err
 
 
-def _col(row, prefix):
-    """按**列名前缀**取值（`状态（AI 填）` / `走哪条路` 这类名字前缀足够稳，后缀由对方决定）。"""
-    for k, v in (row or {}).items():
-        if str(k).startswith(prefix):
-            return v
-    return ''
+def inputs_of(a):
+    """一次运行的三份输入 → `(元素表, 材料表, 假设账, 清点, 报错)`。
 
-
-# ----------------------------------------------------------------判据（每条一个函数，口径在 §5.2）
-def _f(rule, pos, fact):
-    """一条读数 → 行（判据号 / 位置 / 事实）。**档与文案渲染时从 `RULES` 取**，不在这里抄。"""
-    return {'rule': rule, 'pos': pos, 'fact': fact}
-
-
-def rule_d1(nodes, els):
-    """D1 等级拔高：依据指向 `certainty=inferred`（`extractor=vlm`）或带 `degraded` 的证据，
-
-    而该节点的描述**没有** `⚠` 留痕——把"我看到的 / 被截断的"当成"文件里逐字写着的"（§1.3 / §2.3）。
+    没给的输入都是空（对应判据整条跳过）；**给了但读坏了**要报出来，不许当成"没给"。
     """
-    out = []
-    for nd in nodes:
-        why = []
-        for i in sorted(_refs(nd.get('basis'))):
-            e = els.get(i)
-            if not e:
-                continue
-            if e.get('extractor') == 'vlm' or e.get('certainty') == 'inferred':
-                why.append(f'`{i}` 是视觉推断（`certainty=inferred`）')
-            elif e.get('degraded'):
-                why.append(f'`{i}` 带降级留痕（{_esc(e.get("degraded"))[:40]}）')
-        if why and pending_kind(nd.get('desc')) is None:
-            out.append(_f('D1', f'节点 {nd["id"]}', '；'.join(why[:3])))
-    return out
+    els, mats = ({}, {})
+    if a.ledger:
+        els, mats = index_ledger(json.loads(Path(a.ledger).read_text(encoding='utf-8-sig')))
+    recon, e1 = read_side_table(getattr(a, 'recon', None))
+    intake, e2 = read_side_table(getattr(a, 'intake', None))
+    return els, mats, recon, intake, '；'.join(x for x in (e1, e2) if x)
 
 
-def rule_d2(nodes, recon):
-    """D2 假设被推翻仍在用：假设账里 `状态 = 已推翻` 的材料，表里还有节点依据它。"""
-    out = []
-    for mid in sorted(mid for mid, r in recon.items() if _col(r, '状态') == '已推翻'):
-        hits = sorted(nd['id'] for nd in nodes if mid in _mat_of(_refs(nd.get('basis'))))
-        if hits:
-            out.append(_f('D2', f'节点 {"、".join(hits)}',
-                          f'假设账里 `{mid}` 记「已推翻」，而 {len(hits)} 个节点的「依据」仍指向它'))
-    return out
+def prepare(a):
+    """`build` / `check` 共用的准备 → `{判据读数, 阈值, 硬错, 读坏, 跳过了哪几条}`。
 
-
-def rule_d3(nodes, mats):
-    """D3 建立在读不动的材料上：依据里的材料在账本里 `status=unreadable`——断言的来源不存在。"""
-    out = []
-    bad = {mid for mid, m in mats.items() if m.get('status') == 'unreadable'}
-    for nd in nodes:
-        hit = sorted(_mat_of(_refs(nd.get('basis'))) & bad)
-        if hit:
-            out.append(_f('D3', f'节点 {nd["id"]}',
-                          '依据里的 ' + '、'.join(f'`{x}`' for x in hit) + ' 在账本里 `status=unreadable`'))
-    return out
-
-
-def rule_d4(nodes, intake):
-    """D4 含流程的材料零引用 → **缺口**：这份材料的信息没进表（漏读，或读了没落表）。"""
-    cited = _mat_of(_cited(nodes))
-    out = []
-    for mid in sorted(intake):
-        if _col(intake[mid], '含流程') == '是' and mid not in cited:
-            out.append(('D4', mid, '表里没有任何节点引用它的证据'))
-    return out
-
-
-def rule_d5(els, cited, th):
-    """D5 读了没用上 → **缺口**：元素够多、被引用比例却过低（"只读了开头"）。
-
-    阈值存在的理由（§5.2）：一份 300 条元素的合订本，表里引 5 条可能正好够——
-    所以它出的是**缺口**（"还有 295 条没看，要不要看由 AI 判"），不是"表写错了"。
+    **只写一份**（与 `run_checks` 同一条理由）：两个子命令要的东西完全一样，分两处必然漂——
+    一处改了启用条件、另一处不知道。表结构不硬拦、输入读坏不硬拦，只把事实带回去，
+    由子命令决定怎么报（`build` 与 `check` 的报错口径不同）。
     """
-    total = {}
-    for e in els.values():
-        mid = e.get('material_id')
-        total[mid] = total.get(mid, 0) + 1
-    out = []
-    for mid in sorted(total):
-        n = total[mid]
-        if not mid or n < th['coverage_min_elements']:
-            continue
-        used = len({i for i in cited if i.startswith(mid + '#')})
-        if used / n < th['coverage_min_ratio']:
-            out.append(('D5', mid, f'账本里 {n} 条元素，表里只引用 {used} 条（{used / n:.0%}）'))
-    return out
+    nodes, edges, errs = load_flowtable(a.flowtable)
+    els, mats, recon, intake, bad = inputs_of(a)
+    th = load_thresholds(a.dict)
+    drift, gaps = collect(nodes, edges, els, mats, recon, intake, th)
+    off = (list(RULES) if not els else ([] if recon else ['D2']) + ([] if intake else ['D4']))
+    return {'drift': drift, 'gaps': gaps, 'th': th, 'hard': errs.hard, 'bad': bad, 'off': off}
 
 
-def collect(nodes, _edges, els, mats, recon, intake, th):
-    """跑全部**启用**的判据 → `(漂移行, 缺口行)`。缺哪个输入就整条跳过（§5.2 启用条件）。
-
-    缺口行是 `(判据号, 材料号, 事实)`：**同一份材料可以被两条判据各报一次**（如"含流程零引用"
-    与"读了没用上"），所以它按 `(判据, 材料)` 去重，**不按材料去重**——后者会把一条发现静默吃掉。
-
-    `_edges` 只是与 `load_flowtable` 的返回形状对齐（曾经有一条判据要看边，实测被砍，见 §5.2）。
-    """
-    drift, gaps = [], []
-    if els:
-        drift += rule_d1(nodes, els)
-        drift += rule_d3(nodes, mats)
-        gaps += rule_d5(els, _cited(nodes), th)
-    if els and recon:
-        drift += rule_d2(nodes, recon)
-    if els and intake:
-        gaps += rule_d4(nodes, intake)
-    drift.sort(key=lambda r: (r['rule'], r['pos']))
-    return drift, sorted(set(gaps))
-
-
-# ----------------------------------------------------------------渲染与校验
-def _enabled(els, recon, intake):
-    """本次**跳过**了哪几条判据（打印出来：**"跳过"与"跑了没命中"必须能分辨**）。"""
-    off = []
-    if not els:
-        off += list(RULES)
-    else:
-        off += ([] if recon else ['D2']) + ([] if intake else ['D4'])
-    return '、'.join(off) if off else '（无，五条全启用）'
-
-
-def render(drift, gaps, meta):
-    """漂移清单 + 缺口清单（markdown）。**表头先写输入指纹、跳过的判据与本次阈值**——
-
-    不然"漂移 0 条"这种结论事后没法复核（它是"对着哪一版表、在什么阈值下"算出来的）。
-    """
-    lines = ['# 漂移与缺口（循环的发动机）', '',
-             f'> 由 `scripts/drift.py` 从 `{meta["table"]}`（sha256 {meta["sha"]}）生成；'
-             f'判据 D1—D5 的口径见 `PIPELINE-SPEC` §5.2。',
-             f'> 输入：{meta["inputs"]}',
-             f'> 本次跳过的判据：{meta["off"]}（没有对应输入就不启用，**不是"跑了没命中"**）。',
-             f'> 阈值：`coverage_min_elements={meta["coverage_min_elements"]}` · '
-             f'`coverage_min_ratio={meta["coverage_min_ratio"]}`（改 `dictionary.yaml` 的 `drift:` 段）。',
-             '> `处置` / `依据` / `要哪一片` / `状态` / `说明` **留给 AI**；'
-             '`check` 不许留 `待验` 与 `待取证`（§5.4 收敛口径）。', '',
-             f'## ① 漂移清单（{len(drift)} 条）', '',
-             '| ' + ' | '.join(DRIFT_COLUMNS) + ' |',
-             '|' + '---|' * len(DRIFT_COLUMNS)]
-    for i, r in enumerate(drift, 1):
-        lab = RULES[r['rule']][0]
-        lines.append(f'| `X{i:02d}` | {r["rule"]} {lab} | {_esc(r["pos"])} | '
-                     f'{_esc(r["fact"])} | 待验 |  |')
-    lines += ['', f'## ② 缺口清单（{len(gaps)} 条）', '',
-              '| ' + ' | '.join(GAP_COLUMNS) + ' |',
-              '|' + '---|' * len(GAP_COLUMNS)]
-    for i, (rule, mid, note) in enumerate(gaps, 1):
-        path = _col(meta['recon'].get(mid, {}), '走哪条路') or '—'
-        lines.append(f'| `Q{i:02d}` | {rule} {RULES[rule][0]}：{_esc(note)} | `{mid}` |  | '
-                     f'{_esc(path)} | 待取证 |  |')
-    return '\n'.join(lines) + '\n'
-
-
+# ----------------------------------------------------------------产物解析与对账
 def parse_doc(text):
     """`drift.md` → `(漂移行, 缺口行, 报错)`。两张表的表头**必须逐字对得上**（列规范在代码里只有一份）。"""
     drift, gaps, header, mode, err = [], [], None, None, ''
@@ -372,6 +342,11 @@ def parse_doc(text):
     return drift, gaps, err
 
 
+def _blank(s):
+    """空值判据（`—` / 空 / `无` 都算没填）——只给下面两个对账函数用，所以排在这里。"""
+    return str(s or '').strip() in BLANK
+
+
 def check_drift_rows(drift, live):
     """漂移账 → 错误清单。**该表与"现在的读数"双向对账**：
 
@@ -382,7 +357,7 @@ def check_drift_rows(drift, live):
     file_keys = {(((r.get('判据') or '').split() or [''])[0], r.get('位置')) for r in drift}
     live_keys = {(r['rule'], r['pos']) for r in live}
     for r in drift:
-        rule = (r.get('判据') or '').split()[0]
+        rule = ((r.get('判据') or '').split() or [''])[0]
         if rule not in RULES:
             errs.append(f'{r.get("漂移")}: 判据 {rule!r} 不在 {"/".join(RULES)} 内')
             continue
@@ -421,20 +396,42 @@ def check_gap_rows(gaps, live):
     return errs
 
 
-# ----------------------------------------------------------------子命令
-def inputs_of(a):
-    """一次运行的三份输入 → `(元素表, 材料表, 假设账, 清点, 报错)`。
+# ----------------------------------------------------------------渲染（只依赖列规范与 _esc，不依赖判据）
+def _esc(s):
+    """单元格里的 `|` 会撕表 → 换全角（与 `intake.py` 同一口径）。"""
+    return str(s if s is not None else '').replace('|', '｜').replace('\n', ' ').strip()
 
-    没给的输入都是空（对应判据整条跳过）；**给了但读坏了**要报出来，不许当成"没给"。
+
+def render(drift, gaps, meta):
+    """漂移清单 + 缺口清单（markdown）。**表头先写输入指纹、跳过的判据与本次阈值**——
+
+    不然"漂移 0 条"这种结论事后没法复核（它是"对着哪一版表、在什么阈值下"算出来的）。
     """
-    els, mats = ({}, {})
-    if a.ledger:
-        els, mats = index_ledger(_read_json(a.ledger))
-    recon, e1 = read_side_table(getattr(a, 'recon', None))
-    intake, e2 = read_side_table(getattr(a, 'intake', None))
-    return els, mats, recon, intake, '；'.join(x for x in (e1, e2) if x)
+    lines = ['# 漂移与缺口（循环的发动机）', '',
+             f'> 由 `scripts/drift.py` 从 `{meta["table"]}`（sha256 {meta["sha"]}）生成；'
+             f'判据 D1—D5 的口径见 `PIPELINE-SPEC` §5.2。',
+             f'> 输入：{meta["inputs"]}',
+             f'> 本次跳过的判据：{meta["off"]}（没有对应输入就不启用，**不是"跑了没命中"**）。',
+             f'> 阈值：`coverage_min_elements={meta["coverage_min_elements"]}` · '
+             f'`coverage_min_ratio={meta["coverage_min_ratio"]}`（改 `dictionary.yaml` 的 `drift:` 段）。',
+             '> `处置` / `依据` / `要哪一片` / `状态` / `说明` **留给 AI**；'
+             '`check` 不许留 `待验` 与 `待取证`（§5.4 收敛口径）。', '',
+             f'## ① 漂移清单（{len(drift)} 条）', '',
+             '| ' + ' | '.join(DRIFT_COLUMNS) + ' |',
+             '|' + '---|' * len(DRIFT_COLUMNS)]
+    for i, r in enumerate(drift, 1):
+        lines.append(f'| `X{i:02d}` | {r["rule"]} {RULES[r["rule"]][0]} | {_esc(r["pos"])} | '
+                     f'{_esc(r["fact"])} | 待验 |  |')
+    lines += ['', f'## ② 缺口清单（{len(gaps)} 条）', '',
+              '| ' + ' | '.join(GAP_COLUMNS) + ' |',
+              '|' + '---|' * len(GAP_COLUMNS)]
+    for i, (rule, mid, note, path) in enumerate(gaps, 1):
+        lines.append(f'| `Q{i:02d}` | {rule} {RULES[rule][0]}：{_esc(note)} | `{mid}` |  | '
+                     f'{_esc(path)} | 待取证 |  |')
+    return '\n'.join(lines) + '\n'
 
 
+# ----------------------------------------------------------------子命令
 def cmd_build(a):
     """出草稿：机器列已填，AI 那几列留空（`待验` / `待取证`）。"""
     out = Path(a.out)
@@ -442,32 +439,30 @@ def cmd_build(a):
         print(f'✗ {out} 已存在——它同时是**漂移账**（AI 填过的处置写在里面）。')
         print('  → 处置完先跑 `check`；确要重出草稿就显式加 `--force`（旧的会被覆盖）。')
         return 2
-    draft = _read_text(a.flowtable)
-    nodes, edges, errs = load_flowtable(a.flowtable)
-    if errs.hard:
-        print(f'✗ 流程表结构不过（{len(errs.hard)} 条硬错）——在坏表上判漂移是噪音，先修结构：')
-        for e in errs.hard[:5]:
+    got = prepare(a)
+    if got['hard']:
+        print(f'✗ 流程表结构不过（{len(got["hard"])} 条硬错）——在坏表上判漂移是噪音，先修结构：')
+        for e in got['hard'][:5]:
             print(f'   · {e}')
         return 2
-    els, mats, recon, intake, bad = inputs_of(a)
-    if bad:
-        print(f'✗ 伴生表读坏了：{bad}')
+    if got['bad']:
+        print(f'✗ 伴生表读坏了：{got["bad"]}')
         print('  → 「读坏了」与「没给」是两回事：当成没给会让对应判据**静默不跑**，那种绿比红危险。')
         return 2
-    th = load_thresholds(a.dict)
-    drift, gaps = collect(nodes, edges, els, mats, recon, intake, th)
-    meta = {'table': a.flowtable, 'sha': _sha(draft), 'recon': recon,
+    draft = Path(a.flowtable).read_text(encoding='utf-8-sig')
+    th = got['th']
+    meta = {'table': a.flowtable, 'sha': hashlib.sha256(draft.encode('utf-8')).hexdigest()[:12],
             'coverage_min_elements': th['coverage_min_elements'],
             'coverage_min_ratio': th['coverage_min_ratio'],
-            'off': _enabled(els, recon, intake),
+            'off': '、'.join(got['off']) if got['off'] else '（无，五条全启用）',
             'inputs': ' · '.join(x for x in (
                 f'账本 `{a.ledger}`' if a.ledger else '',
                 f'假设账 `{a.recon}`' if a.recon else '',
                 f'清点 `{a.intake}`' if a.intake else '') if x) or '（只有流程表）'}
-    _writer(out, render(drift, gaps, meta))
-    print(f'✓ 漂移 {len(drift)} 条 · 缺口 {len(gaps)} 条 → {out}')
+    out.write_text(render(got['drift'], got['gaps'], meta), encoding='utf-8', newline='\n')
+    print(f'✓ 漂移 {len(got["drift"])} 条 · 缺口 {len(got["gaps"])} 条 → {out}')
     print(f'  · 跳过：{meta["off"]} · 输入：{meta["inputs"]}')
-    print(f'  · 下一步：AI 填「处置 / 依据」与「要哪一片 / 状态 / 说明」，再跑')
+    print('  · 下一步：AI 填「处置 / 依据」与「要哪一片 / 状态 / 说明」，再跑')
     print(f'    python scripts/drift.py check {out} --flowtable {a.flowtable}'
           + (f' --ledger {a.ledger}' if a.ledger else '')
           + (f' --recon {a.recon}' if a.recon else '')
@@ -477,28 +472,23 @@ def cmd_build(a):
 
 def cmd_check(a):
     """查收敛：**拿当前表重跑判据**，与文件里的处置对账（§5.4）。"""
-    if not a.flowtable:
-        print('✗ check 必须给 --flowtable：不重跑判据就没法知道「已修」是不是真修了')
-        return 2
-    drift, gaps, err = parse_doc(_read_text(a.card))
+    drift, gaps, err = parse_doc(Path(a.card).read_text(encoding='utf-8-sig'))
     if err:
         print(f'✗ {a.card}: {err}')
         return 2
-    nodes, edges, errs = load_flowtable(a.flowtable)
-    if errs.hard:
-        print(f'✗ 流程表结构不过（{len(errs.hard)} 条硬错）——先修结构：')
-        for e in errs.hard[:5]:
+    got = prepare(a)
+    if got['hard']:
+        print(f'✗ 流程表结构不过（{len(got["hard"])} 条硬错）——先修结构：')
+        for e in got['hard'][:5]:
             print(f'   · {e}')
         return 2
-    els, mats, recon, intake, bad = inputs_of(a)
-    if bad:
-        print(f'✗ 伴生表读坏了：{bad}')
+    if got['bad']:
+        print(f'✗ 伴生表读坏了：{got["bad"]}')
         return 2
-    live, live_gaps = collect(nodes, edges, els, mats, recon, intake, load_thresholds(a.dict))
-    bad = check_drift_rows(drift, live) + check_gap_rows(gaps, live_gaps)
-    if bad:
-        print(f'✗ 没收敛：{len(bad)} 条')
-        for e in bad[:20]:
+    rows_bad = check_drift_rows(drift, got['drift']) + check_gap_rows(gaps, got['gaps'])
+    if rows_bad:
+        print(f'✗ 没收敛：{len(rows_bad)} 条')
+        for e in rows_bad[:20]:
             print(f'   · {e}')
         return 1
     explained = sum(1 for r in drift if r.get('处置（AI 填）') == '已解释')
@@ -508,18 +498,21 @@ def cmd_check(a):
 
 
 def main(argv=None):
+    """子命令分发。**用显式 if 而不是 `set_defaults(func=…)`**：后者在静态调用图里看不见，
+
+    `hygiene.py` 会把两个子命令函数判成"没人调"（门⑧当场红）。
+    """
     sys.stdout.reconfigure(encoding='utf-8')
     ap = argparse.ArgumentParser(description='循环的发动机：漂移 → 缺口（PIPELINE-SPEC §5）')
     sub = ap.add_subparsers(dest='cmd', required=True)
     b = sub.add_parser('build', help='出草稿（机器列已填，AI 列留空）')
     b.add_argument('flowtable', help='流程表路径，如 output/<流程名>/flowtable.md')
-    b.add_argument('--ledger', help='证据账本 evidence.json（不给就跳过 D1/D2/D3/D4/D6）')
+    b.add_argument('--ledger', help='证据账本 evidence.json（不给就跳过 D1/D2/D3/D4/D5）')
     b.add_argument('--recon', help='假设账 recon.md（不给就跳过 D2，缺口也填不了「走哪条路」）')
     b.add_argument('--intake', help='清点 intake.md（不给就跳过 D4）')
     b.add_argument('--dict', help='dictionary.yaml（默认取 scripts/ 下那份）')
     b.add_argument('-o', '--out', default='drift.md', help='写到哪里（默认 drift.md，落成果根）')
     b.add_argument('--force', action='store_true', help='覆盖已存在的产物（默认拒绝：那是漂移账）')
-    b.set_defaults(func=cmd_build)
     c = sub.add_parser('check', help='查收敛（拿当前表重跑判据，与文件里的处置对账）')
     c.add_argument('card', help='drift.md')
     c.add_argument('--flowtable', required=True, help='当前流程表（判据要重跑一遍）')
@@ -527,9 +520,8 @@ def main(argv=None):
     c.add_argument('--recon', help='假设账 recon.md')
     c.add_argument('--intake', help='清点 intake.md')
     c.add_argument('--dict', help='dictionary.yaml（默认取 scripts/ 下那份）')
-    c.set_defaults(func=cmd_check)
     a = ap.parse_args(argv)
-    return a.func(a)
+    return cmd_build(a) if a.cmd == 'build' else cmd_check(a)
 
 
 if __name__ == '__main__':
