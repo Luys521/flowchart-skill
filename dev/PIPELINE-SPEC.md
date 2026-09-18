@@ -651,7 +651,7 @@ heading  paragraph  list_item  table  figure  caption  code  sheet  cell
 | 规则 | 仪器 | 现状 |
 |---|---|---|
 | H10 证据完整性（§6） | `scripts/flowtable_check.py` 三层校验内 | 判据已定，**未实现** |
-| 漂移判据 D1—D5（§5.2）：等级拔高 · 假设被推翻仍在用 · 建立在读不动的材料上 · 含流程材料零引用 · 读了没用上 | `scripts/drift.py`（判据）+ `dictionary.yaml`（阈值） | **已实现**（`build` 出草稿 + `check` 查收敛：文件里标 `已修` 的必须真不命中、现在命中的必须都在账内）；**未进验收路径**（见 `coding-spec` G14） |
+| 漂移判据 D1—D5（§5.2）：等级拔高 · 假设被推翻仍在用 · 建立在读不动的材料上 · 含流程材料零引用 · 读了没用上 | `scripts/drift.py`（判据）+ `dictionary.yaml`（阈值） | **已实现**（`build` 出草稿 + `check` 查收敛：文件里标 `已修` 的必须真不命中、现在命中的必须都在账内）；夹具 `dev/tools/drift-fixtures/suite.py` 现跑 10/10，但**只有人手动跑**（见 `coding-spec` G14） |
 | 缺口清单与漂移账（§5.3 / §5.4）：状态封闭 · `已解释` / `已放弃` 必须写理由 · 收敛时不许有 `待验` / `待取证` | `scripts/drift.py check` + `artifact.NON_TABLE_MD`（产物名登记） | **已实现**（`已修` 由**重跑判据**验证，不是靠声明）；**未进验收路径** |
 | 子代理摘要三条纪律（§5.5）：每个论断能指回 element id · 只回摘要不回原文 · 引用按 D1 判等级 | 无（AI / 子代理侧，与 G4 同类） | **无仪器**——它是新的失真入口，登记在 G14 |
 | 账本 schema：键封闭 / 枚举合法 / id 唯一 | `scripts/ledger.py` 写入前自检 | **已实现**（不过就不落盘，退 1）；**未进验收路径** |

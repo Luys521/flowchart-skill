@@ -1,0 +1,239 @@
+# -*- coding: utf-8 -*-
+"""drift-fixtures/suite.py — `scripts/drift.py` 的合成夹具与路径测试（**尚未接进验收**，见 `coding-spec` G14）。
+
+为什么单独一个套件：这台仪器的判据有两半——**读得对不对**（D1—D5 命中什么）与
+**账查得严不严**（`check` 能不能抓住说谎与过期）。后者用真实材料造不出来（要故意标错），
+所以在这里合成一份"每条判据正反各一例"的夹具，跑完 9 条路径。
+
+夹具（`--out` 下现生成，不写进仓库）：
+    7 份材料（含一份 `status=unreadable`、一份 30 条元素全没引用的合订本）
+    × 一张 5 节点的表 × 假设账（有一条 `状态=已推翻`）× 清点（两条「含流程 = 是」却零引用）
+
+期望读数（`--out` 下的 `drift.md`）：
+    漂移 3 条：D1 节点 02（依据带 `degraded`）· D2 节点 03（`M05` 已推翻仍在用）· D3 节点 03（`M02` 读不动）
+    缺口 3 条：D4 `M04`（零引用）· D4 `M06`（零引用）· D5 `M06`（30 条元素只引 0 条）
+    反例：节点 04 引 `M07#p001`（vlm）但描述以 `⚠` 开头 → **不报 D1**；
+          `M07` 引 3/25 = 12% ≥ 10% → **不报 D5**
+
+用法：`python dev/tools/drift-fixtures/suite.py`（退 0 = 全部符合预期）
+"""
+import json
+import pathlib
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+
+REPO = pathlib.Path(__file__).resolve().parents[3]        # dev/tools/drift-fixtures/ → 仓库根
+LEDGER = REPO / 'scripts' / 'ledger.py'
+DRIFT = REPO / 'scripts' / 'drift.py'
+
+FLOWTABLE = """---
+id: driftfix
+level: L0
+description: drift.py 判据夹具（每条判据正反各一例）
+---
+
+# drift 判据夹具
+
+## 流程表
+
+| 项目运作阶段 | 节点编号 | 节点名称 | 节点类型 | 输入 | 依据 | 输出 | 执行主体 | 执行者 | 行动所需时间 | 下个节点 | 节点描述 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 阶段 | 01 | 收到材料 | 开始 | 材料 | — | — | 甲方 | 甲 | — | →02 | |
+| 阶段 | 02 | 受理 | 任务 | 材料 | `M01#p001` | 受理回执 | 甲方 | 甲 | 1 天 | →03 | |
+| 阶段 | 03 | 核验 | 任务 | 受理回执 | `M02`、`M05` | 核验结论 | 甲方 | 甲 | 1 天 | →04 | |
+| 阶段 | 04 | 视觉复核 | 任务 | 核验结论 | `M07#p001`、`M07#p002`、`M07#p003` | 复核结论 | 甲方 | 甲 | 1 天 | →05 | ⚠ 依据是看图的读数（`vlm`） |
+| 阶段 | 05 | 交付 | 结束 | 复核结论 | — | — | 甲方 | 甲 | — | — | |
+"""
+
+RECON = """| 材料 | 档位 | 难度 | 规模（依据数字） | 解析深度 | 走哪条路 | 读不动 | 假设角色（AI 填 `⚠`） | 依据（AI 填） | 验证方式（AI 填） | 状态（AI 填） |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `M02` 乙-扫描.pdf | T3 | 最难 | 页 4 | 只取摘要 | 转图片 → 视觉（render_pages） | 缺 OCR | ⚠ 扫描件（内容待认） | 渲染后看图 | 逐页读图 | 待验 |
+| `M05` 戊-补充.docx | T1 | 易 | 非空段 8 | 全量解析 | 直读（py:docx） | — | ⚠ 补充协议（推定） | 读正文 | 看签署日期 | 已推翻 |
+| `M06` 己-合订本.pdf | T2 | 难 | 页 120 | 只取摘要 | PDF 文本抽取（py:pdfplumber） | — | ⚠ 含流程（待验） | 抽样读 | 抽前 10 页 | 待验 |
+| `M07` 庚-白板.png | T3 | 最难 | 图 1 | 全量解析 | 转图片 → 视觉（原文件即图片） | — | ⚠ 白板（已识图） | 看图 | 核 bbox | 已验证 |
+"""
+
+INTAKE = """| 材料 | 档位 | 主题 | 含流程 | 版本关系 | 读不动 | 依据 |
+|---|---|---|---|---|---|---|
+| `M01` 甲-说明.md | T1 | 项目背景 | 否 | 独立 | — | `M01#p001` |
+| `M02` 乙-扫描.pdf | T3 | 主体资质 | 是 | 独立 | 缺 OCR | — |
+| `M03` 丙-表格.xlsx | T1 | 参数表 | 否 | 独立 | — | `M03#p001` |
+| `M04` 丁-流程.docx | T1 | 采购流程 | 是 | 独立 | — | `M04#p001` |
+| `M05` 戊-补充.docx | T1 | 补充约定 | 是 | 互补(M04) | — | `M05#p001` |
+| `M06` 己-合订本.pdf | T2 | 全套流程 | 是 | 独立 | — | `M06#p001` |
+| `M07` 庚-白板.png | T3 | 流程图白板 | 是 | 独立 | — | `M07#p001` |
+"""
+
+
+def make_fixture(root):
+    """把夹具写进 `root`（**不进仓库**：`--out` 目录由 tempfile 建）。返回表的路径。"""
+    materials = [
+        {'id': 'M01', 'path': '材料/甲-说明.md', 'sha256': 'a' * 64, 'bytes': 1024,
+         'mtime': '2026-09-01T10:00:00', 'tier': 'T1', 'kind': 'text', 'probe': '夹具', 'status': 'ok'},
+        {'id': 'M02', 'path': '材料/乙-扫描.pdf', 'sha256': 'b' * 64, 'bytes': 2048,
+         'mtime': '2026-09-01T10:00:00', 'tier': 'T3', 'kind': 'pdf-scan', 'probe': '夹具',
+         'status': 'unreadable', 'reason': '缺 OCR / 未走视觉：先跑 render_pages.py'},
+        {'id': 'M03', 'path': '材料/丙-表格.xlsx', 'sha256': 'c' * 64, 'bytes': 3072,
+         'mtime': '2026-09-01T10:00:00', 'tier': 'T1', 'kind': 'xlsx', 'probe': '夹具', 'status': 'ok'},
+        {'id': 'M04', 'path': '材料/丁-流程.docx', 'sha256': 'd' * 64, 'bytes': 4096,
+         'mtime': '2026-09-01T10:00:00', 'tier': 'T1', 'kind': 'docx', 'probe': '夹具', 'status': 'ok'},
+        {'id': 'M05', 'path': '材料/戊-补充.docx', 'sha256': 'e' * 64, 'bytes': 5120,
+         'mtime': '2026-09-01T10:00:00', 'tier': 'T1', 'kind': 'docx', 'probe': '夹具', 'status': 'ok'},
+        {'id': 'M06', 'path': '材料/己-合订本.pdf', 'sha256': 'f' * 64, 'bytes': 6144,
+         'mtime': '2026-09-01T10:00:00', 'tier': 'T2', 'kind': 'pdf-text', 'probe': '夹具', 'status': 'ok'},
+        {'id': 'M07', 'path': '材料/庚-白板.png', 'sha256': '0' * 64, 'bytes': 7168,
+         'mtime': '2026-09-01T10:00:00', 'tier': 'T3', 'kind': 'image', 'probe': '夹具', 'status': 'ok'},
+    ]
+    elements = [_elem('M01#p001', degraded='quote 截断到 200 字'), _elem('M03#p001'), _elem('M05#p001'),
+                _elem('M07#p001', 'vlm', 'inferred'), _elem('M07#p002'), _elem('M07#p003')]
+    elements += [_elem(f'M06#p{i:03d}') for i in range(1, 31)]     # M06：30 条，一条都没被引用
+    elements += [_elem(f'M07#p{i:03d}') for i in range(4, 26)]     # M07：共 25 条，被引 3 条 = 12%
+    (root / 'materials.json').write_text(json.dumps(materials, ensure_ascii=False, indent=2) + '\n',
+                                         encoding='utf-8', newline='\n')
+    (root / 'elements.json').write_text(json.dumps(elements, ensure_ascii=False, indent=2) + '\n',
+                                        encoding='utf-8', newline='\n')
+    (root / 'flowtable.md').write_text(FLOWTABLE, encoding='utf-8', newline='\n')
+    (root / 'recon.md').write_text(RECON, encoding='utf-8', newline='\n')
+    (root / 'intake.md').write_text(INTAKE, encoding='utf-8', newline='\n')
+    return root / 'flowtable.md'
+
+
+def _elem(eid, extractor='py:text', certainty='direct', degraded=None):
+    """一条合成证据（键取 §2.1 的 element 模型，字段够判据用）。"""
+    e = {'id': eid, 'material_id': eid.split('#')[0], 'kind': 'paragraph', 'text': f'（夹具正文 {eid}）',
+         'location': {'path': '材料/夹具.bin', 'page': None, 'sheet': None, 'cell': None,
+                      'bbox': None, 'quote': f'（夹具摘录 {eid}）'},
+         'extractor': extractor, 'certainty': certainty}
+    if degraded:
+        e['degraded'] = degraded
+    return e
+
+
+def run(cmd):
+    """跑一条命令 → `(退出码, 输出)`（UTF-8 解码，两个流合起来看）。"""
+    p = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', cwd=str(REPO))
+    return p.returncode, (p.stdout or '') + (p.stderr or '')
+
+
+def ledgerize(root):
+    """用**产品的写入器**造账本（不手写 JSON：那会绕开 §2.1 的键封闭校验）。"""
+    rc, out = run([sys.executable, str(LEDGER), '--materials', str(root / 'materials.json'),
+                   '--elements', str(root / 'elements.json'), '--task', 'driftfix',
+                   '-o', str(root / 'evidence.json')])
+    return rc == 0, out
+
+
+def build(root, force=True):
+    """出草稿 → `(退出码, 输出, 草稿文本)`。"""
+    cmd = [sys.executable, str(DRIFT), 'build', str(root / 'flowtable.md'),
+           '--ledger', str(root / 'evidence.json'), '--recon', str(root / 'recon.md'),
+           '--intake', str(root / 'intake.md'), '-o', str(root / 'drift.md')]
+    if force:
+        cmd.append('--force')
+    rc, out = run(cmd)
+    f = root / 'drift.md'
+    return rc, out, (f.read_text(encoding='utf-8') if f.exists() else '')
+
+
+def check(root, text, flowtable=None):
+    """把 `text` 当账本喂给 `check` → `(退出码, 输出)`。"""
+    (root / 't.md').write_text(text, encoding='utf-8', newline='\n')
+    cmd = [sys.executable, str(DRIFT), 'check', str(root / 't.md'),
+           '--flowtable', str(flowtable or (root / 'flowtable.md')),
+           '--ledger', str(root / 'evidence.json'), '--recon', str(root / 'recon.md'),
+           '--intake', str(root / 'intake.md')]
+    return run(cmd)
+
+
+def fill(text, drift_act='已解释', gap_act='已放弃', basis='已核：措辞不同但同一件事',
+         where='第 3 页', note='与流程无关'):
+    """填上 AI 那几列（默认填成可收敛的一版）。列序 = `drift.py` 的 `*_COLUMNS`。"""
+    out = []
+    for line in text.splitlines():
+        if re.match(r'^\| `X\d+` \|', line):
+            c = [x.strip() for x in line.strip().strip('|').split('|')]
+            c[4], c[5] = drift_act, basis
+            line = '| ' + ' | '.join(c) + ' |'
+        elif re.match(r'^\| `Q\d+` \|', line):
+            c = [x.strip() for x in line.strip().strip('|').split('|')]
+            c[3], c[5], c[6] = where, gap_act, note
+            line = '| ' + ' | '.join(c) + ' |'
+        out.append(line)
+    return '\n'.join(out) + '\n'
+
+
+def set_disposition(text, tag, act, basis):
+    """改某一行的处置/依据（按单元格重建，免得手工拼串多一格——本轮就栽过一次）。"""
+    out = []
+    for line in text.splitlines():
+        if line.startswith(f'| `{tag}`'):
+            c = [x.strip() for x in line.strip().strip('|').split('|')]
+            c[4], c[5] = act, basis
+            line = '| ' + ' | '.join(c) + ' |'
+        out.append(line)
+    return '\n'.join(out) + '\n'
+
+
+def paths(root, draft):
+    """9 条路径：判据读数 1 条 + `check` 的过/不过 8 条。返回 `[(名字, 是否符合预期, 退出码, 输出)]`。"""
+    cases = []
+    rc, out, _ = build(root, force=False)                              # 覆盖保护
+    cases.append(('① build 拒绝覆盖已有账（那是漂移账）', rc == 2 and '已存在' in out, rc, out))
+    fixed = root / 'flowtable.md'
+    txt = fixed.read_text(encoding='utf-8').replace('| 1 天 | →03 | |', '| 1 天 | →03 | ⚠ 依据截断过 |')
+    (root / 'fixed.md').write_text(txt, encoding='utf-8', newline='\n')
+    rc, out = check(root, draft)
+    cases.append(('② 草稿（未处置）→ 不许过', rc == 1 and out.count('没收敛') >= 6, rc, out))
+    rc, out = check(root, fill(draft))
+    cases.append(('③ 全部已解释 / 已放弃 → 收敛', rc == 0, rc, out))
+    rc, out = check(root, fill(draft, drift_act='已修'))
+    cases.append(('④ 标「已修」但判据仍命中 → 不许过', rc == 1 and '仍然命中' in out, rc, out))
+    rc, out = check(root, fill(draft, basis='—'))
+    cases.append(('⑤ 「已解释」没写依据 → 不许过', rc == 1 and '必须写依据' in out, rc, out))
+    rc, out = check(root, fill(draft, gap_act='已取证', where='—'))
+    cases.append(('⑥ 「已取证」没写要哪一片 → 不许过', rc == 1 and '必须写「要哪一片」' in out, rc, out))
+    rc, out = check(root, fill(draft, gap_act='已放弃', note='—'))
+    cases.append(('⑦ 「已放弃」没写说明 → 不许过', rc == 1 and '必须写说明' in out, rc, out))
+    stale = '\n'.join(l for l in fill(draft).splitlines() if not l.startswith('| `X02`')) + '\n'
+    rc, out = check(root, stale)
+    cases.append(('⑧ 漏了一条现在的命中 → 不许过', rc == 1 and '没有这一条' in out, rc, out))
+    t = set_disposition(fill(draft), 'X01', '已修', '已给 02 补 ⚠')
+    t = set_disposition(t, 'X02', '已解释', '同一份补充件的两种叫法')
+    t = set_disposition(t, 'X03', '已解释', 'M02 另有直读副本，已在表内注明')
+    rc, out = check(root, t, flowtable=root / 'fixed.md')
+    cases.append(('⑨ 真修掉的那条判「已修」→ 收敛', rc == 0, rc, out))
+    return cases
+
+
+def main(argv=None):
+    """造夹具 → 跑 `build` 比读数 → 跑 9 条路径 → 打印结论并给退出码。"""
+    sys.stdout.reconfigure(encoding='utf-8')
+    root = pathlib.Path(argv[0]) if argv else pathlib.Path(tempfile.mkdtemp(prefix='drift-fix-'))
+    root.mkdir(parents=True, exist_ok=True)
+    print(f'夹具目录：{root}')
+    make_fixture(root)
+    ok, out = ledgerize(root)
+    if not ok:
+        print(f'✗ 账本没写出来：{out.strip()[-300:]}')
+        return 2
+    rc, out, draft = build(root)
+    head = '✓ 漂移 3 条 · 缺口 3 条' in out
+    print(f'{"PASS" if rc == 0 and head else "FAIL"}  ⓪ 读数：{out.splitlines()[0] if out else "（无输出）"}')
+    bad = 0 if (rc == 0 and head) else 1
+    for name, good, rc, out in paths(root, draft):
+        print(f'{"PASS" if good else "FAIL"}  {name}  （rc={rc}）')
+        if not good:
+            print('      ' + out.strip().replace('\n', '\n      ')[:500])
+            bad += 1
+    print(f'—— {"全部符合预期" if not bad else f"{bad} 条不符合预期"}（夹具：{root}）')
+    if argv:
+        return 0 if not bad else 1
+    shutil.rmtree(root, ignore_errors=True)          # 临时目录自己收（`--out` 给了就留着）
+    return 0 if not bad else 1
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv[1:]))
