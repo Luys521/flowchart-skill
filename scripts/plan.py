@@ -135,7 +135,11 @@ def build_plan(cards):
     groups = groups_of(cards)
     flow_ids = [g for g in groups if FLOW_YES.match(str(cards[g[0]]['含流程']).strip())]
     excl = [m for m in sorted(cards) if FLOW_NO.match(str(cards[m]['含流程']).strip())]
-    unsure = [m for m in sorted(cards) if rel_of(cards[m].get('版本关系', ''))[0] == '不确定']
+    # 要问的事有两种来源（**都是"不确定"**，§3 判据表：判不出 → 进澄清申请，不许猜）：
+    # ① 版本关系 `不确定`（哪一份生效）；② `含流程 = 不确定`（读不动 / 判不出它有没有步骤）——
+    # 后者更要紧：它既不是流程、也不在排除清单里，没有这一问就会**静默消失**（真实材料集上现形）。
+    sure = {m for m in cards if str(cards[m]['含流程']).strip().startswith('不确定')}
+    unsure = sorted(sure | {m for m in cards if rel_of(cards[m].get('版本关系', ''))[0] == '不确定'})
     lines = ['# 计划（L2）— 做几张图、谁是谁的子', '',
              '> 由 `scripts/plan.py` 从 `intake.md` 生成：**机器可算的格子已填**（种子 / 强合并 / `F##` 编号 / '
              '排除清单 / 澄清申请的种子），语义格子留 `—` 待 AI 按 `PIPELINE-SPEC` §4 填'
@@ -146,9 +150,11 @@ def build_plan(cards):
              '② 流程数 = 成果根下的 `<流程名>/` 目录数（**要 `--root`**；不给就跳过并打印）。',
              '> `plan.md` 是"做几张"的事实源，流程表是"一张怎么做"的事实源（§0），两者不许互相代替。', '']
     if unsure:
-        lines += [f'> **有问题要问**：{len(unsure)} 份材料的版本关系是 `不确定`（'
+        lines += [f'> **有问题要问**：{len(unsure)} 份材料的结论是"不确定"（'
                   + '、'.join(f'`{m}`' for m in unsure)
-                  + '）——按 §3 判据表"判不出 → 进澄清申请，不许猜"，它们所在的流程状态必须是 `待澄清`。', '']
+                  + '）——按 §3 判据表"判不出 → 进澄清申请，不许猜"。'
+                  '其中「含流程 = 不确定」的那几份**既不是流程、也不在排除清单里**，'
+                  '不写进澄清申请就会静默消失；它们所在的流程状态必须是 `待澄清`。', '']
     lines += ['## ① 流程清单', '',
               '| ' + ' | '.join(FLOW_COLUMNS) + ' |',
               '|' + '---|' * len(FLOW_COLUMNS)]
@@ -267,7 +273,7 @@ def _check_links(row, fid, names, rows):
     return errs
 
 
-def _check_asks(rows, asks, cards, names, unsure):
+def _check_asks(rows, asks, cards, names):
     """澄清申请 ↔ 流程状态：**待澄清的必须有账**（这就是 §5.4 收敛口径里那个"澄清申请"）。"""
     errs = []
     ids = {str(a.get('编号', '')).strip() for a in asks}
@@ -299,11 +305,13 @@ def _check_asks(rows, asks, cards, names, unsure):
         states[fid] = (r.get('状态', ''), mats)
         if r.get('状态', '').strip() == '待澄清' and fid not in asked and not (mats & asked):
             errs.append(f'{fid}: 状态是 `待澄清`，但澄清申请里没有一条指向它（那这个状态是凭空来的）')
-    for m in sorted(unsure):
-        if f'`{m}`' in asked:
-            continue
-        if not any(m in mats and st == '待澄清' for st, mats in states.values()):
-            errs.append(f'`{m}` 的版本关系是 `不确定`，但它所在的流程既没标 `待澄清`、也没进澄清申请')
+    # 「含流程 = 不确定」的材料**必须有人问**：它既不是流程、也不在排除清单里，
+    # 不写进澄清申请就会**静默消失**（这一条是真材料集上现形的：5 份 legacy / 扫描件读不动，
+    # 计划里它们一个都不出现，而谁也没注意到少了 5 份）。
+    for m in sorted(m for m in cards if str(cards[m]['含流程']).strip().startswith('不确定')):
+        if m not in asked:
+            errs.append(f'`{m}` 在清点里是「含流程 = 不确定」（读不动 / 判不出有没有步骤），'
+                        f'澄清申请里却没有它——它既不是流程、也不在排除清单里，会静默消失')
     return errs
 
 
@@ -382,7 +390,7 @@ def check_plan(cards, rows, asks, excl, root=None):
             errs.append(f'排除清单 `{m}`：没写理由（"为什么它不参与"要能复核）')
     for m in sorted(no_flow - {_id_of(r.get('材料', ''), 'M') for r in excl}):
         errs.append(f'`{m}` 在清点里是「含流程 = 否」，排除清单里却没有它（§4.1 ③：这份清单是从清点抄的）')
-    errs += _check_asks(rows, asks, cards, names, unsure)
+    errs += _check_asks(rows, asks, cards, names)
     if root:
         errs += _check_dirs(names, root)
     return errs

@@ -83,7 +83,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →16
-  desc: '★ `intake.md` → `({M##: {''含流程'': …, ''版本关系'': …}}, 报错)`。 · L172 · 函数'
+  desc: '★ `intake.md` → `({M##: {''含流程'': …, ''版本关系'': …}}, 报错)`。 · L178 · 函数'
 - id: '07'
   name: parse_doc
   lines:
@@ -95,7 +95,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →16
-  desc: ★ `plan.md` → `(流程行, 申请行, 排除行, 报错)`。三张表各按**自己的表头**认（列规范在代码里只有… · L201 · 函数
+  desc: ★ `plan.md` → `(流程行, 申请行, 排除行, 报错)`。三张表各按**自己的表头**认（列规范在代码里只有… · L207 · 函数
 - id: 08
   name: _id_of
   lines:
@@ -107,7 +107,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →16
-  desc: ★ 单元格里的第一个 `M##` / `F##`（`prefix` 取 `'M'` / `'F'`；写不写反引号都认）。 · L232 · 函数
+  desc: ★ 单元格里的第一个 `M##` / `F##`（`prefix` 取 `'M'` / `'F'`；写不写反引号都认）。 · L238 · 函数
 - id: 09
   name: _check_links
   lines:
@@ -119,7 +119,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →08
-  desc: ★ `与其它流程` / `并行组` 两列（§4.3 的甲 / 乙 / 丙：取值的形态与后果都可机器核）。 · L242 · 函数
+  desc: ★ `与其它流程` / `并行组` 两列（§4.3 的甲 / 乙 / 丙：取值的形态与后果都可机器核）。 · L248 · 函数
 - id: '10'
   name: _check_asks
   lines:
@@ -131,7 +131,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →08
-  desc: ★ 澄清申请 ↔ 流程状态：**待澄清的必须有账**（这就是 §5.4 收敛口径里那个"澄清申请"）。 · L270 · 函数
+  desc: ★ 澄清申请 ↔ 流程状态：**待澄清的必须有账**（这就是 §5.4 收敛口径里那个"澄清申请"）。 · L276 · 函数
 - id: '11'
   name: _check_dirs
   lines:
@@ -143,7 +143,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →16
-  desc: ★ §4.4 ②：流程数 = 成果根下的 `<流程名>/` 目录数（名字逐个对，多的少的都报）。 · L310 · 函数
+  desc: ★ §4.4 ②：流程数 = 成果根下的 `<流程名>/` 目录数（名字逐个对，多的少的都报）。 · L318 · 函数
 - id: '12'
   name: check_plan
   lines:
@@ -155,7 +155,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→08｜3→09｜4→10｜5→11
-  desc: ★ 计划 vs 清点（+ 成果根）→ 错误清单（空 = 过）。**只报不改**。 · L327 · 函数 · 分支：1→rel_of 2→_id_of
+  desc: ★ 计划 vs 清点（+ 成果根）→ 错误清单（空 = 过）。**只报不改**。 · L335 · 函数 · 分支：1→rel_of 2→_id_of
     3→_check_links 4→_check_asks 5→_check_dirs
 - id: '13'
   name: cmd_build
@@ -168,7 +168,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→05｜2→06
-  desc: ★ 出草稿：机器列已填，AI 那几列留空（`—`）。拒绝覆盖已有计划（它是 AI 判断的落点）。 · L391 · 函数 · 分支：1→build_plan
+  desc: ★ 出草稿：机器列已填，AI 那几列留空（`—`）。拒绝覆盖已有计划（它是 AI 判断的落点）。 · L399 · 函数 · 分支：1→build_plan
     2→read_cards
 - id: '14'
   name: cmd_check
@@ -181,7 +181,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→06｜2→07｜3→12
-  desc: ★ 校验收口后的计划（退 1 = 有问题）。`--root` 给了才核 §4.4 ②，**没给就打印跳过**。 · L418 · 函数 · 分支：1→read_cards
+  desc: ★ 校验收口后的计划（退 1 = 有问题）。`--root` 给了才核 §4.4 ②，**没给就打印跳过**。 · L426 · 函数 · 分支：1→read_cards
     2→parse_doc 3→check_plan
 - id: '15'
   name: main
@@ -194,7 +194,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→13｜2→14
-  desc: L454 · 函数 · 分支：1→cmd_build 2→cmd_check
+  desc: L462 · 函数 · 分支：1→cmd_build 2→cmd_check
 - id: '16'
   name: 结束
   lines:

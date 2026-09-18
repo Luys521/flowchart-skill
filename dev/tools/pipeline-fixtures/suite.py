@@ -448,6 +448,30 @@ def plan_paths(root):
                      '--intake', str(root / 'intake.md'), '--root', str(dirs)])
     cases.append(('㊻ §4.4 ②：计划 4 条 / 目录 3 个 ⇒ 退 1（点出缺哪条）；补齐 ⇒ 退 0',
                   rc1 == 1 and '白板流程' in out1 and rc2 == 0, rc1, (out1[-160:] + out2[-160:])))
+
+    # ㊼ 清点里「含流程 = 不确定」的材料**必须有人问**（真材料集上现形的那条：5 份读不动的材料
+    #    既不是流程、也不在排除清单里，计划里一份都没出现，而谁也没注意到少了 5 份）。
+    #    断言两半：`build` 要**给它种一条澄清申请**（机器列），`check` 要**抓住没账的那种计划**。
+    (root / 'intake-unsure.md').write_text(
+        cards.replace('是 ⚠ 含资质审查步骤（待视觉）', '不确定 ⚠ 缺 OCR，判不出有没有步骤'),
+        encoding='utf-8', newline='\n')
+    rc1, out1 = run([sys.executable, str(PLAN_CMD), 'check', str(root / 'plan-ok.md'),
+                     '--intake', str(root / 'intake-unsure.md')])
+    rc2, out2 = run([sys.executable, str(PLAN_CMD), 'build', str(root / 'intake-unsure.md'),
+                     '-o', str(root / 'plan-u.md')])
+    d_u = (root / 'plan-u.md').read_text(encoding='utf-8') if (root / 'plan-u.md').exists() else ''
+    seeded = [l for l in d_u.splitlines() if l.startswith('| `Q') and '`M02`' in l]
+    # 反向那一半：**给它补一条指向 M02 的澄清申请之后，这条错必须消失**
+    # （少了这半，规则写成"只要有不确定材料就报"也能过——真材料集上就这么错过一次）。
+    q_rows = [l for l in filled.splitlines() if l.startswith('| `Q')]
+    with_q = filled.replace(q_rows[-1], q_rows[-1] + '\n| `Q05` | 这两份哪份算数？ | 取 M02 | `M02` |')
+    (root / 'plan-q.md').write_text(with_q, encoding='utf-8', newline='\n')
+    rc3, out3 = run([sys.executable, str(PLAN_CMD), 'check', str(root / 'plan-q.md'),
+                     '--intake', str(root / 'intake-unsure.md')])
+    cases.append(('㊼ 「含流程 = 不确定」的材料：`build` 给它种澄清申请 · `check` 抓住"没账"的计划 · '
+                  '补上账之后必须过', rc1 == 1 and '会静默消失' in out1 and rc2 == 0 and bool(seeded)
+                  and rc3 == 0, rc1,
+                  (out1[-160:] + str(seeded) + out3[-160:]) if not (rc3 == 0 and seeded) else ''))
     return cases
 
 
