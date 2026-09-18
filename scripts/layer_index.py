@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 
 from semantics import subflow_target
-from artifact import artifact_stem
+from artifact import artifact_stem, NON_TABLE_MD
 from flowtable import parse_table
 from flowtable import C_DESC, split_row_cells
 
@@ -67,7 +67,7 @@ def _visit_subflow(ft_path, depth, parent_rp, via, chain, root, tables):
 def _find_orphans(root, tables, main_ft):
     """目录树里可达集之外的 .md → 孤儿表警告（生成物与说明文档不算表）。"""
     notes = []
-    generated = {'checklist.md', f'{artifact_stem(main_ft)}-index.md'}
+    generated = set(NON_TABLE_MD) | {f'{artifact_stem(main_ft)}-index.md'}
     for p in sorted(root.rglob('*.md')):
         rp = _rel(p, root)
         name = p.name

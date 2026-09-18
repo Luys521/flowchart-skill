@@ -12,6 +12,8 @@
 import re
 from pathlib import Path
 
+from artifact import NON_TABLE_MD
+
 try:
     import yaml
 except ImportError:
@@ -327,6 +329,8 @@ def _parent_by_scan(me):
         for parent_ft in sorted(d.glob('*.md')):
             if parent_ft.resolve() == me:
                 continue
+            if parent_ft.name in NON_TABLE_MD:
+                continue        # 伴生文档不是表（见 artifact.NON_TABLE_MD / PIPELINE-SPEC §7.2）
             try:
                 text = parent_ft.read_text(encoding='utf-8-sig')
             except OSError:

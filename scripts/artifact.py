@@ -22,6 +22,13 @@ table_to_dsl / validate —— 清单以 `grep -l "from artifact import" scripts
 from pathlib import Path
 
 
+# 「不是流程表」的 .md：会出现在成果根 / 流程目录旁、但不是表的那些文档。
+# **名字只在这里写一次**：凡"扫 *.md 找表"的地方（layer_index 的孤儿表检查、
+# flowtable 的父表链扫描）都必须从这里取；否则每新增一个任务级产物名，
+# 就要在多处补白名单，漏一处就冒假警告（见 PIPELINE-SPEC §7.2）。
+NON_TABLE_MD = frozenset({'checklist.md', 'intake.md', 'plan.md'})
+
+
 def artifact_stem(table_path):
     """流程表 → 产物名前缀（见 D-51）。规则：**表名是约定名就用目录名，否则用表名**。
 
