@@ -298,7 +298,7 @@ nodes:
   col: 0
   stage: 接管与解析
   route: →25
-  desc: 3 个函数 · ⊞ pptx_text/flowtable.md
+  desc: 4 个函数 · ⊞ pptx_text/flowtable.md
 - id: '25'
   name: 模块 · probe
   lines:

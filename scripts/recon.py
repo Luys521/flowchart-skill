@@ -40,7 +40,7 @@ import re
 import sys
 from pathlib import Path
 
-from pptx_text import slides
+from pptx_text import other_text_parts, slides
 
 DEP_PKG = {'docx': 'python-docx', 'openpyxl': 'openpyxl'}
 
@@ -58,7 +58,7 @@ PATH_OF_KIND = {
     'pdf-text': 'PDF 文本抽取（py:pdfplumber）',
     'pdf-scan': '转图片 → 视觉（render_pages）',
     'image': '转图片 → 视觉（原文件即图片）',
-    'ole': '转换器（soffice）或请用户另存为 OOXML',
+    'ole': '转换器（soffice）或**用原程序另存为** .docx / .xlsx / .pptx（转出来就是 T1，直读）',
     'pptx': '直读（py:pptx，零依赖 zip+XML）',
     'unknown': 'T4：读不动（见「读不动」列的原因）',
 }
@@ -143,9 +143,12 @@ def _pptx_scale(blob, th):
     if not got:
         return '', [], 0, 'pptx 里没抽出文字（空稿 / 全是图）'
     blank = sum(1 for _n, lines in got if not lines)
+    others = other_text_parts(blob)
     heads = [f'第 {n} 张：{lines[0]}' if lines else f'第 {n} 张：（纯图片，无文字）' for n, lines in got]
     scale = (f'幻灯片 {len(got)} 张'
              + (f'（前 {len(got)} 张里 {blank} 张无文字＝纯图片：那几页要视觉才读得到）' if blank else '')
+             + (f'（另有含文字的部件本摘要不覆盖：' + ' · '.join(f'{k} {v}' for k, v in others.items())
+                + '）' if others else '')
              + f'（按序号读前 {th["outline_max"]} 张取标题）')
     return scale, heads, len(got), ''
 

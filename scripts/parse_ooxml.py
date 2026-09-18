@@ -24,7 +24,7 @@ import sys
 import zipfile
 from pathlib import Path
 
-from pptx_text import slides
+from pptx_text import other_text_parts, slides
 
 # **函数顺序按调用方向排**（助手紧跟调用者，CLI 压尾）：自举表是**单列函数流**，一条跨十个节点的
 # 调用边会把门⑨ 的绕行读数顶上去（G12）。实测：加 `parse_pptx` 后本模块绕行 66%（超 60% 阈值），
@@ -169,6 +169,12 @@ def parse_pptx(blob, path, mid, max_slides, slides_span=None):
               'text': text, 'location': {'path': path.as_posix(), 'page': n, 'quote': text},
               'extractor': 'py:pptx', 'certainty': 'direct'}
         out.append(el)
+    # **没读到的部件要说出来**：幻灯片之外的文字（图表 / SmartArt / 备注页）不在账本里，
+    # 静默漏掉是 §2.4 明令不许的。这里只记账、不读（读它们要连带解决"属于哪一页"，见 G14）。
+    others = other_text_parts(blob)
+    if others:
+        cut.append('另有含文字的部件**本读者不读**（' + ' · '.join(f'{k} {v}' for k, v in others.items())
+                   + '）：那几处的文字不在账本里')
     if blank:
         # **空元素不是证据**（实测真稿：19 张里有 3 张是纯图片，原先被抽成 `text: ""` 的 element，
         # 既占着账本、又让"19 张都进来了"这句话变成假的）。丢掉它们，并把这件事挂到**留下的每条**上：

@@ -21,8 +21,8 @@ nodes:
   row: 0
   col: 0
   stage: 入口
-  route: 1→04
-  desc: 流程起点（结构性节点，不是函数） · 入口：1→slides
+  route: 1→04｜2→05
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→other_text_parts 2→slides
 - id: '02'
   name: slide_names
   lines:
@@ -30,11 +30,11 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 2
+  row: 3
   col: 0
   stage: 模块级
-  route: →05
-  desc: ★ `pptx` 字节 → `[(序号, zip 内部件名)]`，**按序号升序**。不是 pptx / zip 坏了 →… · L28 · 函数
+  route: →06
+  desc: ★ `pptx` 字节 → `[(序号, zip 内部件名)]`，**按序号升序**。不是 pptx / zip 坏了 →… · L33 · 函数
 - id: '03'
   name: slide_lines
   lines:
@@ -42,32 +42,45 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 3
+  row: 4
   col: 0
   stage: 模块级
-  route: →05
-  desc: ★ 一张幻灯片的 XML → 文本行（按 `<a:p>` 切段，段内 `<a:t>` 顺序拼接，去空段）。 · L43 · 函数
+  route: →06
+  desc: ★ 一张幻灯片的 XML → 文本行（按 `<a:p>` 切段，段内 `<a:t>` 顺序拼接，去空段）。 · L48 · 函数
 - id: '04'
-  name: slides
+  name: other_text_parts
   lines:
-  - slides
+  - other_text_parts
   type: task
   subject: 脚本
   executor: selfboot
   row: 1
   col: 0
   stage: 模块级
-  route: 1→02｜2→03
-  desc: ★ `pptx` 字节 → `[(幻灯片序号, [文本行…])]`；`max_slides > 0` 时最多读这么多张（从… · L56 · 函数
-    · 分支：1→slide_names 2→slide_lines
+  route: →06
+  desc: '★ **我们没读**、但里面确实有文字的那些部件 → `{''图表'': 1, ''SmartArt'': 2}`（没有就不出现在… · L61
+    · 函数'
 - id: '05'
+  name: slides
+  lines:
+  - slides
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: 模块级
+  route: 1→02｜2→03
+  desc: ★ `pptx` 字节 → `[(幻灯片序号, [文本行…])]`；`max_slides > 0` 时最多读这么多张（从… · L92 · 函数
+    · 分支：1→slide_names 2→slide_lines
+- id: '06'
   name: 结束
   lines:
   - 结束
   type: end
   subject: 脚本
   executor: selfboot
-  row: 4
+  row: 5
   col: 0
   stage: 出口
   route: —
@@ -78,20 +91,29 @@ edges:
   kind: spine
   polarity: main
   label: '1'
-- from: '02'
+- from: '01'
   to: '05'
   kind: jumpR
   polarity: main
+  label: '2'
+- from: '02'
+  to: '06'
+  kind: jumpR
+  polarity: main
 - from: '03'
-  to: '05'
+  to: '06'
   kind: spine
   polarity: main
 - from: '04'
+  to: '06'
+  kind: jumpR
+  polarity: main
+- from: '05'
   to: '02'
   kind: spine
   polarity: main
   label: '1'
-- from: '04'
+- from: '05'
   to: '03'
   kind: jumpR
   polarity: main

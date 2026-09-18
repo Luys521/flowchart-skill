@@ -42,6 +42,8 @@ PARSE_CMD = REPO / 'scripts' / 'parse.py'
 
 # 合成 pptx 的标题（第 2 张含「审批」——后面的取子集断言就找它）
 DECK_TITLES = ('第 1 章 项目概况', '第 2 章 审批与分工', '第 3 章 结算与付款')
+# 幻灯片**之外**的文字（图表 / SmartArt / 备注）：读者不读，但必须报出来（不许静默漏掉）
+DECK_OUTSIDE = ('CHARTONLY词', 'SMARTARTONLY词', 'NOTESONLY词')
 
 FLOWTABLE = """---
 id: driftfix
@@ -284,6 +286,12 @@ def make_deck(path):
                    f'<p:sld xmlns:p="{p}" xmlns:a="{a}"><p:cSld><p:spTree>'
                    f'<p:pic><p:nvPicPr><p:cNvPr id="9" name="整页截图"/></p:nvPicPr></p:pic>'
                    f'</p:spTree></p:cSld></p:sld>')
+        # **幻灯片之外装着文字的部件**（图表 / SmartArt / 备注页）：本读者不读它们，
+        # 但必须**报出来**——静默漏掉是 §2.4 明令不许的（真稿复验时发现的缺口）。
+        for part, word in (('ppt/charts/chart1.xml', DECK_OUTSIDE[0]),
+                           ('ppt/diagrams/data1.xml', DECK_OUTSIDE[1]),
+                           ('ppt/notesSlides/notesSlide1.xml', DECK_OUTSIDE[2])):
+            z.writestr(part, f'<x xmlns:a="{a}"><a:p><a:r><a:t>{word}</a:t></a:r></a:p></x>')
 
 
 def pptx_paths(root):
@@ -328,9 +336,11 @@ def pptx_paths(root):
           and els[0].get('location', {}).get('page') == 1
           and DECK_TITLES[1] in els[1].get('text', '')
           and not any(not (e.get('text') or '').strip() for e in els)
-          and '没有文字层' in (els[0].get('degraded') or ''))
-    cases.append(('⑲ pptx 读者：按张出元素 + 页码坐标 + **纯图片页丢掉并记账**', ok, rc,
-                  out + str(els)[:300]))
+          and '没有文字层' in (els[0].get('degraded') or '')
+          and '本读者不读' in (els[0].get('degraded') or '')     # 图表/SmartArt/备注：报出来
+          and not any(w in str(e.get('text') or '') for e in els for w in DECK_OUTSIDE))
+    cases.append(('⑲ pptx 读者：按张出元素 + 页码坐标 + **纯图片页丢掉并记账** + '
+                  '**幻灯片之外的文字报出来**（不静默漏）', ok, rc, out + str(els)[:300]))
     return cases
 
 

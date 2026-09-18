@@ -24,6 +24,11 @@ SLIDE_RE = re.compile(r'^ppt/slides/slide(\d+)\.xml$')
 PARA_RE = re.compile(r'<a:p[ >].*?</a:p>', re.S)
 RUN_RE = re.compile(r'<a:t[^>]*>(.*?)</a:t>', re.S)
 
+# **幻灯片之外、但可能装着文字**的部件（2026-09-18 实测：它们会被静默漏掉）。
+# 这份清单是"我们**没**读什么"的口径来源——`other_text_parts` 按它统计，调用方据此记账。
+OTHER_TEXT_PARTS = (('ppt/charts/', '图表'), ('ppt/diagrams/', 'SmartArt'),
+                    ('ppt/notesSlides/', '备注页'))
+
 
 def slide_names(blob):
     """`pptx` 字节 → `[(序号, zip 内部件名)]`，**按序号升序**。不是 pptx / zip 坏了 → `[]`（不抛）。"""
@@ -51,6 +56,37 @@ def slide_lines(xml):
         if line:
             out.append(' '.join(line.split()))       # 段内换行/多空格压成单个空格
     return out
+
+
+def other_text_parts(blob):
+    """**我们没读**、但里面确实有文字的那些部件 → `{'图表': 1, 'SmartArt': 2}`（没有就不出现在字典里）。
+
+    为什么必须能报出来：`.pptx` 的文字不只在 `ppt/slides/*.xml`——图表（`ppt/charts/*.xml`）、
+    SmartArt（`ppt/diagrams/*.xml`）、备注页（`ppt/notesSlides/*.xml`）**各自有 XML、各自有 `<a:t>`**。
+    只读 slides 就等于**静默漏掉**那几处的文字——而"静默少几条"正是本仓明令不许的（§2.4）。
+    本函数只**统计**、不读：读它们要连带解决"这段文字属于哪一页"（要靠 rels），那是下一步的事；
+    在那之前，**先把"没读"变成看得见**。
+    """
+    try:
+        with zipfile.ZipFile(io.BytesIO(blob)) as z:
+            names = z.namelist()
+            got = {}
+            for prefix, label in OTHER_TEXT_PARTS:
+                n = 0
+                for name in names:
+                    if not (name.startswith(prefix) and name.endswith('.xml')):
+                        continue
+                    try:
+                        xml = z.read(name).decode('utf-8', 'replace')
+                    except (KeyError, OSError, zipfile.BadZipFile):
+                        continue
+                    if any(t.strip() for t in RUN_RE.findall(xml)):
+                        n += 1
+                if n:
+                    got[label] = n
+    except (OSError, zipfile.BadZipFile):
+        return {}
+    return got
 
 
 def slides(blob, max_slides=0):
