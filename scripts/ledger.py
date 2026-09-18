@@ -88,7 +88,8 @@ def degrade(elements, limit):
         quote = loc.get('quote') if isinstance(loc, dict) else None
         if isinstance(quote, str) and len(quote) > limit:
             loc['quote'] = quote[:limit] + '…'
-            e['degraded'] = f'quote 截断到 {limit} 字'
+            # **追加**，不许覆盖：上游（解析适配器）可能已经标过采样/截断
+            e['degraded'] = (e.get('degraded') + '；' if e.get('degraded') else '') + f'quote 截断到 {limit} 字'
             n += 1
     return n
 

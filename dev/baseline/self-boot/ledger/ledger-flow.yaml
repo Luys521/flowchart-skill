@@ -82,7 +82,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →09
-  desc: ★ 按 §2.1 的键序组装账本：**多余的键一律丢弃**（模型封闭，不许夹带）。 · L96 · 函数
+  desc: ★ 按 §2.1 的键序组装账本：**多余的键一律丢弃**（模型封闭，不许夹带）。 · L97 · 函数
 - id: '07'
   name: dump
   lines:
@@ -94,7 +94,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →09
-  desc: ★ 写盘契约（§2.4）：UTF-8 / **LF** / 缩进 2 / 中文不转义 / 末尾一个换行。返回字节数。 · L112 · 函数
+  desc: ★ 写盘契约（§2.4）：UTF-8 / **LF** / 缩进 2 / 中文不转义 / 末尾一个换行。返回字节数。 · L113 · 函数
 - id: 08
   name: main
   lines:
@@ -106,7 +106,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→03｜3→04｜4→05｜5→06｜6→07
-  desc: L120 · 函数 · 分支：1→_read_json 2→check_materials 3→check_elements 4→degrade 5→assemble
+  desc: L121 · 函数 · 分支：1→_read_json 2→check_materials 3→check_elements 4→degrade 5→assemble
     6→dump
 - id: 09
   name: 结束

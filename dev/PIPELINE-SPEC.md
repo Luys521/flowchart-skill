@@ -90,6 +90,7 @@ extract(材料路径, options) → {elements[], warnings[], error?}
 | 材料 | **自包含路径（必须实现）** | 可选加速器（**探测到才用**） | 都没有时 |
 |---|---|---|---|
 | OOXML（docx / xlsx / pptx） | Python 库（python-docx / openpyxl / python-pptx）—**依赖要显式声明**（见下） | 宿主本地 Office SDK（若存在） | 记 T4 + **给可执行提示**（装什么） |
+| **文本型 `.pdf`（T2）** | `pdfplumber`（**纯 Python**，无外部二进制）抽文本层—一页一个 element | — | 记 T4 + **可执行提示**（装 pdfplumber） |
 | **legacy**（.doc / .xls / .ppt） | **没有纯 Python 的可靠读法** ⇒ 只用**外部转换器**（LibreOffice / soffice，若装了） | 宿主本地 Office SDK（若存在） | 记 T4 + 可执行提示（"请另存为 .docx" 或 "装 LibreOffice"） |
 | 图片 / 扫描件 / 截图 / 白板照 | **OCR**（tesseract / paddleocr）—依赖显式声明 | 宿主多模态模型（若可用） | 记 T4 + 进澄清 |
 | 纯文本（md / txt / csv / json …） | Python 标准库 | — | — |
@@ -103,7 +104,7 @@ extract(材料路径, options) → {elements[], warnings[], error?}
 
 | 类别 | 清单 | 缺了怎么办 |
 |---|---|---|
-| **必须**（跑通主链） | `PyYAML`（已有）+ `python-docx` + `openpyxl` | 报**可执行**的错：装什么、装完重跑 |
+| **必须**（跑通主链） | `PyYAML`（已有）+ `python-docx` + `openpyxl` + `pdfplumber`（文本型 PDF） | 报**可执行**的错：装什么、装完重跑 |
 | **可选**（增强） | `python-pptx`（演示稿）· `pytesseract` / `paddleocr`（图片 OCR） | 该格式降级为 T4 + 提示 |
 | **外部工具**（通用工具，不是宿主技能） | LibreOffice / `soffice`（legacy 转换） | legacy 记 T4 + 提示「另存为 .docx」或「装 LibreOffice」 |
 | **加速器**（宿主提供，**不许依赖**） | 本地 Office SDK · 多模态模型 | 探测不到就当没有，走自包含路径 |
@@ -390,21 +391,22 @@ heading  paragraph  list_item  table  figure  caption  code  sheet  cell
 | 规则 | 仪器 | 现状 |
 |---|---|---|
 | H10 证据完整性（§5） | `scripts/flowtable_check.py` 三层校验内 | 判据已定，**未实现** |
-| 账本 schema：键封闭 / 枚举合法 / id 唯一 | 账本写入器自检（待定） | 未实现 |
-| 探测记账完整：每份材料一行、无"未判" | 分档器自检（待定） | 未实现 |
-| 幂等：同输入两次同字节 | 待定 | 未实现 |
+| 账本 schema：键封闭 / 枚举合法 / id 唯一 | `scripts/ledger.py` 写入前自检 | **已实现**（不过就不落盘，退 1）；**未进验收路径** |
+| 探测记账完整：每份材料一行、无"未判" | `scripts/probe.py` 一律给档位 | **已实现**（判不出记 T4 + 原因，不猜）；**未进验收路径** |
+| 解析器四条硬要求（只读 · 不抛裸异常 · 输出符合 §2 · 缺依赖报可执行错） | 适配器自检（待定） | `parse_ooxml` / `parse_pdf` 已按此实现（实测：非目标材料**跳过并记账**、缺依赖退 2 并给安装命令）；**无仪器** |
+| 幂等：同输入两次同字节 | 待定 | **未实现**（本轮人工实测：`probe → parse → ledger` 两次同字节） |
 | 计划引用完整：`plan.md` 的 `M##` 都在 `intake.md` 里 | 待定（计划校验器） | 未实现 |
 | 计划与实际一致：流程数 = `<流程名>/` 目录数；`F0x#N` 的 N 是父表真实节点 | 待定 | 未实现 |
 | 版本关系双向一致：`A 互补(B)` → `B 互补(A)`；`A 替代(B)` → `B 被替代(A)` | 待定（卡片校验器） | 未实现 |
 | 卡片与账本一致：档位 / 读不动必须逐字等于 `materials[]` | 待定（卡片校验器） | 未实现 |
-| 侦查（§1.5）：异常材料必须先出侦查结论，再定解析深度 | 待定（侦查器；**自包含优先**） | 未实现 |
-| 依赖清单与自包含自检：新依赖 / 可选外部工具要显式声明，缺依赖报可执行的错 | 待定（requirements + 启动自检） | 未实现 |
+| 侦查（§1.5）：异常材料必须先出侦查结论，再定解析深度 | `scripts/recon.py`（**自包含优先**） | **机器可算部分已实现**（难度排序 / 结构缩样 / 机器建议处置）；"假设角色 / 含流程"是语义判断，留 AI 侧；**未进验收路径** |
+| 依赖清单与自包含自检：新依赖 / 可选外部工具要显式声明，缺依赖报可执行的错 | `requirements.txt` + 适配器缺依赖分支 | **已实现**（依赖显式声明；缺依赖退 2 并报"装什么"）；**无启动自检** |
 纪律：**现在没有仪器 ⇒ 先按 `dev/coding-spec.md` 第三节登记为缺口**，实现时一起接上，不许假装被守住。
 
 ### 7.1 H10 上线清单（实现 H10 时照单执行）
 
 1. **改全仓写死的 H 范围**—`dev/verify/contract.py` 有一条**硬断言**（"flowtable-spec 里 H1—H9 齐全"，比的是 `list('123456789')`），**补了 H10 它会当场判红**。要同步的地方：`references/flowtable-spec.md` 的 H 列表 · `dev/verify/contract.py` 那条断言 · `dev/tools/accept.py` 的门② 标题 · `dev/tools/README.md` 的门表 · `dev/tools/layering.py` 的注释 · `dev/tools/equiv-fixtures/broken.md` 的用例描述。
-2. **误伤回归**：在现有全部表（自举 31 张 + 样例 8 张 = 39 张）上跑 `scripts/table_to_dsl.py --check`，要求 **0 条 hard 增量**。
+2. **误伤回归**：在现有全部表（自举 32 张 + 样例 8 张 = 40 张）上跑 `scripts/table_to_dsl.py --check`，要求 **0 条 hard 增量**。
 
 ### 7.2 已知的代码接缝（实现 L0 / L1 时必改）
 
