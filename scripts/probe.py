@@ -14,6 +14,7 @@ legacy `.doc` / `.xls` 与 `.docx` / `.xlsx` 扩展名像、容器完全不同�
 退出码：0 = 探测完成（即使有 T4）；2 = 输入读不了（路径不存在）。
 """
 import argparse
+import codecs
 import hashlib
 import sys
 import time
@@ -33,6 +34,9 @@ IMAGE_MAGIC = (
 
 # zip 容器里的目录 → 具体是哪种 OOXML（判不出就不是 OOXML）。
 OOXML_PARTS = (('word/', 'docx'), ('xl/', 'xlsx'), ('ppt/', 'pptx'))
+
+# 判"是不是文本"时读多少字节：8 字节不够——中文一个字 3 字节，正好会被 8 字节的头切断（见 _text_tier）。
+TEXT_HEAD = 4096
 
 
 def _read_head(path, n=8):
@@ -82,14 +86,24 @@ def _pdf_tier(path):
 
 
 def _text_tier(head):
-    """能按 UTF-8 解码且无 NUL 字节 → 文本（T1）；否则 None。"""
-    if not head or b'\x00' in head:
+    """能按 UTF-8 解码且无 NUL 字节 → 文本（T1）；否则 None。
+
+    **截断在多字节字符中间也要认**（实测踩到的真 bug）：只看前 8 字节时，"这"（3 字节）会被正好切开，
+    于是**合法的中文 `.txt` 被判 T4**（"魔数不认识，且不是文本"）——本仓的材料以中文为主，
+    这条误判会成片出现。做法：整段先解一次，失败就**逐字节退**（UTF-8 单字符最多 4 字节），
+    退完能解就说明只是尾字节被切断，不是二进制。
+    """
+    if head[:2] in (codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE):
+        return 'T1', 'UTF-16 文本（BOM）'                     # **先看 BOM**：UTF-16 正文里满是 NUL 字节
+    if not head or b'\x00' in head:                           # （下面的 NUL 判据是给"没 BOM 的二进制"用的）
         return None
-    try:
-        head.decode('utf-8')
-    except UnicodeDecodeError:
-        return None
-    return 'T1', 'UTF-8 文本（无 NUL 字节）'
+    for cut in range(4):
+        try:
+            (head[:len(head) - cut] if cut else head).decode('utf-8')
+            return 'T1', 'UTF-8 文本（无 NUL 字节）'
+        except UnicodeDecodeError:
+            continue
+    return None
 
 
 def sniff(path):
@@ -123,7 +137,7 @@ def sniff(path):
     if head[:4] == b'RIFF' and _read_head(path, 16)[8:12] == b'WEBP':
         return 'T3', '图片魔数（webp）', 'ok', ''
 
-    text = _text_tier(head)
+    text = _text_tier(_read_head(path, TEXT_HEAD))       # 判文本要看够多字节（见 _text_tier）
     if text:
         return text[0], text[1], 'ok', ''
 

@@ -95,6 +95,20 @@ notes                     → [{material_id, status?, reason?, extractor?}]   �
 **分派是查表，不是判断**：档位到读者的映射是固定的（T1/T2→脚本、T3→视觉、T4→只记账），没有裁量余地；
 流程图上这一步的执行主体是**脚本**，不是 AI。
 
+**分派器 `scripts/parse.py`**（编排层）：按**固定顺序**跑各适配器（`parse_ooxml → parse_pdf → parse_legacy`），
+合并产物与补注，可一并把账本写掉（一条命令 = `probe → parse → ledger`）。它这张表里**只有顺序，没有判据**——
+"什么材料归谁"由各适配器自己认领（认不出的**不记账**，留给别人）。再抄一份格式清单就是**第四份真值**
+（`probe` 的档位 + 三个适配器各自的认领判据已经在说这件事），必漂。
+
+两条硬要求：**元素按 `material_id` 稳定排序**（材料内部保留该适配器的阅读序）——同输入同字节；
+**冲突与漏认都退 1 且不落盘**：
+- **冲突**：同一 element id 被两个适配器产出（判档重叠），或两份补注对同一材料写出不同的值——静默取一个会
+  让账本里出现"没人知道哪来的"记录；
+- **漏认**：`probe` 说 `status=ok`，却**既无元素、也无补注**（例：纯文本材料至今没有适配器）——
+  这正是账本里最隐蔽的那个洞（"能读却没内容"），不许再让它静默流进账本。
+  **它上线当轮就抓到一个真 bug**：`probe` 用 8 字节头判文本，中文一个字 3 字节正好被切断 ⇒
+  合法中文 `.txt` 被判 T4；已改成 4 KB + 允许尾部截断（另补 UTF-16 BOM）。
+
 **自包含优先，环境能力只当加速器**（按材料类型分工；**降级必须留痕**）：
 
 | 材料 | **自包含路径（必须实现）** | 可选加速器（**探测到才用**） | 都没有时 |
@@ -409,6 +423,7 @@ heading  paragraph  list_item  table  figure  caption  code  sheet  cell
 | 探测记账完整：每份材料一行、无"未判" | `scripts/probe.py` 一律给档位 | **已实现**（判不出记 T4 + 原因，不猜）；**未进验收路径** |
 | 解析器四条硬要求（只读 · 不抛裸异常 · 输出符合 §2 · 缺依赖报可执行错） | 适配器自检（待定） | `parse_ooxml` / `parse_pdf` / `parse_legacy` 已按此实现（实测：非目标材料**跳过并记账**、缺依赖退 2 并给安装命令）；**无仪器** |
 | 材料层记账完整：`status` / `reason` / `extractor` 由解析阶段补注写入（§1.4） | `scripts/ledger.py --notes` | **已实现**（补注键封闭 / id 必须存在 / `unreadable` 必有 reason，**落完再校一次**）；**未进验收路径** |
+| 分派是查表（§1.4）：固定顺序跑适配器 · 同输入同字节 · 冲突与漏认不许静默 | `scripts/parse.py` | **已实现**（元素按 `material_id` 稳定排序；id 重复 / 补注冲突 / `status=ok` 却零证据三类都**退 1 且不落盘**，实测各路径）；**未进验收路径** |
 | legacy 只走外部转换器：判据 `--version` 能通；缺了就记读不动 + 可执行提示，**不许假装能读** | `scripts/parse_legacy.py` | **已实现**（本机无 soffice：缺转换器分支在真实 4 份材料上实测；转换分支用**替身转换器**验过——LibreOffice 自身的转换保真度不在射程内） |
 | 幂等：同输入两次同字节 | 待定 | **未实现**（本轮人工实测：`probe → 三个适配器 → ledger` 两次同字节） |
 | 计划引用完整：`plan.md` 的 `M##` 都在 `intake.md` 里 | 待定（计划校验器） | 未实现 |
@@ -422,7 +437,7 @@ heading  paragraph  list_item  table  figure  caption  code  sheet  cell
 ### 7.1 H10 上线清单（实现 H10 时照单执行）
 
 1. **改全仓写死的 H 范围**—`dev/verify/contract.py` 有一条**硬断言**（"flowtable-spec 里 H1—H9 齐全"，比的是 `list('123456789')`），**补了 H10 它会当场判红**。要同步的地方：`references/flowtable-spec.md` 的 H 列表 · `dev/verify/contract.py` 那条断言 · `dev/tools/accept.py` 的门② 标题 · `dev/tools/README.md` 的门表 · `dev/tools/layering.py` 的注释 · `dev/tools/equiv-fixtures/broken.md` 的用例描述。
-2. **误伤回归**：在现有全部表（自举 33 张 + 样例 8 张 = 41 张）上跑 `scripts/table_to_dsl.py --check`，要求 **0 条 hard 增量**。
+2. **误伤回归**：在现有全部表（自举 34 张 + 样例 8 张 = 42 张）上跑 `scripts/table_to_dsl.py --check`，要求 **0 条 hard 增量**。
 
 ### 7.2 已知的代码接缝（实现 L0 / L1 时必改）
 
