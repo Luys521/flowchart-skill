@@ -40,6 +40,7 @@ import re
 import sys
 from pathlib import Path
 
+import cells
 from pptx_text import other_text_parts_in_file, scan_cost, slides_in_file
 
 DEP_PKG = {'docx': 'python-docx', 'openpyxl': 'openpyxl'}
@@ -367,6 +368,12 @@ def render(rows, meta):
 CARD_COLUMNS = ('材料', '档位', '修改时间', '难度', '规模（依据数字）', '解析深度', '走哪条路', '读不动',
                 '假设角色（AI 填 `⚠`）', '依据（AI 填）', '验证方式（AI 填）', '状态（AI 填）')
 STATUSES = ('待验', '已验证', '已推翻')
+# 「AI 要填的格子」的登记：cells.py fill 按**列名**回写（AI 不再手改表格，见 cells.py 的文件头）
+TODO_TABLES = (cells.table('假设表', '材料', {
+    '假设角色': {'列': '假设角色（AI 填 `⚠`）'},
+    '依据': {'列': '依据（AI 填）'},
+    '验证方式': {'列': '验证方式（AI 填）'},
+    '状态': {'列': '状态（AI 填）'}}, {'状态': list(STATUSES)}),)
 # **脚本列也要查**（审计实测：原先只比 `档位` + 四个 AI 列，于是把"只取摘要"改成"全量解析"照样
 # 校验通过——而那正是 §2.4 明令不许的"一上来就全量灌"）。两个驱动动作的列给封闭取值；
 # 其余（规模/修改时间/走哪条路/读不动）只要求非空——它们是抄来的事实，空着就是没交代。
@@ -546,6 +553,10 @@ def build(a):
         counts[r['diff']] = counts.get(r['diff'], 0) + 1
     print(f'→ 侦查表已写出 {a.out}：' + ' · '.join(f'{k} {v}' for k, v in counts.items())
           + '（**假设角色 / 依据 / 验证方式 / 状态 = AI 填，脚本不猜**）')
+    if getattr(a, 'todo', None):
+        cells.dump(cells.todo_from_doc(a.out, TODO_TABLES), a.todo)   # AI 只写这份 JSON（见 cells.py）
+        print(f'  · 待填清单已写出 {a.todo}：AI 填完它再跑 '
+              f'`python scripts/cells.py fill {Path(a.out).name} <答案>.json`')
     for s in skipped:
         print(f'  · {s}', file=sys.stderr)
     print(f'  · 下一步：AI 填完那四列后跑 `python scripts/recon.py check {a.out} '
@@ -587,6 +598,7 @@ def main(argv=None):
     b.add_argument('--materials', required=True, help='材料层 JSON（probe.py --json 的输出）')
     b.add_argument('--dict', help='dictionary.yaml（默认取 scripts/ 下那份；夹具用它把护栏调小）')
     b.add_argument('-o', '--out', default='recon.md', help='写到哪里（默认 recon.md，落成果根）')
+    b.add_argument('--todo', help='把「待填清单」写到这里（建议写成 <产物名>.todo.json，cells.py fill 默认就找它）')
     c = sub.add_parser('check', help='校验 AI 填好的表（退 1 = 有问题）')
     c.add_argument('card', help='侦查结论表（recon.md）')
     c.add_argument('--materials', required=True, help='材料层 JSON（对照用）')

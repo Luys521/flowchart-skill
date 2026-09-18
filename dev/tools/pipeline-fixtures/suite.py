@@ -38,6 +38,12 @@ import tempfile
 import zipfile
 
 REPO = pathlib.Path(__file__).resolve().parents[3]        # dev/tools/pipeline-fixtures/ → 仓库根
+sys.path.insert(0, str(REPO / 'scripts'))
+# 夹具也走**正式接口**填 AI 列（`cells.fill` 按列名落笔，不再手改单元格）：见 `scripts/cells.py`。
+import cells                                                    # noqa: E402
+import drift as DRIFT_MOD                                       # noqa: E402
+import intake as INTAKE_MOD                                     # noqa: E402
+import recon as RECON_MOD                                       # noqa: E402
 LEDGER = REPO / 'scripts' / 'ledger.py'
 DRIFT = REPO / 'scripts' / 'drift.py'
 QUERY = REPO / 'scripts' / 'query.py'
@@ -183,20 +189,17 @@ def intakeize(root):
     当场现形。
     """
     rc, out = run([sys.executable, str(INTAKE_CMD), 'build', str(root / 'evidence.json'),
-                   '-o', str(root / 'intake.md')])
+                   '-o', str(root / 'intake.md'), '--todo', str(root / 'intake.todo.json')])
     p = root / 'intake.md'
     if rc != 0 or not p.exists():
         return False, out                               # 骨架都没出来就别往下填（与 `ledgerize` 同一约定）
-    lines = []
-    for line in p.read_text(encoding='utf-8').splitlines():
-        if line.startswith('| `M'):
-            c = [x.strip() for x in line.strip().strip('|').split('|')]
-            plan = INTAKE_AI.get(c[0].split('`')[1]) if len(c) == len(INTAKE_COLUMNS) else None
-            if plan:                                   # 列序 = `intake.COLUMNS`：2 主题 / 3 含流程 / 4 版本关系 / 6 依据
-                c[2], c[3], c[4], c[6] = plan
-            line = '| ' + ' | '.join(c) + ' |'
-        lines.append(line)
-    p.write_text('\n'.join(lines) + '\n', encoding='utf-8', newline='\n')
+    # 填 AI 四列**走正式接口**（`cells.py`）：夹具与产品侧同一条路，列序/转义都不由人手保证。
+    new, errs = cells.fill(p.read_text(encoding='utf-8'),
+                           {k: {'主题': v[0], '含流程': v[1], '版本关系': v[2], '依据': v[3]}
+                            for k, v in INTAKE_AI.items()}, INTAKE_MOD.TODO_TABLES)
+    if errs:
+        return False, f'cells.fill 落了空：{errs}'
+    p.write_text(new, encoding='utf-8', newline='\n')
     return True, out
 
 
@@ -222,33 +225,35 @@ def check(root, text, flowtable=None):
     return run(cmd)
 
 
-def fill(text, drift_act='已解释', gap_act='已放弃', basis='已核：措辞不同但同一件事',
-         where='第 3 页', note='与流程无关'):
-    """填上 AI 那几列（默认填成可收敛的一版）。列序 = `drift.py` 的 `*_COLUMNS`。"""
-    out = []
+def answers_of(text, drift_act='已解释', gap_act='已放弃', basis='已核：措辞不同但同一件事',
+               where='第 3 页', note='与流程无关'):
+    """把"AI 该填的那几格"写成**答案 JSON**——正式接口是 `scripts/cells.py`（见它的文件头）。
+
+    夹具也走这条路，理由与产品侧同一条：**按列名写、由脚本落笔**，列序/转义出不了错。
+    （原先这里按列序号 `c[4], c[5] = …` 改单元格——那正是 2026-09-18 在真材料上踩到的坑。）
+    """
+    ans = {}
     for line in text.splitlines():
         if re.match(r'^\| `X\d+` \|', line):
-            c = [x.strip() for x in line.strip().strip('|').split('|')]
-            c[4], c[5] = drift_act, basis
-            line = '| ' + ' | '.join(c) + ' |'
+            ans[line.split('`')[1]] = {'处置': drift_act, '依据': basis}
         elif re.match(r'^\| `Q\d+` \|', line):
-            c = [x.strip() for x in line.strip().strip('|').split('|')]
-            c[3], c[5], c[6] = where, gap_act, note
-            line = '| ' + ' | '.join(c) + ' |'
-        out.append(line)
-    return '\n'.join(out) + '\n'
+            ans[line.split('`')[1]] = {'要哪一片': where, '状态': gap_act, '说明': note}
+    return ans
 
 
-def set_disposition(text, tag, act, basis):
-    """改某一行的处置/依据（按单元格重建，免得手工拼串多一格——本轮就栽过一次）。"""
-    out = []
-    for line in text.splitlines():
-        if line.startswith(f'| `{tag}`'):
-            c = [x.strip() for x in line.strip().strip('|').split('|')]
-            c[4], c[5] = act, basis
-            line = '| ' + ' | '.join(c) + ' |'
-        out.append(line)
-    return '\n'.join(out) + '\n'
+def fill(text, drift_act='已解释', gap_act='已放弃', basis='已核：措辞不同但同一件事',
+         where='第 3 页', note='与流程无关', only=None):
+    """填上 AI 那几列（默认填成可收敛的一版）——**经 `cells.fill` 按列名落笔**。
+
+    `only` 给了就只填那一行（用来测"某一行处置不同"这类路径）。
+    """
+    ans = answers_of(text, drift_act, gap_act, basis, where, note)
+    if only:
+        ans = {k: v for k, v in ans.items() if k == only}
+    new, errs = cells.fill(text, ans, DRIFT_MOD.TODO_TABLES)
+    if errs:                                   # 夹具自身故障：接口没把答案落进去
+        raise AssertionError(f'cells.fill 落了空：{errs}')
+    return new
 
 
 def paths(root, draft):
@@ -762,22 +767,20 @@ def build_material_tree(root):
 
 
 def _fill_recon_card(text):
-    """把侦查表的**四个 AI 列**填成合法值（按单元格索引改）。
+    """把侦查表的**四个 AI 列**填成合法值——经 `cells.fill` 按**列名**落笔（正式接口）。
 
     为什么不用字符串替换：审计里踩过一次——替换式填空"看着对"，但口径一歪就少一格，
-    于是测的其实是"列数不对"而不是想测的那条判据。列序见 `recon.CARD_COLUMNS`（12 列）：
-    0 材料 · 1 档位 · 2 修改时间 · 3 难度 · 4 规模 · 5 解析深度 · 6 走哪条路 · 7 读不动 ·
-    8 假设角色 · 9 依据 · 10 验证方式 · 11 状态。
+    于是测的其实是"列数不对"而不是想测的那条判据。列序见 `recon.CARD_COLUMNS`（12 列）。
     """
-    out = []
+    ans = {}
     for line in text.splitlines():
         if line.startswith('| `M'):
-            c = [x.strip() for x in line.strip().strip('|').split('|')]
-            if len(c) == 12:
-                c[8], c[9], c[10], c[11] = '⚠ 假设一句话', '依据 x', '读大纲', '待验'
-                line = '| ' + ' | '.join(c) + ' |'
-        out.append(line)
-    return '\n'.join(out) + '\n'
+            ans[line.split('`')[1]] = {'假设角色': '⚠ 假设一句话', '依据': '依据 x',
+                                       '验证方式': '读大纲', '状态': '待验'}
+    new, errs = cells.fill(text, ans, RECON_MOD.TODO_TABLES)
+    if errs:
+        raise AssertionError(f'cells.fill 落了空：{errs}')
+    return new
 
 
 def materials_paths(root):

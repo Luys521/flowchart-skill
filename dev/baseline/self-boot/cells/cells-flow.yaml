@@ -1,0 +1,231 @@
+meta:
+  title: cells.py 函数流程表
+  subjects:
+    脚本:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  width: 780
+  origin_x: -180
+nodes:
+- id: '01'
+  name: 开始
+  lines:
+  - 开始
+  type: start
+  subject: 脚本
+  executor: selfboot
+  row: 0
+  col: 0
+  stage: 入口
+  route: 1→02｜2→05｜3→09｜4→11
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→dump 2→table 3→todo_from_doc 4→main
+- id: '02'
+  name: dump
+  lines:
+  - dump
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 1
+  col: 0
+  stage: 模块级
+  route: →12
+  desc: ★ 标准写盘：UTF-8 / LF / 缩进 2 / 中文不转义（与 `ledger.dump` 同一套口径）。 · L41 · 函数
+- id: '03'
+  name: load
+  lines:
+  - load
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 6
+  col: 0
+  stage: 模块级
+  route: →12
+  desc: ★ 读 JSON（容忍 BOM）。 · L46 · 函数
+- id: '04'
+  name: as_spec
+  lines:
+  - as_spec
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: 模块级
+  route: →12
+  desc: '★ `AI 列` 归一成 `{列名: {''列'': …, ''前缀'': …}}`——允许写成一个名字列表（整格替换）。 · L51 · 函数'
+- id: '05'
+  name: table
+  lines:
+  - table
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: 模块级
+  route: →04
+  desc: ★ 登记一张表：名字 / 键列 / AI 列（短名 → 写法）/ 取值域。 · L60 · 函数
+- id: '06'
+  name: _cells
+  lines:
+  - _cells
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 9
+  col: 0
+  stage: 模块级
+  route: →12
+  desc: ★ 一行 markdown 表格 → 单元格列表。 · L65 · 函数
+- id: '07'
+  name: _key_of
+  lines:
+  - _key_of
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 10
+  col: 0
+  stage: 模块级
+  route: →12
+  desc: ★ 单元格里的键：取第一个词并去掉反引号（`` `M02` 甲.md `` → `M02`；`` `F01` 名称 `` … · L70 · 函数
+- id: 08
+  name: _scan
+  lines:
+  - _scan
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 8
+  col: 0
+  stage: 模块级
+  route: 1→06｜2→07
+  desc: ★ 产物 → `([(行号, 表, 键, 表头, 单元格)], 报错)`。**靠表头认表**（哪张表的键列出现在表头里）。 · L76 · 函数 ·
+    分支：1→_cells 2→_key_of
+- id: 09
+  name: todo_from_doc
+  lines:
+  - todo_from_doc
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 4
+  col: 0
+  stage: 模块级
+  route: →08
+  desc: ★ 读**已写出的产物** → 待填清单（键与现值都现取；模块只声明"哪些列是 AI 的"）。 · L99 · 函数
+- id: '10'
+  name: fill
+  lines:
+  - fill
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 7
+  col: 0
+  stage: 模块级
+  route: →08
+  desc: ★ 把答案写回产物 → `(新文本, 错误清单)`。**按列名写**，列数与列序不可能被破坏。 · L115 · 函数
+- id: '11'
+  name: main
+  lines:
+  - main
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 5
+  col: 0
+  stage: 模块级
+  route: 1→03｜2→10
+  desc: L156 · 函数 · 分支：1→load 2→fill
+- id: '12'
+  name: 结束
+  lines:
+  - 结束
+  type: end
+  subject: 脚本
+  executor: selfboot
+  row: 11
+  col: 0
+  stage: 出口
+  route: —
+  desc: 流程终点（结构性节点，不是函数）
+edges:
+- from: '01'
+  to: '02'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '01'
+  to: '05'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '01'
+  to: 09
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '01'
+  to: '11'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '02'
+  to: '12'
+  kind: jumpR
+  polarity: main
+- from: '03'
+  to: '12'
+  kind: jumpR
+  polarity: main
+- from: '04'
+  to: '12'
+  kind: jumpR
+  polarity: main
+- from: '05'
+  to: '04'
+  kind: spine
+  polarity: main
+- from: '06'
+  to: '12'
+  kind: jumpR
+  polarity: main
+- from: '07'
+  to: '12'
+  kind: spine
+  polarity: main
+- from: 08
+  to: '06'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: 08
+  to: '07'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: 09
+  to: 08
+  kind: jumpR
+  polarity: main
+- from: '10'
+  to: 08
+  kind: spine
+  polarity: main
+- from: '11'
+  to: '03'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '11'
+  to: '10'
+  kind: jumpR
+  polarity: main
+  label: '2'

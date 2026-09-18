@@ -60,6 +60,8 @@ import re
 import sys
 from pathlib import Path
 
+import cells
+
 FLOW_COLUMNS = ('流程', '角色', '挂在', '材料集', '与其它流程', '并行组', '状态')
 ASK_COLUMNS = ('编号', '问题', '推荐答案', '指向')
 EXCL_COLUMNS = ('材料', '理由')
@@ -68,6 +70,20 @@ ROLES = ('主', '子')
 STATES = ('可落表', '待澄清')
 NO = '—'
 BLANK = ('—', '-', '－', '无', '')
+# 「AI 要填的格子」的登记（三张表）：`cells.py fill` 按**列名**回写（AI 不再手改表格）。
+# 「流程」列是"编号与名字同处一格"⇒ 用带前缀的写法（`{}` 换成该行的 `F##`）。
+TODO_TABLES = (cells.table('流程清单', '流程', {
+    '流程名': {'列': '流程', '前缀': '`{}` '},
+    '角色': {'列': '角色'},
+    '挂在': {'列': '挂在'},
+    '与其它流程': {'列': '与其它流程'},
+    '并行组': {'列': '并行组'},
+    '状态': {'列': '状态'}}, {'角色': list(ROLES), '状态': list(STATES)}),
+    cells.table('澄清申请', '编号', {
+        '问题': {'列': '问题'},
+        '推荐答案': {'列': '推荐答案'}}),
+    cells.table('排除清单', '材料', {
+        '理由': {'列': '理由'}}))
 # 必并的关系（§4.2 步骤 2 = §3 判据表里的纯事实：内容相同的副本 / 同一标的的两份 / 新的覆盖旧的）
 MERGE_KINDS = ('重复', '互补', '替代', '被替代')
 # Windows 上不能出现在目录名里的字符（流程名 = 目录名，§4.1）
@@ -467,6 +483,10 @@ def cmd_build(a):
     n_ask = sum(1 for ln in lines if ln.startswith('| `Q'))
     print(f'→ 已写出 {out}：候选流程 {n_flow} 条 · 澄清申请 {n_ask} 条 · 排除 {n_excl} 条'
           f'（材料 {len(cards)} 份）· 待 AI 填的格子标 `{NO}`')
+    if getattr(a, 'todo', None):
+        cells.dump(cells.todo_from_doc(a.out, TODO_TABLES), a.todo)   # 见 cells.py 的文件头
+        print(f'  · 待填清单已写出 {a.todo}：AI 填完它再跑 '
+              f'`python scripts/cells.py fill {out.name} <答案>.json`')
     return 0
 
 
@@ -516,6 +536,7 @@ def main(argv=None):
     b.add_argument('intake', help='intake.md')
     b.add_argument('-o', '--out', default='plan.md', help='写到哪里（默认 plan.md，落成果根）')
     b.add_argument('--force', action='store_true', help='覆盖已有的 plan.md（它会抹掉 AI 填过的判断）')
+    b.add_argument('--todo', help='把「待填清单」写到这里（建议写成 <产物名>.todo.json，cells.py fill 默认就找它）')
     c = sub.add_parser('check', help='校验收口后的计划（退 1 = 有问题）')
     c.add_argument('plan', help='plan.md')
     c.add_argument('--intake', required=True, help='intake.md（对照用）')

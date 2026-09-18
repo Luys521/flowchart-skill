@@ -28,7 +28,17 @@ import re
 import sys
 from pathlib import Path
 
+import cells
+
 COLUMNS = ('材料', '档位', '主题', '含流程', '版本关系', '读不动', '依据')
+# 「AI 要填的格子」的登记：`cells.py fill` 按**列名**回写（AI 不再手改表格，见 `cells.py` 的文件头）
+TODO_TABLES = (cells.table('材料卡片', '材料', {
+    '主题': {'列': '主题'},
+    '含流程': {'列': '含流程'},
+    '版本关系': {'列': '版本关系'},
+    '依据': {'列': '依据'}},
+    {'含流程': ['是', '否', '不确定'],
+     '版本关系': ['独立', '不确定', '重复(M##)', '互补(M##)', '替代(M##)', '被替代(M##)', '无关(M##)']}),)
 RELATIONS = ('独立', '不确定', '重复', '互补', '替代', '被替代', '无关')
 REL_RE = re.compile(r'^(独立|不确定|(?:重复|互补|替代|被替代|无关)\((M\d+)\))')
 REL_TAIL_OK = (' ', '（', '(', '⚠', '·')                  # 取值后面只许跟这些（理由 / 留痕 / 备注）
@@ -252,6 +262,7 @@ def main(argv=None):
     b = sub.add_parser('build', help='出骨架（机器可算的格子已填）')
     b.add_argument('ledger', help='evidence.json')
     b.add_argument('-o', '--out', default='intake.md', help='写到哪里（默认 intake.md，落成果根）')
+    b.add_argument('--todo', help='把「待填清单」写到这里（建议写成 <产物名>.todo.json，cells.py fill 默认就找它）')
     c = sub.add_parser('check', help='校验收口后的卡片（退 1 = 有问题）')
     c.add_argument('card', help='intake.md')
     c.add_argument('--ledger', required=True, help='evidence.json（对照用）')
@@ -280,6 +291,10 @@ def main(argv=None):
         n_dup = len(duplicate_pairs(ledger['materials'])[1])
         print(f'→ 已写出 {a.out}：材料 {len(ledger["materials"])} 张卡片'
               f' · 判重事实 {n_dup} 对 · 待 AI 填的格子标 `{NO_FLOW}`')
+        if getattr(a, 'todo', None):
+            cells.dump(cells.todo_from_doc(a.out, TODO_TABLES), a.todo)   # 见 cells.py 的文件头
+            print(f'  · 待填清单已写出 {a.todo}：AI 填完它再跑 '
+                  f'`python scripts/cells.py fill {Path(a.out).name} <答案>.json`')
         return 0
 
     try:

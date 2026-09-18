@@ -62,6 +62,7 @@ from pathlib import Path
 
 from flowtable import Errors, parse_table
 from flowtable_check import run_checks
+import cells
 from semantics import pending_kind
 
 DICT_NAME = 'dictionary.yaml'
@@ -86,6 +87,14 @@ GAP_COLUMNS = ('缺口', '触发', '需要哪份材料', '要哪一片（AI 填�
                '状态（AI 填）', '说明（AI 填）')
 DISPOSITIONS = ('已修', '已解释', '待验')
 GAP_STATES = ('待取证', '已取证', '已放弃')
+# 「AI 要填的格子」的登记（两张表）：cells.py fill 按**列名**回写（AI 不再手改表格）。
+TODO_TABLES = (cells.table('漂移清单', '漂移', {
+    '处置': {'列': '处置（AI 填）'},
+    '依据': {'列': '依据（AI 填）'}}, {'处置': list(DISPOSITIONS)}),
+    cells.table('缺口清单', '缺口', {
+        '要哪一片': {'列': '要哪一片（AI 填）'},
+        '状态': {'列': '状态（AI 填）'},
+        '说明': {'列': '说明（AI 填）'}}, {'状态': list(GAP_STATES)}))
 BLANK = ('—', '-', '－', '无', '')
 
 # 引用 id：element id（`M03#p012`）与裸材料号（`M03`）都在射程内（§2.2）。
@@ -477,6 +486,10 @@ def cmd_build(a):
                 f'假设账 `{a.recon}`' if a.recon else '',
                 f'清点 `{a.intake}`' if a.intake else '') if x) or '（只有流程表）'}
     out.write_text(render(got['drift'], got['gaps'], meta), encoding='utf-8', newline='\n')
+    if getattr(a, 'todo', None):
+        cells.dump(cells.todo_from_doc(out, TODO_TABLES), a.todo)   # 见 cells.py 的文件头
+        print(f'  · 待填清单已写出 {a.todo}：AI 填完它再跑 '
+              f'`python scripts/cells.py fill {out.name} <答案>.json`')
     print(f'✓ 漂移 {len(got["drift"])} 条 · 缺口 {len(got["gaps"])} 条 → {out}')
     print(f'  · 跳过：{meta["off"]} · 输入：{meta["inputs"]}')
     print('  · 下一步：AI 填「处置 / 依据」与「要哪一片 / 状态 / 说明」，再跑')
@@ -578,6 +591,7 @@ def main(argv=None):
     b.add_argument('--dict', help='dictionary.yaml（默认取 scripts/ 下那份）')
     b.add_argument('-o', '--out', default='drift.md', help='写到哪里（默认 drift.md，落成果根）')
     b.add_argument('--force', action='store_true', help='覆盖已存在的产物（默认拒绝：那是漂移账）')
+    b.add_argument('--todo', help='把「待填清单」写到这里（建议写成 <产物名>.todo.json，cells.py fill 默认就找它）')
     c = sub.add_parser('check', help='查收敛（拿当前表重跑判据，与文件里的处置对账）')
     c.add_argument('card', help='drift.md')
     c.add_argument('--flowtable', required=True, help='当前流程表（判据要重跑一遍）')
