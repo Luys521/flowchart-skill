@@ -7,6 +7,12 @@ r"""ledger.py — 证据账本写入器（PIPELINE-SPEC §2）：把 `materials[
 **协作走产物**（本仓分层纪律：模块层之间不许互相 import）：本脚本**不 import probe.py**，
 而是读它输出的 JSON：`python scripts/probe.py <路径> --json | ...` → `ledger.py --materials <那个 JSON>`。
 
+**材料层补注（`--notes`）**：材料层由 `probe.py` 起头（档位 / 魔数依据），但"这份到底读没读出来、
+走的是哪条路"只有**解析阶段**知道——`probe` 看到的 legacy 与"能读的 legacy"长得一模一样。
+所以适配器另写一份补注（`{material_id, status?, reason?, extractor?}`），由本脚本落到材料层：
+`extractor` 记走了哪条路（`py:docx` / `soffice+py:docx` / `vlm`），读不动的记 `status=unreadable` +
+**可执行**原因（§1.3 的 T4 记账）。补注**只许改这三个字段**（键封闭），且落完**再校一次**。
+
 退出码：0 = 写出；1 = **校验不过**（输入不符合 §2 的模型，不落盘）；2 = 输入读不了。
 """
 import argparse
@@ -24,6 +30,8 @@ CERTAINTIES = ('direct', 'inferred')
 MATERIAL_KEYS = ('id', 'path', 'sha256', 'bytes', 'mtime', 'tier', 'probe', 'status', 'reason', 'extractor')
 ELEMENT_KEYS = ('id', 'material_id', 'kind', 'text', 'rows', 'location', 'extractor', 'certainty', 'degraded')
 LOCATION_KEYS = ('path', 'page', 'sheet', 'cell', 'bbox', 'quote')
+# 材料层补注（解析阶段对现场事实的记账）：只许改这三个字段——补注不是"重写材料卡片"。
+NOTE_KEYS = ('material_id', 'status', 'reason', 'extractor')
 
 
 def _read_json(path):
@@ -94,6 +102,52 @@ def degrade(elements, limit):
     return n
 
 
+def check_notes(items, material_ids):
+    """材料层补注校验 → 错误清单。**键封闭**：补注只许改 `status` / `reason` / `extractor` 三个字段。"""
+    errs = []
+    for i, n in enumerate(items):
+        if not isinstance(n, dict):
+            errs.append(f'notes[{i}]: 不是对象')
+            continue
+        mid = n.get('material_id')
+        if not mid:
+            errs.append(f'notes[{i}]: 缺 material_id')
+        elif mid not in material_ids:
+            errs.append(f'notes[{i}]: material_id {mid!r} 不在 materials[] 里')
+        for k in n:
+            if k not in NOTE_KEYS:
+                errs.append(f'notes[{i}]({mid}): 不许写字段 {k}（补注只能改 {"、".join(NOTE_KEYS[1:])}）')
+        if n.get('status') is not None and n['status'] not in STATUSES:
+            errs.append(f'notes[{i}]({mid}): status 只能是 {"/".join(STATUSES)}，实际 {n["status"]!r}')
+        if n.get('status') == 'unreadable' and not n.get('reason'):
+            errs.append(f'notes[{i}]({mid}): status=unreadable 必须给 reason（读不动不给理由 = 静默降级）')
+    return errs
+
+
+def apply_notes(materials, notes):
+    """把补注落到材料层（**就地改**）→ `(改了几条, 读不动几份)`。
+
+    为什么要有这一手：`probe.py` 只能给**档位**（T2 的 legacy 与"能读的 legacy"在探测阶段长得一样），
+    "这份到底读没读出来、走的是哪条路"只有解析阶段知道（§1.4 的 `extractor`、§1.3 的 T4 记账）。
+    补注是**唯一**把这条现场事实送回账本的路——没有它，读不动的材料在账本上就是"tier=T2 / status=ok /
+    零证据"，看着像能读却没内容。
+    """
+    by_id = {m.get('id'): m for m in materials}
+    n_unreadable = 0
+    for note in notes:
+        m = by_id.get(note.get('material_id'))
+        if m is None:
+            continue
+        for k in NOTE_KEYS[1:]:
+            if k in note and note[k] is not None:
+                m[k] = note[k]
+        if m.get('status') == 'ok' and 'reason' in m:
+            del m['reason']                         # 补注把状态改回 ok ⇒ 旧的 reason 就是陈旧真值，删掉
+        if m.get('status') == 'unreadable':
+            n_unreadable += 1
+    return len(notes), n_unreadable
+
+
 def assemble(task, materials, elements):
     """按 §2.1 的键序组装账本：**多余的键一律丢弃**（模型封闭，不许夹带）。"""
     out_elems = []
@@ -124,6 +178,8 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description='L0 证据账本写入器（PIPELINE-SPEC §2）')
     ap.add_argument('--materials', required=True, help='材料层 JSON（probe.py --json 的输出）')
     ap.add_argument('--elements', help='证据层 JSON（解析适配器的输出；没有就写空表）')
+    ap.add_argument('--notes', action='append', default=[],
+                    help='材料层补注 JSON（解析适配器的 --notes 输出；多份可重复给，逐份按序落）')
     ap.add_argument('--task', default='', help='任务名（一般取成果根名）')
     ap.add_argument('-o', '--out', default='evidence.json', help='写到哪里（默认 evidence.json）')
     ap.add_argument('--quote-limit', type=int, default=200, help='quote 截断上限（默认 200 字）')
@@ -132,6 +188,13 @@ def main(argv=None):
     try:
         materials = _read_json(a.materials)
         elements = _read_json(a.elements) if a.elements else []
+        notes = []
+        for p in a.notes:                       # 每份补注**单独校形状**：拿对象冒充数组会在下面变成
+            got = _read_json(p)                 # "notes[0]: 不是对象"这种把真正的错因藏起来的报错
+            if not isinstance(got, list):
+                print(f'⚠ 补注必须是 JSON 数组（notes[]）: {p}', file=sys.stderr)
+                return 2
+            notes += got
     except (OSError, ValueError) as e:
         print(f'⚠ 输入读不了: {e}', file=sys.stderr)
         return 2
@@ -139,9 +202,18 @@ def main(argv=None):
         print('⚠ 输入必须是 JSON 数组（materials[] / elements[]）', file=sys.stderr)
         return 2
 
-    errs = check_materials(materials) + check_elements(elements, {m.get('id') for m in materials})
+    mids = {m.get('id') for m in materials}
+    errs = (check_materials(materials) + check_elements(elements, mids) + check_notes(notes, mids))
     if errs:
         print('⚠ 账本校验未过（先修输入，**不落盘**）:')
+        for x in errs[:20]:
+            print(f'  - {x}')
+        return 1
+
+    n_applied, n_unreadable = apply_notes(materials, notes)
+    errs = check_materials(materials)                       # 补注之后**再校一次**：unreadable 必须有 reason
+    if errs:
+        print('⚠ 补注把材料层改坏了（先修补注，**不落盘**）:')
         for x in errs[:20]:
             print(f'  - {x}')
         return 1
@@ -149,7 +221,8 @@ def main(argv=None):
     n = degrade(elements, a.quote_limit)
     size = dump(assemble(a.task, materials, elements), a.out)
     tail = f' · 降级 {n} 条' if n else ''
-    print(f'→ 已写出 {a.out}：材料 {len(materials)} · 证据 {len(elements)}{tail} · {size} 字节')
+    note = f' · 材料补注 {n_applied} 条（读不动 {n_unreadable} 份）' if n_applied else ''
+    print(f'→ 已写出 {a.out}：材料 {len(materials)} · 证据 {len(elements)}{tail}{note} · {size} 字节')
     return 0
 
 

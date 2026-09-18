@@ -71,6 +71,9 @@ N 与密度阈值属**数值**：落地时必须写进 `scripts/dictionary.yaml`
 - T1/T2：产出进证据账本，`extractor` 写具体插件名。
 - **T3 也必须产出证据**（element 带 bbox 与摘录）—否则流程表「依据」列会指向空，H10 断链。T3 的 `extractor` 记 `vlm`，`certainty` 一律 `inferred`（视觉推断不许伪装成直取）。
 - T4：作为 materials[] 的一条记录进账本（status=unreadable + reason，见 §2.1），**不静默丢弃**；清点只读账本，不另立一份。
+- **"读没读出来"由解析阶段记账**（材料层补注，见 §1.4）：`extractor` 写走的是哪条路，读不动的写 `status=unreadable` + **可执行**原因。
+  这一条不是补充说明，是**必要的一环**：`probe` 只能给档位——4 份 legacy 与"能读的 legacy"在探测阶段长得一模一样，
+  没有补注，账本上它们就是"tier=T2 / status=ok / 零证据"，看着像能读却没内容。
 
 **这一版 T2 与 T3 都要做**（不是"先用能读的那些起步"）：T2 走转换器（legacy 二进制、文本型 PDF），T3 走视觉解析。两条路产出的文字同样要进账本、带出处—否则 H10 断链。
 
@@ -80,7 +83,14 @@ N 与密度阈值属**数值**：落地时必须写进 `scripts/dictionary.yaml`
 name                                  插件名（写进 element.extractor）
 supports(探测结果)        → bool   它认不认这一档/这一种容器
 extract(材料路径, options) → {elements[], warnings[], error?}
+notes                     → [{material_id, status?, reason?, extractor?}]   材料层补注（见下）
 ```
+
+**材料层补注（notes）**：材料层由 `probe` 起头（档位 / 魔数依据），"这份到底读出来没有、走的是哪条路"
+只有解析阶段知道。补注是唯一把这条现场事实送回账本的路，**只许改 `status` / `reason` / `extractor` 三个字段**
+（键封闭），由 `ledger.py --notes` 校验并落盘，**落完再校一次**（`unreadable` 必须有 reason）。
+**不归自己管的材料不许补注**：`parse_ooxml` 看到 legacy 只说"不是 OOXML"，**不下"读不动"的结论**——
+那是 `parse_legacy` 的地盘，抢着下就是双份真值。
 
 **分派是查表，不是判断**：档位到读者的映射是固定的（T1/T2→脚本、T3→视觉、T4→只记账），没有裁量余地；
 流程图上这一步的执行主体是**脚本**，不是 AI。
@@ -91,7 +101,7 @@ extract(材料路径, options) → {elements[], warnings[], error?}
 |---|---|---|---|
 | OOXML（docx / xlsx / pptx） | Python 库（python-docx / openpyxl / python-pptx）—**依赖要显式声明**（见下） | 宿主本地 Office SDK（若存在） | 记 T4 + **给可执行提示**（装什么） |
 | **文本型 `.pdf`（T2）** | `pdfplumber`（**纯 Python**，无外部二进制）抽文本层—一页一个 element | — | 记 T4 + **可执行提示**（装 pdfplumber） |
-| **legacy**（.doc / .xls / .ppt） | **没有纯 Python 的可靠读法** ⇒ 只用**外部转换器**（LibreOffice / soffice，若装了） | 宿主本地 Office SDK（若存在） | 记 T4 + 可执行提示（"请另存为 .docx" 或 "装 LibreOffice"） |
+| **legacy**（.doc / .xls / .ppt） | **没有纯 Python 的可靠读法** ⇒ 只用**外部转换器**（LibreOffice / soffice，若装了）：转成 OOXML 再交给 T1 适配器抽（§1.1 的 T2 定义就是"转换后可用"），`extractor` 写 `soffice+py:docx` | 宿主本地 Office SDK（若存在） | 记 T4 + 可执行提示（"请另存为 .docx" 或 "装 LibreOffice"） |
 | 图片 / 扫描件 / 截图 / 白板照 | **OCR**（tesseract / paddleocr）—依赖显式声明 | 宿主多模态模型（若可用） | 记 T4 + 进澄清 |
 | 纯文本（md / txt / csv / json …） | Python 标准库 | — | — |
 
@@ -185,9 +195,13 @@ extract(材料路径, options) → {elements[], warnings[], error?}
 | `mtime` | 是 | 修改时间（ISO 8601 本地时区）—§3「替代」判据的**末位兜底**（前两位是正文日期、文件名日期） |
 | `tier` | 是 | `T1`/`T2`/`T3`/`T4`（§1） |
 | `probe` | 是 | 档位依据（魔数 / 文本层密度 / …），人可核 |
-| `status` | 是 | `ok` / `unreadable` / `skipped` |
-| `reason` | 视 status | 读不动 / 不参与的原因（**unreadable 必填**） |
-| `extractor` | 视 status | 谁产的（插件名 / `vlm`） |
+| `status` | 是 | `ok` / `unreadable` / `skipped`。口径：**ok** = 这条材料的证据已在账本里（文本侧抽到了，或已由视觉侧产出）；**unreadable** = **读不动**（缺转换器 / 缺 OCR / 文件坏）——必须给 reason；**skipped** = **不参与**（T4：与流程无关、音视频…）——必须给 reason |
+| `reason` | 视 status | 读不动 / 不参与的原因（**unreadable 与 skipped 必填**），要给**可执行**的话（装什么、或改走哪条路） |
+| `extractor` | 视 status | 谁产的（插件名 / `soffice+py:docx` / `vlm`）。**由解析阶段的材料层补注写**（§1.4）：`probe` 只给档位，给不出这个 |
+
+**谁写这三格**（唯一口径）：`probe.py` 给**初始值**（按档位：T1/T2/T3 → ok；T4 → unreadable + 依据）；
+解析阶段用**补注**（§1.4）改它——补注是唯一入口，`ledger.py --notes` 校验（键封闭 / id 存在 / unreadable 必有 reason）
+并**落完再校一次**。清点（§3）只读账本，**不重判**这三格。
 
 **elements[]（证据层：只装"抽出来的东西"）**
 
@@ -393,8 +407,10 @@ heading  paragraph  list_item  table  figure  caption  code  sheet  cell
 | H10 证据完整性（§5） | `scripts/flowtable_check.py` 三层校验内 | 判据已定，**未实现** |
 | 账本 schema：键封闭 / 枚举合法 / id 唯一 | `scripts/ledger.py` 写入前自检 | **已实现**（不过就不落盘，退 1）；**未进验收路径** |
 | 探测记账完整：每份材料一行、无"未判" | `scripts/probe.py` 一律给档位 | **已实现**（判不出记 T4 + 原因，不猜）；**未进验收路径** |
-| 解析器四条硬要求（只读 · 不抛裸异常 · 输出符合 §2 · 缺依赖报可执行错） | 适配器自检（待定） | `parse_ooxml` / `parse_pdf` 已按此实现（实测：非目标材料**跳过并记账**、缺依赖退 2 并给安装命令）；**无仪器** |
-| 幂等：同输入两次同字节 | 待定 | **未实现**（本轮人工实测：`probe → parse → ledger` 两次同字节） |
+| 解析器四条硬要求（只读 · 不抛裸异常 · 输出符合 §2 · 缺依赖报可执行错） | 适配器自检（待定） | `parse_ooxml` / `parse_pdf` / `parse_legacy` 已按此实现（实测：非目标材料**跳过并记账**、缺依赖退 2 并给安装命令）；**无仪器** |
+| 材料层记账完整：`status` / `reason` / `extractor` 由解析阶段补注写入（§1.4） | `scripts/ledger.py --notes` | **已实现**（补注键封闭 / id 必须存在 / `unreadable` 必有 reason，**落完再校一次**）；**未进验收路径** |
+| legacy 只走外部转换器：判据 `--version` 能通；缺了就记读不动 + 可执行提示，**不许假装能读** | `scripts/parse_legacy.py` | **已实现**（本机无 soffice：缺转换器分支在真实 4 份材料上实测；转换分支用**替身转换器**验过——LibreOffice 自身的转换保真度不在射程内） |
+| 幂等：同输入两次同字节 | 待定 | **未实现**（本轮人工实测：`probe → 三个适配器 → ledger` 两次同字节） |
 | 计划引用完整：`plan.md` 的 `M##` 都在 `intake.md` 里 | 待定（计划校验器） | 未实现 |
 | 计划与实际一致：流程数 = `<流程名>/` 目录数；`F0x#N` 的 N 是父表真实节点 | 待定 | 未实现 |
 | 版本关系双向一致：`A 互补(B)` → `B 互补(A)`；`A 替代(B)` → `B 被替代(A)` | 待定（卡片校验器） | 未实现 |
@@ -406,7 +422,7 @@ heading  paragraph  list_item  table  figure  caption  code  sheet  cell
 ### 7.1 H10 上线清单（实现 H10 时照单执行）
 
 1. **改全仓写死的 H 范围**—`dev/verify/contract.py` 有一条**硬断言**（"flowtable-spec 里 H1—H9 齐全"，比的是 `list('123456789')`），**补了 H10 它会当场判红**。要同步的地方：`references/flowtable-spec.md` 的 H 列表 · `dev/verify/contract.py` 那条断言 · `dev/tools/accept.py` 的门② 标题 · `dev/tools/README.md` 的门表 · `dev/tools/layering.py` 的注释 · `dev/tools/equiv-fixtures/broken.md` 的用例描述。
-2. **误伤回归**：在现有全部表（自举 32 张 + 样例 8 张 = 40 张）上跑 `scripts/table_to_dsl.py --check`，要求 **0 条 hard 增量**。
+2. **误伤回归**：在现有全部表（自举 33 张 + 样例 8 张 = 41 张）上跑 `scripts/table_to_dsl.py --check`，要求 **0 条 hard 增量**。
 
 ### 7.2 已知的代码接缝（实现 L0 / L1 时必改）
 

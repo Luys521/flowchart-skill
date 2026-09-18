@@ -12,7 +12,9 @@ r"""parse_pdf.py — PDF **文本层**解析适配器（PIPELINE-SPEC §1.4）�
 **采样**：页数超上限就截断，并在**该材料的每个 element 上**标 `degraded`（消费方扫任意一条就知道这份是抽样的）；
 单页字数超上限则**只标那一条**——材料级与元素级两档粒度不同，见 `parse_pdf` 的 docstring（§2.4 要求"降级必须记账"）。
 
-**协作走产物**：读 `probe.py --json` 的材料层，产出元素层 JSON → 交给 `ledger.py`。
+**协作走产物**：读 `probe.py --json` 的材料层，产出元素层 JSON → 交给 `ledger.py`；
+另有 `--notes` 写**材料层补注**（`status` / `reason` / `extractor`）——那是解析阶段对账本材料层的记账，
+没有它，T3 在账本上会看着像"能读却什么都没抽到"（§2.1）。
 
 退出码：0 = 完成（可能有跳过）；2 = **缺依赖** 或输入读不了。
 """
@@ -23,6 +25,11 @@ import sys
 from pathlib import Path
 
 DEP_PKG = {'pdfplumber': 'pdfplumber'}
+
+# T3（扫描件）在**这条自包含路径上**读不动：自包含侧没有 OCR（可选依赖未装时），宿主多模态是加速器。
+# 提示要可执行（§1.4）：装 OCR，或由会看图的 AI / 人补证据，或让它不参与。
+NO_OCR = ('扫描件（T3）需视觉 / OCR：自包含侧未装 OCR（pytesseract / paddleocr），'
+          '宿主多模态不可用时请装 OCR，或人工核对后让它不参与')
 
 
 def _import_dep(name):
@@ -37,6 +44,11 @@ def _import_dep(name):
 def _read_json(path):
     """读 JSON（容忍 BOM）。"""
     return json.loads(Path(path).read_text(encoding='utf-8-sig'))
+
+
+def _write_notes(notes, path):
+    """写材料层补注：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 `ledger.dump`）。"""
+    Path(path).write_bytes((json.dumps(notes, ensure_ascii=False, indent=2) + '\n').encode('utf-8'))
 
 
 def parse_pdf(path, mid, max_pages, max_chars):
@@ -84,8 +96,14 @@ def parse_pdf(path, mid, max_pages, max_chars):
 
 
 def parse_materials(materials, max_pages, max_chars):
-    """材料层 → `(elements, 摘要, 跳过清单, 报错文案)`。非 PDF / 非 T2 一律跳过并记账。"""
-    elements, notes, skipped = [], [], []
+    """材料层 → `(elements, 补注, 摘要, 跳过清单, 报错文案)`。非 PDF / 非 T2 一律跳过并记账。
+
+    **补注（notes）**是解析阶段对材料层的记账（§2.1 的 `status`/`reason`/`extractor`）：
+    抽到的写 `extractor`；**T3 扫描件在本脚本这条路上读不动**（自包含侧没有 OCR，宿主多模态是加速器），
+    所以它带 `status=unreadable` + 可执行提示进账本——否则账本上它看着像"能读却什么都没抽到"。
+    不归本脚本管的材料（docx/xlsx/legacy）**不补注**：那是别的适配器的地盘，抢着下结论就是双份真值。
+    """
+    elements, notes, done, skipped = [], [], [], []
     for m in materials:
         mid = m.get('id', '?')
         path = Path(m.get('path', ''))
@@ -102,6 +120,7 @@ def parse_materials(materials, max_pages, max_chars):
             skipped.append(f'{mid}: 不是 PDF（tier={m.get("tier")}）')
             continue
         if m.get('tier') == 'T3':
+            notes.append({'material_id': mid, 'status': 'unreadable', 'reason': NO_OCR})
             skipped.append(f'{mid}: 扫描件（T3）走视觉 / OCR，不在这里抽')
             continue
         try:
@@ -110,10 +129,12 @@ def parse_materials(materials, max_pages, max_chars):
             skipped.append(f'{mid}: 解析失败 {type(e).__name__}: {e}')
             continue
         if err:
-            return None, notes, skipped, err
+            return None, notes, done, skipped, err
         elements += got
-        notes.append(f'{mid} {len(got)} 页' + (f'（{note}）' if note else ''))
-    return elements, notes, skipped, ''
+        done.append(f'{mid} {len(got)} 页' + (f'（{note}）' if note else ''))
+        if got:
+            notes.append({'material_id': mid, 'extractor': 'py:pdfplumber'})
+    return elements, notes, done, skipped, ''
 
 
 def main(argv=None):
@@ -122,6 +143,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description='PDF 文本层解析适配器：.pdf → elements[]')
     ap.add_argument('--materials', required=True, help='材料层 JSON（probe.py --json 的输出）')
     ap.add_argument('-o', '--out', help='写到哪里（默认 stdout，供管道接 ledger）')
+    ap.add_argument('--notes', help='材料层补注写到哪里（status / reason / extractor，交给 ledger.py --notes）')
     ap.add_argument('--max-pages', type=int, default=50, help='最多抽多少页（超了记 degraded）')
     ap.add_argument('--max-chars', type=int, default=4000, help='单页最多多少字（超了截断并记账）')
     a = ap.parse_args(argv)
@@ -135,7 +157,7 @@ def main(argv=None):
         print('⚠ 输入必须是 JSON 数组（materials[]）', file=sys.stderr)
         return 2
 
-    elements, notes, skipped, err = parse_materials(materials, a.max_pages, a.max_chars)
+    elements, notes, done, skipped, err = parse_materials(materials, a.max_pages, a.max_chars)
     if err:
         print(f'⚠ {err}', file=sys.stderr)
         return 2
@@ -147,10 +169,15 @@ def main(argv=None):
     else:
         sys.stdout.write(text)
         where = 'stdout'
-    print(f'→ 已写出 {where}：元素 {len(elements)} · 抽取 {len(notes)} 份 · 跳过 {len(skipped)} 份',
-          file=sys.stderr)
+    if a.notes:
+        _write_notes(notes, a.notes)
+    print(f'→ 已写出 {where}：元素 {len(elements)} · 抽取 {len(done)} 份 · 跳过 {len(skipped)} 份'
+          f' · 补注 {len(notes)} 条', file=sys.stderr)
     for s in skipped:
         print(f'  · 跳过 {s}', file=sys.stderr)
+    for n in notes:
+        if n.get('status') == 'unreadable':
+            print(f'  · 读不动 {n["material_id"]}：{n["reason"]}', file=sys.stderr)
     return 0
 
 

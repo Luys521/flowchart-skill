@@ -2,17 +2,17 @@
  "title": "parse_pdf.py 函数流程表",
  "layout": "flow",
  "source": "flowtable.md",
- "dsl_sha256": "f9d7184aa10e1eb3",
- "source_sha256": "149b34aecfc97ebb",
+ "dsl_sha256": "1d16e5d4abf376ae",
+ "source_sha256": "5467caafd7ee7273",
  "counts": {
-  "nodes": 7,
-  "edges": 7,
+  "nodes": 8,
+  "edges": 9,
   "by_type": {
    "end": 1,
    "start": 1,
-   "task": 5
+   "task": 6
   },
-  "labeled_edges": 3,
+  "labeled_edges": 4,
   "loop_edges": 0,
   "pending_nodes": 0
  },
@@ -23,36 +23,45 @@
   "04",
   "05",
   "06",
-  "07"
+  "07",
+  "08"
  ],
  "edges": [
   [
    "01",
-   "06"
+   "07"
   ],
   [
    "02",
-   "07"
+   "08"
   ],
   [
    "03",
-   "07"
+   "08"
   ],
   [
    "04",
-   "02"
+   "08"
   ],
   [
    "05",
-   "04"
-  ],
-  [
-   "06",
-   "03"
+   "02"
   ],
   [
    "06",
    "05"
+  ],
+  [
+   "07",
+   "03"
+  ],
+  [
+   "07",
+   "04"
+  ],
+  [
+   "07",
+   "06"
   ]
  ]
 }

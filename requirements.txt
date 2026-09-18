@@ -14,5 +14,7 @@ pdfplumber>=0.11     # PDF **文本层**抽取（纯 Python，无外部二进制
 # pytesseract>=0.3    # 图片 OCR（需另装 tesseract 二进制）
 # paddleocr>=2.7      # 图片 OCR（备选）
 #
-# 可选外部工具（不是 Python 包；缺了 legacy 格式记 T4 + 提示用户另存为 .docx）
-# LibreOffice / soffice >= 7
+# 可选外部工具（不是 Python 包；缺了 legacy（.doc/.xls/.ppt）记 T4 + 提示用户另存为 .docx）
+# LibreOffice / soffice >= 7    判据：`soffice --version` 能通（文件存在 ≠ 能跑，见 parse_legacy.find_converter）
+# OCR（图片 / 扫描件走 OCR 时需要，另一个自包含选项是宿主多模态）：
+# tesseract 二进制（配 pytesseract）/ paddleocr 运行时

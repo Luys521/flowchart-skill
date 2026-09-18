@@ -5,7 +5,8 @@ r"""parse_ooxml.py — OOXML 解析适配器（PIPELINE-SPEC §1.4）：`.docx` 
 宿主 Office SDK / 多模态模型是**加速器**，不属于本脚本（探测到才用的那部分在 spec §1.4）。
 
 **协作走产物**（本仓分层纪律：模块层之间不许互相 import）：本脚本读 `probe.py --json` 的材料层，
-产出元素层 JSON，再交给 `ledger.py` — 三段串起来是 `probe → parse_ooxml → ledger`。
+产出元素层 JSON，再交给 `ledger.py` — 三段串起来是 `probe → parse_ooxml → ledger`；
+`--notes` 另写**材料层补注**（`extractor` 这类"走了哪条路"的记账，§2.1）。
 
 三条边界：**只读材料**（不改、不动）；**不做语义判断**（不猜流程、不合并节点）；
 **抽不出不猜**（跳过并记账，不伪造空 element）。
@@ -35,6 +36,11 @@ def _import_dep(name):
 def _read_json(path):
     """读 JSON（容忍 BOM）。"""
     return json.loads(Path(path).read_text(encoding='utf-8-sig'))
+
+
+def _write_notes(notes, path):
+    """写材料层补注：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 `ledger.dump`）。"""
+    Path(path).write_bytes((json.dumps(notes, ensure_ascii=False, indent=2) + '\n').encode('utf-8'))
 
 
 def container_kind(path):
@@ -138,8 +144,12 @@ def parse_xlsx(path, mid, max_rows, max_cols):
 
 
 def parse_materials(materials, max_rows, max_cols):
-    """材料层 → `(elements, 摘要, 跳过清单, 报错文案)`。非 OOXML / 非 ok 的一律**跳过并记账**。"""
-    elements, notes, skipped = [], [], []
+    """材料层 → `(elements, 补注, 摘要, 跳过清单, 报错文案)`。非 OOXML / 非 ok 的一律**跳过并记账**。
+
+    **补注**只写"抽到了、走的是哪条路"（§2.1 的 `extractor`）：这一档的跳过全是"**不归我管**"
+    （legacy 归 `parse_legacy`、PDF 归 `parse_pdf`），**不在这里下"读不动"的结论**——抢着下就是双份真值。
+    """
+    elements, notes, done, skipped = [], [], [], []
     for m in materials:
         mid = m.get('id', '?')
         path = Path(m.get('path', ''))
@@ -157,10 +167,12 @@ def parse_materials(materials, max_rows, max_cols):
             skipped.append(f'{mid}: 解析失败 {type(e).__name__}: {e}')
             continue
         if err:
-            return None, notes, skipped, err
+            return None, notes, done, skipped, err
         elements += got
-        notes.append(f'{mid}({kind}) {len(got)}')
-    return elements, notes, skipped, ''
+        done.append(f'{mid}({kind}) {len(got)}')
+        if got:
+            notes.append({'material_id': mid, 'extractor': f'py:{kind}'})
+    return elements, notes, done, skipped, ''
 
 
 def main(argv=None):
@@ -169,6 +181,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description='OOXML 解析适配器：.docx / .xlsx → elements[]')
     ap.add_argument('--materials', required=True, help='材料层 JSON（probe.py --json 的输出）')
     ap.add_argument('-o', '--out', help='写到哪里（默认 stdout，供管道接 ledger）')
+    ap.add_argument('--notes', help='材料层补注写到哪里（status / reason / extractor，交给 ledger.py --notes）')
     ap.add_argument('--max-rows', type=int, default=200, help='每张 sheet 的行上限（超了记 degraded）')
     ap.add_argument('--max-cols', type=int, default=50, help='每张 sheet 的列上限')
     a = ap.parse_args(argv)
@@ -182,7 +195,7 @@ def main(argv=None):
         print('⚠ 输入必须是 JSON 数组（materials[]）', file=sys.stderr)
         return 2
 
-    elements, notes, skipped, err = parse_materials(materials, a.max_rows, a.max_cols)
+    elements, notes, done, skipped, err = parse_materials(materials, a.max_rows, a.max_cols)
     if err:
         print(f'⚠ {err}', file=sys.stderr)
         return 2
@@ -194,8 +207,10 @@ def main(argv=None):
     else:
         sys.stdout.write(text)
         where = 'stdout'
-    print(f'→ 已写出 {where}：元素 {len(elements)} · 解析 {len(notes)} 份 · 跳过 {len(skipped)} 份',
-          file=sys.stderr)
+    if a.notes:
+        _write_notes(notes, a.notes)
+    print(f'→ 已写出 {where}：元素 {len(elements)} · 解析 {len(done)} 份 · 跳过 {len(skipped)} 份'
+          f' · 补注 {len(notes)} 条', file=sys.stderr)
     for s in skipped:
         print(f'  · 跳过 {s}', file=sys.stderr)
     return 0

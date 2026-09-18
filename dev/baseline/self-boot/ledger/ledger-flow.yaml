@@ -8,8 +8,8 @@ meta:
 layout:
   col_x:
   - 400
-  width: 840
-  origin_x: -120
+  width: 940
+  origin_x: -60
 nodes:
 - id: '01'
   name: 开始
@@ -21,7 +21,7 @@ nodes:
   row: 0
   col: 0
   stage: 入口
-  route: 1→08
+  route: 1→10
   desc: 流程起点（结构性节点，不是函数） · 入口：1→main
 - id: '02'
   name: _read_json
@@ -33,8 +33,8 @@ nodes:
   row: 2
   col: 0
   stage: 模块级
-  route: →09
-  desc: ★ 读 JSON（容忍 BOM — PowerShell 的 `Out-File -Encoding utf8` 会写 B… · L29 · 函数
+  route: →11
+  desc: ★ 读 JSON（容忍 BOM — PowerShell 的 `Out-File -Encoding utf8` 会写 B… · L37 · 函数
 - id: '03'
   name: check_materials
   lines:
@@ -45,8 +45,8 @@ nodes:
   row: 3
   col: 0
   stage: 模块级
-  route: →09
-  desc: ★ 材料层校验 → 错误清单（空 = 过）。逐条说清**哪里错了**，不返回布尔。 · L34 · 函数
+  route: →11
+  desc: ★ 材料层校验 → 错误清单（空 = 过）。逐条说清**哪里错了**，不返回布尔。 · L42 · 函数
 - id: '04'
   name: check_elements
   lines:
@@ -57,8 +57,8 @@ nodes:
   row: 4
   col: 0
   stage: 模块级
-  route: →09
-  desc: ★ 证据层校验 → 错误清单。`kind` 是**封闭枚举**（§2.1），扩枚举要先改规范。 · L57 · 函数
+  route: →11
+  desc: ★ 证据层校验 → 错误清单。`kind` 是**封闭枚举**（§2.1），扩枚举要先改规范。 · L65 · 函数
 - id: '05'
   name: degrade
   lines:
@@ -69,33 +69,57 @@ nodes:
   row: 5
   col: 0
   stage: 模块级
-  route: →09
-  desc: ★ §2.4 的降级：`quote` 超限就截断 + 标 `degraded`（**不许静默截断**）。返回降级条数。 · L83 · 函数
+  route: →11
+  desc: ★ §2.4 的降级：`quote` 超限就截断 + 标 `degraded`（**不许静默截断**）。返回降级条数。 · L91 · 函数
 - id: '06'
-  name: assemble
+  name: check_notes
   lines:
-  - assemble
+  - check_notes
   type: task
   subject: 脚本
   executor: selfboot
   row: 6
   col: 0
   stage: 模块级
-  route: →09
-  desc: ★ 按 §2.1 的键序组装账本：**多余的键一律丢弃**（模型封闭，不许夹带）。 · L97 · 函数
+  route: →11
+  desc: ★ 材料层补注校验 → 错误清单。**键封闭**：补注只许改 `status` / `reason` / `extract… · L105 · 函数
 - id: '07'
-  name: dump
+  name: apply_notes
   lines:
-  - dump
+  - apply_notes
   type: task
   subject: 脚本
   executor: selfboot
   row: 7
   col: 0
   stage: 模块级
-  route: →09
-  desc: ★ 写盘契约（§2.4）：UTF-8 / **LF** / 缩进 2 / 中文不转义 / 末尾一个换行。返回字节数。 · L113 · 函数
+  route: →11
+  desc: ★ 把补注落到材料层（**就地改**）→ `(改了几条, 读不动几份)`。 · L127 · 函数
 - id: 08
+  name: assemble
+  lines:
+  - assemble
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 8
+  col: 0
+  stage: 模块级
+  route: →11
+  desc: ★ 按 §2.1 的键序组装账本：**多余的键一律丢弃**（模型封闭，不许夹带）。 · L151 · 函数
+- id: 09
+  name: dump
+  lines:
+  - dump
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 9
+  col: 0
+  stage: 模块级
+  route: →11
+  desc: ★ 写盘契约（§2.4）：UTF-8 / **LF** / 缩进 2 / 中文不转义 / 末尾一个换行。返回字节数。 · L167 · 函数
+- id: '10'
   name: main
   lines:
   - main
@@ -105,78 +129,96 @@ nodes:
   row: 1
   col: 0
   stage: 模块级
-  route: 1→02｜2→03｜3→04｜4→05｜5→06｜6→07
-  desc: L121 · 函数 · 分支：1→_read_json 2→check_materials 3→check_elements 4→degrade 5→assemble
-    6→dump
-- id: 09
+  route: 1→02｜2→03｜3→04｜4→05｜5→06｜6→07｜7→08｜8→09
+  desc: L175 · 函数 · 分支：1→_read_json 2→check_materials 3→check_elements 4→degrade 5→check_notes
+    6→apply_notes 7→assemble 8→dump
+- id: '11'
   name: 结束
   lines:
   - 结束
   type: end
   subject: 脚本
   executor: selfboot
-  row: 8
+  row: 10
   col: 0
   stage: 出口
   route: —
   desc: 流程终点（结构性节点，不是函数）
 edges:
 - from: '01'
-  to: 08
+  to: '10'
   kind: spine
   polarity: main
   label: '1'
 - from: '02'
-  to: 09
+  to: '11'
   kind: jumpR
   polarity: main
 - from: '03'
-  to: 09
+  to: '11'
   kind: jumpR
   polarity: main
 - from: '04'
-  to: 09
+  to: '11'
   kind: jumpR
   polarity: main
 - from: '05'
-  to: 09
+  to: '11'
   kind: jumpR
   polarity: main
 - from: '06'
-  to: 09
+  to: '11'
   kind: jumpR
   polarity: main
 - from: '07'
-  to: 09
-  kind: spine
+  to: '11'
+  kind: jumpR
   polarity: main
 - from: 08
+  to: '11'
+  kind: jumpR
+  polarity: main
+- from: 09
+  to: '11'
+  kind: spine
+  polarity: main
+- from: '10'
   to: '02'
   kind: spine
   polarity: main
   label: '1'
-- from: 08
+- from: '10'
   to: '03'
   kind: jumpR
   polarity: main
   label: '2'
-- from: 08
+- from: '10'
   to: '04'
   kind: jumpR
   polarity: main
   label: '3'
-- from: 08
+- from: '10'
   to: '05'
   kind: jumpR
   polarity: main
   label: '4'
-- from: 08
+- from: '10'
   to: '06'
   kind: jumpR
   polarity: main
   label: '5'
-- from: 08
+- from: '10'
   to: '07'
   kind: jumpR
   polarity: main
   label: '6'
+- from: '10'
+  to: 08
+  kind: jumpR
+  polarity: main
+  label: '7'
+- from: '10'
+  to: 09
+  kind: jumpR
+  polarity: main
+  label: '8'

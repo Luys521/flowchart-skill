@@ -5,7 +5,7 @@
 
 ## 层级树
 
-- **L0 主流程** `flowtable.md`——《self-boot — 模块索引》（id: selfboot-map）（33 节点）
+- **L0 主流程** `flowtable.md`——《self-boot — 模块索引》（id: selfboot-map）（34 节点）
   - **L1 子流程** `artifact/flowtable.md`——《artifact.py 函数流程表》（id: selfboot-artifact）（4 节点）
   - **L1 子流程** `build/flowtable.md`——《build.py 函数流程表》（id: selfboot-build）（27 节点）
   - **L1 子流程** `clarify/flowtable.md`——《clarify.py 函数流程表》（id: selfboot-clarify）（16 节点）
@@ -19,10 +19,11 @@
   - **L1 子流程** `label/flowtable.md`——《label.py 函数流程表》（id: selfboot-label）（11 节点）
   - **L1 子流程** `lane_router/flowtable.md`——《lane_router.py 函数流程表》（id: selfboot-lane_router）（37 节点）
   - **L1 子流程** `layer_index/flowtable.md`——《layer_index.py 函数流程表》（id: selfboot-layer_index）（13 节点）
-  - **L1 子流程** `ledger/flowtable.md`——《ledger.py 函数流程表》（id: selfboot-ledger）（9 节点）
+  - **L1 子流程** `ledger/flowtable.md`——《ledger.py 函数流程表》（id: selfboot-ledger）（11 节点）
   - **L1 子流程** `manifest/flowtable.md`——《manifest.py 函数流程表》（id: selfboot-manifest）（31 节点）
-  - **L1 子流程** `parse_ooxml/flowtable.md`——《parse_ooxml.py 函数流程表》（id: selfboot-parse_ooxml）（10 节点）
-  - **L1 子流程** `parse_pdf/flowtable.md`——《parse_pdf.py 函数流程表》（id: selfboot-parse_pdf）（7 节点）
+  - **L1 子流程** `parse_legacy/flowtable.md`——《parse_legacy.py 函数流程表》（id: selfboot-parse_legacy）（15 节点）
+  - **L1 子流程** `parse_ooxml/flowtable.md`——《parse_ooxml.py 函数流程表》（id: selfboot-parse_ooxml）（11 节点）
+  - **L1 子流程** `parse_pdf/flowtable.md`——《parse_pdf.py 函数流程表》（id: selfboot-parse_pdf）（8 节点）
   - **L1 子流程** `probe/flowtable.md`——《probe.py 函数流程表》（id: selfboot-probe）（11 节点）
   - **L1 子流程** `recon/flowtable.md`——《recon.py 函数流程表》（id: selfboot-recon）（11 节点）
   - **L1 子流程** `render_drawio/flowtable.md`——《render_drawio.py 函数流程表》（id: selfboot-render_drawio）（27 节点）
@@ -55,20 +56,21 @@
 13. `layer_index/flowtable.md`（L1）
 14. `ledger/flowtable.md`（L1）
 15. `manifest/flowtable.md`（L1）
-16. `parse_ooxml/flowtable.md`（L1）
-17. `parse_pdf/flowtable.md`（L1）
-18. `probe/flowtable.md`（L1）
-19. `recon/flowtable.md`（L1）
-20. `render_drawio/flowtable.md`（L1）
-21. `render_html/flowtable.md`（L1）
-22. `render_svg/flowtable.md`（L1）
-23. `router/flowtable.md`（L1）
-24. `semantics/flowtable.md`（L1）
-25. `shot/flowtable.md`（L1）
-26. `swimlane/flowtable.md`（L1）
-27. `sync/flowtable.md`（L1）
-28. `table_to_dsl/flowtable.md`（L1）
-29. `validate/flowtable.md`（L1）
-30. `writeback/flowtable.md`（L1）
-31. `xml_reader/flowtable.md`（L1）
-32. `flowtable.md`（L0）
+16. `parse_legacy/flowtable.md`（L1）
+17. `parse_ooxml/flowtable.md`（L1）
+18. `parse_pdf/flowtable.md`（L1）
+19. `probe/flowtable.md`（L1）
+20. `recon/flowtable.md`（L1）
+21. `render_drawio/flowtable.md`（L1）
+22. `render_html/flowtable.md`（L1）
+23. `render_svg/flowtable.md`（L1）
+24. `router/flowtable.md`（L1）
+25. `semantics/flowtable.md`（L1）
+26. `shot/flowtable.md`（L1）
+27. `swimlane/flowtable.md`（L1）
+28. `sync/flowtable.md`（L1）
+29. `table_to_dsl/flowtable.md`（L1）
+30. `validate/flowtable.md`（L1）
+31. `writeback/flowtable.md`（L1）
+32. `xml_reader/flowtable.md`（L1）
+33. `flowtable.md`（L0）

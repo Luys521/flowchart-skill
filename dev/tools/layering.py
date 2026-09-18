@@ -68,6 +68,7 @@ MODULE = {
     'ledger',         # → evidence.json（证据账本，PIPELINE-SPEC §2）
     'parse_ooxml',    # → elements[] JSON（OOXML 解析适配器，PIPELINE-SPEC §1.4）
     'parse_pdf',      # → elements[] JSON（PDF 文本层适配器，PIPELINE-SPEC §1.4）
+    'parse_legacy',   # → elements[] JSON（legacy 走外部转换器，PIPELINE-SPEC §1.4）
     'recon',          # → 侦查结论表草稿（难度排序 + 结构缩样，PIPELINE-SPEC §1.5）
 }
 
