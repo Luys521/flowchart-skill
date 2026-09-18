@@ -68,7 +68,8 @@ N 与密度阈值属**数值**：落地时必须写进 `scripts/dictionary.yaml`
 
 ### 1.3 三档的产出义务
 
-- T1/T2：产出进证据账本，`extractor` 写具体插件名。
+- T1/T2：产出进证据账本，`extractor` 写具体插件名；**且必须过 §1.5 的抽取质量门**——
+  抽不出来算读不动（诚实），抽出来是碎片 / 坏字符则**不许当 `direct` 证据**（污染唯一事实源，且没有仪器看得见）。
 - **T3 也必须产出证据**（element 带 bbox 与摘录）—否则流程表「依据」列会指向空，H10 断链。T3 的 `extractor` 记 `vlm`，`certainty` 一律 `inferred`（视觉推断不许伪装成直取）。
 - T4：作为 materials[] 的一条记录进账本（status=unreadable + reason，见 §2.1），**不静默丢弃**；清点只读账本，不另立一份。
 - **"读没读出来"由解析阶段记账**（材料层补注，见 §1.4）：`extractor` 写走的是哪条路，读不动的写 `status=unreadable` + **可执行**原因。
@@ -191,8 +192,19 @@ notes                     → [{material_id, status?, reason?, extractor?}]   �
 
 | # | 手段 | 怎么做 | 状态 |
 |---|---|---|---|
+| 0 | **抽取质量门**（**先过这道门**） | `textquality.py`：单字行占比 · 平均行长 · 坏字符率（替换字符/控制字符/私用区）· 单一字符占比 → `ok` 照收 · `noisy` 丢**纯碎片**元素 + 留下每条挂 `degraded` · `garbled` 该材料**不入账** + 建议处置；阈值在 `dictionary.yaml` 的 `material_quality` | 可用 |
 | 1 | **结构缩样**（首选） | **自包含**：`openpyxl` 读 sheet 名与 used range、`python-docx` 读大纲；宿主 Office SDK 若存在可读更全（公式 / 透视表计数） | 可用 |
 | 2 | 转图片 → 视觉 | 只在"**结构里根本读不出内容**"时用（真扫描件 T3）—图片信息**无法逐字引用**，用了会让 H10 断链 | **自包含侧无渲染能力**，暂不可用（见 §7.2 第 4 条） |
+
+**为什么"手段 0"必须排在"手段 1"前面**（实测，不是推演）：`probe` 说某份 PDF"有文本层"（`/Font` x161）、
+`parse_pdf` 说"抽到 1563 字"——**两边都真**，可那条文本层是竖排 / 字距碎裂的水印碎片：整份 225 行里
+140 行是单字行（62%），前 3 页 100%，首页抽出来是 `验 / 核 / 息 / 信 / 司 / 公 / 于 / 用 / 仅`。
+**"读不动"是诚实的，"读出垃圾却当 `direct` 证据"是最坏的一种**——它污染唯一事实源，而没有任何仪器看得见。
+所以：**T1/T2 抽出来的东西要先过质量门才算证据**；不过门的按上面的三级处置，**丢元素一律记账**
+（不吭声地少几条，下游只会以为"这份材料本来就这么点内容"）。
+
+**样本太小不判**（行数 < `min_lines`）：几行的材料没有统计意义，判了就是拿噪声当结论——
+**宁可漏判，不可误判**（误判会把能读的材料判成读不动，那是把仪器的错算在材料头上）。
 
 **假设必须落盘**（否则"循环"是黑箱，事后无法复现）：侦查结论写成表，**被推翻也要留痕**。
 
@@ -241,7 +253,7 @@ notes                     → [{material_id, status?, reason?, extractor?}]   �
 | `location` | 是 | 出处，见 §2.3 |
 | `extractor` | 是 | 产出它的插件名（含 `vlm`） |
 | `certainty` | 是 | `direct` / `inferred` 两值；T3 与任何机器猜测一律 `inferred` |
-| `degraded` | 否 | **降级说明**（如 `quote 截断到 200 字`）；没降级就**不写这个键** |
+| `degraded` | 否 | **降级说明**（如 `quote 截断到 200 字`、`抽取质量有保留：单字行 62%…`）；没降级就**不写这个键** |
 
 `kind` 初始枚举（**键封闭**：扩枚举必须先改本文）：
 
@@ -448,6 +460,7 @@ heading  paragraph  list_item  table  figure  caption  code  sheet  cell
 | 解析器四条硬要求（只读 · 不抛裸异常 · 输出符合 §2 · 缺依赖报可执行错） | 适配器自检（待定） | `parse_ooxml` / `parse_pdf` / `parse_legacy` 已按此实现（实测：非目标材料**跳过并记账**、缺依赖退 2 并给安装命令）；**无仪器** |
 | 材料层记账完整：`status` / `reason` / `extractor` 由解析阶段补注写入（§1.4） | `scripts/ledger.py --notes` | **已实现**（补注键封闭 / id 必须存在 / `unreadable` 必有 reason，**落完再校一次**）；**未进验收路径** |
 | 分派是查表（§1.4）：固定顺序跑适配器 · 同输入同字节 · 冲突与漏认不许静默 | `scripts/parse.py` | **已实现**（元素按 `material_id` 稳定排序；id 重复 / 补注冲突 / `status=ok` 却零证据三类都**退 1 且不落盘**，实测各路径）；**未进验收路径** |
+| 抽取质量门（§1.5 手段 0）：碎片 / 坏字符主导的抽取**不许当证据入账** | `scripts/textquality.py`（判据）+ `scripts/parse.py`（执行）+ `dictionary.yaml`（阈值） | **已实现**（三级判决；真数据实测 M15 单字行 62% → `noisy`：丢 10 条纯碎片、留 6 条逐条挂 `degraded`；干净材料零误判；样本 < `min_lines` 不判）；**未进验收路径** |
 | 纯文本不猜编码（§1.4）：只认 UTF-8 / 带 BOM 的 UTF-16；GBK 等要显式 `--encoding` | `scripts/parse_text.py` | **已实现**（不带 `--encoding`：GBK 材料记 `unreadable` + 可执行提示；带了：读出来并把 `status` 改回 `ok`、删掉陈旧的 probe reason。兜底**不覆盖** UTF-8 材料——实测修掉"一份 GBK 把整批拖成读不动"）；**未进验收路径** |
 | 文本档只记账、不认结构（§1.4）：**理解归直读的模型**，脚本只保证"可引用 / 可复现 / 编码与上限" | `scripts/parse_text.py` | **已实现**（按行打块：行数守恒；块超上限**先收后放**，单行比块长才截断并记 `degraded`——实测第一版"先攒后收"会把整行吃掉还标假降级）；**未进验收路径** |
 | legacy 只走外部转换器：判据 `--version` 能通；缺了就记读不动 + 可执行提示，**不许假装能读** | `scripts/parse_legacy.py` | **已实现**（本机无 soffice：缺转换器分支在真实 4 份材料上实测；转换分支用**替身转换器**验过——LibreOffice 自身的转换保真度不在射程内） |
@@ -464,7 +477,7 @@ heading  paragraph  list_item  table  figure  caption  code  sheet  cell
 ### 7.1 H10 上线清单（实现 H10 时照单执行）
 
 1. **改全仓写死的 H 范围**—`dev/verify/contract.py` 有一条**硬断言**（"flowtable-spec 里 H1—H9 齐全"，比的是 `list('123456789')`），**补了 H10 它会当场判红**。要同步的地方：`references/flowtable-spec.md` 的 H 列表 · `dev/verify/contract.py` 那条断言 · `dev/tools/accept.py` 的门② 标题 · `dev/tools/README.md` 的门表 · `dev/tools/layering.py` 的注释 · `dev/tools/equiv-fixtures/broken.md` 的用例描述。
-2. **误伤回归**：在现有全部表（自举 36 张 + 样例 8 张 = 44 张）上跑 `scripts/table_to_dsl.py --check`，要求 **0 条 hard 增量**。
+2. **误伤回归**：在现有全部表（自举 37 张 + 样例 8 张 = 45 张）上跑 `scripts/table_to_dsl.py --check`，要求 **0 条 hard 增量**。
 
 ### 7.2 已知的代码接缝（实现 L0 / L1 时必改）
 

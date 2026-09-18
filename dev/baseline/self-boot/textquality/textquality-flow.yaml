@@ -1,0 +1,177 @@
+meta:
+  title: textquality.py 函数流程表
+  subjects:
+    脚本:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  width: 800
+  origin_x: -180
+nodes:
+- id: '01'
+  name: 开始
+  lines:
+  - 开始
+  type: start
+  subject: 脚本
+  executor: selfboot
+  row: 0
+  col: 0
+  stage: 入口
+  route: 1→02｜2→07｜3→08
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→load_thresholds 2→verdict 3→scar
+- id: '02'
+  name: load_thresholds
+  lines:
+  - load_thresholds
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: 模块级
+  route: →09
+  desc: ★ 阈值 = 默认 + `dictionary.yaml` 的 `material_quality:` 段（读不到就用默认… · L41 · 函数
+- id: '03'
+  name: _bad_char
+  lines:
+  - _bad_char
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 6
+  col: 0
+  stage: 模块级
+  route: →09
+  desc: ★ 替换字符 / 控制字符 / 私用区：乱码常落在这三类里。 · L61 · 函数
+- id: '04'
+  name: stats
+  lines:
+  - stats
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 5
+  col: 0
+  stage: 模块级
+  route: →03
+  desc: ★ 文字类元素 → 读数（人可核）：行 / 字 / 单字行 / 平均行长 / 坏字符 / 单一字符占比。 · L68 · 函数
+- id: '05'
+  name: _why
+  lines:
+  - _why
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: 模块级
+  route: →09
+  desc: ★ 读数 → 人话（**判据要能被人复核**：比例后面永远跟上原始计数）。 · L97 · 函数
+- id: '06'
+  name: element_is_garbage
+  lines:
+  - element_is_garbage
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 4
+  col: 0
+  stage: 模块级
+  route: →04
+  desc: ★ 单条元素是不是**纯碎片**（元素级判据；行数门槛比材料级低，因为一条元素可能就几行）。 · L104 · 函数
+- id: '07'
+  name: verdict
+  lines:
+  - verdict
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 1
+  col: 0
+  stage: 模块级
+  route: 1→04｜2→05｜3→06
+  desc: ★ 一组元素 → `(级别, 判据说明, 该丢的元素 id)`。级别 ∈ `ok` / `noisy` / `garble… · L112 · 函数
+    · 分支：1→stats 2→_why 3→element_is_garbage
+- id: 08
+  name: scar
+  lines:
+  - scar
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 7
+  col: 0
+  stage: 模块级
+  route: →09
+  desc: ★ 把"质量有保留"挂到**该材料的每条**上（§2.4 降级必须留痕；与 `parse_pdf` 的采样说明同一口径）。 · L132 · 函数
+- id: 09
+  name: 结束
+  lines:
+  - 结束
+  type: end
+  subject: 脚本
+  executor: selfboot
+  row: 8
+  col: 0
+  stage: 出口
+  route: —
+  desc: 流程终点（结构性节点，不是函数）
+edges:
+- from: '01'
+  to: '02'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '01'
+  to: '07'
+  kind: spine
+  polarity: main
+  label: '2'
+- from: '01'
+  to: 08
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '02'
+  to: 09
+  kind: jumpR
+  polarity: main
+- from: '03'
+  to: 09
+  kind: jumpR
+  polarity: main
+- from: '04'
+  to: '03'
+  kind: spine
+  polarity: main
+- from: '05'
+  to: 09
+  kind: jumpR
+  polarity: main
+- from: '06'
+  to: '04'
+  kind: spine
+  polarity: main
+- from: '07'
+  to: '04'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '07'
+  to: '05'
+  kind: spine
+  polarity: main
+  label: '2'
+- from: '07'
+  to: '06'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: 08
+  to: 09
+  kind: spine
+  polarity: main

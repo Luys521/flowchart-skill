@@ -11,14 +11,19 @@ r"""parse.py — 解析分派器（**编排层**；PIPELINE-SPEC §1.4）：材�
 `material_id` **稳定排序**（各适配器内部的阅读序原样保留，只按材料归位）——账本里 M01…M15 是连着的，
 人翻账本不用在三个适配器的输出之间来回跳。
 
-**冲突与漏认都退 1**（两条都是"仪器发现真问题"，不是可忽略的噪声）：
+**三道关，缺一不可**（都在这一层，因为只有它同时看得见"谁产的"与"整份材料长什么样"）：
+
+- **质量门**（§1.5「手段 0」）：`probe` 说"有文本层"、适配器说"抽到了"——两边都真，但那条文本层可能是
+  竖排 / 字距碎裂的水印碎片（实测 M15：单字行 62%）。判据在 `textquality`（阈值在 `dictionary.yaml`）：
+  `ok` 照收 · `noisy` 丢**纯碎片**元素、留下的每条挂 `degraded` · `garbled` 整份**不入账** + 建议处置。
+  **丢元素一律记账**：不吭声地少几条，下游只会以为"这份材料本来就这么点内容"。
 - **冲突**：同一个 element id 被两个适配器产出（判档重叠），或两份补注对同一材料给出不同的
   `status`/`reason`/`extractor`——静默取一个会让账本里出现"没人知道哪来的"记录；
 - **漏认**：`probe` 说这份 status=ok，却**既没有元素、也没有补注**（例如纯文本 `.txt` 至今没有适配器）
   ——那正是上一轮补掉的洞（"能读却没内容"），不许再让它静默流进账本。
 
 退出码：0 = 跑完（**可能有读不动的材料**，补注里逐份给了原因）；1 = 冲突 / 漏认（不写产物）；
-2 = 输入读不了 / 适配器起不来 / 适配器报错。
+2 = 输入读不了 / 适配器起不来 / 适配器报错。质量门**不改退出码**：材料读不动是数据事实，不是仪器故障。
 """
 import argparse
 import json
@@ -26,6 +31,8 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+from textquality import load_thresholds, scar, verdict
 
 SCRIPTS = Path(__file__).resolve().parent
 
@@ -108,6 +115,53 @@ def merge_elements(per_adapter):
     return merged, ''
 
 
+def apply_quality(elements, materials, adapter_notes, th):
+    """抽取质量门（§1.5「手段 0」）→ `(留下的元素, 覆盖用的补注, 丢掉的元素 id, 读数行, {M##: 级别})`。
+
+    **为什么门要设在这里**：`probe` 说"有文本层"、适配器说"抽到了"——两边都真，但那条文本层可能是
+    竖排 / 字距碎裂的水印碎片（实测 M15：单字行 62%）。不设门，账本就把碎片当 `direct` 证据收下，
+    下游「依据」列引一堆读不出意思的东西，而且**没有任何仪器看得见**。
+
+    三级处置（判据在 `textquality.verdict`，阈值在 `dictionary.yaml`）：
+    `ok` 照收；`noisy` 丢掉**纯碎片**元素、留下的每条挂 `degraded`（降级留痕 §2.4）；`garbled` 整份不入账。
+    **丢元素必须记账**：不吭声地少几条，下游只会以为"这份材料本来就这么点内容"。
+    """
+    by_mid, kept, notes, frozen, lines, level_of = {}, [], [], [], [], {}
+    for e in elements:
+        by_mid.setdefault(e.get('material_id'), []).append(e)
+    for m in materials:
+        mid = m.get('id')
+        mine = by_mid.get(mid) or []
+        if not mine:
+            continue
+        level, why, drop = verdict(mine, th)
+        level_of[mid] = (level, why)
+        if level == 'garbled':
+            old = next((n for n in adapter_notes if n.get('material_id') == mid), {})
+            note = {'material_id': mid, 'status': 'unreadable',
+                    'reason': f'抽取质量不过关（{why}）：建议转图片 → 视觉识别（`render_pages`）、'
+                              f'装 OCR，或人工核对后进澄清'}
+            if old.get('extractor'):
+                note['extractor'] = old['extractor']      # 记下"谁抽的、抽成这样"，排障要看
+            notes.append(note)
+            frozen += [e.get('id') for e in mine]
+            lines.append(f'{mid} garbled：{why} → 该材料 {len(mine)} 条元素一律不入账')
+            continue
+        # 元素级丢碎片：**各级都做**（整份判干净，也可能夹着一页纯水印碎片——那条本身没有可用内容）
+        kill = set(drop)
+        keep = [e for e in mine if e.get('id') not in kill]
+        kept += keep
+        frozen += drop
+        if level == 'noisy':
+            scar(keep, why)
+            lines.append(f'{mid} noisy：{why}'
+                         + (f' → 丢掉纯碎片 {len(drop)} 条，其余每条挂 degraded' if drop else ' → 每条挂 degraded'))
+        elif drop:
+            lines.append(f'{mid} ok（整份判据干净）：丢掉纯碎片 {len(drop)} 条'
+                         f'（那几条自己就是一页水印/碎片，留进账本只会让「依据」引到读不出意思的东西）')
+    return kept, notes, frozen, lines, level_of
+
+
 def merge_notes(per_adapter):
     """`[(适配器名, notes)]` → `(合并后的 notes, 冲突说明)`。
 
@@ -126,7 +180,7 @@ def merge_notes(per_adapter):
     return [by_mid[mid] for mid in by_mid], ''
 
 
-def survey(materials, elements, notes):
+def survey(materials, elements, notes, quality=None):
     """材料层 × 证据 × 补注 → `(每份材料一行, 漏认清单)`。**漏认 = status=ok 却既无元素也无补注。**"""
     counts, note_of = {}, {}
     for e in elements:
@@ -143,6 +197,9 @@ def survey(materials, elements, notes):
         row = {'id': mid, 'tier': m.get('tier'), 'status': status,
                'extractor': n.get('extractor') or m.get('extractor') or '',
                'elements': counts.get(mid, 0), 'reason': reason}
+        q = (quality or {}).get(mid)
+        if q and q[0] == 'noisy':                     # 有保留：**表上也要看得见**（别让人以为这份是干净的）
+            row['reason'] = f'⚠ 抽取质量有保留：{q[1]}'
         rows.append(row)
         if status == 'ok' and not row['elements'] and not note_of.get(mid):
             gaps.append(mid)
@@ -214,11 +271,24 @@ def main(argv=None):
         print(f'⚠ {err}', file=sys.stderr)
         return 1
 
-    rows, gaps = survey(materials, elements, notes)
+    # 抽取质量门（§1.5）：先过门再记账——"抽出来了"不等于"抽对了"
+    elements, q_notes, frozen, q_lines, q_of = apply_quality(
+        elements, materials, notes, load_thresholds())
+    if q_notes:                                        # 质量门的补注**覆盖**适配器那条（谁抽的仍记着）
+        killed = {n.get('material_id') for n in q_notes}
+        notes = [n for n in notes if n.get('material_id') not in killed] + q_notes
+
+    rows, gaps = survey(materials, elements, notes, q_of)
     if a.verbose:
         for line in briefs:
             print(f'  · {line}', file=sys.stderr)
     _print_survey(rows, gaps, a.verbose)
+    if q_lines:
+        n_flag = sum(1 for lv, _w in q_of.values() if lv != 'ok')
+        print(f'抽取质量门（§1.5）：{n_flag} 份没过"干净"这一档'
+              + (f' · 丢弃元素 {len(frozen)} 条（**已记账**，不是静默少几条）' if frozen else ''))
+        for line in q_lines:
+            print(f'  · {line}')
     if gaps:
         return 1
 

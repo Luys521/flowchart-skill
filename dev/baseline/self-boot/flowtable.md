@@ -28,7 +28,7 @@ level: L0
 | 层级索引 | 15 | 模块 · layer_index | 任务 | — | — | — | 脚本 | selfboot | — | →16 | 9 个函数 · ⊞ layer_index/flowtable.md |
 | 接管与解析 | 16 | 模块 · ledger | 任务 | — | — | — | 脚本 | selfboot | — | →17 | 9 个函数 · ⊞ ledger/flowtable.md |
 | 产物审核 | 17 | 模块 · manifest | 任务 | — | — | — | 脚本 | selfboot | — | →18 | 29 个函数 · ⊞ manifest/flowtable.md |
-| 接管与解析 | 18 | 模块 · parse | 任务 | — | — | — | 脚本 | selfboot | — | →19 | 10 个函数 · ⊞ parse/flowtable.md |
+| 接管与解析 | 18 | 模块 · parse | 任务 | — | — | — | 脚本 | selfboot | — | →19 | 11 个函数 · ⊞ parse/flowtable.md |
 | 接管与解析 | 19 | 模块 · parse_legacy | 任务 | — | — | — | 脚本 | selfboot | — | →20 | 13 个函数 · ⊞ parse_legacy/flowtable.md |
 | 接管与解析 | 20 | 模块 · parse_ooxml | 任务 | — | — | — | 脚本 | selfboot | — | →21 | 9 个函数 · ⊞ parse_ooxml/flowtable.md |
 | 接管与解析 | 21 | 模块 · parse_pdf | 任务 | — | — | — | 脚本 | selfboot | — | →22 | 6 个函数 · ⊞ parse_pdf/flowtable.md |
@@ -44,7 +44,8 @@ level: L0
 | 渲染 | 31 | 模块 · swimlane | 任务 | — | — | — | 脚本 | selfboot | — | →32 | 19 个函数 · ⊞ swimlane/flowtable.md |
 | 同步闭环 | 32 | 模块 · sync | 任务 | — | — | — | 脚本 | selfboot | — | →33 | 10 个函数 · ⊞ sync/flowtable.md |
 | DSL 装配 | 33 | 模块 · table_to_dsl | 任务 | — | — | — | 脚本 | selfboot | — | →34 | 14 个函数 · ⊞ table_to_dsl/flowtable.md |
-| 产物审核 | 34 | 模块 · validate | 任务 | — | — | — | 脚本 | selfboot | — | →35 | 39 个函数 · ⊞ validate/flowtable.md |
-| 同步闭环 | 35 | 模块 · writeback | 任务 | — | — | — | 脚本 | selfboot | — | →36 | 21 个函数 · ⊞ writeback/flowtable.md |
-| 同步闭环 | 36 | 模块 · xml_reader | 任务 | — | — | — | 脚本 | selfboot | — | →37 | 40 个函数 · ⊞ xml_reader/flowtable.md |
-| 出口 | 37 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |
+| 接管与解析 | 34 | 模块 · textquality | 任务 | — | — | — | 脚本 | selfboot | — | →35 | 7 个函数 · ⊞ textquality/flowtable.md |
+| 产物审核 | 35 | 模块 · validate | 任务 | — | — | — | 脚本 | selfboot | — | →36 | 39 个函数 · ⊞ validate/flowtable.md |
+| 同步闭环 | 36 | 模块 · writeback | 任务 | — | — | — | 脚本 | selfboot | — | →37 | 21 个函数 · ⊞ writeback/flowtable.md |
+| 同步闭环 | 37 | 模块 · xml_reader | 任务 | — | — | — | 脚本 | selfboot | — | →38 | 40 个函数 · ⊞ xml_reader/flowtable.md |
+| 出口 | 38 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |

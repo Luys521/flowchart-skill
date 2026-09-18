@@ -5,7 +5,7 @@
 
 ## 层级树
 
-- **L0 主流程** `flowtable.md`——《self-boot — 模块索引》（id: selfboot-map）（37 节点）
+- **L0 主流程** `flowtable.md`——《self-boot — 模块索引》（id: selfboot-map）（38 节点）
   - **L1 子流程** `artifact/flowtable.md`——《artifact.py 函数流程表》（id: selfboot-artifact）（4 节点）
   - **L1 子流程** `build/flowtable.md`——《build.py 函数流程表》（id: selfboot-build）（27 节点）
   - **L1 子流程** `clarify/flowtable.md`——《clarify.py 函数流程表》（id: selfboot-clarify）（16 节点）
@@ -22,7 +22,7 @@
   - **L1 子流程** `layer_index/flowtable.md`——《layer_index.py 函数流程表》（id: selfboot-layer_index）（13 节点）
   - **L1 子流程** `ledger/flowtable.md`——《ledger.py 函数流程表》（id: selfboot-ledger）（11 节点）
   - **L1 子流程** `manifest/flowtable.md`——《manifest.py 函数流程表》（id: selfboot-manifest）（31 节点）
-  - **L1 子流程** `parse/flowtable.md`——《parse.py 函数流程表》（id: selfboot-parse）（12 节点）
+  - **L1 子流程** `parse/flowtable.md`——《parse.py 函数流程表》（id: selfboot-parse）（13 节点）
   - **L1 子流程** `parse_legacy/flowtable.md`——《parse_legacy.py 函数流程表》（id: selfboot-parse_legacy）（15 节点）
   - **L1 子流程** `parse_ooxml/flowtable.md`——《parse_ooxml.py 函数流程表》（id: selfboot-parse_ooxml）（11 节点）
   - **L1 子流程** `parse_pdf/flowtable.md`——《parse_pdf.py 函数流程表》（id: selfboot-parse_pdf）（8 节点）
@@ -38,6 +38,7 @@
   - **L1 子流程** `swimlane/flowtable.md`——《swimlane.py 函数流程表》（id: selfboot-swimlane）（21 节点）
   - **L1 子流程** `sync/flowtable.md`——《sync.py 函数流程表》（id: selfboot-sync）（12 节点）
   - **L1 子流程** `table_to_dsl/flowtable.md`——《table_to_dsl.py 函数流程表》（id: selfboot-table_to_dsl）（16 节点）
+  - **L1 子流程** `textquality/flowtable.md`——《textquality.py 函数流程表》（id: selfboot-textquality）（9 节点）
   - **L1 子流程** `validate/flowtable.md`——《validate.py 函数流程表》（id: selfboot-validate）（41 节点）
   - **L1 子流程** `writeback/flowtable.md`——《writeback.py 函数流程表》（id: selfboot-writeback）（23 节点）
   - **L1 子流程** `xml_reader/flowtable.md`——《xml_reader.py 函数流程表》（id: selfboot-xml_reader）（42 节点）
@@ -76,7 +77,8 @@
 30. `swimlane/flowtable.md`（L1）
 31. `sync/flowtable.md`（L1）
 32. `table_to_dsl/flowtable.md`（L1）
-33. `validate/flowtable.md`（L1）
-34. `writeback/flowtable.md`（L1）
-35. `xml_reader/flowtable.md`（L1）
-36. `flowtable.md`（L0）
+33. `textquality/flowtable.md`（L1）
+34. `validate/flowtable.md`（L1）
+35. `writeback/flowtable.md`（L1）
+36. `xml_reader/flowtable.md`（L1）
+37. `flowtable.md`（L0）
