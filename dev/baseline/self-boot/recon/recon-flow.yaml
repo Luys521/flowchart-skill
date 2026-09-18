@@ -8,8 +8,8 @@ meta:
 layout:
   col_x:
   - 400
-  width: 920
-  origin_x: -120
+  width: 1220
+  origin_x: 0
 nodes:
 - id: '01'
   name: 开始
@@ -21,106 +21,230 @@ nodes:
   row: 0
   col: 0
   stage: 入口
-  route: 1→10
+  route: 1→20
   desc: 流程起点（结构性节点，不是函数） · 入口：1→main
 - id: '02'
-  name: _import_dep
-  lines:
-  - _import_dep
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 6
-  col: 0
-  stage: 模块级
-  route: →11
-  desc: ★ import 一个必须依赖 → `(模块, 报错文案)`（缺了给可执行的提示）。 · L29 · 函数
-- id: '03'
   name: _read_json
   lines:
   - _read_json
   type: task
   subject: 脚本
   executor: selfboot
-  row: 4
+  row: 17
   col: 0
   stage: 模块级
-  route: →11
-  desc: ★ 读 JSON（容忍 BOM）。 · L38 · 函数
-- id: '04'
-  name: _scale_docx
+  route: →21
+  desc: ★ 读 JSON（容忍 BOM）。 · L75 · 函数
+- id: '03'
+  name: _import_dep
   lines:
-  - _scale_docx
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 3
-  col: 0
-  stage: 模块级
-  route: →02
-  desc: ★ `.docx` → `(规模描述, 大纲行, 报错文案)`：只读结构，不物化全部文字。 · L43 · 函数
-- id: '05'
-  name: _scale_xlsx
-  lines:
-  - _scale_xlsx
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 5
-  col: 0
-  stage: 模块级
-  route: →02
-  desc: ★ `.xlsx` → `(规模描述, 子表行, 报错文案)`：只用 `calculate_dimension()` 读尺… · L66 · 函数
-- id: '06'
-  name: make_rows
-  lines:
-  - make_rows
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 7
-  col: 0
-  stage: 模块级
-  route: →11
-  desc: ★ 材料层 → 侦查行（**先不判断**：难度 / 规模 / 建议由 run 填）。 · L85 · 函数
-- id: '07'
-  name: advise
-  lines:
-  - advise
+  - _import_dep
   type: task
   subject: 脚本
   executor: selfboot
   row: 9
   col: 0
   stage: 模块级
-  route: →11
-  desc: ★ 机器建议处置（§1.5 的"处置三选一"）：**只看档位与内容量**，不做语义判断。 · L93 · 函数
-- id: 08
-  name: render
+  route: →21
+  desc: ★ import 一个必须依赖 → `(模块, 报错文案)`（缺了给可执行的提示）。 · L80 · 函数
+- id: '04'
+  name: load_thresholds
   lines:
-  - render
+  - load_thresholds
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: 模块级
+  route: →21
+  desc: ★ 阈值 = 默认 + `dictionary.yaml` 的 `recon:` 段（读不到就用默认，**不报错**）。 · L89 · 函数
+- id: '05'
+  name: _docx_scale
+  lines:
+  - _docx_scale
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 6
+  col: 0
+  stage: 模块级
+  route: 1→03｜2→06
+  desc: ★ `.docx` 字节 → `(规模描述, 大纲行, 大纲总条数, 结构说明)`。**只读结构，不物化全部文字**。 · L106 · 函数 ·
+    分支：1→_import_dep 2→_is_heading
+- id: '06'
+  name: _is_heading
+  lines:
+  - _is_heading
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 7
+  col: 0
+  stage: 模块级
+  route: →21
+  desc: ★ 样式名判标题（与 `parse_ooxml` 同一句判据；两边都只认 `heading` 前缀）。 · L123 · 函数
+- id: '07'
+  name: _xlsx_scale
+  lines:
+  - _xlsx_scale
   type: task
   subject: 脚本
   executor: selfboot
   row: 8
   col: 0
   stage: 模块级
-  route: →07
-  desc: ★ 侦查结论表草稿（markdown）：机器列已填，**假设角色留给 AI**（§1.5 要求落盘）。 · L109 · 函数
-- id: 09
-  name: run
+  route: →03
+  desc: ★ `.xlsx` 字节 → `(规模描述, 子表行, 子表数, 结构说明)`。用尺寸信息读规模，**不扫单元格**。 · L131 · 函数
+- id: 08
+  name: _note_of
   lines:
-  - run
+  - _note_of
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 10
+  col: 0
+  stage: 模块级
+  route: →21
+  desc: ★ 异常 → 记在表里的说明。**把"材料的问题"与"我们自己的 bug"分开**： · L158 · 函数
+- id: 09
+  name: sample_structure
+  lines:
+  - sample_structure
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 5
+  col: 0
+  stage: 模块级
+  route: 1→05｜2→07｜3→08
+  desc: ★ 按 `kind` 缩样 → `(规模描述, 结构行, 结构总条数, 说明)`。**读不了不是错**：返回说明，逐份记账。 · L171 · 函数
+    · 分支：1→_docx_scale 2→_xlsx_scale 3→_note_of
+- id: '10'
+  name: difficulty
+  lines:
+  - difficulty
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 11
+  col: 0
+  stage: 模块级
+  route: →21
+  desc: ★ 难度：不参与 / 易 / 中 / 难 / 最难。**分档只看 `bytes` 与 `tier`**（kind 只影响"… · L184 · 函数
+- id: '11'
+  name: advise_depth
+  lines:
+  - advise_depth
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 13
+  col: 0
+  stage: 模块级
+  route: →21
+  desc: ★ 解析深度（§1.5 三选一）+ 触发它的数字。**事实与建议要能分开看**：数字随后写进「规模」列。 · L194 · 函数
+- id: '12'
+  name: advise_path
+  lines:
+  - advise_path
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 14
+  col: 0
+  stage: 模块级
+  route: →21
+  desc: ★ 走哪条路（§1.1 档位映射）：**按 `kind` 查表**，不看扩展名（审计 F3/F6）。 · L203 · 函数
+- id: '13'
+  name: make_rows
+  lines:
+  - make_rows
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 4
+  col: 0
+  stage: 模块级
+  route: 1→09｜2→10
+  desc: ★ 材料层 → 侦查行 + 跳过清单。**逐份尽力而为**：结构读不了记在行里，绝不外溢成整批失败。 · L210 · 函数 · 分支：1→sample_structure
+    2→difficulty
+- id: '14'
+  name: render
+  lines:
+  - render
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 12
+  col: 0
+  stage: 模块级
+  route: 1→11｜2→12
+  desc: ★ 侦查结论表（markdown）。**表头先写输入指纹与阈值**——不然"共 20"这类数字事后没法复核。 · L241 · 函数 · 分支：1→advise_depth
+    2→advise_path
+- id: '15'
+  name: parse_table
+  lines:
+  - parse_table
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 18
+  col: 0
+  stage: 模块级
+  route: →21
+  desc: '★ `recon.md` → `(表头, {M##: {列: 值}}, 报错)`。表头必须逐字对得上（列规范在代码里只有这… · L269 · 函数'
+- id: '16'
+  name: check_rows
+  lines:
+  - check_rows
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 19
+  col: 0
+  stage: 模块级
+  route: →21
+  desc: ★ AI 填的列 → 错误清单（空 = 过）。**只报不改**；§1.5"假设必须落盘、被推翻也要留痕"。 · L297 · 函数
+- id: '17'
+  name: _write
+  lines:
+  - _write
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 15
+  col: 0
+  stage: 模块级
+  route: →21
+  desc: ★ 写盘：UTF-8 / LF（与账本同一套口径；本文件通篇用 `\n` 拼）。 · L327 · 函数
+- id: '18'
+  name: build
+  lines:
+  - build
   type: task
   subject: 脚本
   executor: selfboot
   row: 2
   col: 0
   stage: 模块级
-  route: 1→04｜2→05｜3→06｜4→07
-  desc: ★ 结构缩样 → 算难度 → 排序 → 填建议 → `(rows, 跳过清单, 报错文案)`。 · L124 · 函数 · 分支：1→_scale_docx
-    2→_scale_xlsx 3→make_rows 4→advise
-- id: '10'
+  route: 1→02｜2→04｜3→13｜4→14｜5→17
+  desc: ★ 出侦查结论表草稿 → 退出码。 · L332 · 函数 · 分支：1→_read_json 2→load_thresholds 3→make_rows
+    4→render 5→_write
+- id: '19'
+  name: check
+  lines:
+  - check
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 16
+  col: 0
+  stage: 模块级
+  route: 1→02｜2→15｜3→16
+  desc: ★ 校验 AI 填好的表 → 退出码 0/1/2。 · L365 · 函数 · 分支：1→_read_json 2→parse_table 3→check_rows
+- id: '20'
   name: main
   lines:
   - main
@@ -130,86 +254,166 @@ nodes:
   row: 1
   col: 0
   stage: 模块级
-  route: 1→03｜2→08｜3→09
-  desc: L156 · 函数 · 分支：1→_read_json 2→render 3→run
-- id: '11'
+  route: 1→18｜2→19
+  desc: L392 · 函数 · 分支：1→build 2→check
+- id: '21'
   name: 结束
   lines:
   - 结束
   type: end
   subject: 脚本
   executor: selfboot
-  row: 10
+  row: 20
   col: 0
   stage: 出口
   route: —
   desc: 流程终点（结构性节点，不是函数）
 edges:
 - from: '01'
-  to: '10'
+  to: '20'
   kind: spine
   polarity: main
   label: '1'
 - from: '02'
-  to: '11'
+  to: '21'
   kind: jumpR
   polarity: main
 - from: '03'
-  to: '11'
+  to: '21'
   kind: jumpR
   polarity: main
 - from: '04'
-  to: '02'
+  to: '21'
   kind: jumpR
   polarity: main
 - from: '05'
-  to: '02'
-  kind: spine
-  polarity: main
-- from: '06'
-  to: '11'
-  kind: jumpR
-  polarity: main
-- from: '07'
-  to: '11'
-  kind: spine
-  polarity: main
-- from: 08
-  to: '07'
-  kind: spine
-  polarity: main
-- from: 09
-  to: '04'
-  kind: spine
-  polarity: main
-  label: '1'
-- from: 09
-  to: '05'
-  kind: jumpR
-  polarity: main
-  label: '2'
-- from: 09
-  to: '06'
-  kind: jumpR
-  polarity: main
-  label: '3'
-- from: 09
-  to: '07'
-  kind: jumpR
-  polarity: main
-  label: '4'
-- from: '10'
   to: '03'
   kind: jumpR
   polarity: main
   label: '1'
-- from: '10'
-  to: 08
+- from: '05'
+  to: '06'
+  kind: spine
+  polarity: main
+  label: '2'
+- from: '06'
+  to: '21'
+  kind: jumpR
+  polarity: main
+- from: '07'
+  to: '03'
+  kind: spine
+  polarity: main
+- from: 08
+  to: '21'
+  kind: jumpR
+  polarity: main
+- from: 09
+  to: '05'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: 09
+  to: '07'
   kind: jumpR
   polarity: main
   label: '2'
+- from: 09
+  to: 08
+  kind: jumpR
+  polarity: main
+  label: '3'
 - from: '10'
+  to: '21'
+  kind: jumpR
+  polarity: main
+- from: '11'
+  to: '21'
+  kind: jumpR
+  polarity: main
+- from: '12'
+  to: '21'
+  kind: jumpR
+  polarity: main
+- from: '13'
   to: 09
   kind: spine
   polarity: main
+  label: '1'
+- from: '13'
+  to: '10'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '14'
+  to: '11'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '14'
+  to: '12'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '15'
+  to: '21'
+  kind: jumpR
+  polarity: main
+- from: '16'
+  to: '21'
+  kind: spine
+  polarity: main
+- from: '17'
+  to: '21'
+  kind: jumpR
+  polarity: main
+- from: '18'
+  to: '02'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '18'
+  to: '04'
+  kind: spine
+  polarity: main
+  label: '2'
+- from: '18'
+  to: '13'
+  kind: jumpR
+  polarity: main
   label: '3'
+- from: '18'
+  to: '14'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '18'
+  to: '17'
+  kind: jumpR
+  polarity: main
+  label: '5'
+- from: '19'
+  to: '02'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '19'
+  to: '15'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '19'
+  to: '16'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '20'
+  to: '18'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '20'
+  to: '19'
+  kind: jumpR
+  polarity: main
+  label: '2'
