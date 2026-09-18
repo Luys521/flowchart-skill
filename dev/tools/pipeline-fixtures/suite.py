@@ -127,9 +127,19 @@ def _elem(eid, extractor='py:text', certainty='direct', degraded=None):
 
 
 def run(cmd):
-    """跑一条命令 → `(退出码, 输出)`（UTF-8 解码，两个流合起来看）。"""
+    """跑一条命令 → `(退出码, 输出)`（UTF-8 解码，两个流合起来看）。cwd 固定在仓库根。"""
     p = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', cwd=str(REPO))
     return p.returncode, (p.stdout or '') + (p.stderr or '')
+
+
+def repo_root_clean():
+    """**跑完不许往仓库根写字节**——这条是踩过才加的：夹具里有一次漏给 `--elements/--notes`，
+    于是 `parse.py` 的默认产物名把 `<仓库根>/elements.json`、`notes.json` 写了出来，
+    而下一次 `git add -A` 顺手把它们（连同用户材料正文）提交进库了。
+    `.gitignore` 能挡住它**进库**，但挡不住"没人发现"——所以在这里当场判。
+    """
+    return [p.name for p in (REPO / 'elements.json', REPO / 'notes.json',
+                             REPO / 'materials.json', REPO / 'evidence.json') if p.exists()]
 
 
 def ledgerize(root):
@@ -449,6 +459,7 @@ def materials_paths(root):
     cases.append(('㉑ probe 不变式：判 T1 的 kind 全都有 reader 认领',
                   t1 <= {'docx', 'xlsx', 'pptx', 'text'}, rc, f'T1 的 kind = {sorted(t1)}'))
     rc, out = run([sys.executable, str(PARSE_CMD), '--materials', str(d / 'materials.json'),
+                   '--elements', str(d / 'e-tree.json'), '--notes', str(d / 'n-tree.json'),
                    '--ledger', str(d / 'evidence.json'), '--task', 'mat-tree'])
     els = []
     if (d / 'evidence.json').exists():
@@ -544,6 +555,10 @@ def main(argv=None):
         if not good:
             print('      ' + out.strip().replace('\n', '\n      ')[:500])
             bad += 1
+    dirty = repo_root_clean()
+    print(f'{"PASS" if not dirty else "FAIL"}  ㉗ 跑完没往仓库根写字节'
+          + (f'（多出：{"、".join(dirty)}）' if dirty else ''))
+    bad += 1 if dirty else 0
     print(f'—— {"全部符合预期" if not bad else f"{bad} 条不符合预期"}（夹具：{root}）')
     if argv:
         return 0 if not bad else 1
