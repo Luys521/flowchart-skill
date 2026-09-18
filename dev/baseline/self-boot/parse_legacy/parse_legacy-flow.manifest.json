@@ -2,8 +2,8 @@
  "title": "parse_legacy.py 函数流程表",
  "layout": "flow",
  "source": "flowtable.md",
- "dsl_sha256": "1465cf09bc0a2c79",
- "source_sha256": "0652ff5055518c16",
+ "dsl_sha256": "99055e53dfce7cb4",
+ "source_sha256": "4c13e881a7f0aca5",
  "counts": {
   "nodes": 15,
   "edges": 20,

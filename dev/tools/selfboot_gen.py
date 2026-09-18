@@ -196,7 +196,7 @@ SUBJECTS = ('AI', '用户', SUBJECT)
 # 扁平单层、不切三层时，**分组信息只落在这里**——不复用这一列，分组在图里就没有据可查。
 # 元组顺序即流水线顺序；`_root_rows` 按模块查表，查不到就抛错（仪器失效，不静默留空）。
 PIPELINE_STAGES = (
-    ('接管与解析', ('probe', 'recon', 'parse', 'textquality', 'parse_ooxml', 'parse_pdf',
+    ('接管与解析', ('probe', 'recon', 'parse', 'textquality', 'pptx_text', 'parse_ooxml', 'parse_pdf',
                     'parse_legacy', 'parse_text', 'render_pages', 'ledger', 'intake',
                     'flowtable', 'semantics', 'artifact')),
     ('结构校验', ('flowtable_check',)),

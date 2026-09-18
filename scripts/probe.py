@@ -44,14 +44,11 @@ IMAGE_MAGIC = (
 # 判据跟 reader 用同一句（`parse_ooxml.container_kind` 也认这两个名字）。
 OOXML_PARTS = (('word/document.xml', 'docx'), ('xl/workbook.xml', 'xlsx'),
                ('ppt/presentation.xml', 'pptx'))
-# 有**自包含读取器**的那两种；其余 OOXML（pptx）按 §1.4 的依赖表降级：可选依赖没装 ⇒ 记 T4 + 可执行提示。
-READABLE_OOXML = ('docx', 'xlsx')
-NO_READER_REASON = {
-    'pptx': '本仓尚无 .pptx 读取器（python-pptx 是**可选**依赖，未落地）：'
-            '装 `python -m pip install python-pptx` 并补一个适配器，或把材料另存为 .docx / .xlsx',
-}
-NO_PART_REASON = ('zip 容器里没有可读的 OOXML 部件（要 word/document.xml 或 xl/workbook.xml）：'
-                  '多半是损坏 / 半成品包，请重新导出')
+# 有**自包含读取器**的那三种：docx/xlsx 靠声明的必须依赖，pptx 靠标准库（zip + `ppt/slides/*.xml`，
+# 见公共层 `pptx_text`）。所以三种都能判 T1 —— **判 T1 的依据是"有人认领"，不是"看起来能读"**。
+READABLE_OOXML = ('docx', 'xlsx', 'pptx')
+NO_PART_REASON = ('zip 容器里没有可读的 OOXML 部件（要 word/document.xml / xl/workbook.xml / '
+                  'ppt/presentation.xml）：多半是损坏 / 半成品包，请重新导出')
 
 # 材料类型（**机器可读的 kind**，§2.1）：本仓"这是什么"的唯一判据源就是这里，别处不许按扩展名重判
 KINDS = ('docx', 'xlsx', 'pptx', 'ole', 'pdf-text', 'pdf-scan', 'image', 'text', 'unknown')
@@ -136,9 +133,9 @@ def sniff(path):
     """一个文件 → `(tier, probe, status, reason, kind)`。`probe` 是**判据**（人可核），`kind` 是机器可读类型。
 
     **一条不变式**（审计后加的，§1.2）：**`tier=T1`（可直读）⇒ 必须至少有一个适配器认领**。
-    所以这里判 OOXML 时用的部件名与 `parse_ooxml.container_kind` 同源；`pptx` 没有读取器，
-    就**不许**说它"可直读"，按 §1.4 的依赖表降级成 T4 + 可执行提示（探测的声明不许比实现的射程宽）。
-    判不出不猜：一律 T4 + `unreadable` + 原因（§1.2 第 3 条）。
+    所以这里判 OOXML 时用的部件名与 `parse_ooxml.container_kind` 同源；三种 OOXML（docx/xlsx/pptx）
+    都有 reader，都能判 T1——**曾经不是**：pptx 没有 reader 却判 T1，于是一份 pptx 就让整条链判"漏认"退 1
+    （§1.4 的教训：探测的声明不许比实现的射程宽）。判不出不猜：一律 T4 + `unreadable` + 原因（§1.2 第 3 条）。
     """
     path = Path(path)
     head = _read_head(path, 8)
@@ -149,8 +146,6 @@ def sniff(path):
         kind = _ooxml_kind(path)
         if kind in READABLE_OOXML:
             return 'T1', f'PK 容器 + {kind} 可读部件', 'ok', '', kind
-        if kind in NO_READER_REASON:                 # pptx：容器认出来了，但**没有 reader**
-            return 'T4', f'PK 容器 + {kind}（无读取器）', 'unreadable', NO_READER_REASON[kind], kind
         return 'T4', 'PK 容器但缺可读部件', 'unreadable', NO_PART_REASON, 'unknown'
 
     if head[:4] == b'\xd0\xcf\x11\xe0':

@@ -40,6 +40,8 @@ import re
 import sys
 from pathlib import Path
 
+from pptx_text import slides
+
 DEP_PKG = {'docx': 'python-docx', 'openpyxl': 'openpyxl'}
 
 # 难度序（§1.1）：T1 可直读 < T2 需转换器 < T3 需视觉；"不参与"排最后。
@@ -57,11 +59,11 @@ PATH_OF_KIND = {
     'pdf-scan': '转图片 → 视觉（render_pages）',
     'image': '转图片 → 视觉（原文件即图片）',
     'ole': '转换器（soffice）或请用户另存为 OOXML',
-    'pptx': 'T4：无 reader（装 python-pptx 或另存为 .docx/.xlsx）',
+    'pptx': '直读（py:pptx，零依赖 zip+XML）',
     'unknown': 'T4：读不动（见「读不动」列的原因）',
 }
 # T1 里"有 reader"的那几种：T1 却不在其中 = **探测说谎**（§1.2 的不变式），老实报出来而不是硬编建议。
-T1_WITH_READER = ('docx', 'xlsx', 'text')
+T1_WITH_READER = ('docx', 'xlsx', 'pptx', 'text')
 
 DEFAULTS = {                     # 兜底值；`dictionary.yaml` 的 `recon:` 段按名覆盖（数值只有一个家）
     'easy_max_bytes': 1048576,   # 超过它 → 建议"只取摘要"（默认 1 MiB：一个**人给的**圆整默认，不是从样本反推）
@@ -155,6 +157,21 @@ def _xlsx_scale(blob, th):
     return scale, rows, len(rows), ''
 
 
+def _pptx_scale(blob, th):
+    """`.pptx` 字节 → `(规模描述, 大纲行, 大纲总条数, 结构说明)`。**这就是那份".pptx 解析摘要"**。
+
+    为什么它值得单独做到位（用户的真实工作方式）：一份几十上百张的演示稿，**先扫摘要看有没有线索**
+    （哪一页在讲审批 / 讲分工），再决定要不要点名撬开那几页（§5.3）。没有摘要，那份材料在 AI 眼里
+    就等于不存在——它体积最大、却一个字都进不来。
+    取文字用公共层 `pptx_text`（与 `parse_ooxml` 的读者**同一句判据**，免得"摘要里看得见、撬开找不到"）。
+    """
+    got = slides(blob, th['outline_max'])            # 只读前面若干张就够当摘要；读不动返回空
+    if not got:
+        return '', [], 0, 'pptx 里没抽出文字（空稿 / 全是图）'
+    heads = [f'第 {n} 张：{lines[0]}' if lines else f'第 {n} 张：（无文字）' for n, lines in got]
+    return f'幻灯片 {len(got)} 张（按序号读前 {th["outline_max"]} 张取标题）', heads, len(got), ''
+
+
 def _note_of(e):
     """异常 → 记在表里的说明。**把"材料的问题"与"我们自己的 bug"分开**：
 
@@ -168,16 +185,26 @@ def _note_of(e):
     return f'{head}（{type(e).__name__}: {str(e)[:60]}）'
 
 
+# 有"结构缩样"的 kind：**这份清单只在这里写一次**（`sample_structure` 的分支与 `make_rows` 的开门判据都从它取）。
+# 审计教训（2026-09-18 实测踩到）：原先 `make_rows` 里另写了一份 `('docx','xlsx')`，于是给
+# `sample_structure` 补上 pptx 之后，**摘要照样是空的**——"支持了"与"用上了"之间隔着一份重复的清单。
+SCALED_KINDS = ('docx', 'xlsx', 'pptx')
+
+
 def sample_structure(blob, kind, th):
     """按 `kind` 缩样 → `(规模描述, 结构行, 结构总条数, 说明)`。**读不了不是错**：返回说明，逐份记账。"""
+    if kind not in SCALED_KINDS:
+        return '', [], 0, ''                         # 别的 kind 没有"结构缩样"这回事（不是失败）
     try:
         if kind == 'docx':
             return _docx_scale(blob, th)
         if kind == 'xlsx':
             return _xlsx_scale(blob, th)
+        if kind == 'pptx':
+            return _pptx_scale(blob, th)
     except Exception as e:                           # 单份坏不让整批失败（§1.4 硬要求 2）
         return '', [], 0, _note_of(e)
-    return '', [], 0, ''                             # 别的 kind 没有"结构缩样"这回事（不是失败）
+    return '', [], 0, ''
 
 
 # ----------------------------------------------------------------分档与建议（纯查表，不猜）
@@ -217,7 +244,7 @@ def make_rows(materials, th):
                'probe': m.get('probe', ''), 'reason': m.get('reason', ''),
                'scale': '', 'structure': [], 'structure_total': 0, 'note': ''}
         row['diff'] = difficulty(row, th)
-        if row['status'] == 'ok' and row['kind'] in ('docx', 'xlsx'):
+        if row['status'] == 'ok' and row['kind'] in SCALED_KINDS:
             if row['bytes'] > th['max_open_bytes']:
                 skipped.append(f"{row['id']}: {row['bytes']} 字节超护栏（{th['max_open_bytes']}），"
                                f'只记元数据不打开结构')

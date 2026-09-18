@@ -62,7 +62,8 @@ def _last_line(text):
 def _adapter_args(name, a):
     """按适配器给参数——**不认得的选项不硬塞**（argparse 会当场报用法错，那是假故障）。"""
     if name == 'parse_ooxml':
-        return ['--max-rows', str(a.max_rows), '--max-cols', str(a.max_cols)]
+        return ['--max-rows', str(a.max_rows), '--max-cols', str(a.max_cols),
+                '--max-slides', str(a.max_slides)]
     if name == 'parse_pdf':
         return ['--max-pages', str(a.max_pages), '--max-chars', str(a.max_chars)]
     if name == 'parse_legacy':
@@ -236,6 +237,7 @@ def main(argv=None):
     ap.add_argument('--quote-limit', type=int, default=200, help='账本的 quote 截断上限')
     ap.add_argument('--max-rows', type=int, default=200, help='[parse_ooxml] 每张 sheet 行上限')
     ap.add_argument('--max-cols', type=int, default=50, help='[parse_ooxml] 每张 sheet 列上限')
+    ap.add_argument('--max-slides', type=int, default=200, help='[parse_ooxml] pptx 最多读多少张幻灯片')
     ap.add_argument('--max-pages', type=int, default=50, help='[parse_pdf] 最多抽多少页')
     ap.add_argument('--max-chars', type=int, default=4000, help='[parse_pdf] 单页最多多少字')
     ap.add_argument('--soffice', help='[parse_legacy] 显式指定转换器命令')

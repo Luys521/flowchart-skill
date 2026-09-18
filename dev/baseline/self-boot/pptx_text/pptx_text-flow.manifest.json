@@ -1,0 +1,48 @@
+{
+ "title": "pptx_text.py 函数流程表",
+ "layout": "flow",
+ "source": "flowtable.md",
+ "dsl_sha256": "2d78c0c27aa2e55f",
+ "source_sha256": "7f302a5896231cac",
+ "counts": {
+  "nodes": 5,
+  "edges": 5,
+  "by_type": {
+   "end": 1,
+   "start": 1,
+   "task": 3
+  },
+  "labeled_edges": 3,
+  "loop_edges": 0,
+  "pending_nodes": 0
+ },
+ "node_ids": [
+  "01",
+  "02",
+  "03",
+  "04",
+  "05"
+ ],
+ "edges": [
+  [
+   "01",
+   "04"
+  ],
+  [
+   "02",
+   "05"
+  ],
+  [
+   "03",
+   "05"
+  ],
+  [
+   "04",
+   "02"
+  ],
+  [
+   "04",
+   "03"
+  ]
+ ]
+}

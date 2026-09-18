@@ -17,11 +17,11 @@ parent: ../flowtable.md
 | 模块级 | 03 | _write_json | 任务 | — | — | — | 脚本 | selfboot | — | →13 | ★ 写 JSON：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 `ledger.dump`… · L51 · 函数 |
 | 模块级 | 04 | _last_line | 任务 | — | — | — | 脚本 | selfboot | — | →13 | ★ 子进程输出 → 最后一行非空（适配器把摘要打在 stderr，取它给人看；整份太吵，`--verbose` 才全给）。 · L56 · 函数 |
 | 模块级 | 05 | _adapter_args | 任务 | — | — | — | 脚本 | selfboot | — | →13 | ★ 按适配器给参数——**不认得的选项不硬塞**（argparse 会当场报用法错，那是假故障）。 · L62 · 函数 |
-| 模块级 | 06 | run_adapter | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→04 | ★ 跑一个适配器 → `(elements, notes, 摘要行, 报错文案)`。走**子进程 + 产物**（模块层不许… · L78 · 函数 · 分支：1→_read_json 2→_last_line |
-| 模块级 | 07 | merge_elements | 任务 | — | — | — | 脚本 | selfboot | — | →13 | ★ `[(适配器名, elements)]` → `(合并后的 elements, 冲突说明)`。 · L101 · 函数 |
-| 模块级 | 08 | apply_quality | 任务 | — | — | — | 脚本 | selfboot | — | →13 | ★ 抽取质量门（§1.5「手段 0」）→ `(留下的元素, 覆盖用的补注, 丢掉的元素 id, 读数行, {M##: 级别… · L120 · 函数 · ⇢ 依赖 textquality.scar、textquality.verdict |
-| 模块级 | 09 | merge_notes | 任务 | — | — | — | 脚本 | selfboot | — | →13 | ★ `[(适配器名, notes)]` → `(合并后的 notes, 冲突说明)`。 · L167 · 函数 |
-| 模块级 | 10 | survey | 任务 | — | — | — | 脚本 | selfboot | — | →13 | ★ 材料层 × 证据 × 补注 → `(每份材料一行, 漏认清单)`。**漏认 = status=ok 却既无元素也无补注… · L185 · 函数 |
-| 模块级 | 11 | _print_survey | 任务 | — | — | — | 脚本 | selfboot | — | →13 | ★ 人读摘要：一份材料一行。**没有证据也没有补注的当场标出来**（那是漏认，不是"空材料"）。 · L211 · 函数 |
-| 模块级 | 12 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→03｜3→04｜4→05｜5→06｜6→07｜7→08｜8→09｜9→10｜10→11 | L227 · 函数 · 分支：1→_read_json 2→_write_json 3→_last_line 4→_adapter_args 5→run_adapter 6→merge_elements 7→apply_quality 8→merge_notes 9→survey 10→_print_survey · ⇢ 依赖 textquality.load_thresholds |
+| 模块级 | 06 | run_adapter | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→04 | ★ 跑一个适配器 → `(elements, notes, 摘要行, 报错文案)`。走**子进程 + 产物**（模块层不许… · L79 · 函数 · 分支：1→_read_json 2→_last_line |
+| 模块级 | 07 | merge_elements | 任务 | — | — | — | 脚本 | selfboot | — | →13 | ★ `[(适配器名, elements)]` → `(合并后的 elements, 冲突说明)`。 · L102 · 函数 |
+| 模块级 | 08 | apply_quality | 任务 | — | — | — | 脚本 | selfboot | — | →13 | ★ 抽取质量门（§1.5「手段 0」）→ `(留下的元素, 覆盖用的补注, 丢掉的元素 id, 读数行, {M##: 级别… · L121 · 函数 · ⇢ 依赖 textquality.scar、textquality.verdict |
+| 模块级 | 09 | merge_notes | 任务 | — | — | — | 脚本 | selfboot | — | →13 | ★ `[(适配器名, notes)]` → `(合并后的 notes, 冲突说明)`。 · L168 · 函数 |
+| 模块级 | 10 | survey | 任务 | — | — | — | 脚本 | selfboot | — | →13 | ★ 材料层 × 证据 × 补注 → `(每份材料一行, 漏认清单)`。**漏认 = status=ok 却既无元素也无补注… · L186 · 函数 |
+| 模块级 | 11 | _print_survey | 任务 | — | — | — | 脚本 | selfboot | — | →13 | ★ 人读摘要：一份材料一行。**没有证据也没有补注的当场标出来**（那是漏认，不是"空材料"）。 · L212 · 函数 |
+| 模块级 | 12 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→03｜3→04｜4→05｜5→06｜6→07｜7→08｜8→09｜9→10｜10→11 | L228 · 函数 · 分支：1→_read_json 2→_write_json 3→_last_line 4→_adapter_args 5→run_adapter 6→merge_elements 7→apply_quality 8→merge_notes 9→survey 10→_print_survey · ⇢ 依赖 textquality.load_thresholds |
 | 出口 | 13 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |

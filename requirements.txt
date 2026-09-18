@@ -11,7 +11,7 @@ pdfplumber>=0.11     # PDF **文本层**抽取（纯 Python，无外部二进制
                      # 同一份依赖也管**渲染**：`page.to_image()` 走它声明的 pypdfium2（无外部二进制）
 #
 # 可选（增强，缺了该格式降级为 T4）
-# python-pptx>=0.6    # .pptx
+# python-pptx 不需要：.pptx 由 scripts/pptx_text.py 用标准库读（zip + ppt/slides/*.xml）
 # pytesseract>=0.3    # 图片 OCR（需另装 tesseract 二进制）
 # paddleocr>=2.7      # 图片 OCR（备选）
 #

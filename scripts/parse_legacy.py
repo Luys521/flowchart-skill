@@ -56,7 +56,8 @@ CONVERTER_PATHS = (
 )
 NO_CONVERTER = ('legacy 二进制没有纯 Python 可靠读法，自包含侧也没探到外部转换器：'
                 '装 LibreOffice（`soffice`）后重跑，或把材料另存为 .docx / .xlsx')
-NO_PPTX = '本仓尚无 .pptx 读取器（python-pptx 是可选依赖，未落地）：暂记读不动，别假装能读'
+NO_PPTX = ('这里拿到的是**转换出来的临时** pptx，账本不回填它：本仓的 .pptx 读取器在 `parse_ooxml` '
+           '那条路上（材料里的 .pptx 直接走 T1）。把 .ppt 另存为 .pptx 后作为材料重投即可')
 
 
 def _read_json(path):

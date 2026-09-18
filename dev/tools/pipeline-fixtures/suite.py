@@ -29,11 +29,18 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import zipfile
 
 REPO = pathlib.Path(__file__).resolve().parents[3]        # dev/tools/pipeline-fixtures/ → 仓库根
 LEDGER = REPO / 'scripts' / 'ledger.py'
 DRIFT = REPO / 'scripts' / 'drift.py'
 QUERY = REPO / 'scripts' / 'query.py'
+PROBE_CMD = REPO / 'scripts' / 'probe.py'
+RECON_CMD = REPO / 'scripts' / 'recon.py'          # 名字带 _CMD：本文件的 `RECON` 是**夹具表格文本**
+OOXML_CMD = REPO / 'scripts' / 'parse_ooxml.py'
+
+# 合成 pptx 的标题（第 2 张含「审批」——后面的取子集断言就找它）
+DECK_TITLES = ('第 1 章 项目概况', '第 2 章 审批与分工', '第 3 章 结算与付款')
 
 FLOWTABLE = """---
 id: driftfix
@@ -243,8 +250,69 @@ def query_paths(root):
     return cases
 
 
+def make_deck(path):
+    """造一份**最小可读的 .pptx**：确切部件 `ppt/presentation.xml` + 每张一行标题一行正文。
+
+    为什么夹具造得出来：`.pptx` 就是 zip + `ppt/slides/slideN.xml` 的 `<a:t>` 运行——
+    所以"pptx 能不能读"这件事**不需要真的 PowerPoint**，也不需要 `python-pptx`（本仓已不依赖它）。
+    """
+    p = 'http://schemas.openxmlformats.org/presentationml/2006/main'
+    a = 'http://schemas.openxmlformats.org/drawingml/2006/main'
+    with zipfile.ZipFile(path, 'w') as z:
+        z.writestr('ppt/presentation.xml', f'<p:presentation xmlns:p="{p}"/>')
+        for i, title in enumerate(DECK_TITLES, 1):
+            z.writestr(f'ppt/slides/slide{i}.xml',
+                       f'<p:sld xmlns:p="{p}" xmlns:a="{a}"><p:cSld><p:spTree>'
+                       f'<a:p><a:r><a:t>{title}</a:t></a:r></a:p>'
+                       f'<a:p><a:r><a:t>正文 {i}：审批流程第 {i} 步</a:t></a:r></a:p>'
+                       f'</p:spTree></p:cSld></p:sld>')
+
+
+def pptx_paths(root):
+    """pptx 全链 3 条路径：**认得出来**（T1 + kind）· **有摘要**（张数 + 每张标题）· **撬得开**（按张 + 页码 + 超限留痕）。
+
+    这三条正是用户故事里那一步（"大体量的 pptx，先看摘要找线索，再指名撬开那几页"）的最小可验版本。
+    """
+    d = root / 'deck'
+    d.mkdir(exist_ok=True)
+    make_deck(d / '大演示稿.pptx')
+    cases = []
+    rc, out = run([sys.executable, str(PROBE_CMD), str(d), '--json'])
+    mats = []
+    if rc == 0 and '[' in out:
+        try:
+            mats = json.loads(out[out.index('['):])
+        except ValueError:
+            mats = []
+    ok = bool(mats) and mats[0].get('tier') == 'T1' and mats[0].get('kind') == 'pptx'
+    cases.append(('⑰ probe：pptx 判 T1 + kind=pptx（有 reader 才敢判可直读）', ok, rc, out))
+    if not mats:
+        cases.append(('⑱ recon：出 pptx 摘要', False, rc, '（probe 没产出材料层，跳过）'))
+        cases.append(('⑲ pptx 读者：按张出元素', False, rc, '（同上）'))
+        return cases
+    (d / 'materials.json').write_text(json.dumps(mats, ensure_ascii=False, indent=2) + '\n',
+                                      encoding='utf-8', newline='\n')
+    rc, out = run([sys.executable, str(RECON_CMD), 'build', '--materials', str(d / 'materials.json'),
+                   '-o', str(d / 'recon.md')])
+    rec = (d / 'recon.md').read_text(encoding='utf-8') if (d / 'recon.md').exists() else ''
+    cases.append(('⑱ recon：出 pptx 摘要（张数 + 每张标题）',
+                  rc == 0 and '幻灯片 3 张' in rec and DECK_TITLES[1] in rec, rc, out + rec[:300]))
+    rc, out = run([sys.executable, str(OOXML_CMD), '--materials', str(d / 'materials.json'),
+                   '-o', str(d / 'elements.json'), '--max-slides', '2'])
+    els = []
+    if (d / 'elements.json').exists():
+        try:
+            els = json.loads((d / 'elements.json').read_text(encoding='utf-8'))
+        except ValueError:
+            els = []
+    ok = (rc == 0 and len(els) == 2 and els[0].get('location', {}).get('page') == 1
+          and DECK_TITLES[1] in els[1].get('text', '') and els[0].get('degraded'))
+    cases.append(('⑲ pptx 读者：按张出元素 + 页码坐标 + 超限留痕', ok, rc, out + str(els[:2])[:300]))
+    return cases
+
+
 def main(argv=None):
-    """造夹具 → 比 `drift` 读数 → 跑漂移 9 条 + 取子集 7 条路径 → 打印结论并给退出码。"""
+    """造夹具 → 比 `drift` 读数 → 跑漂移 9 条 + 取子集 7 条 + pptx 3 条路径 → 打印结论并给退出码。"""
     sys.stdout.reconfigure(encoding='utf-8')
     root = pathlib.Path(argv[0]) if argv else pathlib.Path(tempfile.mkdtemp(prefix='pipeline-fix-'))
     root.mkdir(parents=True, exist_ok=True)
@@ -258,7 +326,7 @@ def main(argv=None):
     head = '✓ 漂移 3 条 · 缺口 3 条' in out
     print(f'{"PASS" if rc == 0 and head else "FAIL"}  ⓪ 读数：{out.splitlines()[0] if out else "（无输出）"}')
     bad = 0 if (rc == 0 and head) else 1
-    for name, good, rc, out in paths(root, draft) + query_paths(root):
+    for name, good, rc, out in paths(root, draft) + query_paths(root) + pptx_paths(root):
         print(f'{"PASS" if good else "FAIL"}  {name}  （rc={rc}）')
         if not good:
             print('      ' + out.strip().replace('\n', '\n      ')[:500])

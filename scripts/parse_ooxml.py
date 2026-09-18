@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
-r"""parse_ooxml.py — OOXML 解析适配器（PIPELINE-SPEC §1.4）：`.docx` / `.xlsx` → `elements[]`。
+r"""parse_ooxml.py — OOXML 解析适配器（PIPELINE-SPEC §1.4）：`.docx` / `.xlsx` / `.pptx` → `elements[]`。
 
-**自包含优先**：用 `python-docx` / `openpyxl`（`requirements.txt` 里声明的**必须**依赖）。
+**自包含优先**：`.docx` 用 `python-docx`、`.xlsx` 用 `openpyxl`（`requirements.txt` 里声明的**必须**依赖）；
+**`.pptx` 零依赖**——它是 zip，正文在 `ppt/slides/slideN.xml` 的 `<a:t>` 里，取文字的活由公共层的
+`pptx_text` 干（与 `recon` 的摘要**同一句判据**，免得"摘要里看得见、撬开却找不到"）。
 宿主 Office SDK / 多模态模型是**加速器**，不属于本脚本（探测到才用的那部分在 spec §1.4）。
 
 **协作走产物**（本仓分层纪律：模块层之间不许互相 import）：本脚本读 `probe.py --json` 的材料层，
@@ -20,6 +22,8 @@ import json
 import sys
 import zipfile
 from pathlib import Path
+
+from pptx_text import slides
 
 DEP_PKG = {'docx': 'python-docx', 'openpyxl': 'openpyxl'}
 
@@ -45,9 +49,9 @@ def _write_notes(notes, path):
 
 
 def container_kind(blob):
-    """PK 容器的**字节** → `'docx'` / `'xlsx'`；不是 OOXML 返回 None。
+    """PK 容器的**字节** → `'docx'` / `'xlsx'` / `'pptx'`；不是 OOXML 返回 None。
 
-    判据与 `probe._ooxml_kind` **同一句**（都认 `word/document.xml` / `xl/workbook.xml`）——
+    判据与 `probe._ooxml_kind` **同一句**（都认 `word/document.xml` / `xl/workbook.xml` / `ppt/presentation.xml`）——
     审计抓到过精度不一致的后果：probe 按目录前缀判、这里按确切部件判，于是"有 word/ 没 document.xml"
     的包被判 T1 可直读却没人认领，整条链判"漏认"退 1。**探测与读者的射程必须对齐。**
     """
@@ -60,6 +64,8 @@ def container_kind(blob):
         return 'docx'
     if 'xl/workbook.xml' in names:
         return 'xlsx'
+    if 'ppt/presentation.xml' in names:
+        return 'pptx'
     return None
 
 
@@ -153,7 +159,35 @@ def parse_xlsx(blob, path, mid, max_rows, max_cols):
     return out, ''
 
 
-def parse_materials(materials, max_rows, max_cols):
+def parse_pptx(blob, path, mid, max_slides):
+    """`.pptx` **字节** → `(elements, 报错文案)`。**一张幻灯片一个 element**（零依赖，见 `pptx_text`）。
+
+    **一张一个**（而不是一页拆成标题 + 若干段落）：幻灯片是"一屏一屏"读的，页码就是它天然的坐标，
+    所以 `location.page` = 幻灯片序号——于是 `query.py --range pages=40-60` 对 PPT 也成立
+    （§5.3 的取子集语法**不为格式分叉**）。
+    超上限先记账（`degraded` 写在**抽到的每条**上，与 `parse_pdf` 同一套做法）：不吭声地少几页，
+    下游只会以为"这份材料本来就这么点内容"（§2.4）。
+    """
+    got = slides(blob, max_slides)
+    if not got:
+        return [], 'pptx 里没抽出任何幻灯片文字（空稿 / 全是图）'
+    out, cut = [], []
+    for n, lines in got:
+        text = ' / '.join(lines)
+        el = {'id': f'{mid}#p{n:03d}', 'material_id': mid, 'kind': 'paragraph',
+              'text': text, 'location': {'path': path.as_posix(), 'page': n, 'quote': text},
+              'extractor': 'py:pptx', 'certainty': 'direct'}
+        out.append(el)
+    if max_slides and len(got) >= max_slides:
+        cut.append(f'只取前 {max_slides} 张（按序号）')
+    note = '；'.join(cut)
+    if note:
+        for e in out:
+            e['degraded'] = note
+    return out, ''
+
+
+def parse_materials(materials, max_rows, max_cols, max_slides):
     """材料层 → `(elements, 补注, 摘要, 跳过清单, 报错文案)`。非 OOXML / 非 ok 的一律**跳过并记账**。
 
     **补注**只写"抽到了、走的是哪条路"（§2.1 的 `extractor`）：这一档的跳过全是"**不归我管**"
@@ -176,8 +210,12 @@ def parse_materials(materials, max_rows, max_cols):
             skipped.append(f'{mid}: 不是 OOXML（tier={m.get("tier")}）')
             continue
         try:
-            got, err = (parse_docx(blob, path, mid) if kind == 'docx'
-                        else parse_xlsx(blob, path, mid, max_rows, max_cols))
+            if kind == 'docx':
+                got, err = parse_docx(blob, path, mid)
+            elif kind == 'xlsx':
+                got, err = parse_xlsx(blob, path, mid, max_rows, max_cols)
+            else:
+                got, err = parse_pptx(blob, path, mid, max_slides)
         except Exception as e:                       # 单份坏不让整批失败（§1.4 硬要求 2）
             skipped.append(f'{mid}: 解析失败 {type(e).__name__}: {e}')
             continue
@@ -193,12 +231,13 @@ def parse_materials(materials, max_rows, max_cols):
 def main(argv=None):
     sys.stdout.reconfigure(encoding='utf-8')
     sys.stderr.reconfigure(encoding='utf-8')  # 摘要/报错走 stderr，同样要定编码（GBK 控制台会乱码）
-    ap = argparse.ArgumentParser(description='OOXML 解析适配器：.docx / .xlsx → elements[]')
+    ap = argparse.ArgumentParser(description='OOXML 解析适配器：.docx / .xlsx / .pptx → elements[]')
     ap.add_argument('--materials', required=True, help='材料层 JSON（probe.py --json 的输出）')
     ap.add_argument('-o', '--out', help='写到哪里（默认 stdout，供管道接 ledger）')
     ap.add_argument('--notes', help='材料层补注写到哪里（status / reason / extractor，交给 ledger.py --notes）')
     ap.add_argument('--max-rows', type=int, default=200, help='每张 sheet 的行上限（超了记 degraded）')
     ap.add_argument('--max-cols', type=int, default=50, help='每张 sheet 的列上限')
+    ap.add_argument('--max-slides', type=int, default=200, help='pptx 最多读多少张幻灯片（超了记 degraded）')
     a = ap.parse_args(argv)
 
     try:
@@ -210,7 +249,7 @@ def main(argv=None):
         print('⚠ 输入必须是 JSON 数组（materials[]）', file=sys.stderr)
         return 2
 
-    elements, notes, done, skipped, err = parse_materials(materials, a.max_rows, a.max_cols)
+    elements, notes, done, skipped, err = parse_materials(materials, a.max_rows, a.max_cols, a.max_slides)
     if err:
         print(f'⚠ {err}', file=sys.stderr)
         return 2

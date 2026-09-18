@@ -34,7 +34,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →15
-  desc: ★ 读 JSON（容忍 BOM）。 · L62 · 函数
+  desc: ★ 读 JSON（容忍 BOM）。 · L63 · 函数
 - id: '03'
   name: _head
   lines:
@@ -46,7 +46,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →15
-  desc: ★ 前 n 字节；读不动返回空（调用方按读不动记账，不崩）。 · L67 · 函数
+  desc: ★ 前 n 字节；读不动返回空（调用方按读不动记账，不崩）。 · L68 · 函数
 - id: '04'
   name: ole_kind
   lines:
@@ -58,7 +58,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →03
-  desc: ★ OLE 复合文档 → `'docx'` / `'xlsx'` / `'pptx'`；不是 OLE 或判不出返回 Non… · L76 · 函数
+  desc: ★ OLE 复合文档 → `'docx'` / `'xlsx'` / `'pptx'`；不是 OLE 或判不出返回 Non… · L77 · 函数
 - id: '05'
   name: _argv_of
   lines:
@@ -70,7 +70,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →15
-  desc: ★ `--soffice` 的取值 → argv 前缀。**存在就整条当路径**（躲开 `C:\Program Files… · L89 · 函数
+  desc: ★ `--soffice` 的取值 → argv 前缀。**存在就整条当路径**（躲开 `C:\Program Files… · L90 · 函数
 - id: '06'
   name: _decode
   lines:
@@ -82,7 +82,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →15
-  desc: ★ 外部转换器的输出 → 文本。**不能假定它说 UTF-8**：Windows 上的 soffice 往管道里写本地编码 · L109 · 函数
+  desc: ★ 外部转换器的输出 → 文本。**不能假定它说 UTF-8**：Windows 上的 soffice 往管道里写本地编码 · L110 · 函数
 - id: '07'
   name: _runs
   lines:
@@ -94,7 +94,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →06
-  desc: ★ 跑一次 `<转换器> --version` → `(退出码, 输出)`；起不来返回 (None, 原因)。 · L124 · 函数
+  desc: ★ 跑一次 `<转换器> --version` → `(退出码, 输出)`；起不来返回 (None, 原因)。 · L125 · 函数
 - id: 08
   name: find_converter
   lines:
@@ -106,7 +106,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→05｜2→07
-  desc: ★ 探测外部转换器 → `(argv 前缀, 版本说明, 报错文案)`。 · L134 · 函数 · 分支：1→_argv_of 2→_runs
+  desc: ★ 探测外部转换器 → `(argv 前缀, 版本说明, 报错文案)`。 · L135 · 函数 · 分支：1→_argv_of 2→_runs
 - id: 09
   name: convert
   lines:
@@ -118,7 +118,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →06
-  desc: ★ `<转换器> --headless --convert-to <target> --outdir <dir> <材料>… · L157 · 函数
+  desc: ★ `<转换器> --headless --convert-to <target> --outdir <dir> <材料>… · L158 · 函数
 - id: '10'
   name: extract_via_ooxml
   lines:
@@ -130,7 +130,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →15
-  desc: ★ 子进程调 `parse_ooxml.py` 抽转换产物 → `(elements, 报错文案)`；出处改回原材料。 · L185 · 函数
+  desc: ★ 子进程调 `parse_ooxml.py` 抽转换产物 → `(elements, 报错文案)`；出处改回原材料。 · L186 · 函数
 - id: '11'
   name: parse_legacy
   lines:
@@ -142,7 +142,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→04｜2→09｜3→10
-  desc: ★ 一份 legacy 材料 → `(elements, 材料补注, 跳过说明, 报错文案)`。 · L214 · 函数 · 分支：1→ole_kind
+  desc: ★ 一份 legacy 材料 → `(elements, 材料补注, 跳过说明, 报错文案)`。 · L215 · 函数 · 分支：1→ole_kind
     2→convert 3→extract_via_ooxml
 - id: '12'
   name: parse_materials
@@ -155,7 +155,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 材料层 → `(elements, 材料补注, 摘要, 跳过清单, 报错文案)`。只认 OLE；别的材料**不归我管*… · L242 · 函数
+  desc: ★ 材料层 → `(elements, 材料补注, 摘要, 跳过清单, 报错文案)`。只认 OLE；别的材料**不归我管*… · L243 · 函数
 - id: '13'
   name: _write_json
   lines:
@@ -167,7 +167,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →15
-  desc: ★ 写 JSON：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 ledger.dump）。 · L268 · 函数
+  desc: ★ 写 JSON：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 ledger.dump）。 · L269 · 函数
 - id: '14'
   name: main
   lines:
@@ -179,7 +179,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→08｜3→12｜4→13
-  desc: L273 · 函数 · 分支：1→_read_json 2→find_converter 3→parse_materials 4→_write_json
+  desc: L274 · 函数 · 分支：1→_read_json 2→find_converter 3→parse_materials 4→_write_json
 - id: '15'
   name: 结束
   lines:

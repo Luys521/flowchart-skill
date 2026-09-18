@@ -8,8 +8,8 @@ meta:
 layout:
   col_x:
   - 400
-  width: 840
-  origin_x: -80
+  width: 1000
+  origin_x: -120
 nodes:
 - id: '01'
   name: 开始
@@ -21,7 +21,7 @@ nodes:
   row: 0
   col: 0
   stage: 入口
-  route: 1→10
+  route: 1→11
   desc: 流程起点（结构性节点，不是函数） · 入口：1→main
 - id: '02'
   name: _import_dep
@@ -33,8 +33,8 @@ nodes:
   row: 9
   col: 0
   stage: 模块级
-  route: →11
-  desc: ★ import 一个必须依赖 → `(模块, 报错文案)`。缺了给**可执行**的提示（§1.4）。 · L27 · 函数
+  route: →12
+  desc: ★ import 一个必须依赖 → `(模块, 报错文案)`。缺了给**可执行**的提示（§1.4）。 · L31 · 函数
 - id: '03'
   name: _read_json
   lines:
@@ -42,11 +42,11 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 2
+  row: 4
   col: 0
   stage: 模块级
-  route: →11
-  desc: ★ 读 JSON（容忍 BOM）。 · L37 · 函数
+  route: →12
+  desc: ★ 读 JSON（容忍 BOM）。 · L41 · 函数
 - id: '04'
   name: _write_notes
   lines:
@@ -54,11 +54,11 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 3
+  row: 5
   col: 0
   stage: 模块级
-  route: →11
-  desc: ★ 写材料层补注：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 `ledger.dump`… · L42 · 函数
+  route: →12
+  desc: ★ 写材料层补注：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 `ledger.dump`… · L46 · 函数
 - id: '05'
   name: container_kind
   lines:
@@ -66,11 +66,11 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 5
+  row: 6
   col: 0
   stage: 模块级
-  route: →11
-  desc: ★ PK 容器的**字节** → `'docx'` / `'xlsx'`；不是 OOXML 返回 None。 · L47 · 函数
+  route: →12
+  desc: ★ PK 容器的**字节** → `'docx'` / `'xlsx'` / `'pptx'`；不是 OOXML 返回 N… · L51 · 函数
 - id: '06'
   name: _docx_body
   lines:
@@ -81,8 +81,8 @@ nodes:
   row: 7
   col: 0
   stage: 模块级
-  route: →11
-  desc: ★ 按**文档阅读序**产出 (kind, 对象)：段落与表格交替，顺序不丢（§2.2 第 3 条）。 · L66 · 函数
+  route: →12
+  desc: ★ 按**文档阅读序**产出 (kind, 对象)：段落与表格交替，顺序不丢（§2.2 第 3 条）。 · L72 · 函数
 - id: '07'
   name: parse_docx
   lines:
@@ -90,11 +90,11 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 6
+  row: 3
   col: 0
   stage: 模块级
   route: 1→02｜2→06
-  desc: ★ `.docx` **字节** → `(elements, 报错文案)`。样式名判 heading / list_ite… · L78 · 函数
+  desc: ★ `.docx` **字节** → `(elements, 报错文案)`。样式名判 heading / list_ite… · L84 · 函数
     · 分支：1→_import_dep 2→_docx_body
 - id: 08
   name: parse_xlsx
@@ -107,21 +107,34 @@ nodes:
   col: 0
   stage: 模块级
   route: →02
-  desc: ★ `.xlsx` **字节** → `(elements, 报错文案)`。**一张 sheet 一个 element**… · L119 · 函数
+  desc: ★ `.xlsx` **字节** → `(elements, 报错文案)`。**一张 sheet 一个 element**… · L125 · 函数
 - id: 09
+  name: parse_pptx
+  lines:
+  - parse_pptx
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 10
+  col: 0
+  stage: 模块级
+  route: →12
+  desc: ★ `.pptx` **字节** → `(elements, 报错文案)`。**一张幻灯片一个 element**（零依赖… · L162 · 函数
+    · ⇢ 依赖 pptx_text.slides
+- id: '10'
   name: parse_materials
   lines:
   - parse_materials
   type: task
   subject: 脚本
   executor: selfboot
-  row: 4
+  row: 2
   col: 0
   stage: 模块级
-  route: 1→05｜2→07｜3→08
-  desc: ★ 材料层 → `(elements, 补注, 摘要, 跳过清单, 报错文案)`。非 OOXML / 非 ok 的一律**… · L156 · 函数
-    · 分支：1→container_kind 2→parse_docx 3→parse_xlsx
-- id: '10'
+  route: 1→05｜2→07｜3→08｜4→09
+  desc: ★ 材料层 → `(elements, 补注, 摘要, 跳过清单, 报错文案)`。非 OOXML / 非 ok 的一律**… · L190 · 函数
+    · 分支：1→container_kind 2→parse_docx 3→parse_xlsx 4→parse_pptx
+- id: '11'
   name: main
   lines:
   - main
@@ -131,44 +144,44 @@ nodes:
   row: 1
   col: 0
   stage: 模块级
-  route: 1→03｜2→04｜3→09
-  desc: L193 · 函数 · 分支：1→_read_json 2→_write_notes 3→parse_materials
-- id: '11'
+  route: 1→03｜2→04｜3→10
+  desc: L231 · 函数 · 分支：1→_read_json 2→_write_notes 3→parse_materials
+- id: '12'
   name: 结束
   lines:
   - 结束
   type: end
   subject: 脚本
   executor: selfboot
-  row: 10
+  row: 11
   col: 0
   stage: 出口
   route: —
   desc: 流程终点（结构性节点，不是函数）
 edges:
 - from: '01'
-  to: '10'
+  to: '11'
   kind: spine
   polarity: main
   label: '1'
 - from: '02'
-  to: '11'
-  kind: spine
+  to: '12'
+  kind: jumpR
   polarity: main
 - from: '03'
-  to: '11'
+  to: '12'
   kind: jumpR
   polarity: main
 - from: '04'
-  to: '11'
+  to: '12'
   kind: jumpR
   polarity: main
 - from: '05'
-  to: '11'
+  to: '12'
   kind: jumpR
   polarity: main
 - from: '06'
-  to: '11'
+  to: '12'
   kind: jumpR
   polarity: main
 - from: '07'
@@ -178,7 +191,7 @@ edges:
   label: '1'
 - from: '07'
   to: '06'
-  kind: spine
+  kind: jumpR
   polarity: main
   label: '2'
 - from: 08
@@ -186,32 +199,41 @@ edges:
   kind: spine
   polarity: main
 - from: 09
-  to: '05'
+  to: '12'
   kind: spine
   polarity: main
-  label: '1'
-- from: 09
-  to: '07'
+- from: '10'
+  to: '05'
   kind: jumpR
   polarity: main
+  label: '1'
+- from: '10'
+  to: '07'
+  kind: spine
+  polarity: main
   label: '2'
-- from: 09
+- from: '10'
   to: 08
   kind: jumpR
   polarity: main
   label: '3'
 - from: '10'
+  to: 09
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '11'
   to: '03'
-  kind: spine
+  kind: jumpR
   polarity: main
   label: '1'
-- from: '10'
+- from: '11'
   to: '04'
   kind: jumpR
   polarity: main
   label: '2'
-- from: '10'
-  to: 09
-  kind: jumpR
+- from: '11'
+  to: '10'
+  kind: spine
   polarity: main
   label: '3'

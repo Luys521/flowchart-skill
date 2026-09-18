@@ -19,7 +19,7 @@ r"""accept.py — **验收：一条命令跑完十一道门，只给一个结论
 | ⑧ 卫生 | scripts/*.py 的未用 import／死函数归零 | hygiene.py 退出码（0 过 / 1 有白写 / 其它=仪器故障）；**射程只有 scripts/**，见 D-88 |
 | ⑨ 审美 | 三条审美律的读数不许退化（偏心 / 绕行 / 通道半径） | `aesthetic.py` 的读数与退出码；阈值见 `references/visual-spec.md` §0.1（当前收口值，见 G12） |
 | ⑩ 等价 | 夹具自身有效 + 工作树可观测行为与底本 tag 逐字节相同 | `table_to_dsl --check` 对 `equiv-fixtures/*.md` 的期望结果；`equiv.py make-base` / `suite` 的退出码 |
-| ⑪ 材料链 · 漂移 · 取子集 | `drift.py` 的判据 D1—D5 与账目对账 · `query.py` 的取子集边界（每条正反各一例） | `pipeline-fixtures/suite.py` 的 `PASS/FAIL` 行 + 退出码；夹具在系统临时目录里现造现跑 |
+| ⑪ 材料链 · 漂移 · 取子集 | `drift.py` 的判据 D1—D5 与账目对账 · `query.py` 的取子集边界 · pptx 全链（判 T1 / 摘要 / 按张撬开） | `pipeline-fixtures/suite.py` 的 `PASS/FAIL` 行 + 退出码；夹具在系统临时目录里现造现跑 |
 
 **门⑤在仓库外的副本上跑**：`build.py` 会往树里写 html / drawio / `.bak` / yaml。验收**不改产物**，
 所以先把树整棵复制到临时目录再 build——副本的根目录仍叫 `self-boot`，产物名（`self-boot-flow.html`
@@ -676,7 +676,8 @@ def gate_drift(g):
     """门⑪：材料链的两台仪器（`PIPELINE-SPEC` §5 / §5.3）**每轮验收都跑一遍**，用合成夹具钉住判据与边界。
 
     覆盖：`drift.py` 的判据 D1—D5 与 `check` 的**账目对账**（说谎 / 过期 / 无理由都要被抓住）；
-    `query.py` 的点名取子集（分批 + 游标 / 范围 / 关键词 / 只裁显示不筛 / 语法错退 2）。
+    `query.py` 的点名取子集（分批 + 游标 / 范围 / 关键词 / 只裁显示不筛 / 语法错退 2）；
+    pptx 全链（probe 判 T1 / recon 出摘要 / 读者按张撬开 + 超限留痕）。
 
     **为什么它够格当一道门**：这两台仪器的判据都有"读得对不对"与"边界守不守得住"两半，
     后者**只能用合成夹具验**（真实材料造不出"故意标错"），而在这之前它只有人手动跑：

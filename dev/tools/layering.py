@@ -40,6 +40,7 @@ PUBLIC = {
     'geometry',           # 网格 / 吸附 / 线段谓词；出度 0
     'artifact',           # 产物命名的唯一出处；出度 0
     'textquality',        # 抽取质量判据（§1.5 手段 0）：被分派器复用；出度 0
+    'pptx_text',          # .pptx 取文字（zip + ppt/slides/*.xml）：摘要器与读者共用同一句；出度 0
     'flowtable_layout',   # 行列与槽位计算；出度 0
     'flowtable',          # 《流程表》解析
     'flowtable_check',    # 结构校验 H1–H8 三层 + 表头 H9
