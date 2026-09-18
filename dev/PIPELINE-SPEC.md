@@ -80,12 +80,43 @@ extract(材料路径, options) → {elements[], warnings[], error?}
 **分派是查表，不是判断**：档位到读者的映射是固定的（T1/T2→脚本、T3→视觉、T4→只记账），没有裁量余地；
 流程图上这一步的执行主体是**脚本**，不是 AI。
 
+**解析者的三层**（按材料类型分工；**降级必须留痕**）：
+
+| 材料 | 首选 | 降级 | 兜底 |
+|---|---|---|---|
+| Office 类（doc / docx / wps / xls / xlsx / csv / tsv / ppt / pptx，**含 legacy**） | **运行时本地 Office SDK**（`tencent-local-office-edit` 的 `edsdk.py list/schema/call`）—**不必装 LibreOffice** | 纯 Python（python-docx / openpyxl）—**只吃 OOXML，legacy 读不了** | 记 T4 读不动 |
+| 图片 / 扫描件 / 截图 / 白板照 | **多模态 LLM**（读图 → element + bbox + 出处） | Python OCR（tesseract / paddle）—**精度与可核对性都下降，必须显著标注** | 记 T4 读不动 + 进澄清 |
+| 纯文本（md / txt / csv / json …） | Python 直接读 | — | — |
+
+`extractor` 必须写清**具体走了哪条路**（`sdk:edsdk` / `vlm` / `ocr:tesseract` / `py:openpyxl`）—否则 §0 的"可追溯"就是空话。
+
 四条硬要求：
 
 1. **只读**：不许修改、移动、重命名材料。
 2. **不抛裸异常**：失败要返回 `error` 文本（上游按"读不动"记账，见 §1.3）。
 3. **不做业务判断**：不猜流程、不合并节点—判断在 AI 侧（与 `SKILL.md` "`scripts/` 只执行，不承载判断"同一条）。
 4. **输出必须符合 §2 的 element 模型**，否则账本拒绝收（键封闭，见 §2.1）。
+
+### 1.5 侦查（recon）：异常文件先搞清"是什么"，再决定要不要解析
+
+**触发**：探测发现"异常"—体积超阈值、预估 element 数超阈值、表数/行列数异常，或结构不像文档（阈值是**数值**，写进 `scripts/dictionary.yaml`）。
+
+**为什么需要**：真实材料里有**工具型文件**（如一张 sheet 就是一台计算器的测算表）。它能抽出几十万字符，却**没有过程步骤**—直接灌进账本既爆体积、又没价值。**先侦查，再决定解析深度。**
+
+| # | 手段 | 怎么做 | 状态 |
+|---|---|---|---|
+| 1 | **结构侦查**（首选，零成本） | 用本地 Office SDK 的读工具取"目录级结构"：`sheet_get_used_range`（表数/行列数/使用区域）· `doc_get_outline`（标题层级）· `doc_list_tables` + `doc_get_table_info`（表格数与规模）· `slide_get_info`（页数/版式）· 图表 / 透视表 / 公式计数 | **可用** |
+| 2 | 视觉侦查 | 把文件渲染成图片交给多模态 LLM 看一眼 | **暂不可用**：实测本地 Office SDK 只暴露 `list` / `schema` / `call`，工具面里**没有** export / render / 截图类；将来 SDK 具备或编辑器可截图时再补 |
+
+**产出**：一条**侦查结论**，写进材料卡片的「主题 / 含流程 / 建议处置」；处置三选一：
+
+| 处置 | 什么时候 | 后果 |
+|---|---|---|
+| `全量解析` | 判为文档型 / 流程型 | 走正常 T1 / T2 路径 |
+| `只取摘要` | 判为工具型 / 数据型，但可能含少量流程线索 | 只抽"侦查结论 + 少量抽样"，**不灌满账本**—这才是 §2.4 降级该有的姿势 |
+| `不参与` | 判为纯工具 / 纯资质 / 与流程无关 | 记 T4 + 理由，进 §4 的排除清单 |
+
+**记账要求**：侦查结论算**语义推断** → 标 `⚠`；**它凭以判断的结构数字（表数 / 行列数 / 大纲）要写进卡片**，人能复核（对齐 §0 责任边界）。
 
 ## 2 L0 证据账本
 
@@ -152,7 +183,7 @@ heading  paragraph  list_item  table  figure  caption  code  sheet  cell
 - UTF-8、LF、缩进 2、`ensure_ascii=false`（中文不转义）。
 - **幂等**：同输入两次 ⇒ 同字节（对齐现有"build 两次产物不变"的纪律）。
 - **键序固定**：按 §2.1 的字段序，不随解析顺序漂。
-- 降级必须记账：超上限只能缩 `quote` / 丢 `rows` 明细，且要在账本里写明"哪份材料被降级"—**不许静默截断**。
+- **超上限先侦查、再决定**（§1.5）：处置为「只取摘要」时才缩 `quote` / 丢 `rows` 明细，并写明"哪份材料被降级"—**不许静默截断**，**也不许一上来就全量灌**。
 
 ### 2.5 L0 的对外承诺
 
@@ -315,6 +346,7 @@ heading  paragraph  list_item  table  figure  caption  code  sheet  cell
 | 计划与实际一致：流程数 = `<流程名>/` 目录数；`F0x#N` 的 N 是父表真实节点 | 待定 | 未实现 |
 | 版本关系双向一致：`A 互补(B)` → `B 互补(A)`；`A 替代(B)` → `B 被替代(A)` | 待定（卡片校验器） | 未实现 |
 | 卡片与账本一致：档位 / 读不动必须逐字等于 `materials[]` | 待定（卡片校验器） | 未实现 |
+| 侦查（§1.5）：异常材料必须先出侦查结论，再定解析深度 | 待定（侦查器：SDK 结构读取） | 未实现 |
 纪律：**现在没有仪器 ⇒ 先按 `dev/coding-spec.md` 第三节登记为缺口**，实现时一起接上，不许假装被守住。
 
 ### 7.1 H10 上线清单（实现 H10 时照单执行）
@@ -327,3 +359,4 @@ heading  paragraph  list_item  table  figure  caption  code  sheet  cell
 1. **`intake.md` / `plan.md` 会被判"孤儿表"**：`scripts/layer_index.py` 的 `_find_orphans` 扫 `root.rglob('*.md')`，白名单只有 `checklist.md` / `<stem>-index.md` / `README*` / `*.sync.md`—其余一律报 `孤儿表: xxx.md`。
 2. **父表链扫描会读它们**：`scripts/flowtable.py` 的 `_parent_by_scan` 沿目录向上 `glob('*.md')` 找 `⊞` 父表；理论上 `plan.md` 若出现 `⊞` 字符会被误判成父表。
 3. **修法（不许各写一份）**：把这类"不是表的 `.md`"集中登记一处（按既有纪律：命名只走 `scripts/artifact.py`），由 `layer_index` / `flowtable` 从那里取白名单。
+4. **视觉侦查暂不可用**：本地 Office SDK 只暴露 `list` / `schema` / `call`，工具面里没有 export / render / 截图类 ⇒ §1.5 的第二手段（转图片侦查）当前走不通，先只做结构侦查。
