@@ -30,6 +30,11 @@
 
 **任务级产物住哪**：`evidence.json`、`intake.md`、`plan.md` 都住**成果根**（用户给的路径，或 C 档默认根），与各 `<流程名>/` **平级**；**流程目录里只有原七件套**（`flowtable.md`、`checklist.md`、`<流程名>-index.md`、`<流程名>-flow.{yaml,manifest.json,html,drawio,svg}`）。
 
+**自包含优先，环境能力只当加速器**（硬约束）：本 SKILL 必须能**独立跑**—**不许依赖宿主环境里的任何其它技能或工具**。
+- 每条能力都要有一条**自包含实现**（只用本仓 `scripts/` + **显式声明的依赖**）。
+- 宿主恰好提供的能力**只在探测到时可选用**，用来提速/提质，**不许成为唯一路径**（降级要留痕：见 §1.4 的 `extractor`）。
+- **环境要求要显式声明**：哪些格式需要外部工具，缺了给**可执行**的提示，不许静默降级、也不许假装能读。
+
 ## 1 格式三档 + 内容探测
 
 ### 1.1 三档定义
@@ -80,13 +85,17 @@ extract(材料路径, options) → {elements[], warnings[], error?}
 **分派是查表，不是判断**：档位到读者的映射是固定的（T1/T2→脚本、T3→视觉、T4→只记账），没有裁量余地；
 流程图上这一步的执行主体是**脚本**，不是 AI。
 
-**解析者的三层**（按材料类型分工；**降级必须留痕**）：
+**自包含优先，环境能力只当加速器**（按材料类型分工；**降级必须留痕**）：
 
-| 材料 | 首选 | 降级 | 兜底 |
+| 材料 | **自包含路径（必须实现）** | 可选加速器（**探测到才用**） | 都没有时 |
 |---|---|---|---|
-| Office 类（doc / docx / wps / xls / xlsx / csv / tsv / ppt / pptx，**含 legacy**） | **运行时本地 Office SDK**（`tencent-local-office-edit` 的 `edsdk.py list/schema/call`）—**不必装 LibreOffice** | 纯 Python（python-docx / openpyxl）—**只吃 OOXML，legacy 读不了** | 记 T4 读不动 |
-| 图片 / 扫描件 / 截图 / 白板照 | **多模态 LLM**（读图 → element + bbox + 出处） | Python OCR（tesseract / paddle）—**精度与可核对性都下降，必须显著标注** | 记 T4 读不动 + 进澄清 |
-| 纯文本（md / txt / csv / json …） | Python 直接读 | — | — |
+| OOXML（docx / xlsx / pptx） | Python 库（python-docx / openpyxl / python-pptx）—**依赖要显式声明**（见下） | 宿主本地 Office SDK（若存在） | 记 T4 + **给可执行提示**（装什么） |
+| **legacy**（.doc / .xls / .ppt） | **没有纯 Python 的可靠读法** ⇒ 只用**外部转换器**（LibreOffice / soffice，若装了） | 宿主本地 Office SDK（若存在） | 记 T4 + 可执行提示（"请另存为 .docx" 或 "装 LibreOffice"） |
+| 图片 / 扫描件 / 截图 / 白板照 | **OCR**（tesseract / paddleocr）—依赖显式声明 | 宿主多模态模型（若可用） | 记 T4 + 进澄清 |
+| 纯文本（md / txt / csv / json …） | Python 标准库 | — | — |
+
+**环境清单要显式**：新增依赖（Python 包）与**可选外部工具**（转换器）都要写成清单（如 `requirements.txt` + 一节"可选外部工具"）；
+缺依赖报的错**要可执行**（说清装什么、或改走哪条路）—不许静默降级。
 
 `extractor` 必须写清**具体走了哪条路**（`sdk:edsdk` / `vlm` / `ocr:tesseract` / `py:openpyxl`）—否则 §0 的"可追溯"就是空话。
 
@@ -110,7 +119,7 @@ extract(材料路径, options) → {elements[], warnings[], error?}
 
 | # | 手段 | 怎么做 | 状态 |
 |---|---|---|---|
-| 1 | **结构侦查**（首选，零成本） | 用本地 Office SDK 的读工具取"目录级结构"：`sheet_get_used_range`（表数/行列数/使用区域）· `doc_get_outline`（标题层级）· `doc_list_tables` + `doc_get_table_info`（表格数与规模）· `slide_get_info`（页数/版式）· 图表 / 透视表 / 公式计数 | **可用** |
+| 1 | **结构侦查**（首选，零成本） | **自包含**：用自带库读"目录级结构"（openpyxl 读 sheet 名与 used range、python-docx 读大纲、python-pptx 读页数与版式）；**宿主 Office SDK 若存在则优先**（读得更全，如公式 / 透视表计数） | 自包含可用；SDK 可选 |
 | 2 | 视觉侦查 | 把文件渲染成图片交给多模态 LLM 看一眼 | **暂不可用**：实测本地 Office SDK 只暴露 `list` / `schema` / `call`，工具面里**没有** export / render / 截图类；将来 SDK 具备或编辑器可截图时再补 |
 
 **产出**：一条**侦查结论**，写进材料卡片的「主题 / 含流程 / 建议处置」；处置三选一：
@@ -351,7 +360,8 @@ heading  paragraph  list_item  table  figure  caption  code  sheet  cell
 | 计划与实际一致：流程数 = `<流程名>/` 目录数；`F0x#N` 的 N 是父表真实节点 | 待定 | 未实现 |
 | 版本关系双向一致：`A 互补(B)` → `B 互补(A)`；`A 替代(B)` → `B 被替代(A)` | 待定（卡片校验器） | 未实现 |
 | 卡片与账本一致：档位 / 读不动必须逐字等于 `materials[]` | 待定（卡片校验器） | 未实现 |
-| 侦查（§1.5）：异常材料必须先出侦查结论，再定解析深度 | 待定（侦查器：SDK 结构读取） | 未实现 |
+| 侦查（§1.5）：异常材料必须先出侦查结论，再定解析深度 | 待定（侦查器；**自包含优先**） | 未实现 |
+| 依赖清单与自包含自检：新依赖 / 可选外部工具要显式声明，缺依赖报可执行的错 | 待定（requirements + 启动自检） | 未实现 |
 纪律：**现在没有仪器 ⇒ 先按 `dev/coding-spec.md` 第三节登记为缺口**，实现时一起接上，不许假装被守住。
 
 ### 7.1 H10 上线清单（实现 H10 时照单执行）
@@ -364,4 +374,4 @@ heading  paragraph  list_item  table  figure  caption  code  sheet  cell
 1. **`intake.md` / `plan.md` 会被判"孤儿表"**：`scripts/layer_index.py` 的 `_find_orphans` 扫 `root.rglob('*.md')`，白名单只有 `checklist.md` / `<stem>-index.md` / `README*` / `*.sync.md`—其余一律报 `孤儿表: xxx.md`。
 2. **父表链扫描会读它们**：`scripts/flowtable.py` 的 `_parent_by_scan` 沿目录向上 `glob('*.md')` 找 `⊞` 父表；理论上 `plan.md` 若出现 `⊞` 字符会被误判成父表。
 3. **修法（不许各写一份）**：把这类"不是表的 `.md`"集中登记一处（按既有纪律：命名只走 `scripts/artifact.py`），由 `layer_index` / `flowtable` 从那里取白名单。
-4. **视觉侦查暂不可用**：本地 Office SDK 只暴露 `list` / `schema` / `call`，工具面里没有 export / render / 截图类 ⇒ §1.5 的第二手段（转图片侦查）当前走不通，先只做结构侦查。
+4. **宿主 Office SDK 不许当唯一路径**：它只是**加速器**（本 SKILL 必须自包含）。实测它没有 export / render / 截图类工具 ⇒ §1.5 的"视觉侦查"目前没有实现手段（自包含侧也没有），先只做结构侦查。
