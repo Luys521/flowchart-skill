@@ -263,6 +263,13 @@ def main(argv=None):
     except (OSError, ValueError) as e:
         print(f'⚠ 账本读不了: {e}', file=sys.stderr)
         return 2
+    if not isinstance(ledger, dict):
+        # 审计实测：喂一份 JSON **数组**（比如把材料层当账本）曾在这里裸抛
+        # `AttributeError: 'list' object has no attribute 'get'`——"不抛裸异常"这条对所有脚本都成立，
+        # 输入形态不对要**说人话**并退 2（仪器故障），不是崩栈。
+        print(f'⚠ 账本结构不对（要一个对象，含 materials[] 与 elements[]）：实际是 {type(ledger).__name__}',
+              file=sys.stderr)
+        return 2
     if not isinstance(ledger.get('materials'), list) or not isinstance(ledger.get('elements'), list):
         print('⚠ 账本结构不对（要 materials[] 与 elements[]）', file=sys.stderr)
         return 2
