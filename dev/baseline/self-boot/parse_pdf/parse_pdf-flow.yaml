@@ -70,7 +70,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →09
-  desc: ★ `'40-60'` / `'7'` → `(40, 60)` / `(7, 7)`；空或写歪 → `None`（**不… · L55 · 函数
+  desc: ★ `'40-60'` / `'7'` → `(40, 60)`；空 → `None`；**写歪/反区间要报错，不许静默按… · L55 · 函数
 - id: '06'
   name: parse_pdf
   lines:
@@ -82,7 +82,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →02
-  desc: ★ `.pdf` → `(elements, 采样说明, 报错文案)`。只抽文本层；空页跳过（不伪造 element）。 · L63 · 函数
+  desc: ★ `.pdf` → `(elements, 采样说明, 报错文案)`。只抽文本层；空页跳过（不伪造 element）。 · L71 · 函数
 - id: '07'
   name: parse_materials
   lines:
@@ -94,7 +94,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →06
-  desc: ★ 材料层 → `(elements, 补注, 摘要, 跳过清单, 报错文案)`。非 PDF / 非 T2 一律跳过并记账。 · L113 · 函数
+  desc: ★ 材料层 → `(elements, 补注, 摘要, 跳过清单, 报错文案)`。非 PDF / 非 T2 一律跳过并记账。 · L121 · 函数
 - id: 08
   name: main
   lines:
@@ -106,7 +106,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→03｜2→04｜3→05｜4→07
-  desc: L155 · 函数 · 分支：1→_read_json 2→_write_notes 3→_page_span 4→parse_materials
+  desc: L171 · 函数 · 分支：1→_read_json 2→_write_notes 3→_page_span 4→parse_materials
 - id: 09
   name: 结束
   lines:

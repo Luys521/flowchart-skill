@@ -578,14 +578,20 @@ def materials_paths(root):
             led = {}
     ms = {m['id']: m for m in led.get('materials', [])}
     els = led.get('elements', [])
+    hard = {m['id'] for m in mats if m.get('status') != 'ok'}      # 材料层自己就判读不动的
+    others = {k: (v.get('status'), v.get('reason') or '') for k, v in ms.items()
+              if k not in ('M06', 'M07')}
     ok = (rc == 0
           and {e['material_id'] for e in els} == {'M06'}                 # 只有 f.txt 含「审批」
           and ms.get('M07', {}).get('status') == 'skipped'               # 被滤空的那份：记「未取」
           and '未取' in (ms.get('M07', {}).get('reason') or '')
-          and all(m.get('status') == 'skipped' for k, m in ms.items() if k not in ('M06', 'M07'))
+          # **读不动是材料的属性**：`--only` 不许把它改写成「未取」（审计实测的阻断，这里钉住）
+          and all(others.get(i, ('', ''))[0] == 'unreadable' for i in hard)
+          and all(s == 'skipped' for i, (s, _r) in others.items() if i not in hard)
           and all('本轮收窄' in (e.get('degraded') or '') for e in els))
-    cases.append(('㉕ 抽取时收窄（--only + --grep）：只留该留的，其余记「本轮未取」而不是读不动',
-                  ok, rc, (out[-300:] + str({k: v.get('status') for k, v in ms.items()})) if not ok else ''))
+    cases.append(('㉕ 抽取时收窄（--only + --grep）：只留该留的 · 其余记「本轮未取」· '
+                  '**读不动的仍记读不动**', ok, rc,
+                  (out[-200:] + str({k: v[0] for k, v in others.items()})) if not ok else ''))
 
     # ㉖ 范围收窄下沉到适配器：xlsx 只要一张子表 + 只要第 2 行（逐条记 degraded）
     rc, out = run([sys.executable, str(PARSE_CMD), '--materials', str(d / 'materials.json'),
@@ -625,11 +631,39 @@ def materials_paths(root):
           and rc2 == 0 and '超护栏' in r2)                        # 护栏收到 512 ⇒ 照样记在行里
     cases.append(('㉘ 图大不挡摘要：护栏按*要读的部件*算（20KB 媒体 + 4KB 护栏 → 有摘要；'
                   '收到 512 → 才记超护栏）', ok, rc, (r1[-200:] + r2[-200:]) if not ok else ''))
+    # ㉙ 范围写歪 / 点名不存在的材料 ⇒ 退 2 说人话（原先：静默按全量走 / 静默退 0 且写一张空账本）
+    rc, out = run([sys.executable, str(PARSE_CMD), '--materials', str(d / 'materials.json'),
+                   '--only', 'M02', '--lines', '5-2',
+                   '--elements', str(d / 'x.json'), '--notes', str(d / 'xn.json')])
+    rc2, out2 = run([sys.executable, str(PARSE_CMD), '--materials', str(d / 'materials.json'),
+                     '--only', 'M99', '--elements', str(d / 'x.json'), '--notes', str(d / 'xn.json')])
+    ok = (rc == 2 and '上界小于下界' in out and rc2 == 2 and '一个都不在材料层里' in out2)
+    cases.append(('㉙ 写歪的范围 / 点名不存在的材料 ⇒ 退 2 + 人话', ok, rc,
+                  (out[-150:] + out2[-150:]) if not ok else ''))
+
+    # ㉚ 收窄把材料读空 ⇒ 记 `skipped`「本轮收窄未取」，**不是** `unreadable`「空文档 / 只有图片」、
+    #    也不是假报「探测说谎」退 1（审计实测：`--slides 999-1000`、`--sheet 不存在`、`--pages 越界`
+    #    都会把**参数错**记成**材料缺陷**，下一轮 AI 会照它把好材料判死）。
+    rc, out = run([sys.executable, str(PARSE_CMD), '--materials', str(d / 'materials.json'),
+                   '--only', 'M03', '--slides', '99-100',
+                   '--elements', str(d / 'e-narrow.json'), '--notes', str(d / 'n-narrow.json'),
+                   '--ledger', str(d / 'led-narrow.json'), '--task', 'narrow-empty'])
+    led2 = {}
+    if (d / 'led-narrow.json').exists():
+        try:
+            led2 = json.loads((d / 'led-narrow.json').read_text(encoding='utf-8'))
+        except ValueError:
+            led2 = {}
+    m3 = next((m for m in led2.get('materials', []) if m['id'] == 'M03'), {})
+    ok = (rc == 0 and m3.get('status') == 'skipped' and '收窄' in (m3.get('reason') or '')
+          and '探测说谎' not in out)
+    cases.append(('㉚ 收窄读空 ⇒ skipped「本轮收窄未取」（不是 unreadable「空文档」、也不是假探谎）',
+                  ok, rc, (out[-200:] + str(m3)[:150]) if not ok else ''))
     return cases
 
 
 def main(argv=None):
-    """造夹具 → 比 `drift` 读数 → 跑漂移 9 + 取子集 7 + pptx 3 + 材料树 5 条路径 → 打印结论并给退出码。"""
+    """造夹具 → 比 `drift` 读数 → 跑漂移 9 + 取子集 7 + pptx 3 + 材料树若干条路径 → 打印结论并给退出码。"""
     sys.stdout.reconfigure(encoding='utf-8')
     root = pathlib.Path(argv[0]) if argv else pathlib.Path(tempfile.mkdtemp(prefix='pipeline-fix-'))
     root.mkdir(parents=True, exist_ok=True)

@@ -16,8 +16,8 @@ parent: ../flowtable.md
 | 模块级 | 02 | _import_dep | 任务 | — | — | — | 脚本 | selfboot | — | →09 | ★ import 一个必须依赖 → `(模块, 报错文案)`（缺了给可执行的提示）。 · L36 · 函数 |
 | 模块级 | 03 | _read_json | 任务 | — | — | — | 脚本 | selfboot | — | →09 | ★ 读 JSON（容忍 BOM）。 · L45 · 函数 |
 | 模块级 | 04 | _write_notes | 任务 | — | — | — | 脚本 | selfboot | — | →09 | ★ 写材料层补注：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 `ledger.dump`… · L50 · 函数 |
-| 模块级 | 05 | _page_span | 任务 | — | — | — | 脚本 | selfboot | — | →09 | ★ `'40-60'` / `'7'` → `(40, 60)` / `(7, 7)`；空或写歪 → `None`（**不… · L55 · 函数 |
-| 模块级 | 06 | parse_pdf | 任务 | — | — | — | 脚本 | selfboot | — | →02 | ★ `.pdf` → `(elements, 采样说明, 报错文案)`。只抽文本层；空页跳过（不伪造 element）。 · L63 · 函数 |
-| 模块级 | 07 | parse_materials | 任务 | — | — | — | 脚本 | selfboot | — | →06 | ★ 材料层 → `(elements, 补注, 摘要, 跳过清单, 报错文案)`。非 PDF / 非 T2 一律跳过并记账。 · L113 · 函数 |
-| 模块级 | 08 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→03｜2→04｜3→05｜4→07 | L155 · 函数 · 分支：1→_read_json 2→_write_notes 3→_page_span 4→parse_materials |
+| 模块级 | 05 | _page_span | 任务 | — | — | — | 脚本 | selfboot | — | →09 | ★ `'40-60'` / `'7'` → `(40, 60)`；空 → `None`；**写歪/反区间要报错，不许静默按… · L55 · 函数 |
+| 模块级 | 06 | parse_pdf | 任务 | — | — | — | 脚本 | selfboot | — | →02 | ★ `.pdf` → `(elements, 采样说明, 报错文案)`。只抽文本层；空页跳过（不伪造 element）。 · L71 · 函数 |
+| 模块级 | 07 | parse_materials | 任务 | — | — | — | 脚本 | selfboot | — | →06 | ★ 材料层 → `(elements, 补注, 摘要, 跳过清单, 报错文案)`。非 PDF / 非 T2 一律跳过并记账。 · L121 · 函数 |
+| 模块级 | 08 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→03｜2→04｜3→05｜4→07 | L171 · 函数 · 分支：1→_read_json 2→_write_notes 3→_page_span 4→parse_materials |
 | 出口 | 09 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |

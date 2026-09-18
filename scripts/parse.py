@@ -89,21 +89,45 @@ def _opt(base, pairs):
 
 
 def _span(spec):
-    """`'40-60'` / `'7'` → `(40, 60)` / `(7, 7)`；空或写歪 → `None`（写歪时给个明白的错更好，但这里只收窄）。"""
-    m = re.fullmatch(r'\s*(\d+)\s*(?:-\s*(\d+)\s*)?', str(spec or ''))
-    if not m:
+    """`'40-60'` / `'7'` → `(40, 60)` / `(7, 7)`；空 → `None`；**写歪/反区间要报错，不许静默按全量走**。
+
+    "歪了就按全量走"本身就是猜（把"我要第 3 条"执行成"全都要"），而且会让下游以为收窄生效了。
+    与 `query.py` 的同一句声明保持一致：那边是抛错退 2，这边也退 2（审计实测两处曾相反）。
+    """
+    if not str(spec or '').strip():
         return None
+    m = re.fullmatch(r'\s*(\d+)\s*(?:-\s*(\d+)\s*)?', str(spec))
+    if not m:
+        raise ValueError(f'范围写法不认：{spec!r}（应为 N 或 A-B，1 起，闭区间）')
     a = int(m.group(1))
-    return (a, int(m.group(2)) if m.group(2) else a)
+    b = int(m.group(2)) if m.group(2) else a
+    if a < 1:
+        raise ValueError(f'范围 {spec!r}：起点要 ≥1（页码/条数是 1 起）')
+    if b < a:
+        raise ValueError(f'范围 {spec!r}：上界小于下界')
+    return (a, b)
 
 
 def narrow_materials(materials, only):
-    """`--only M03,M15` → `(可选中的那些, 被排除的那些)`。**空集合 = 不筛**（不是"一份都不要"）。"""
+    """`--only M03,M15` → `(可选中的那些, 被排除的那些)`。**空集合 = 不筛**（不是"一份都不要"）。
+
+    **点名了却一个都没匹配上 ⇒ 报错退 2**：否则整批被静默记成"本轮未取"、还退 0，
+    唯一的线索是理由句里的一个空括号（审计实测）。大小写敏感是有意的：`M##` 是本仓的编号写法，
+    认小写等于默许两种写法并存（而 `--grep` 的大小写不敏感是**文本匹配**，两回事）。
+    """
     want = {x.strip() for x in str(only or '').split(',') if x.strip()}
     if not want:
         return materials, []
-    picked = [m for m in materials if m.get('id') in want]
-    return picked, [m for m in materials if m.get('id') not in want]
+    known = {m.get('id') for m in materials}
+    missing = sorted(want - known)
+    if not (want & known):
+        raise ValueError(f'--only 点名的材料一个都不在材料层里：{"、".join(missing)}'
+                         f'（材料层现有 {"、".join(sorted(x for x in known if x)) or "空"}）')
+    if missing:
+        raise ValueError(f'--only 里有材料层没有的编号：{"、".join(missing)}'
+                         f'（材料层现有 {"、".join(sorted(x for x in known if x))}）')
+    return ([m for m in materials if m.get('id') in want],
+            [m for m in materials if m.get('id') not in want])
 
 
 def apply_narrowing(elements, grep, lines):
@@ -332,7 +356,16 @@ def main(argv=None):
         return 2
 
     per_elements, per_notes, briefs = [], [], []
-    picked, left_out = narrow_materials(materials, a.only)
+    try:
+        picked, left_out = narrow_materials(materials, a.only)
+    except ValueError as e:                          # 点名了却没有/写错编号 ⇒ 退 2 说人话
+        print(f'⚠ {e}', file=sys.stderr)
+        return 2
+    try:                                             # 范围写歪 ⇒ 退 2（不许静默按全量走）
+        lines_span = _span(a.lines)
+    except ValueError as e:
+        print(f'⚠ {e}', file=sys.stderr)
+        return 2
     with tempfile.TemporaryDirectory(prefix='parse_dispatch_') as td:
         # `--only` 时**换材料层给适配器**（省掉不该读的那几份的解析代价）；账本仍然按**全量**材料落，
         # 被排除的那几份在下面补注成 `skipped`——不补的话它们在账本上就是"status=ok 却零证据"，
@@ -368,8 +401,19 @@ def main(argv=None):
         killed = {n.get('material_id') for n in q_notes}
         notes = [n for n in notes if n.get('material_id') not in killed] + q_notes
 
+    # **"未取"不许顶掉"读不动"**（审计实测的阻断）：这两类补注是在别的补注之后追加的，
+    # 而 `ledger` 对同一材料**后写覆盖先写**——于是一份"缺转换器 / 容器损坏"的材料，
+    # 只要它这一轮被 `--only` 排除或被 `--grep` 滤空，账本上的结论就会从 `unreadable`
+    # 变成 `skipped`，理由句还反过来断言"这不是读不动"——**账本开始说假话**。
+    # 读不动是材料的属性，不随本轮读不读它而改变；所以这两处补注都要**避开已经确定读不动的材料**：
+    # ① 补注里写了 `unreadable` 的（适配器 / 质量门判的）；② **材料层本身就是 `unreadable`/`skipped` 的**
+    # （`probe` 判的 T4 / 不参与）——后者没有补注，光看 notes 会漏掉（审计实测：`--only M01` 把
+    # 一份 probe 判"容器损坏"的材料改写成了 `skipped` +"这不是读不动"）。
+    pinned = {n.get('material_id') for n in notes if n.get('status') == 'unreadable'}
+    pinned |= {m.get('id') for m in materials if m.get('status') not in (None, 'ok')}
+
     # 收窄在**质量门之后**：门判的是"这份材料抽得干不干净"（按整份统计），先滤后判会让统计失真
-    elements, dropped = apply_narrowing(elements, a.grep, _span(a.lines))
+    elements, dropped = apply_narrowing(elements, a.grep, lines_span)
     if a.grep or a.lines:
         print(f'本轮收窄：' + ' · '.join(x for x in (
             f'只保留含「{a.grep}」的片段' if a.grep else '',
@@ -379,21 +423,24 @@ def main(argv=None):
         # **整份被滤空**的材料：留痕没地方挂（`degraded` 挂在留下的元素上）⇒ 改记材料级 `skipped`。
         # 不记的话它在账本上就是"status=ok 却零证据"——读的人分不清"本来就没有"与"被我滤掉了"。
         emptied = [(m, n) for m, n in dropped
-                   if not any(e.get('material_id') == m for e in elements)]
+                   if not any(e.get('material_id') == m for e in elements) and m not in pinned]
         if emptied:
             notes += [{'material_id': m, 'status': 'skipped',
                        'reason': f'本轮未取（收窄把它原有的 {n} 条片段全滤掉了）：'
                                  f'{"、".join(x for x in (f"--grep {a.grep}" if a.grep else "", f"--lines {a.lines}" if a.lines else "") if x)}'
-                                 f'；放宽条件重跑即可——**这不是读不动**'}
+                                 f'；放宽条件重跑即可'}
                       for m, n in emptied]
             print(f'  · {len(emptied)} 份材料被滤空（记「本轮未取」，不是漏认）：'
                   f'{"、".join(m for m, _n in emptied)}')
     if left_out:
+        rest = [m for m in left_out if m.get('id') not in pinned]
         notes += [{'material_id': m['id'], 'status': 'skipped',
                    'reason': f'本轮 --only 未取（只要了 {"、".join(sorted(x["id"] for x in picked))}）；'
-                             f'下一轮补上——**这不是读不动**'}
-                  for m in left_out]
-        print(f'本轮 --only：解析 {len(picked)} 份 · 其余 {len(left_out)} 份记「未取」（不是漏认、也不是读不动）')
+                             f'下一轮补上'}
+                  for m in rest]
+        print(f'本轮 --only：解析 {len(picked)} 份 · 其余 {len(rest)} 份记「未取」（不是漏认）'
+              + (f' · 其中 {len(left_out) - len(rest)} 份保持原本的「读不动」（读不动不随本轮读不读它而变）'
+                 if len(rest) != len(left_out) else ''))
 
     rows, gaps = survey(materials, elements, notes, q_of)
     if a.verbose:

@@ -139,11 +139,19 @@ def parse_xlsx(blob, path, mid, max_rows, max_cols, sheet='', rows_span=None):
     return out, ''
 
 def _span(spec):
-    """`'40-60'` / `'7'` → `(40, 60)` / `(7, 7)`；空或写歪 → `None`（**不猜**：歪了按全量走）。"""
-    m = re.fullmatch(r'\s*(\d+)\s*(?:-\s*(\d+)\s*)?', str(spec or ''))
-    if not m:
+    """`'40-60'` / `'7'` → `(40, 60)`；空 → `None`；**写歪/反区间要报错，不许静默按全量走**。"""
+    if not str(spec or '').strip():
         return None
-    return (int(m.group(1)), int(m.group(2)) if m.group(2) else int(m.group(1)))
+    m = re.fullmatch(r'\s*(\d+)\s*(?:-\s*(\d+)\s*)?', str(spec))
+    if not m:
+        raise ValueError(f'范围写法不认：{spec!r}（应为 N 或 A-B，1 起）')
+    a = int(m.group(1))
+    b = int(m.group(2)) if m.group(2) else a
+    if a < 1:
+        raise ValueError(f'范围 {spec!r}：起点要 ≥1（行/张是 1 起）')
+    if b < a:
+        raise ValueError(f'范围 {spec!r}：上界小于下界')
+    return (a, b)
 
 
 def parse_pptx(blob, path, mid, max_slides, slides_span=None):
@@ -258,6 +266,18 @@ def parse_materials(materials, max_rows, max_cols, max_slides, sheet='', rows_sp
         if err:
             return None, notes, done, skipped, err
         if not got:
+            if slides_span or rows_span or sheet:
+                # **收窄读空 ≠ 材料是空的**（审计实测：原先一律记 `unreadable`「空文档 / 只有图片」，
+                # 下一轮 AI 会照这条把好材料判死；`--slides` 越界与 `--sheet` 不存在都落这里）。
+                what = '、'.join(x for x in (
+                    f'--slides {slides_span[0]}-{slides_span[1]}' if slides_span else '',
+                    f'--rows {rows_span[0]}-{rows_span[1]}' if rows_span else '',
+                    f'--sheet {sheet}' if sheet else '') if x)
+                notes.append({'material_id': mid, 'status': 'skipped',
+                              'reason': f'本轮收窄未取：`{what}` 在这一份里没命中任何内容'
+                                        f'（不是读不动，也不是材料为空）'})
+                skipped.append(f'{mid}: {what} 未命中')
+                continue
             notes.append({'material_id': mid, 'status': 'unreadable',
                           'reason': f'{kind} 里没抽出任何文字（空文档 / 只有图片）——'
                                     f'确属空材料就写进清点，别让它悬着'})
@@ -299,10 +319,15 @@ def main(argv=None):
     if not isinstance(materials, list):
         print('⚠ 输入必须是 JSON 数组（materials[]）', file=sys.stderr)
         return 2
+    try:                                             # 范围写歪 ⇒ 退 2 说人话（不许静默按全量走）
+        rows_span, slides_span = _span(a.rows), _span(a.slides)
+    except ValueError as e:
+        print(f'⚠ {e}', file=sys.stderr)
+        return 2
 
     elements, notes, done, skipped, err = parse_materials(materials, a.max_rows, a.max_cols,
                                                           a.max_slides, a.sheet,
-                                                          _span(a.rows), _span(a.slides))
+                                                          rows_span, slides_span)
     if err:
         print(f'⚠ {err}', file=sys.stderr)
         return 2

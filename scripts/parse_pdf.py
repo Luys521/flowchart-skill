@@ -53,11 +53,19 @@ def _write_notes(notes, path):
 
 
 def _page_span(spec):
-    """`'40-60'` / `'7'` → `(40, 60)` / `(7, 7)`；空或写歪 → `None`（**不猜**：歪了就按全量走，不静默换口径）。"""
-    m = re.fullmatch(r'\s*(\d+)\s*(?:-\s*(\d+)\s*)?', str(spec or ''))
-    if not m:
+    """`'40-60'` / `'7'` → `(40, 60)`；空 → `None`；**写歪/反区间要报错，不许静默按全量走**。"""
+    if not str(spec or '').strip():
         return None
-    return (int(m.group(1)), int(m.group(2)) if m.group(2) else int(m.group(1)))
+    m = re.fullmatch(r'\s*(\d+)\s*(?:-\s*(\d+)\s*)?', str(spec))
+    if not m:
+        raise ValueError(f'--pages 写法不认：{spec!r}（应为 N 或 A-B，1 起）')
+    a = int(m.group(1))
+    b = int(m.group(2)) if m.group(2) else a
+    if a < 1:
+        raise ValueError(f'--pages {spec!r}：页码是 1 起')
+    if b < a:
+        raise ValueError(f'--pages {spec!r}：上界小于下界')
+    return (a, b)
 
 
 def parse_pdf(path, mid, max_pages, max_chars, pages=None):
@@ -149,6 +157,14 @@ def parse_materials(materials, max_pages, max_chars, pages=None):
         done.append(f'{mid} {len(got)} 页' + (f'（{note}）' if note else ''))
         if got:
             notes.append({'material_id': mid, 'extractor': 'py:pdfplumber'})
+        elif pages:
+            # **收窄读空 ≠ 材料是空的**（审计实测：原先这里什么都不记 ⇒ 分派器判"探测说谎"、
+            # 整链退 1 且一个字节都不落盘，还把矛头指向 probe）。记 `skipped`：它没参与**本轮**，
+            # 而 `probe` 判的 T2/pdf-text 完全正确（§2.4：收窄也要留痕，且不许把参数错记成材料缺陷）。
+            notes.append({'material_id': mid, 'status': 'skipped',
+                          'reason': f'本轮收窄未取：`--pages {pages[0]}-{pages[1]}` 在这一份里'
+                                    f'没命中任何有文本层的页（不是读不动，也不是材料为空）'})
+            skipped.append(f'{mid}: --pages {pages[0]}-{pages[1]} 未命中')
     return elements, notes, done, skipped, ''
 
 
