@@ -165,8 +165,71 @@ def groups_of(cards):
     return sorted([sorted(g) for g in groups], key=lambda g: g[0])
 
 
-def build_plan(cards):
-    """清点卡片 → `plan.md` 全文。机器可算的格子已填，语义格子留 `—`（`check` 会把未填当错）。"""
+def clean_split(split):
+    """`--split` 的 JSON → **洗干净的一份**：字符串值里的 `|` 换全角、换行压成空格。
+
+    **在入口处洗一次**，渲染侧就不必到处转义（与"AI 只写 JSON，落笔由脚本做"同一条：AI 不该关心
+    表格语法）。`--scope` 也走这里（它同样是 AI / 用户给的自由文本）。
+    """
+    def clean(v):
+        return v.replace('|', '｜').replace('\n', ' ').strip() if isinstance(v, str) else v
+    out = {}
+    for k, v in (split or {}).items():
+        if isinstance(v, dict):
+            out[k] = {k2: clean(v2) for k2, v2 in v.items()}
+        elif isinstance(v, list):
+            out[k] = [{k2: clean(v2) for k2, v2 in x.items()} if isinstance(x, dict) else clean(x)
+                      for x in v]
+        else:
+            out[k] = clean(v)
+    return out
+
+
+def _split_flows(split):
+    """`--split` 的「流程」段 → 按「材料集里最小的 `M##`」排好序（§4.1 的编号规则由脚本做）。"""
+    out = []
+    for f in split.get('流程') or []:
+        mats = sorted(str(m).strip('`') for m in (f.get('材料集') or []) if str(m).strip())
+        out.append((mats[0] if mats else '', mats, f))
+    return sorted(out, key=lambda x: x[0])
+
+
+def check_split(cards, split):
+    """AI 的拆解（`--split`）→ 错误清单。**这一步核的是"决定完整性"**：
+
+    每一份「含流程 = 是」的材料必须**有下落**——进某条流程的材料集，或写进「范围外」。
+    漏掉的会**静默消失**（与「含流程 = 不确定」必须有人问同一条纪律；真材料集上现形过：
+    5 份读不动的材料既不是流程、也不在排除清单里，计划里一份都没出现而没人注意到）。
+    """
+    errs, placed = [], set()
+    for _k, mats, f in _split_flows(split):
+        if not mats:
+            errs.append(f'流程 {f.get("名")!r} 的材料集是空的（§4.4 ①：流程没有材料就没有依据）')
+        for m in mats:
+            if m not in cards:
+                errs.append(f'流程 {f.get("名")!r} 材料集里的 `{m}` 在 `intake.md` 里没有')
+            placed.add(m)
+    for r in split.get('范围外') or []:
+        m = str(r.get('材料') or '').strip('`')
+        if m not in cards:
+            errs.append(f'「范围外」里的 `{m}` 在 `intake.md` 里没有')
+        if not str(r.get('理由') or '').strip().startswith(OUT_OF_SCOPE):
+            errs.append(f'「范围外」`{m}` 的理由必须以「{OUT_OF_SCOPE}」开头（§4.1 ③ 的第二支）')
+        placed.add(m)
+    for m in sorted(cards):
+        if FLOW_YES.match(str(cards[m]['含流程']).strip()) and m not in placed:
+            errs.append(f'`{m}` 是「含流程 = 是」，但既没进任何流程、也没写进「范围外」'
+                        f'——它会静默消失（§4.2：拆解要对每一份材料有交代）')
+    return errs
+
+
+def build_plan(cards, split=None, scope=None):
+    """清点卡片 → `plan.md` 全文。机器可算的格子已填，语义格子留 `—`（`check` 会把未填当错）。
+
+    **两种入口**：不给 `--split` 就出**机器种子草稿**（每份「含流程 = 是」各一条 + 强合并）；
+    给了就用 AI 的拆解决定（`流程` / `范围外` / `澄清` 三段）渲染——**行集合由 AI 定、落笔由脚本做**，
+    这样"合并 / 移出范围 / 加澄清行"这些判断有了**结构化落点**（不再靠手改 markdown 表格）。
+    """
     groups = groups_of(cards)
     flow_ids = [g for g in groups if FLOW_YES.match(str(cards[g[0]]['含流程']).strip())]
     excl = [m for m in sorted(cards) if FLOW_NO.match(str(cards[m]['含流程']).strip())]
@@ -179,7 +242,11 @@ def build_plan(cards):
              '> 由 `scripts/plan.py` 从 `intake.md` 生成：**机器可算的格子已填**（种子 / 强合并 / `F##` 编号 / '
              '排除清单 / 澄清申请的种子），语义格子留 `—` 待 AI 按 `PIPELINE-SPEC` §4 填'
              '（流程名 · 角色 · `挂在` · 与其它流程 · 并行组 · 澄清问题与推荐答案）。',
-             SCOPE_BLANK,
+             # 表头那三格（§4.0）：`--scope` 给了就渲染成答复，没给就留 `—` 等 AI 去问用户。
+             # （这段原先是个 `_scope_line` 助手，只被这里调一次 ⇒ 内联；见文件头的读数说明。）
+             (f'> **本任务**：主体 = {(scope or {}).get("主体") or NO} · '
+              f'目的 = {(scope or {}).get("目的") or NO} · '
+              f'材料根 = {(scope or {}).get("材料根") or NO}') if scope else SCOPE_BLANK,
              '> ↑ **这三格要先问用户**（§4.0 前置澄清）：`主体` = 这几张图覆盖谁；`目的` = 给谁看、'
              '用来干什么（它决定交付粒度）；`材料根` = 材料从哪几个目录 / 文件来——**含用户手边的'
              '相关工作目录**（同项目的资料常常不在同一个文件夹里）。**没填满这三格，`check` 直接退 1**：'
@@ -201,21 +268,34 @@ def build_plan(cards):
     lines += ['## ① 流程清单', '',
               '| ' + ' | '.join(FLOW_COLUMNS) + ' |',
               '|' + '---|' * len(FLOW_COLUMNS)]
-    for i, g in enumerate(flow_ids, 1):
-        state = '待澄清' if any(m in unsure for m in g) else NO       # 蕴含是机器事实，见 check 规则 5
-        mats = '、'.join(f'`{m}`' for m in g)                        # 只在这里用一次 ⇒ 内联（见文件头）
-        lines.append(f'| `F{i:02d}` {NO} | {NO} | {NO} | {mats} | {NO} | {NO} | {state} |')
+    if split is None:                                  # 机器种子草稿
+        for i, g in enumerate(flow_ids, 1):
+            state = '待澄清' if any(m in unsure for m in g) else NO   # 蕴含是机器事实，见 check 规则 5
+            lines.append(f'| `F{i:02d}` {NO} | {NO} | {NO} | '
+                         f'{"、".join(f"`{m}`" for m in g)} | {NO} | {NO} | {state} |')
+    else:                                              # AI 的拆解（编号按最小 M## 由脚本排）
+        for i, (_k, mats, f) in enumerate(_split_flows(split), 1):
+            lines.append(f'| `F{i:02d}` {f.get("名") or NO} | {f.get("角色") or NO} | '
+                         f'{f.get("挂在") or NO} | {"、".join(f"`{m}`" for m in mats)} | '
+                         f'{f.get("与其它流程") or NO} | {f.get("并行组") or NO} | '
+                         f'{f.get("状态") or NO} |')
     lines += ['', '## ② 澄清申请', '',
               '| ' + ' | '.join(ASK_COLUMNS) + ' |',
               '|' + '---|' * len(ASK_COLUMNS)]
-    for i, m in enumerate(unsure, 1):
-        lines.append(f'| `Q{i:02d}` | {NO} | {NO} | `{m}` |')
+    asks = ([(NO, NO, f'`{m}`') for m in unsure] if split is None
+            else [(a.get('问题') or NO, a.get('推荐答案') or NO, a.get('指向') or NO)
+                  for a in split.get('澄清') or []])
+    for i, (q, a, to) in enumerate(asks, 1):
+        lines.append(f'| `Q{i:02d}` | {q} | {a} | {to} |')
     lines += ['', '## ③ 排除清单（两支：`含流程 = 否` · 有流程但按 §4.0 在本次范围外——后者理由以'
                   '「`范围外`」开头）', '',
               '| ' + ' | '.join(EXCL_COLUMNS) + ' |',
               '|' + '---|' * len(EXCL_COLUMNS)]
     for m in excl:
         lines.append(f'| `{m}` | {reason_of(cards[m]["含流程"])} |')
+    if split is not None:                    # 排除清单第二支：有流程、但按 §4.0 在本次范围外
+        for r in split.get('范围外') or []:
+            lines.append(f'| `{str(r.get("材料") or "").strip("`")}` | {r.get("理由") or NO} |')
     return '\n'.join(lines).rstrip('\n') + '\n'
 
 
@@ -359,31 +439,6 @@ def _check_asks(rows, asks, cards, names):
     return errs
 
 
-def _check_dirs(names, root):
-    """§4.4 ②：流程数 = 成果根下的 `<流程名>/` 目录数（名字逐个对，多的少的都报）。"""
-    try:
-        dirs = {p.name for p in Path(root).iterdir() if p.is_dir()}
-    except OSError as e:
-        return [f'成果根读不了：{e}']
-    want = {n for n in names.values() if n not in BLANK}
-    miss, extra = sorted(want - dirs), sorted(dirs - want)
-    errs = []
-    if miss:
-        errs.append(f'计划里有 {len(miss)} 条流程还没有目录（§4.4 ②：计划说做几张就得真做出几张）：'
-                    + '、'.join(miss))
-    if extra:
-        errs.append(f'成果根下有 {len(extra)} 个目录不在计划里（计划是"做几张"的事实源）：' + '、'.join(extra))
-    return errs
-
-
-def _scope_of(text):
-    """`plan.md` 表头那一行 → `(主体, 目的, 材料根)`；没有那一行就返回三个空串（`check` 会当错）。"""
-    hit = SCOPE_RE.search(str(text or ''))
-    if not hit:
-        return '', '', ''
-    return hit.group('who').strip(), hit.group('why').strip(), hit.group('root').strip()
-
-
 def check_plan(cards, rows, asks, excl, root=None, scope=('', '', '')):
     """计划 vs 清点（+ 成果根）→ 错误清单（空 = 过）。**只报不改**。"""
     errs, names = [], {}
@@ -455,7 +510,21 @@ def check_plan(cards, rows, asks, excl, root=None, scope=('', '', '')):
         errs.append(f'`{m}` 在清点里是「含流程 = 否」，排除清单里却没有它（§4.1 ③：这份清单是从清点抄的）')
     errs += _check_asks(rows, asks, cards, names)
     if root:
-        errs += _check_dirs(names, root)
+        # §4.4 ②：流程数 = 成果根下的 `<流程名>/` 目录数（名字逐个对，多的少的都报）。
+        # （这段原先是个 `_check_dirs` 助手，只被这里调一次 ⇒ 内联；见文件头的读数说明。）
+        try:
+            dirs = {p.name for p in Path(root).iterdir() if p.is_dir()}
+        except OSError as e:
+            errs.append(f'成果根读不了：{e}')
+            dirs = set(names.values())
+        want = {n for n in names.values() if n not in BLANK}
+        miss, extra = sorted(want - dirs), sorted(dirs - want)
+        if miss:
+            errs.append(f'计划里有 {len(miss)} 条流程还没有目录（§4.4 ②：计划说做几张就得真做出几张）：'
+                        + '、'.join(miss))
+        if extra:
+            errs.append(f'成果根下有 {len(extra)} 个目录不在计划里（计划是"做几张"的事实源）：'
+                        + '、'.join(extra))
     return errs
 
 
@@ -475,7 +544,23 @@ def cmd_build(a):
     if err:
         print(f'⚠ {err}', file=sys.stderr)
         return 2
-    text = build_plan(cards)
+    split, scope = None, None
+    try:                                   # `--split` / `--scope`：AI 的拆解决定与前置澄清答复
+        if getattr(a, 'split', None):
+            split = clean_split(cells.load(a.split))
+        if getattr(a, 'scope', None):
+            scope = clean_split(cells.load(a.scope))
+    except (OSError, ValueError) as e:
+        print(f'⚠ `--split` / `--scope` 读不了: {e}', file=sys.stderr)
+        return 2
+    if split is not None:
+        bad = check_split(cards, split)
+        if bad:
+            print(f'✗ 拆解没交代全（{len(bad)} 条；**没有写盘**）——§4.2：每一份材料都要有下落：')
+            for x in bad[:20]:
+                print(f'  - {x}')
+            return 2
+    text = build_plan(cards, split, scope)
     out.write_bytes(text.encode('utf-8'))
     lines = text.splitlines()
     n_flow = sum(1 for ln in lines if ln.startswith('| `F'))
@@ -510,7 +595,12 @@ def cmd_check(a):
           f' · 清点 `{a.intake}` · 流程 {len(rows)} / 澄清 {len(asks)} / 排除 {len(excl)}')
     if not a.root:
         print('> **跳过了 §4.4 ②**（流程数 = `<流程名>/` 目录数）：没给 `--root`。')
-    errs = check_plan(cards, rows, asks, excl, a.root, _scope_of(text))
+    # 表头那一行 → `(主体, 目的, 材料根)`；没有这一行就是三个空串（§4.0：没澄清就不该开工）。
+    # （原先是个 `_scope_of` 助手，只被这里调一次 ⇒ 内联；见文件头的读数说明。）
+    hit = SCOPE_RE.search(text)
+    scope = (hit.group('who').strip(), hit.group('why').strip(), hit.group('root').strip()) \
+        if hit else ('', '', '')
+    errs = check_plan(cards, rows, asks, excl, a.root, scope)
     waiting = sum(1 for r in rows if str(r.get('状态', '')).strip() == '待澄清')
     if errs:
         print(f'✗ 计划校验未过（{len(errs)} 条；**只报不改**。改计划 → 再落流程表，§4.4）：')
@@ -536,7 +626,9 @@ def main(argv=None):
     b.add_argument('intake', help='intake.md')
     b.add_argument('-o', '--out', default='plan.md', help='写到哪里（默认 plan.md，落成果根）')
     b.add_argument('--force', action='store_true', help='覆盖已有的 plan.md（它会抹掉 AI 填过的判断）')
-    b.add_argument('--todo', help='把「待填清单」写到这里（建议写成 <产物名>.todo.json，cells.py fill 默认就找它）')
+    b.add_argument('--split', help='AI 的拆解决定 JSON（流程 / 范围外 / 澄清三段）——行集合由它定')
+    b.add_argument('--scope', help='前置澄清答复 JSON（主体 / 目的 / 材料根，§4.0）')
+    b.add_argument('--todo', help='把「待填清单」写到这里（建议写成 `<产物名>.todo.json`，`cells.py fill` 默认就找它）')
     c = sub.add_parser('check', help='校验收口后的计划（退 1 = 有问题）')
     c.add_argument('plan', help='plan.md')
     c.add_argument('--intake', required=True, help='intake.md（对照用）')

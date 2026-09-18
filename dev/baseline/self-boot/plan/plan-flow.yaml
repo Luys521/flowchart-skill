@@ -9,7 +9,7 @@ layout:
   col_x:
   - 400
   width: 1220
-  origin_x: -60
+  origin_x: -140
 nodes:
 - id: '01'
   name: 开始
@@ -21,7 +21,7 @@ nodes:
   row: 0
   col: 0
   stage: 入口
-  route: 1→16
+  route: 1→17
   desc: 流程起点（结构性节点，不是函数） · 入口：1→main
 - id: '02'
   name: rel_of
@@ -30,10 +30,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 14
+  row: 12
   col: 0
   stage: 模块级
-  route: →17
+  route: →19
   desc: ★ 版本关系单元格 → `(kind, 对方 M##)`；取值以 `不确定` / `独立` 开头时对方为空。 · L120 · 函数
 - id: '03'
   name: reason_of
@@ -42,10 +42,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 12
+  row: 4
   col: 0
   stage: 模块级
-  route: →17
+  route: →19
   desc: ★ `含流程` 单元格 → 那一句理由（`否 ⚠ 通篇参数，无步骤` → `通篇参数，无步骤`）。 · L132 · 函数
 - id: '04'
   name: groups_of
@@ -54,148 +54,160 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 13
+  row: 5
   col: 0
   stage: 模块级
   route: →02
   desc: ★ §4.2 步骤 2 的**强合并**：把必并的关系连成组，返回按"最小 `M##`"排序的材料号组列表。 · L148 · 函数
 - id: '05'
-  name: build_plan
+  name: clean_split
   lines:
-  - build_plan
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 11
-  col: 0
-  stage: 模块级
-  route: 1→02｜2→03｜3→04
-  desc: ★ 清点卡片 → `plan.md` 全文。机器可算的格子已填，语义格子留 `—`（`check` 会把未填当错）。 · L168 · 函数 · 分支：1→rel_of
-    2→reason_of 3→groups_of
-- id: '06'
-  name: read_cards
-  lines:
-  - read_cards
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 15
-  col: 0
-  stage: 模块级
-  route: →17
-  desc: '★ `intake.md` → `({M##: {''含流程'': …, ''版本关系'': …}}, 报错)`。 · L222 · 函数'
-- id: '07'
-  name: parse_doc
-  lines:
-  - parse_doc
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 5
-  col: 0
-  stage: 模块级
-  route: →17
-  desc: ★ `plan.md` → `(流程行, 申请行, 排除行, 报错)`。三张表各按**自己的表头**认（列规范在代码里只有… · L251 · 函数
-- id: 08
-  name: _id_of
-  lines:
-  - _id_of
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 7
-  col: 0
-  stage: 模块级
-  route: →17
-  desc: ★ 单元格里的第一个 `M##` / `F##`（`prefix` 取 `'M'` / `'F'`；写不写反引号都认）。 · L282 · 函数
-- id: 09
-  name: _check_links
-  lines:
-  - _check_links
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 4
-  col: 0
-  stage: 模块级
-  route: →08
-  desc: ★ `与其它流程` / `并行组` 两列（§4.3 的甲 / 乙 / 丙：取值的形态与后果都可机器核）。 · L292 · 函数
-- id: '10'
-  name: _check_asks
-  lines:
-  - _check_asks
+  - clean_split
   type: task
   subject: 脚本
   executor: selfboot
   row: 6
   col: 0
   stage: 模块级
-  route: →08
-  desc: ★ 澄清申请 ↔ 流程状态：**待澄清的必须有账**（这就是 §5.4 收敛口径里那个"澄清申请"）。 · L320 · 函数
-- id: '11'
-  name: _check_dirs
+  route: →18
+  desc: ★ `--split` 的 JSON → **洗干净的一份**：字符串值里的 `｜` 换全角、换行压成空格。 · L168 · 函数
+- id: '06'
+  name: _split_flows
   lines:
-  - _check_dirs
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 8
-  col: 0
-  stage: 模块级
-  route: →17
-  desc: ★ §4.4 ②：流程数 = 成果根下的 `<流程名>/` 目录数（名字逐个对，多的少的都报）。 · L362 · 函数
-- id: '12'
-  name: _scope_of
-  lines:
-  - _scope_of
+  - _split_flows
   type: task
   subject: 脚本
   executor: selfboot
   row: 9
   col: 0
   stage: 模块级
-  route: →17
-  desc: ★ `plan.md` 表头那一行 → `(主体, 目的, 材料根)`；没有那一行就返回三个空串（`check` 会当错）。 · L379 · 函数
-- id: '13'
-  name: check_plan
+  route: →19
+  desc: ★ `--split` 的「流程」段 → 按「材料集里最小的 `M##`」排好序（§4.1 的编号规则由脚本做）。 · L188 · 函数
+- id: '07'
+  name: check_split
   lines:
-  - check_plan
+  - check_split
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 8
+  col: 0
+  stage: 模块级
+  route: →06
+  desc: ★ AI 的拆解（`--split`）→ 错误清单。**这一步核的是"决定完整性"**： · L197 · 函数
+- id: 08
+  name: build_plan
+  lines:
+  - build_plan
   type: task
   subject: 脚本
   executor: selfboot
   row: 3
   col: 0
   stage: 模块级
-  route: 1→02｜2→08｜3→09｜4→10｜5→11
-  desc: ★ 计划 vs 清点（+ 成果根）→ 错误清单（空 = 过）。**只报不改**。 · L387 · 函数 · 分支：1→rel_of 2→_id_of
-    3→_check_links 4→_check_asks 5→_check_dirs
+  route: 1→02｜2→03｜3→04｜4→06
+  desc: ★ 清点卡片 → `plan.md` 全文。机器可算的格子已填，语义格子留 `—`（`check` 会把未填当错）。 · L226 · 函数 · 分支：1→rel_of
+    2→reason_of 3→groups_of 4→_split_flows
+- id: 09
+  name: read_cards
+  lines:
+  - read_cards
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 13
+  col: 0
+  stage: 模块级
+  route: →19
+  desc: '★ `intake.md` → `({M##: {''含流程'': …, ''版本关系'': …}}, 报错)`。 · L302 · 函数'
+- id: '10'
+  name: parse_doc
+  lines:
+  - parse_doc
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 15
+  col: 0
+  stage: 模块级
+  route: →19
+  desc: ★ `plan.md` → `(流程行, 申请行, 排除行, 报错)`。三张表各按**自己的表头**认（列规范在代码里只有… · L331 · 函数
+- id: '11'
+  name: _id_of
+  lines:
+  - _id_of
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 17
+  col: 0
+  stage: 模块级
+  route: →19
+  desc: ★ 单元格里的第一个 `M##` / `F##`（`prefix` 取 `'M'` / `'F'`；写不写反引号都认）。 · L362 · 函数
+- id: '12'
+  name: _check_links
+  lines:
+  - _check_links
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 14
+  col: 0
+  stage: 模块级
+  route: →11
+  desc: ★ `与其它流程` / `并行组` 两列（§4.3 的甲 / 乙 / 丙：取值的形态与后果都可机器核）。 · L372 · 函数
+- id: '13'
+  name: _check_asks
+  lines:
+  - _check_asks
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 16
+  col: 0
+  stage: 模块级
+  route: →11
+  desc: ★ 澄清申请 ↔ 流程状态：**待澄清的必须有账**（这就是 §5.4 收敛口径里那个"澄清申请"）。 · L400 · 函数
 - id: '14'
+  name: check_plan
+  lines:
+  - check_plan
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 11
+  col: 0
+  stage: 模块级
+  route: 1→02｜2→11｜3→12｜4→13
+  desc: ★ 计划 vs 清点（+ 成果根）→ 错误清单（空 = 过）。**只报不改**。 · L442 · 函数 · 分支：1→rel_of 2→_id_of
+    3→_check_links 4→_check_asks
+- id: '15'
   name: cmd_build
   lines:
   - cmd_build
   type: task
   subject: 脚本
   executor: selfboot
-  row: 10
+  row: 2
   col: 0
   stage: 模块级
-  route: 1→05｜2→06
-  desc: ★ 出草稿：机器列已填，AI 那几列留空（`—`）。拒绝覆盖已有计划（它是 AI 判断的落点）。 · L462 · 函数 · 分支：1→build_plan
-    2→read_cards · ⇢ 依赖 cells.dump、cells.todo_from_doc
-- id: '15'
+  route: 1→05｜2→07｜3→08｜4→09
+  desc: ★ 出草稿：机器列已填，AI 那几列留空（`—`）。拒绝覆盖已有计划（它是 AI 判断的落点）。 · L531 · 函数 · 分支：1→clean_split
+    2→check_split 3→build_plan 4→read_cards · ⇢ 依赖 cells.dump、cells.load、cells.todo_from_doc
+- id: '16'
   name: cmd_check
   lines:
   - cmd_check
   type: task
   subject: 脚本
   executor: selfboot
-  row: 2
+  row: 10
   col: 0
   stage: 模块级
-  route: 1→06｜2→07｜3→12｜4→13
-  desc: ★ 校验收口后的计划（退 1 = 有问题）。`--root` 给了才核 §4.4 ②，**没给就打印跳过**。 · L493 · 函数 · 分支：1→read_cards
-    2→parse_doc 3→_scope_of 4→check_plan
-- id: '16'
+  route: 1→09｜2→10｜3→14
+  desc: ★ 校验收口后的计划（退 1 = 有问题）。`--root` 给了才核 §4.4 ②，**没给就打印跳过**。 · L578 · 函数 · 分支：1→read_cards
+    2→parse_doc 3→check_plan
+- id: '17'
   name: main
   lines:
   - main
@@ -205,118 +217,124 @@ nodes:
   row: 1
   col: 0
   stage: 模块级
-  route: 1→14｜2→15
-  desc: L530 · 函数 · 分支：1→cmd_build 2→cmd_check
-- id: '17'
+  route: 1→15｜2→16
+  desc: L620 · 函数 · 分支：1→cmd_build 2→cmd_check
+- id: '18'
+  name: clean_split.clean
+  lines:
+  - clean_split.clean
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 7
+  col: 0
+  stage: clean_split
+  route: →19
+  desc: L174 · 嵌套函数
+- id: '19'
   name: 结束
   lines:
   - 结束
   type: end
   subject: 脚本
   executor: selfboot
-  row: 16
+  row: 18
   col: 0
   stage: 出口
   route: —
   desc: 流程终点（结构性节点，不是函数）
 edges:
 - from: '01'
-  to: '16'
+  to: '17'
   kind: spine
   polarity: main
   label: '1'
 - from: '02'
-  to: '17'
+  to: '19'
   kind: jumpR
   polarity: main
 - from: '03'
-  to: '17'
+  to: '19'
   kind: jumpR
   polarity: main
 - from: '04'
   to: '02'
-  kind: spine
+  kind: jumpR
   polarity: main
 - from: '05'
+  to: '18'
+  kind: spine
+  polarity: main
+- from: '06'
+  to: '19'
+  kind: jumpR
+  polarity: main
+- from: '07'
+  to: '06'
+  kind: spine
+  polarity: main
+- from: 08
   to: '02'
   kind: jumpR
   polarity: main
   label: '1'
-- from: '05'
+- from: 08
   to: '03'
   kind: spine
   polarity: main
   label: '2'
-- from: '05'
+- from: 08
   to: '04'
   kind: jumpR
   polarity: main
   label: '3'
-- from: '06'
-  to: '17'
-  kind: spine
-  polarity: main
-- from: '07'
-  to: '17'
-  kind: jumpR
-  polarity: main
 - from: 08
-  to: '17'
-  kind: jumpR
-  polarity: main
-- from: 09
-  to: 08
-  kind: jumpR
-  polarity: main
-- from: '10'
-  to: 08
-  kind: spine
-  polarity: main
-- from: '11'
-  to: '17'
-  kind: jumpR
-  polarity: main
-- from: '12'
-  to: '17'
-  kind: jumpR
-  polarity: main
-- from: '13'
-  to: '02'
-  kind: jumpR
-  polarity: main
-  label: '1'
-- from: '13'
-  to: 08
-  kind: jumpR
-  polarity: main
-  label: '2'
-- from: '13'
-  to: 09
-  kind: spine
-  polarity: main
-  label: '3'
-- from: '13'
-  to: '10'
+  to: '06'
   kind: jumpR
   polarity: main
   label: '4'
-- from: '13'
+- from: 09
+  to: '19'
+  kind: jumpR
+  polarity: main
+- from: '10'
+  to: '19'
+  kind: jumpR
+  polarity: main
+- from: '11'
+  to: '19'
+  kind: spine
+  polarity: main
+- from: '12'
   to: '11'
   kind: jumpR
   polarity: main
-  label: '5'
+- from: '13'
+  to: '11'
+  kind: spine
+  polarity: main
 - from: '14'
-  to: '05'
+  to: '02'
   kind: spine
   polarity: main
   label: '1'
 - from: '14'
-  to: '06'
+  to: '11'
   kind: jumpR
   polarity: main
   label: '2'
+- from: '14'
+  to: '12'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '14'
+  to: '13'
+  kind: jumpR
+  polarity: main
+  label: '4'
 - from: '15'
-  to: '06'
+  to: '05'
   kind: jumpR
   polarity: main
   label: '1'
@@ -326,22 +344,41 @@ edges:
   polarity: main
   label: '2'
 - from: '15'
-  to: '12'
-  kind: jumpR
+  to: 08
+  kind: spine
   polarity: main
   label: '3'
 - from: '15'
-  to: '13'
-  kind: spine
+  to: 09
+  kind: jumpR
   polarity: main
   label: '4'
 - from: '16'
-  to: '14'
+  to: 09
   kind: jumpR
   polarity: main
   label: '1'
 - from: '16'
+  to: '10'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '16'
+  to: '14'
+  kind: spine
+  polarity: main
+  label: '3'
+- from: '17'
   to: '15'
   kind: spine
   polarity: main
+  label: '1'
+- from: '17'
+  to: '16'
+  kind: jumpR
+  polarity: main
   label: '2'
+- from: '18'
+  to: '19'
+  kind: jumpR
+  polarity: main

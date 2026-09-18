@@ -310,7 +310,7 @@ nodes:
   col: 0
   stage: 接管与解析
   route: →26
-  desc: 15 个函数 · ⊞ plan/flowtable.md
+  desc: 17 个函数 · ⊞ plan/flowtable.md
 - id: '26'
   name: 模块 · pptx_text
   lines:

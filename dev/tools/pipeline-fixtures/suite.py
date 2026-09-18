@@ -487,6 +487,43 @@ def plan_paths(root):
                   '补上账之后必须过', rc1 == 1 and '会静默消失' in out1 and rc2 == 0 and bool(seeded)
                   and rc3 == 0, rc1,
                   (out1[-160:] + str(seeded) + out3[-160:]) if not (rc3 == 0 and seeded) else ''))
+
+    # ㊽ `--scope` + `--split`：**AI 的拆解落成结构化产物**（行集合由它定，落笔由脚本做）。
+    # 为什么值得一条路径：在那之前，"合并 / 移出范围 / 加一条澄清"只能靠 AI 手改 markdown 表格
+    # （行集合一改，列数、编号、双向引用全靠人保证）；真材料集上就是这么踩的。
+    scope = {'主体': '夹具的两个甲方', '目的': '夹具：验证拆解接口', '材料根': '临时夹具目录'}
+    # 夹具里「含流程 = 是」的是 M02/M04/M05/M06/M07（M07 的**版本关系**是 `不确定` ⇒ 它所在流程
+    # 状态必须是 `待澄清`，且澄清申请要有账——两条都由 `check` 核）。
+    split = {'流程': [{'材料集': ['M02', 'M04', 'M05', 'M06', 'M07'], '名': '夹具流程', '角色': '主',
+                     '挂在': '—', '与其它流程': '—', '并行组': '`G1`', '状态': '待澄清'}],
+             '范围外': [],
+             '澄清': [{'问题': '白板与合订本哪份算数？', '推荐答案': '取合订本', '指向': '`M07`'}]}
+    (root / 'scope.json').write_text(json.dumps(scope, ensure_ascii=False, indent=2) + '\n',
+                                     encoding='utf-8', newline='\n')
+    (root / 'split.json').write_text(json.dumps(split, ensure_ascii=False, indent=2) + '\n',
+                                     encoding='utf-8', newline='\n')
+    rc1, out1 = run([sys.executable, str(PLAN_CMD), 'build', str(root / 'intake.md'),
+                     '-o', str(root / 'plan-split.md'), '--scope', str(root / 'scope.json'),
+                     '--split', str(root / 'split.json')])
+    d_sp = (root / 'plan-split.md').read_text(encoding='utf-8') if (root / 'plan-split.md').exists() else ''
+    rc2, out2 = run([sys.executable, str(PLAN_CMD), 'check', str(root / 'plan-split.md'),
+                     '--intake', str(root / 'intake.md')])
+    ok_split = (rc1 == 0 and '| `F01` 夹具流程 | 主 | — | `M02`、`M04`、`M05`、`M06`、`M07` | — | `G1` '
+                '| 待澄清 |' in d_sp and '主体 = 夹具的两个甲方' in d_sp and rc2 == 0)
+    bad_split = dict(split)
+    bad_split['流程'] = [dict(split['流程'][0], 材料集=['M02', 'M04'])]     # M05 / M06 / M07 没了下落
+    (root / 'split-bad.json').write_text(json.dumps(bad_split, ensure_ascii=False, indent=2) + '\n',
+                                         encoding='utf-8', newline='\n')
+    before = ((root / 'plan-split.md').read_bytes() if (root / 'plan-split.md').exists() else b'')
+    rc3, out3 = run([sys.executable, str(PLAN_CMD), 'build', str(root / 'intake.md'),
+                     '-o', str(root / 'plan-split.md'), '--force', '--scope', str(root / 'scope.json'),
+                     '--split', str(root / 'split-bad.json')])
+    frow = next((ln for ln in d_sp.splitlines() if ln.startswith('| `F')), '（没有流程行）')
+    cases.append(('㊽ plan `--scope` / `--split`：拆解落成 JSON（行集合由它定、落笔由脚本做）· '
+                  '**漏一份「含流程 = 是」的材料 ⇒ 退 2 且不写盘**',
+                  ok_split and rc3 == 2 and '静默消失' in out3
+                  and (root / 'plan-split.md').read_bytes() == before,
+                  rc1, (out1[-200:] + frow + out2[-260:] + out3[-200:]) if not ok_split else ''))
     return cases
 
 
