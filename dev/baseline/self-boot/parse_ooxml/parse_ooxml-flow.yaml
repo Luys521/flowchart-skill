@@ -34,7 +34,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ import 一个必须依赖 → `(模块, 报错文案)`。缺了给**可执行**的提示（§1.4）。 · L26 · 函数
+  desc: ★ import 一个必须依赖 → `(模块, 报错文案)`。缺了给**可执行**的提示（§1.4）。 · L27 · 函数
 - id: '03'
   name: _read_json
   lines:
@@ -46,7 +46,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 读 JSON（容忍 BOM）。 · L36 · 函数
+  desc: ★ 读 JSON（容忍 BOM）。 · L37 · 函数
 - id: '04'
   name: _write_notes
   lines:
@@ -58,7 +58,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 写材料层补注：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 `ledger.dump`… · L41 · 函数
+  desc: ★ 写材料层补注：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 `ledger.dump`… · L42 · 函数
 - id: '05'
   name: container_kind
   lines:
@@ -70,7 +70,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ PK 容器 → `'docx'` / `'xlsx'`；不是 OOXML 返回 None。 · L46 · 函数
+  desc: ★ PK 容器的**字节** → `'docx'` / `'xlsx'`；不是 OOXML 返回 None。 · L47 · 函数
 - id: '06'
   name: _docx_body
   lines:
@@ -82,7 +82,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 按**文档阅读序**产出 (kind, 对象)：段落与表格交替，顺序不丢（§2.2 第 3 条）。 · L64 · 函数
+  desc: ★ 按**文档阅读序**产出 (kind, 对象)：段落与表格交替，顺序不丢（§2.2 第 3 条）。 · L66 · 函数
 - id: '07'
   name: parse_docx
   lines:
@@ -94,7 +94,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→06
-  desc: ★ `.docx` → `(elements, 报错文案)`。样式名判 heading / list_item（判不出就当… · L76 · 函数
+  desc: ★ `.docx` **字节** → `(elements, 报错文案)`。样式名判 heading / list_ite… · L78 · 函数
     · 分支：1→_import_dep 2→_docx_body
 - id: 08
   name: parse_xlsx
@@ -107,7 +107,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →02
-  desc: ★ `.xlsx` → `(elements, 报错文案)`。**一张 sheet 一个 element**（`rows`… · L112 · 函数
+  desc: ★ `.xlsx` **字节** → `(elements, 报错文案)`。**一张 sheet 一个 element**… · L119 · 函数
 - id: 09
   name: parse_materials
   lines:
@@ -119,7 +119,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→05｜2→07｜3→08
-  desc: ★ 材料层 → `(elements, 补注, 摘要, 跳过清单, 报错文案)`。非 OOXML / 非 ok 的一律**… · L146 · 函数
+  desc: ★ 材料层 → `(elements, 补注, 摘要, 跳过清单, 报错文案)`。非 OOXML / 非 ok 的一律**… · L156 · 函数
     · 分支：1→container_kind 2→parse_docx 3→parse_xlsx
 - id: '10'
   name: main
@@ -132,7 +132,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→03｜2→04｜3→09
-  desc: L178 · 函数 · 分支：1→_read_json 2→_write_notes 3→parse_materials
+  desc: L193 · 函数 · 分支：1→_read_json 2→_write_notes 3→parse_materials
 - id: '11'
   name: 结束
   lines:

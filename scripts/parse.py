@@ -19,8 +19,10 @@ r"""parse.py — 解析分派器（**编排层**；PIPELINE-SPEC §1.4）：材�
   **丢元素一律记账**：不吭声地少几条，下游只会以为"这份材料本来就这么点内容"。
 - **冲突**：同一个 element id 被两个适配器产出（判档重叠），或两份补注对同一材料给出不同的
   `status`/`reason`/`extractor`——静默取一个会让账本里出现"没人知道哪来的"记录；
-- **漏认**：`probe` 说这份 status=ok，却**既没有元素、也没有补注**（例如纯文本 `.txt` 至今没有适配器）
-  ——那正是上一轮补掉的洞（"能读却没内容"），不许再让它静默流进账本。
+- **漏认**（**现在是"探测说谎"的代名词**）：`probe` 说这份 `status=ok`，却**既没有元素、也没有补注**
+  ——§1.2 的不变式是"**`tier=T1` ⇒ 必须有人认领**"，做不到就是**探测的声明比读者的射程宽**，
+  该改的是 `probe` 的判据（例：`.pptx` 没有读取器却曾判 T1、OOXML 曾按目录前缀判而非确切部件），
+  不是在下游加特例。报错会点名材料与它的 `kind`，方便直接回去修探测。
 
 退出码：0 = 跑完（**可能有读不动的材料**，补注里逐份给了原因）；1 = 冲突 / 漏认（不写产物）；
 2 = 输入读不了 / 适配器起不来 / 适配器报错。质量门**不改退出码**：材料读不动是数据事实，不是仪器故障。
@@ -194,7 +196,7 @@ def survey(materials, elements, notes, quality=None):
         # 状态已改成 ok 时**不许再回落到 probe 的旧 reason**：那是陈旧真值（补注说了能读，
         # 表上却还印着"魔数不认识"——ledger 落补注时会把这条 reason 删掉，两处必须一致）
         reason = n.get('reason') or (m.get('reason') if status != 'ok' else '') or ''
-        row = {'id': mid, 'tier': m.get('tier'), 'status': status,
+        row = {'id': mid, 'tier': m.get('tier'), 'kind': m.get('kind', '?'), 'status': status,
                'extractor': n.get('extractor') or m.get('extractor') or '',
                'elements': counts.get(mid, 0), 'reason': reason}
         q = (quality or {}).get(mid)
@@ -208,16 +210,18 @@ def survey(materials, elements, notes, quality=None):
 
 def _print_survey(rows, gaps, verbose):
     """人读摘要：一份材料一行。**没有证据也没有补注的当场标出来**（那是漏认，不是"空材料"）。"""
-    print(f'{"材料":<5}{"档":<4}{"状态":<11}{"谁产的":<22}{"元素":>5}  原因')
+    print(f'{"材料":<5}{"档":<4}{"类型":<10}{"状态":<11}{"谁产的":<22}{"元素":>5}  原因')
     for r in rows:
         mark = ' ⚠' if r['id'] in gaps else ''
-        print(f'{r["id"]:<5}{r["tier"]:<4}{r["status"]:<11}{r["extractor"] or "-":<22}'
-              f'{r["elements"]:>5}  {r["reason"][:56]}{mark}')
+        print(f'{r["id"]:<5}{r["tier"]:<4}{r["kind"]:<10}{r["status"]:<11}'
+              f'{r["extractor"] or "-":<22}{r["elements"]:>5}  {r["reason"][:56]}{mark}')
     if gaps:
-        print(f'⚠ 漏认 {len(gaps)} 份（probe 说能读，却没有适配器认领，也没有补注说明）：{"、".join(gaps)}')
+        who = '、'.join(f'{r["id"]}({r["kind"]})' for r in rows if r['id'] in gaps)
+        print(f'⚠ **探测说谎** {len(gaps)} 份：probe 判"可直读"，却没有任何适配器认领 → {who}')
         if verbose:
-            print('  处置：给这一类材料补一个适配器，或在补注里如实记 unreadable + 原因——'
-                  '不许让它带着 status=ok / 零证据进账本（§1.3）。')
+            print('  这不是"缺个适配器"那么简单——§1.2 的不变式是「tier=T1 ⇒ 必须有人认领」。'
+                  '要么 probe 的判据收紧到与 reader 同源（例：pptx 没有读取器就不许判 T1、'
+                  'OOXML 要按确切部件判），要么补一个适配器；**不许在下游加特例绕过**。')
 
 
 def main(argv=None):

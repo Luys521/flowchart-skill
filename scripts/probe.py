@@ -8,8 +8,13 @@ legacy `.doc` / `.xls` 与 `.docx` / `.xlsx` 扩展名像、容器完全不同�
 宿主加速器（本地 Office SDK / 多模态模型）不在这里探测 — 那是解析阶段的事。
 
 只做一件事：把一个路径（文件或目录）变成 `materials[]` 骨架
-（`id` / `path` / `sha256` / `bytes` / `mtime` / `tier` / `probe` / `status` / `reason`），
+（`id` / `path` / `sha256` / `bytes` / `mtime` / `tier` / `kind` / `probe` / `status` / `reason`），
 供账本写入器消费。**不读内容、不抽 element、不做语义判断**（那是 L1 清点的事）。
+
+`kind` 是**机器可读的材料类型**（§2.1 的封闭枚举）：本仓"这是什么"的唯一判据源就是这里。
+别处（侦查 / 适配器 / 渲染）**只许读它，不许按扩展名或魔数重判**——审计实测过：同字节材料换个
+文件名（真 docx 改名 `.doc`）会让两处判据给出互相矛盾的结论，而"按内容判"正是 §1.2 的第一条理由。
+**一条不变式**：`tier=T1`（可直读）⇒ **必须至少有一个适配器认领**（判据与 reader 同源，见 `sniff`）。
 
 退出码：0 = 探测完成（即使有 T4）；2 = 输入读不了（路径不存在）。
 """
@@ -32,8 +37,24 @@ IMAGE_MAGIC = (
     (b'MM\x00*', 'tiff'),
 )
 
-# zip 容器里的目录 → 具体是哪种 OOXML（判不出就不是 OOXML）。
-OOXML_PARTS = (('word/', 'docx'), ('xl/', 'xlsx'), ('ppt/', 'pptx'))
+# zip 容器里**真正能被读出来的那个部件** → 具体是哪种 OOXML。
+# **为什么必须是确切部件、不能是目录前缀**（审计抓到的真 bug）：原先写 `n.startswith('word/')`，
+# 于是一个"有 word/ 目录、却没有 word/document.xml"的包被判 T1 可直读，而 `parse_ooxml` 要的正是
+# 那个部件 → 没人认领 → 分派器判"漏认"、整条链退 1、不落盘。**探测的声明必须与读者的射程对齐**：
+# 判据跟 reader 用同一句（`parse_ooxml.container_kind` 也认这两个名字）。
+OOXML_PARTS = (('word/document.xml', 'docx'), ('xl/workbook.xml', 'xlsx'),
+               ('ppt/presentation.xml', 'pptx'))
+# 有**自包含读取器**的那两种；其余 OOXML（pptx）按 §1.4 的依赖表降级：可选依赖没装 ⇒ 记 T4 + 可执行提示。
+READABLE_OOXML = ('docx', 'xlsx')
+NO_READER_REASON = {
+    'pptx': '本仓尚无 .pptx 读取器（python-pptx 是**可选**依赖，未落地）：'
+            '装 `python -m pip install python-pptx` 并补一个适配器，或把材料另存为 .docx / .xlsx',
+}
+NO_PART_REASON = ('zip 容器里没有可读的 OOXML 部件（要 word/document.xml 或 xl/workbook.xml）：'
+                  '多半是损坏 / 半成品包，请重新导出')
+
+# 材料类型（**机器可读的 kind**，§2.1）：本仓"这是什么"的唯一判据源就是这里，别处不许按扩展名重判
+KINDS = ('docx', 'xlsx', 'pptx', 'ole', 'pdf-text', 'pdf-scan', 'image', 'text', 'unknown')
 
 # 判"是不是文本"时读多少字节：8 字节不够——中文一个字 3 字节，正好会被 8 字节的头切断（见 _text_tier）。
 TEXT_HEAD = 4096
@@ -57,14 +78,19 @@ def _mtime(path):
 
 
 def _ooxml_kind(path):
-    """PK 容器 → `docx` / `xlsx` / `pptx`；不是 OOXML 就返回 None。"""
+    """PK 容器 → `docx` / `xlsx` / `pptx`；不是 OOXML 就返回 None。
+
+    **判据是"确切部件在不在"，不是"目录前缀在不在"**（见 `OOXML_PARTS` 上的那段）：
+    前者才等于"有 reader 读得动"。判据与 `parse_ooxml.container_kind` 同源（都认这两个部件名），
+    所以 `tier=T1` 才真的意味着"有人认领"。
+    """
     try:
         with zipfile.ZipFile(path) as z:
-            names = z.namelist()
+            names = set(z.namelist())
     except (OSError, zipfile.BadZipFile):
         return None
-    for prefix, kind in OOXML_PARTS:
-        if any(n.startswith(prefix) for n in names):
+    for part, kind in OOXML_PARTS:
+        if part in names:
             return kind
     return None
 
@@ -107,41 +133,47 @@ def _text_tier(head):
 
 
 def sniff(path):
-    """一个文件 → `(tier, probe, status, reason)`。`probe` 是**判据**（人可核）。
+    """一个文件 → `(tier, probe, status, reason, kind)`。`probe` 是**判据**（人可核），`kind` 是机器可读类型。
 
-    判不出不猜：一律 T4 + `unreadable` + 原因（PIPELINE-SPEC §1.2 第 3 条）。
+    **一条不变式**（审计后加的，§1.2）：**`tier=T1`（可直读）⇒ 必须至少有一个适配器认领**。
+    所以这里判 OOXML 时用的部件名与 `parse_ooxml.container_kind` 同源；`pptx` 没有读取器，
+    就**不许**说它"可直读"，按 §1.4 的依赖表降级成 T4 + 可执行提示（探测的声明不许比实现的射程宽）。
+    判不出不猜：一律 T4 + `unreadable` + 原因（§1.2 第 3 条）。
     """
     path = Path(path)
     head = _read_head(path, 8)
     if not head:
-        return 'T4', '空文件或读不动', 'unreadable', '文件为空或不可读'
+        return 'T4', '空文件或读不动', 'unreadable', '文件为空或不可读', 'unknown'
 
     if head[:2] == b'PK':
         kind = _ooxml_kind(path)
-        if kind:
-            return 'T1', f'PK 容器 + {kind} 目录结构', 'ok', ''
-        return 'T4', 'PK 容器但不是 OOXML', 'unreadable', 'zip 容器里没有 word/ xl/ ppt/ 目录'
+        if kind in READABLE_OOXML:
+            return 'T1', f'PK 容器 + {kind} 可读部件', 'ok', '', kind
+        if kind in NO_READER_REASON:                 # pptx：容器认出来了，但**没有 reader**
+            return 'T4', f'PK 容器 + {kind}（无读取器）', 'unreadable', NO_READER_REASON[kind], kind
+        return 'T4', 'PK 容器但缺可读部件', 'unreadable', NO_PART_REASON, 'unknown'
 
     if head[:4] == b'\xd0\xcf\x11\xe0':
-        return 'T2', 'OLE 复合文档（legacy doc/xls/ppt）', 'ok', ''
+        return 'T2', 'OLE 复合文档（legacy doc/xls/ppt）', 'ok', '', 'ole'
 
     if head[:4] == b'%PDF':
         tier, probe = _pdf_tier(path)
+        kind = 'pdf-text' if tier == 'T2' else ('pdf-scan' if tier == 'T3' else 'unknown')
         if tier == 'T4':
-            return tier, probe, 'unreadable', probe
-        return tier, probe, 'ok', ''
+            return tier, probe, 'unreadable', probe, kind
+        return tier, probe, 'ok', '', kind
 
     for magic, name in IMAGE_MAGIC:
         if head.startswith(magic):
-            return 'T3', f'图片魔数（{name}）', 'ok', ''
+            return 'T3', f'图片魔数（{name}）', 'ok', '', 'image'
     if head[:4] == b'RIFF' and _read_head(path, 16)[8:12] == b'WEBP':
-        return 'T3', '图片魔数（webp）', 'ok', ''
+        return 'T3', '图片魔数（webp）', 'ok', '', 'image'
 
     text = _text_tier(_read_head(path, TEXT_HEAD))       # 判文本要看够多字节（见 _text_tier）
     if text:
-        return text[0], text[1], 'ok', ''
+        return text[0], text[1], 'ok', '', 'text'
 
-    return 'T4', f'魔数不认识（{head[:4].hex()}）', 'unreadable', '魔数不认识，且不是文本'
+    return 'T4', f'魔数不认识（{head[:4].hex()}）', 'unreadable', '魔数不认识，且不是文本', 'unknown'
 
 
 def probe_tree(root):
@@ -156,15 +188,16 @@ def probe_tree(root):
 
     out = []
     for i, p in enumerate(files, 1):
-        tier, probe, status, reason = sniff(p)
+        tier, probe, status, reason, kind = sniff(p)
         try:
             blob = p.read_bytes()
             sha, size = hashlib.sha256(blob).hexdigest(), len(blob)
         except OSError as e:
-            tier, probe, status, reason = 'T4', f'读不动（{type(e).__name__}）', 'unreadable', str(e)
+            tier, probe, status, reason, kind = ('T4', f'读不动（{type(e).__name__}）',
+                                                 'unreadable', str(e), 'unknown')
             sha, size = '', 0
         item = {'id': f'M{i:02d}', 'path': p.as_posix(), 'sha256': sha, 'bytes': size,
-                'mtime': _mtime(p), 'tier': tier, 'probe': probe, 'status': status}
+                'mtime': _mtime(p), 'tier': tier, 'kind': kind, 'probe': probe, 'status': status}
         if reason:
             item['reason'] = reason
         out.append(item)
@@ -178,7 +211,7 @@ def _print_table(items):
         counts[it['tier']] = counts.get(it['tier'], 0) + 1
     print('  '.join(f'{k} x{counts[k]}' for k in sorted(counts)) or '（没有材料）')
     for it in items:
-        print(f"  {it['id']}  {it['tier']}  {it['status']:<10} {it['probe']}")
+        print(f"  {it['id']}  {it['tier']}  {it['kind']:<9} {it['status']:<10} {it['probe']}")
 
 
 def main(argv=None):

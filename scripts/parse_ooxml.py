@@ -15,6 +15,7 @@ r"""parse_ooxml.py — OOXML 解析适配器（PIPELINE-SPEC §1.4）：`.docx` 
 """
 import argparse
 import importlib
+import io
 import json
 import sys
 import zipfile
@@ -43,15 +44,16 @@ def _write_notes(notes, path):
     Path(path).write_bytes((json.dumps(notes, ensure_ascii=False, indent=2) + '\n').encode('utf-8'))
 
 
-def container_kind(path):
-    """PK 容器 → `'docx'` / `'xlsx'`；不是 OOXML 返回 None。
+def container_kind(blob):
+    """PK 容器的**字节** → `'docx'` / `'xlsx'`；不是 OOXML 返回 None。
 
-    这里再判一次容器**不是重复 probe**：probe 回答"这份材料属于哪一档"（档位口径），
-    本函数回答"该用哪个 reader 打开"（打开方式）。两者判据不同，且都只读容器目录。
+    判据与 `probe._ooxml_kind` **同一句**（都认 `word/document.xml` / `xl/workbook.xml`）——
+    审计抓到过精度不一致的后果：probe 按目录前缀判、这里按确切部件判，于是"有 word/ 没 document.xml"
+    的包被判 T1 可直读却没人认领，整条链判"漏认"退 1。**探测与读者的射程必须对齐。**
     """
     try:
-        with zipfile.ZipFile(path) as z:
-            names = z.namelist()
+        with zipfile.ZipFile(io.BytesIO(blob)) as z:
+            names = set(z.namelist())
     except (OSError, zipfile.BadZipFile):
         return None
     if 'word/document.xml' in names:
@@ -73,13 +75,18 @@ def _docx_body(doc):
             yield 'tbl', Table(child, doc)
 
 
-def parse_docx(path, mid):
-    """`.docx` → `(elements, 报错文案)`。样式名判 heading / list_item（判不出就当 paragraph）。"""
+def parse_docx(blob, path, mid):
+    """`.docx` **字节** → `(elements, 报错文案)`。样式名判 heading / list_item（判不出就当 paragraph）。
+
+    收字节而不是收路径，是为了**不让扩展名投票**：`python-docx` 打开 zip 时不看后缀，但
+    `openpyxl` 会（见 `parse_xlsx`）——两者都改成从内存读，材料叫什么名字就不影响能不能读
+    （§1.2"按内容，不按扩展名"要贯彻到**读者**这一步，不能只在探测那一步）。
+    """
     docx, err = _import_dep('docx')
     if err:
         return None, err
     out, seq = [], {'h': 0, 'l': 0, 'p': 0, 't': 0}
-    for tag, obj in _docx_body(docx.Document(str(path))):
+    for tag, obj in _docx_body(docx.Document(io.BytesIO(blob))):
         if tag == 'p':
             text = (obj.text or '').strip()
             if not text:
@@ -109,15 +116,18 @@ def parse_docx(path, mid):
     return out, ''
 
 
-def parse_xlsx(path, mid, max_rows, max_cols):
-    """`.xlsx` → `(elements, 报错文案)`。**一张 sheet 一个 element**（`rows` 承载内容，§2.1）。
+def parse_xlsx(blob, path, mid, max_rows, max_cols):
+    """`.xlsx` **字节** → `(elements, 报错文案)`。**一张 sheet 一个 element**（`rows` 承载内容，§2.1）。
 
     超上限就截断并标 `degraded`（§2.4 降级必须记账）—大表（实测有 72 万字符的测算表）靠这条不炸账本。
+    **从内存打开（`BytesIO`）**：`openpyxl.load_workbook` 收路径时**按扩展名投票**——审计实测
+    "合法 xlsx 改名 `.et`" 会被它 `InvalidFileException` 拒绝，于是没人认领、整条链判漏认退 1。
+    内容对就该读得动，名字不该决定这件事。
     """
     openpyxl, err = _import_dep('openpyxl')
     if err:
         return None, err
-    wb = openpyxl.load_workbook(str(path), read_only=True, data_only=True)
+    wb = openpyxl.load_workbook(io.BytesIO(blob), read_only=True, data_only=True)
     out = []
     try:
         for n, ws in enumerate(wb.worksheets, 1):
@@ -156,14 +166,19 @@ def parse_materials(materials, max_rows, max_cols):
         if m.get('status') != 'ok':
             skipped.append(f'{mid}: status={m.get("status")}（不解析）')
             continue
-        kind = container_kind(path)
+        try:
+            blob = path.read_bytes()
+        except OSError as e:
+            skipped.append(f'{mid}: 读不动（{type(e).__name__}）')
+            continue
+        kind = container_kind(blob)
         if kind is None:
             skipped.append(f'{mid}: 不是 OOXML（tier={m.get("tier")}）')
             continue
         try:
-            got, err = (parse_docx(path, mid) if kind == 'docx'
-                        else parse_xlsx(path, mid, max_rows, max_cols))
-        except Exception as e:
+            got, err = (parse_docx(blob, path, mid) if kind == 'docx'
+                        else parse_xlsx(blob, path, mid, max_rows, max_cols))
+        except Exception as e:                       # 单份坏不让整批失败（§1.4 硬要求 2）
             skipped.append(f'{mid}: 解析失败 {type(e).__name__}: {e}')
             continue
         if err:

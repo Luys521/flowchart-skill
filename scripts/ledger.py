@@ -27,9 +27,13 @@ STATUSES = ('ok', 'unreadable', 'skipped')
 CERTAINTIES = ('direct', 'inferred')
 
 # §2.1 的键序**写死在这里**：键序固定是"幂等"的一半（另一半是不依赖输入顺序做决策）。
-MATERIAL_KEYS = ('id', 'path', 'sha256', 'bytes', 'mtime', 'tier', 'probe', 'status', 'reason', 'extractor')
+MATERIAL_KEYS = ('id', 'path', 'sha256', 'bytes', 'mtime', 'tier', 'kind', 'probe', 'status',
+                 'reason', 'extractor')
 ELEMENT_KEYS = ('id', 'material_id', 'kind', 'text', 'rows', 'location', 'extractor', 'certainty', 'degraded')
 LOCATION_KEYS = ('path', 'page', 'sheet', 'cell', 'bbox', 'quote')
+# 材料类型（§2.1 封闭枚举）：**与 `probe.py` 的 `KINDS` 同一份口径**——改一处必须改另一处，
+# 所以这里只做校验，不在这里重新推导。
+MATERIAL_KINDS = ('docx', 'xlsx', 'pptx', 'ole', 'pdf-text', 'pdf-scan', 'image', 'text', 'unknown')
 # 材料层补注（解析阶段对现场事实的记账）：只许改这三个字段——补注不是"重写材料卡片"。
 NOTE_KEYS = ('material_id', 'status', 'reason', 'extractor')
 
@@ -47,9 +51,12 @@ def check_materials(items):
             errs.append(f'materials[{i}]: 不是对象')
             continue
         where = m.get('id') or f'materials[{i}]'
-        for k in ('id', 'path', 'sha256', 'bytes', 'mtime', 'tier', 'probe', 'status'):
+        for k in ('id', 'path', 'sha256', 'bytes', 'mtime', 'tier', 'kind', 'probe', 'status'):
             if k not in m:
                 errs.append(f'{where}: 缺必填字段 {k}')
+        if m.get('kind') not in MATERIAL_KINDS:
+            errs.append(f'{where}: kind 只能是 {"/".join(MATERIAL_KINDS)}，实际 {m.get("kind")!r}'
+                        f'（材料类型由 `probe.py` 判一次，别处不许按扩展名重判）')
         if m.get('id') in seen:
             errs.append(f'{where}: id 重复')
         seen.add(m.get('id'))
