@@ -219,7 +219,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→14｜2→15
-  desc: ★ 侦查结论表（markdown）。**表头先写输入指纹与阈值**——不然"共 20"这类数字事后没法复核。 · L305 · 函数 · 分支：1→advise_depth
+  desc: ★ 侦查结论表（markdown）。**表头先写输入指纹与阈值**——不然"共 20"这类数字事后没法复核。 · L308 · 函数 · 分支：1→advise_depth
     2→advise_path
 - id: '18'
   name: parse_table
@@ -232,7 +232,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →26
-  desc: '★ `recon.md` → `(表头, {M##: {列: 值}}, 报错)`。表头必须逐字对得上（列规范在代码里只有这… · L333 · 函数'
+  desc: '★ `recon.md` → `(表头, {M##: {列: 值}}, 报错)`。表头必须逐字对得上（列规范在代码里只有这… · L336 · 函数'
 - id: '19'
   name: check_rows
   lines:
@@ -244,7 +244,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →26
-  desc: ★ AI 填的列 → 错误清单（空 = 过）。**只报不改**；§1.5"假设必须落盘、被推翻也要留痕"。 · L360 · 函数
+  desc: ★ AI 填的列 → 错误清单（空 = 过）。**只报不改**；§1.5"假设必须落盘、被推翻也要留痕"。 · L363 · 函数
 - id: '20'
   name: _write
   lines:
@@ -256,7 +256,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →26
-  desc: ★ 写盘：UTF-8 / LF（与账本同一套口径；本文件通篇用 `\n` 拼）。 · L391 · 函数
+  desc: ★ 写盘：UTF-8 / LF（与账本同一套口径；本文件通篇用 `\n` 拼）。 · L394 · 函数
 - id: '21'
   name: _read_json
   lines:
@@ -268,7 +268,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →26
-  desc: ★ 读 JSON（容忍 BOM）。 · L395 · 函数
+  desc: ★ 读 JSON（容忍 BOM）。 · L398 · 函数
 - id: '22'
   name: load_thresholds
   lines:
@@ -280,7 +280,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →26
-  desc: ★ 阈值 = 默认 + `dictionary.yaml` 的 `recon:` 段（读不到就用默认，**不报错**）。 · L399 · 函数
+  desc: ★ 阈值 = 默认 + `dictionary.yaml` 的 `recon:` 段（读不到就用默认，**不报错**）。 · L402 · 函数
 - id: '23'
   name: build
   lines:
@@ -292,7 +292,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→16｜2→17｜3→20｜4→21｜5→22
-  desc: ★ 出侦查结论表草稿 → 退出码。 · L417 · 函数 · 分支：1→make_rows 2→render 3→_write 4→_read_json
+  desc: ★ 出侦查结论表草稿 → 退出码。 · L420 · 函数 · 分支：1→make_rows 2→render 3→_write 4→_read_json
     5→load_thresholds
 - id: '24'
   name: check
@@ -305,7 +305,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→18｜2→19｜3→21
-  desc: ★ 校验 AI 填好的表 → 退出码 0/1/2。 · L449 · 函数 · 分支：1→parse_table 2→check_rows 3→_read_json
+  desc: ★ 校验 AI 填好的表 → 退出码 0/1/2。 · L452 · 函数 · 分支：1→parse_table 2→check_rows 3→_read_json
 - id: '25'
   name: main
   lines:
@@ -317,7 +317,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→23｜2→24
-  desc: L475 · 函数 · 分支：1→build 2→check
+  desc: L478 · 函数 · 分支：1→build 2→check
 - id: '26'
   name: 结束
   lines:

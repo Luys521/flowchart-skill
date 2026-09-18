@@ -121,7 +121,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →12
-  desc: ★ 读 JSON（容忍 BOM）。 · L218 · 函数
+  desc: ★ 读 JSON（容忍 BOM）。 · L228 · 函数
 - id: '10'
   name: _write_notes
   lines:
@@ -133,7 +133,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →12
-  desc: ★ 写材料层补注：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 `ledger.dump`… · L222 · 函数
+  desc: ★ 写材料层补注：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 `ledger.dump`… · L232 · 函数
 - id: '11'
   name: main
   lines:
@@ -145,7 +145,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→08｜2→09｜3→10
-  desc: L226 · 函数 · 分支：1→parse_materials 2→_read_json 3→_write_notes
+  desc: L236 · 函数 · 分支：1→parse_materials 2→_read_json 3→_write_notes
 - id: '12'
   name: 结束
   lines:

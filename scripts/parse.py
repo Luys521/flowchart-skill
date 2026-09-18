@@ -184,7 +184,13 @@ def merge_notes(per_adapter):
 
 
 def survey(materials, elements, notes, quality=None):
-    """材料层 × 证据 × 补注 → `(每份材料一行, 漏认清单)`。**漏认 = status=ok 却既无元素也无补注。**"""
+    """材料层 × 证据 × 补注 → `(每份材料一行, 漏认清单)`。**漏认 = status=ok 却既无元素也无补注。**
+
+    **T3（需视觉）不算漏认**（2026-09-18 夹具实测补的一条）：视觉路是 `render_pages.py` 的活，
+    本链（文本抽取）**本来就不该认领**它——所以"零证据"在这里是**正确行为**，不是漏认。
+    把它算成漏认会让整链退 1，而实际上什么都没错（夹具里那张 4×4 的 PNG 就是这么暴露出来的）。
+    它也不是没人管：`render_pages.py` 才是它的 owner，表里那一行会写明"转图片 → 视觉"。
+    """
     counts, note_of = {}, {}
     for e in elements:
         counts[e.get('material_id')] = counts.get(e.get('material_id'), 0) + 1
@@ -204,7 +210,8 @@ def survey(materials, elements, notes, quality=None):
         if q and q[0] == 'noisy':                     # 有保留：**表上也要看得见**（别让人以为这份是干净的）
             row['reason'] = f'⚠ 抽取质量有保留：{q[1]}'
         rows.append(row)
-        if status == 'ok' and not row['elements'] and not note_of.get(mid):
+        if (status == 'ok' and not row['elements'] and not note_of.get(mid)
+                and m.get('tier') != 'T3'):
             gaps.append(mid)
     return rows, gaps
 

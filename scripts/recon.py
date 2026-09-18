@@ -282,8 +282,11 @@ def make_rows(materials, th):
         row['diff'] = difficulty(row, th)
         if row['status'] == 'ok' and row['kind'] in SCALED_KINDS:
             if row['bytes'] > th['max_open_bytes']:
-                skipped.append(f"{row['id']}: {row['bytes']} 字节超护栏（{th['max_open_bytes']}），"
-                               f'只记元数据不打开结构')
+                # **护栏事实要进表**，不能只打到 stderr：行里留白会让人以为"这份材料没被交代"
+                # （与 §2.4"降级必须留痕"同一条）。实测：夹具把护栏调到 512 字节时现形。
+                row['note'] = (f'超护栏（{row["bytes"]} 字节 > {th["max_open_bytes"]}）：'
+                               f'只记元数据，不打开结构')
+                skipped.append(f"{row['id']}: {row['note']}")
             else:
                 try:
                     blob = Path(row['path']).read_bytes()
@@ -425,7 +428,7 @@ def build(a):
     if not isinstance(materials, list):
         print('⚠ 输入必须是 JSON 数组（materials[]）', file=sys.stderr)
         return 2
-    th = load_thresholds()
+    th = load_thresholds(getattr(a, 'dict', None))
     rows, skipped = make_rows(materials, th)
     n_missing_kind = [r['id'] for r in rows if r['kind'] == '?']
     if n_missing_kind:
@@ -479,6 +482,7 @@ def main(argv=None):
     sub = ap.add_subparsers(dest='cmd', required=True)
     b = sub.add_parser('build', help='出草稿（机器列已填，AI 填四列）')
     b.add_argument('--materials', required=True, help='材料层 JSON（probe.py --json 的输出）')
+    b.add_argument('--dict', help='dictionary.yaml（默认取 scripts/ 下那份；夹具用它把护栏调小）')
     b.add_argument('-o', '--out', default='recon.md', help='写到哪里（默认 recon.md，落成果根）')
     c = sub.add_parser('check', help='校验 AI 填好的表（退 1 = 有问题）')
     c.add_argument('card', help='侦查结论表（recon.md）')

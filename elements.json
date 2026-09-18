@@ -1,0 +1,194 @@
+[
+  {
+    "id": "M01#h001",
+    "material_id": "M01",
+    "kind": "heading",
+    "text": "验收流程",
+    "location": {
+      "path": "C:/Users/ADMINI~1/AppData/Local/Temp/pipeline-fix-uep1t2s4/材料树/a.docx",
+      "quote": "验收流程"
+    },
+    "extractor": "py:docx",
+    "certainty": "direct"
+  },
+  {
+    "id": "M01#p001",
+    "material_id": "M01",
+    "kind": "paragraph",
+    "text": "第一步：受理；第二步：核验；第三步：交付。",
+    "location": {
+      "path": "C:/Users/ADMINI~1/AppData/Local/Temp/pipeline-fix-uep1t2s4/材料树/a.docx",
+      "quote": "第一步：受理；第二步：核验；第三步：交付。"
+    },
+    "extractor": "py:docx",
+    "certainty": "direct"
+  },
+  {
+    "id": "M02#s001",
+    "material_id": "M02",
+    "kind": "sheet",
+    "text": "短名单",
+    "rows": [
+      [
+        "序号",
+        "供应商"
+      ],
+      [
+        "1",
+        "甲公司"
+      ]
+    ],
+    "location": {
+      "path": "C:/Users/ADMINI~1/AppData/Local/Temp/pipeline-fix-uep1t2s4/材料树/b.xlsx",
+      "sheet": "短名单"
+    },
+    "extractor": "py:openpyxl",
+    "certainty": "direct"
+  },
+  {
+    "id": "M03#p001",
+    "material_id": "M03",
+    "kind": "paragraph",
+    "text": "第 1 章 项目概况 / 正文 1：审批流程第 1 步",
+    "location": {
+      "path": "C:/Users/ADMINI~1/AppData/Local/Temp/pipeline-fix-uep1t2s4/材料树/c.pptx",
+      "page": 1,
+      "quote": "第 1 章 项目概况 / 正文 1：审批流程第 1 步"
+    },
+    "extractor": "py:pptx",
+    "certainty": "direct"
+  },
+  {
+    "id": "M03#p002",
+    "material_id": "M03",
+    "kind": "paragraph",
+    "text": "第 2 章 审批与分工 / 正文 2：审批流程第 2 步",
+    "location": {
+      "path": "C:/Users/ADMINI~1/AppData/Local/Temp/pipeline-fix-uep1t2s4/材料树/c.pptx",
+      "page": 2,
+      "quote": "第 2 章 审批与分工 / 正文 2：审批流程第 2 步"
+    },
+    "extractor": "py:pptx",
+    "certainty": "direct"
+  },
+  {
+    "id": "M03#p003",
+    "material_id": "M03",
+    "kind": "paragraph",
+    "text": "第 3 章 结算与付款 / 正文 3：审批流程第 3 步",
+    "location": {
+      "path": "C:/Users/ADMINI~1/AppData/Local/Temp/pipeline-fix-uep1t2s4/材料树/c.pptx",
+      "page": 3,
+      "quote": "第 3 章 结算与付款 / 正文 3：审批流程第 3 步"
+    },
+    "extractor": "py:pptx",
+    "certainty": "direct"
+  },
+  {
+    "id": "M04#p001",
+    "material_id": "M04",
+    "kind": "paragraph",
+    "text": "hello",
+    "location": {
+      "path": "C:/Users/ADMINI~1/AppData/Local/Temp/pipeline-fix-uep1t2s4/材料树/d-text.pdf",
+      "page": 1,
+      "quote": "hello"
+    },
+    "extractor": "py:pdfplumber",
+    "certainty": "direct"
+  },
+  {
+    "id": "M06#p001",
+    "material_id": "M06",
+    "kind": "paragraph",
+    "text": "第一行：材料清单\n第二行：审批流程",
+    "location": {
+      "path": "C:/Users/ADMINI~1/AppData/Local/Temp/pipeline-fix-uep1t2s4/材料树/f.txt",
+      "quote": "第一行：材料清单\n第二行：审批流程"
+    },
+    "extractor": "py:text",
+    "certainty": "direct"
+  },
+  {
+    "id": "M07#t001",
+    "material_id": "M07",
+    "kind": "table",
+    "text": "g",
+    "rows": [
+      [
+        "序号",
+        "名称"
+      ],
+      [
+        "1",
+        "甲"
+      ],
+      [
+        "2",
+        "乙"
+      ]
+    ],
+    "location": {
+      "path": "C:/Users/ADMINI~1/AppData/Local/Temp/pipeline-fix-uep1t2s4/材料树/g.csv"
+    },
+    "extractor": "py:csv",
+    "certainty": "direct"
+  },
+  {
+    "id": "M09#s001",
+    "material_id": "M09",
+    "kind": "sheet",
+    "text": "短名单",
+    "rows": [
+      [
+        "序号",
+        "供应商"
+      ],
+      [
+        "1",
+        "甲公司"
+      ]
+    ],
+    "location": {
+      "path": "C:/Users/ADMINI~1/AppData/Local/Temp/pipeline-fix-uep1t2s4/材料树/i.xlsx.et",
+      "sheet": "短名单"
+    },
+    "extractor": "py:openpyxl",
+    "certainty": "direct"
+  },
+  {
+    "id": "M10#p001",
+    "material_id": "M10",
+    "kind": "paragraph",
+    "text": "hello",
+    "location": {
+      "path": "C:/Users/ADMINI~1/AppData/Local/Temp/pipeline-fix-uep1t2s4/材料树/j.pdf.png",
+      "page": 1,
+      "quote": "hello"
+    },
+    "extractor": "py:pdfplumber",
+    "certainty": "direct"
+  },
+  {
+    "id": "M17#s001",
+    "material_id": "M17",
+    "kind": "sheet",
+    "text": "流式表",
+    "rows": [
+      [
+        "序号",
+        "金额"
+      ],
+      [
+        "1",
+        "100"
+      ]
+    ],
+    "location": {
+      "path": "C:/Users/ADMINI~1/AppData/Local/Temp/pipeline-fix-uep1t2s4/材料树/q.xlsx",
+      "sheet": "流式表"
+    },
+    "extractor": "py:openpyxl",
+    "certainty": "direct"
+  }
+]

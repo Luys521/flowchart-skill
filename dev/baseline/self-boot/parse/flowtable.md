@@ -22,6 +22,6 @@ parent: ../flowtable.md
 | 模块级 | 08 | apply_quality | 任务 | — | — | — | 脚本 | selfboot | — | →13 | ★ 抽取质量门（§1.5「手段 0」）→ `(留下的元素, 覆盖用的补注, 丢掉的元素 id, 读数行, {M##: 级别… · L121 · 函数 · ⇢ 依赖 textquality.scar、textquality.verdict |
 | 模块级 | 09 | merge_notes | 任务 | — | — | — | 脚本 | selfboot | — | →13 | ★ `[(适配器名, notes)]` → `(合并后的 notes, 冲突说明)`。 · L168 · 函数 |
 | 模块级 | 10 | survey | 任务 | — | — | — | 脚本 | selfboot | — | →13 | ★ 材料层 × 证据 × 补注 → `(每份材料一行, 漏认清单)`。**漏认 = status=ok 却既无元素也无补注… · L186 · 函数 |
-| 模块级 | 11 | _print_survey | 任务 | — | — | — | 脚本 | selfboot | — | →13 | ★ 人读摘要：一份材料一行。**没有证据也没有补注的当场标出来**（那是漏认，不是"空材料"）。 · L212 · 函数 |
-| 模块级 | 12 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→03｜3→04｜4→05｜5→06｜6→07｜7→08｜8→09｜9→10｜10→11 | L228 · 函数 · 分支：1→_read_json 2→_write_json 3→_last_line 4→_adapter_args 5→run_adapter 6→merge_elements 7→apply_quality 8→merge_notes 9→survey 10→_print_survey · ⇢ 依赖 textquality.load_thresholds |
+| 模块级 | 11 | _print_survey | 任务 | — | — | — | 脚本 | selfboot | — | →13 | ★ 人读摘要：一份材料一行。**没有证据也没有补注的当场标出来**（那是漏认，不是"空材料"）。 · L219 · 函数 |
+| 模块级 | 12 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→03｜3→04｜4→05｜5→06｜6→07｜7→08｜8→09｜9→10｜10→11 | L235 · 函数 · 分支：1→_read_json 2→_write_json 3→_last_line 4→_adapter_args 5→run_adapter 6→merge_elements 7→apply_quality 8→merge_notes 9→survey 10→_print_survey · ⇢ 依赖 textquality.load_thresholds |
 | 出口 | 13 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |

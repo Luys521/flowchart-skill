@@ -38,6 +38,7 @@ QUERY = REPO / 'scripts' / 'query.py'
 PROBE_CMD = REPO / 'scripts' / 'probe.py'
 RECON_CMD = REPO / 'scripts' / 'recon.py'          # 名字带 _CMD：本文件的 `RECON` 是**夹具表格文本**
 OOXML_CMD = REPO / 'scripts' / 'parse_ooxml.py'
+PARSE_CMD = REPO / 'scripts' / 'parse.py'
 
 # 合成 pptx 的标题（第 2 张含「审批」——后面的取子集断言就找它）
 DECK_TITLES = ('第 1 章 项目概况', '第 2 章 审批与分工', '第 3 章 结算与付款')
@@ -311,8 +312,182 @@ def pptx_paths(root):
     return cases
 
 
+def _minimal_docx(path):
+    """一份**真**的最小 docx（`python-docx` 自己造的，所以它必然合法）。"""
+    import docx
+    d = docx.Document()
+    d.add_heading('验收流程', level=1)
+    d.add_paragraph('第一步：受理；第二步：核验；第三步：交付。')
+    d.save(str(path))
+
+
+def _minimal_xlsx(path):
+    """一份**真**的最小 xlsx（`openpyxl` 自己造的）。"""
+    import openpyxl
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = '短名单'
+    ws.append(['序号', '供应商'])
+    ws.append([1, '甲公司'])
+    wb.save(str(path))
+
+
+def _unsized_xlsx(path):
+    """**没有 `<dimension>` 的工作表**（`openpyxl` 的 write-only 模式就这么导出）。
+
+    审计 R2 的原案：第三方导出 / write-only 常没这个标签，`openpyxl` 会抛 `Worksheet is unsized`，
+    原先 `recon` 直接裸栈退 1、整批零产出。现在它必须只影响自己那一行（记"尺寸不可知"）。
+    """
+    import openpyxl
+    wb = openpyxl.Workbook(write_only=True)
+    ws = wb.create_sheet('流式表')
+    ws.append(['序号', '金额'])
+    ws.append([1, 100])
+    wb.save(str(path))
+
+
+def _minimal_png(path):
+    """一张**真**的 4×4 PNG（Pillow 造的）。"""
+    from PIL import Image
+    Image.new('RGB', (4, 4), (200, 30, 30)).save(str(path))
+
+
+def _pdf_bytes(with_font):
+    """最小 PDF 字节。**只要有 `/Font` 就够 `probe` 判"有文本层"**——本夹具只考探测，不考抽取。
+
+    所以不写 xref 表（`pdfplumber` 会拒收它）——那正好**顺带考另一件事**：一份读不动的材料
+    必须只影响它自己，整链照常退 0（§1.4 硬要求 2）。
+    """
+    font = '/Resources<</Font<</F1 5 0 R>>>>' if with_font else '/Resources<<>>'
+    body = b'BT /F1 12 Tf 10 50 Td (hello) Tj ET' if with_font else b'q 1 0 0 1 0 0 cm /Im0 Do Q'
+    return (b'%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n'
+            b'2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n'
+            b'3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 200]' + font.encode() +
+            b'/Contents 4 0 R>>endobj\n'
+            b'4 0 obj<</Length ' + str(len(body)).encode() + b'>>stream\n' + body +
+            b'\nendstream endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n')
+
+
+def _zip_with(path, parts):
+    """按 `{部件名: 字节}` 写一个 zip —— 用来造"半容器 / 坏部件"这类**只有内容能分辨**的材料。"""
+    with zipfile.ZipFile(path, 'w') as z:
+        for name, data in parts.items():
+            z.writestr(name, data)
+
+
+def build_material_tree(root):
+    """造一棵**合成材料树**：审计抓到的那批"整批硬失败"全在这里复现。
+
+    台账（每行 = 一份材料 + 它要考的那件事）：
+
+    | 文件 | 考什么 |
+    |---|---|
+    | `a.docx` `b.xlsx` `c.pptx` `f.txt` `g.csv` | 五种**有 reader** 的正常材料（含 CSV） |
+    | `h.png` | 图片魔数（T3） |
+    | `d-text.pdf` `e-scan.pdf` | 有 / 无 `/Font` → `pdf-text` / `pdf-scan`（探测的分档依据） |
+    | `i.xlsx.et` | **改名件**：真 xlsx 叫 `.et`（WPS 后缀）——必须按内容判、按内容读（审计 F6） |
+    | `j.pdf.png` | **改名件**：PDF 字节叫 `.png`——不许被扩展名带偏成图片（审计 F3） |
+    | `k.docx` | **半容器**：有 `word/` 却没有 `word/document.xml`（审计 R3） |
+    | `l.docx` `m.xlsx` | **部件是垃圾**：容器像、正文坏（原先让 `recon` 裸栈退 1） |
+    | `n.txt` | GBK 纯文本：**不猜编码**，要记读不动 + 可执行提示 |
+    | `o.txt` | 空文件（0 字节） |
+    | `p.doc` | 假 OLE 魔数：legacy 那条路（本机无转换器 ⇒ 记读不动 + 提示） |
+    | `q.xlsx` | **无 `<dimension>` 的流式表**（审计 R2：原先 `recon` 在这里裸栈退 1） |
+
+    返回材料目录。**全部现造在临时目录里**，不进仓库。
+    """
+    d = root / '材料树'
+    d.mkdir(parents=True, exist_ok=True)
+    _minimal_docx(d / 'a.docx')
+    _minimal_xlsx(d / 'b.xlsx')
+    make_deck(d / 'c.pptx')
+    (d / 'd-text.pdf').write_bytes(_pdf_bytes(True))
+    (d / 'e-scan.pdf').write_bytes(_pdf_bytes(False))
+    (d / 'f.txt').write_text('第一行：材料清单\n第二行：审批流程\n', encoding='utf-8')
+    (d / 'g.csv').write_text('序号,名称\n1,甲\n2,乙\n', encoding='utf-8')
+    _minimal_png(d / 'h.png')
+    shutil.copy(d / 'b.xlsx', d / 'i.xlsx.et')                 # 改名件（WPS 后缀）
+    shutil.copy(d / 'd-text.pdf', d / 'j.pdf.png')             # 改名件（PDF 叫 .png）
+    _zip_with(d / 'k.docx', {'word/styles.xml': '<w:styles/>'})            # 半容器
+    _zip_with(d / 'l.docx', {'word/document.xml': '这不是 XML <<<'})        # 部件是垃圾
+    _zip_with(d / 'm.xlsx', {'xl/workbook.xml': 'not xml at all'})         # 部件是垃圾
+    (d / 'n.txt').write_bytes('第一行：中文\n第二行：中文\n'.encode('gbk'))  # GBK
+    (d / 'o.txt').write_bytes(b'')                                        # 空文件
+    (d / 'p.doc').write_bytes(b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1' + b'\x00' * 64)   # 假 OLE
+    _unsized_xlsx(d / 'q.xlsx')                                           # 无 <dimension> 的流式表
+    return d
+
+
+def materials_paths(root):
+    """材料树 5 条路径：**探测不撒谎 · 整批不崩 · 缩样尽力而为 · 护栏记在行里**。
+
+    这是 `coding-spec` G13 要的仪器：审计实测过"三类整批硬失败 + 五类 `recon` 崩溃**全都逃过十道门**"——
+    不是门坏了，是这批判据根本没进门。这笔账在这里结清。
+    """
+    d = build_material_tree(root)
+    cases = []
+    rc, out = run([sys.executable, str(PROBE_CMD), str(d), '--json'])
+    mats = []
+    if rc == 0 and '[' in out:
+        try:
+            mats = json.loads(out[out.index('['):])
+        except ValueError:
+            mats = []
+    by = {pathlib.Path(m['path']).name: m for m in mats}
+    ok = (len(mats) == 17 and all(m.get('tier') and m.get('kind') for m in mats)
+          and by.get('i.xlsx.et', {}).get('kind') == 'xlsx'        # 改名件按内容判
+          and by.get('j.pdf.png', {}).get('kind') == 'pdf-text'
+          and by.get('k.docx', {}).get('kind') == 'unknown'        # 半容器不许冒充 docx
+          and by.get('o.txt', {}).get('tier') == 'T4')             # 空文件记 T4，不猜
+    cases.append(('⑳ probe：17 份都有档位 + kind；改名件/半容器/空文件都按内容判', ok, rc,
+                  out[-300:] if not ok else ''))
+    if not mats:
+        return cases
+    (d / 'materials.json').write_text(json.dumps(mats, ensure_ascii=False, indent=2) + '\n',
+                                      encoding='utf-8', newline='\n')
+    t1 = {m.get('kind') for m in mats if m.get('tier') == 'T1'}
+    cases.append(('㉑ probe 不变式：判 T1 的 kind 全都有 reader 认领',
+                  t1 <= {'docx', 'xlsx', 'pptx', 'text'}, rc, f'T1 的 kind = {sorted(t1)}'))
+    rc, out = run([sys.executable, str(PARSE_CMD), '--materials', str(d / 'materials.json'),
+                   '--ledger', str(d / 'evidence.json'), '--task', 'mat-tree'])
+    els = []
+    if (d / 'evidence.json').exists():
+        try:
+            els = json.loads((d / 'evidence.json').read_text(encoding='utf-8')).get('elements') or []
+        except ValueError:
+            els = []
+    bad = [m for m in json.loads((d / 'evidence.json').read_text(encoding='utf-8')).get('materials', [])
+           if m.get('status') != 'ok'] if els else []
+    cases.append(('㉒ parse 整链：坏材料逐份记账、整批不崩（退 0 且证据没归零）',
+                  rc == 0 and len(els) > 0 and len(bad) >= 3
+                  and all(m.get('reason') for m in bad), rc, out[-400:] + str(bad)[:200]))
+    rc, out = run([sys.executable, str(RECON_CMD), 'build', '--materials', str(d / 'materials.json'),
+                   '-o', str(d / 'recon.md')])
+    rec = (d / 'recon.md').read_text(encoding='utf-8') if (d / 'recon.md').exists() else ''
+    rows = [l for l in rec.splitlines() if l.startswith('| `M')]
+    cells = [[c.strip() for c in l.strip().strip('|').split('|')] for l in rows]
+    # 「每种 kind 都有交代」的可机器核形式：**每行的「规模」或「读不动」至少有一格非空**——
+    # 空白格子 = 这一份材料没被交代（那正是审计里"摘要静默为空"的样子）。
+    blank = [c[0] for c in cells if not c[4].strip('— ') and not c[7].strip('— ')]
+    ok = (rc == 0 and len(rows) == 17 and not blank
+          and '摘要不可得' in rec                       # legacy：说清极限
+          and '尺寸不可知' in rec                        # 无 <dimension> 的流式表：记在行里而不是崩
+          and '超护栏' not in rec)                      # 正常阈值下不该有护栏记账
+    cases.append(('㉓ recon：17 行 · 每行的「规模/读不动」都有交代（坏部件/半容器/流式表/GBK/空文件）',
+                  ok, rc, (out[-200:] + f'｜空白行={blank}') if not ok else ''))
+    small = d / 'small.yaml'
+    small.write_text('recon:\n  easy_max_bytes: 1024\n  max_open_bytes: 512\n'
+                     '  outline_max: 50\n  outline_show: 3\n', encoding='utf-8')
+    rc, out = run([sys.executable, str(RECON_CMD), 'build', '--materials', str(d / 'materials.json'),
+                   '--dict', str(small), '-o', str(d / 'recon-small.md')])
+    rec2 = (d / 'recon-small.md').read_text(encoding='utf-8') if (d / 'recon-small.md').exists() else ''
+    cases.append(('㉔ 超护栏：`max_open_bytes` 调到 512 后记在行里（不打开结构、不崩）',
+                  rc == 0 and '超护栏' in rec2, rc, out[-300:] if rc != 0 else ''))
+    return cases
+
+
 def main(argv=None):
-    """造夹具 → 比 `drift` 读数 → 跑漂移 9 条 + 取子集 7 条 + pptx 3 条路径 → 打印结论并给退出码。"""
+    """造夹具 → 比 `drift` 读数 → 跑漂移 9 + 取子集 7 + pptx 3 + 材料树 5 条路径 → 打印结论并给退出码。"""
     sys.stdout.reconfigure(encoding='utf-8')
     root = pathlib.Path(argv[0]) if argv else pathlib.Path(tempfile.mkdtemp(prefix='pipeline-fix-'))
     root.mkdir(parents=True, exist_ok=True)
@@ -326,7 +501,8 @@ def main(argv=None):
     head = '✓ 漂移 3 条 · 缺口 3 条' in out
     print(f'{"PASS" if rc == 0 and head else "FAIL"}  ⓪ 读数：{out.splitlines()[0] if out else "（无输出）"}')
     bad = 0 if (rc == 0 and head) else 1
-    for name, good, rc, out in paths(root, draft) + query_paths(root) + pptx_paths(root):
+    for name, good, rc, out in (paths(root, draft) + query_paths(root) + pptx_paths(root)
+                                + materials_paths(root)):
         print(f'{"PASS" if good else "FAIL"}  {name}  （rc={rc}）')
         if not good:
             print('      ' + out.strip().replace('\n', '\n      ')[:500])

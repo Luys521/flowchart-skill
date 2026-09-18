@@ -139,7 +139,7 @@ def parse_pptx(blob, path, mid, max_slides):
     """
     got = slides(blob, max_slides)
     if not got:
-        return [], 'pptx 里没抽出任何幻灯片文字（空稿 / 全是图）'
+        return [], ''                                 # 空稿 / 全是图：**由调用方统一记"没抽出文字"**，不当致命错
     out, cut = [], []
     for n, lines in got:
         text = ' / '.join(lines)
@@ -206,13 +206,23 @@ def parse_materials(materials, max_rows, max_cols, max_slides):
                 got, err = parse_pptx(blob, path, mid, max_slides)
         except Exception as e:                       # 单份坏不让整批失败（§1.4 硬要求 2）
             skipped.append(f'{mid}: 解析失败 {type(e).__name__}: {e}')
+            # **容器认出来了、正文却是坏的 ⇒ 必须补注读不动**：不然它在账本上就是
+            # "status=ok 却零证据"，分派器当场判漏认、整条链退 1（夹具实测：垃圾 xlsx / 垃圾 docx）。
+            notes.append({'material_id': mid, 'status': 'unreadable',
+                          'reason': f'{kind} 容器的内容坏了（{type(e).__name__}: {str(e)[:70]}）'
+                                    f'——重新导出，或另存为 .docx / .xlsx'})
             continue
         if err:
             return None, notes, done, skipped, err
+        if not got:
+            notes.append({'material_id': mid, 'status': 'unreadable',
+                          'reason': f'{kind} 里没抽出任何文字（空文档 / 只有图片）——'
+                                    f'确属空材料就写进清点，别让它悬着'})
+            skipped.append(f'{mid}: 抽出 0 条')
+            continue
         elements += got
         done.append(f'{mid}({kind}) {len(got)}')
-        if got:
-            notes.append({'material_id': mid, 'extractor': f'py:{kind}'})
+        notes.append({'material_id': mid, 'extractor': f'py:{kind}'})
     return elements, notes, done, skipped, ''
 
 def _read_json(path):

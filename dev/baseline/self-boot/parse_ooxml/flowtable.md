@@ -20,7 +20,7 @@ parent: ../flowtable.md
 | 模块级 | 06 | parse_pptx | 任务 | — | — | — | 脚本 | selfboot | — | →12 | ★ `.pptx` **字节** → `(elements, 报错文案)`。**一张幻灯片一个 element**（零依赖… · L131 · 函数 · ⇢ 依赖 pptx_text.slides |
 | 模块级 | 07 | container_kind | 任务 | — | — | — | 脚本 | selfboot | — | →12 | ★ PK 容器的**字节** → `'docx'` / `'xlsx'` / `'pptx'`；不是 OOXML 返回 N… · L158 · 函数 |
 | 模块级 | 08 | parse_materials | 任务 | — | — | — | 脚本 | selfboot | — | 1→04｜2→05｜3→06｜4→07 | ★ 材料层 → `(elements, 补注, 摘要, 跳过清单, 报错文案)`。非 OOXML / 非 ok 的一律**… · L178 · 函数 · 分支：1→parse_docx 2→parse_xlsx 3→parse_pptx 4→container_kind |
-| 模块级 | 09 | _read_json | 任务 | — | — | — | 脚本 | selfboot | — | →12 | ★ 读 JSON（容忍 BOM）。 · L218 · 函数 |
-| 模块级 | 10 | _write_notes | 任务 | — | — | — | 脚本 | selfboot | — | →12 | ★ 写材料层补注：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 `ledger.dump`… · L222 · 函数 |
-| 模块级 | 11 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→08｜2→09｜3→10 | L226 · 函数 · 分支：1→parse_materials 2→_read_json 3→_write_notes |
+| 模块级 | 09 | _read_json | 任务 | — | — | — | 脚本 | selfboot | — | →12 | ★ 读 JSON（容忍 BOM）。 · L228 · 函数 |
+| 模块级 | 10 | _write_notes | 任务 | — | — | — | 脚本 | selfboot | — | →12 | ★ 写材料层补注：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 `ledger.dump`… · L232 · 函数 |
+| 模块级 | 11 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→08｜2→09｜3→10 | L236 · 函数 · 分支：1→parse_materials 2→_read_json 3→_write_notes |
 | 出口 | 12 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |
