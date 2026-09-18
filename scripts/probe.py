@@ -160,6 +160,7 @@ def _print_table(items):
 
 def main(argv=None):
     sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')  # 摘要/报错走 stderr，同样要定编码（GBK 控制台会乱码）
     ap = argparse.ArgumentParser(description='材料探测分档（按内容，不按扩展名）')
     ap.add_argument('path', help='材料路径（文件或目录）')
     ap.add_argument('--json', action='store_true', help='输出 materials[] JSON')

@@ -27,17 +27,18 @@ level: L0
 | 层级索引 | 14 | 模块 · layer_index | 任务 | — | — | — | 脚本 | selfboot | — | →15 | 9 个函数 · ⊞ layer_index/flowtable.md |
 | 接管与解析 | 15 | 模块 · ledger | 任务 | — | — | — | 脚本 | selfboot | — | →16 | 7 个函数 · ⊞ ledger/flowtable.md |
 | 产物审核 | 16 | 模块 · manifest | 任务 | — | — | — | 脚本 | selfboot | — | →17 | 29 个函数 · ⊞ manifest/flowtable.md |
-| 接管与解析 | 17 | 模块 · probe | 任务 | — | — | — | 脚本 | selfboot | — | →18 | 8 个函数 · ⊞ probe/flowtable.md |
-| 渲染 | 18 | 模块 · render_drawio | 任务 | — | — | — | 脚本 | selfboot | — | →19 | 24 个函数 · ⊞ render_drawio/flowtable.md |
-| 渲染 | 19 | 模块 · render_html | 任务 | — | — | — | 脚本 | selfboot | — | →20 | 23 个函数 · ⊞ render_html/flowtable.md |
-| 渲染 | 20 | 模块 · render_svg | 任务 | — | — | — | 脚本 | selfboot | — | →21 | 11 个函数 · ⊞ render_svg/flowtable.md |
-| 渲染 | 21 | 模块 · router | 任务 | — | — | — | 脚本 | selfboot | — | →22 | 30 个函数 · ⊞ router/flowtable.md |
-| 接管与解析 | 22 | 模块 · semantics | 任务 | — | — | — | 脚本 | selfboot | — | →23 | 17 个函数 · ⊞ semantics/flowtable.md |
-| 编排入口 | 23 | 模块 · shot | 任务 | — | — | — | 脚本 | selfboot | — | →24 | 8 个函数 · ⊞ shot/flowtable.md |
-| 渲染 | 24 | 模块 · swimlane | 任务 | — | — | — | 脚本 | selfboot | — | →25 | 19 个函数 · ⊞ swimlane/flowtable.md |
-| 同步闭环 | 25 | 模块 · sync | 任务 | — | — | — | 脚本 | selfboot | — | →26 | 10 个函数 · ⊞ sync/flowtable.md |
-| DSL 装配 | 26 | 模块 · table_to_dsl | 任务 | — | — | — | 脚本 | selfboot | — | →27 | 14 个函数 · ⊞ table_to_dsl/flowtable.md |
-| 产物审核 | 27 | 模块 · validate | 任务 | — | — | — | 脚本 | selfboot | — | →28 | 39 个函数 · ⊞ validate/flowtable.md |
-| 同步闭环 | 28 | 模块 · writeback | 任务 | — | — | — | 脚本 | selfboot | — | →29 | 21 个函数 · ⊞ writeback/flowtable.md |
-| 同步闭环 | 29 | 模块 · xml_reader | 任务 | — | — | — | 脚本 | selfboot | — | →30 | 40 个函数 · ⊞ xml_reader/flowtable.md |
-| 出口 | 30 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |
+| 接管与解析 | 17 | 模块 · parse_ooxml | 任务 | — | — | — | 脚本 | selfboot | — | →18 | 8 个函数 · ⊞ parse_ooxml/flowtable.md |
+| 接管与解析 | 18 | 模块 · probe | 任务 | — | — | — | 脚本 | selfboot | — | →19 | 8 个函数 · ⊞ probe/flowtable.md |
+| 渲染 | 19 | 模块 · render_drawio | 任务 | — | — | — | 脚本 | selfboot | — | →20 | 24 个函数 · ⊞ render_drawio/flowtable.md |
+| 渲染 | 20 | 模块 · render_html | 任务 | — | — | — | 脚本 | selfboot | — | →21 | 23 个函数 · ⊞ render_html/flowtable.md |
+| 渲染 | 21 | 模块 · render_svg | 任务 | — | — | — | 脚本 | selfboot | — | →22 | 11 个函数 · ⊞ render_svg/flowtable.md |
+| 渲染 | 22 | 模块 · router | 任务 | — | — | — | 脚本 | selfboot | — | →23 | 30 个函数 · ⊞ router/flowtable.md |
+| 接管与解析 | 23 | 模块 · semantics | 任务 | — | — | — | 脚本 | selfboot | — | →24 | 17 个函数 · ⊞ semantics/flowtable.md |
+| 编排入口 | 24 | 模块 · shot | 任务 | — | — | — | 脚本 | selfboot | — | →25 | 8 个函数 · ⊞ shot/flowtable.md |
+| 渲染 | 25 | 模块 · swimlane | 任务 | — | — | — | 脚本 | selfboot | — | →26 | 19 个函数 · ⊞ swimlane/flowtable.md |
+| 同步闭环 | 26 | 模块 · sync | 任务 | — | — | — | 脚本 | selfboot | — | →27 | 10 个函数 · ⊞ sync/flowtable.md |
+| DSL 装配 | 27 | 模块 · table_to_dsl | 任务 | — | — | — | 脚本 | selfboot | — | →28 | 14 个函数 · ⊞ table_to_dsl/flowtable.md |
+| 产物审核 | 28 | 模块 · validate | 任务 | — | — | — | 脚本 | selfboot | — | →29 | 39 个函数 · ⊞ validate/flowtable.md |
+| 同步闭环 | 29 | 模块 · writeback | 任务 | — | — | — | 脚本 | selfboot | — | →30 | 21 个函数 · ⊞ writeback/flowtable.md |
+| 同步闭环 | 30 | 模块 · xml_reader | 任务 | — | — | — | 脚本 | selfboot | — | →31 | 40 个函数 · ⊞ xml_reader/flowtable.md |
+| 出口 | 31 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |

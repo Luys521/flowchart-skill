@@ -119,6 +119,7 @@ def dump(ledger, path):
 
 def main(argv=None):
     sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')  # 摘要/报错走 stderr，同样要定编码（GBK 控制台会乱码）
     ap = argparse.ArgumentParser(description='L0 证据账本写入器（PIPELINE-SPEC §2）')
     ap.add_argument('--materials', required=True, help='材料层 JSON（probe.py --json 的输出）')
     ap.add_argument('--elements', help='证据层 JSON（解析适配器的输出；没有就写空表）')

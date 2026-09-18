@@ -5,7 +5,7 @@
 
 ## 层级树
 
-- **L0 主流程** `flowtable.md`——《self-boot — 模块索引》（id: selfboot-map）（30 节点）
+- **L0 主流程** `flowtable.md`——《self-boot — 模块索引》（id: selfboot-map）（31 节点）
   - **L1 子流程** `artifact/flowtable.md`——《artifact.py 函数流程表》（id: selfboot-artifact）（4 节点）
   - **L1 子流程** `build/flowtable.md`——《build.py 函数流程表》（id: selfboot-build）（27 节点）
   - **L1 子流程** `clarify/flowtable.md`——《clarify.py 函数流程表》（id: selfboot-clarify）（16 节点）
@@ -21,6 +21,7 @@
   - **L1 子流程** `layer_index/flowtable.md`——《layer_index.py 函数流程表》（id: selfboot-layer_index）（13 节点）
   - **L1 子流程** `ledger/flowtable.md`——《ledger.py 函数流程表》（id: selfboot-ledger）（9 节点）
   - **L1 子流程** `manifest/flowtable.md`——《manifest.py 函数流程表》（id: selfboot-manifest）（31 节点）
+  - **L1 子流程** `parse_ooxml/flowtable.md`——《parse_ooxml.py 函数流程表》（id: selfboot-parse_ooxml）（10 节点）
   - **L1 子流程** `probe/flowtable.md`——《probe.py 函数流程表》（id: selfboot-probe）（10 节点）
   - **L1 子流程** `render_drawio/flowtable.md`——《render_drawio.py 函数流程表》（id: selfboot-render_drawio）（27 节点）
   - **L1 子流程** `render_html/flowtable.md`——《render_html.py 函数流程表》（id: selfboot-render_html）（25 节点）
@@ -52,17 +53,18 @@
 13. `layer_index/flowtable.md`（L1）
 14. `ledger/flowtable.md`（L1）
 15. `manifest/flowtable.md`（L1）
-16. `probe/flowtable.md`（L1）
-17. `render_drawio/flowtable.md`（L1）
-18. `render_html/flowtable.md`（L1）
-19. `render_svg/flowtable.md`（L1）
-20. `router/flowtable.md`（L1）
-21. `semantics/flowtable.md`（L1）
-22. `shot/flowtable.md`（L1）
-23. `swimlane/flowtable.md`（L1）
-24. `sync/flowtable.md`（L1）
-25. `table_to_dsl/flowtable.md`（L1）
-26. `validate/flowtable.md`（L1）
-27. `writeback/flowtable.md`（L1）
-28. `xml_reader/flowtable.md`（L1）
-29. `flowtable.md`（L0）
+16. `parse_ooxml/flowtable.md`（L1）
+17. `probe/flowtable.md`（L1）
+18. `render_drawio/flowtable.md`（L1）
+19. `render_html/flowtable.md`（L1）
+20. `render_svg/flowtable.md`（L1）
+21. `router/flowtable.md`（L1）
+22. `semantics/flowtable.md`（L1）
+23. `shot/flowtable.md`（L1）
+24. `swimlane/flowtable.md`（L1）
+25. `sync/flowtable.md`（L1）
+26. `table_to_dsl/flowtable.md`（L1）
+27. `validate/flowtable.md`（L1）
+28. `writeback/flowtable.md`（L1）
+29. `xml_reader/flowtable.md`（L1）
+30. `flowtable.md`（L0）

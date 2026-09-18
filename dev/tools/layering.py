@@ -66,6 +66,7 @@ MODULE = {
     'shot',           # → *.shot.png
     'probe',          # → materials[] 骨架（材料探测分档，PIPELINE-SPEC §1.2）
     'ledger',         # → evidence.json（证据账本，PIPELINE-SPEC §2）
+    'parse_ooxml',    # → elements[] JSON（OOXML 解析适配器，PIPELINE-SPEC §1.4）
 }
 
 # 编排层：驱动整条流水线，允许依赖上面两层。

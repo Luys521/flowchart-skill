@@ -388,7 +388,7 @@ heading  paragraph  list_item  table  figure  caption  code  sheet  cell
 ### 7.1 H10 上线清单（实现 H10 时照单执行）
 
 1. **改全仓写死的 H 范围**—`dev/verify/contract.py` 有一条**硬断言**（"flowtable-spec 里 H1—H9 齐全"，比的是 `list('123456789')`），**补了 H10 它会当场判红**。要同步的地方：`references/flowtable-spec.md` 的 H 列表 · `dev/verify/contract.py` 那条断言 · `dev/tools/accept.py` 的门② 标题 · `dev/tools/README.md` 的门表 · `dev/tools/layering.py` 的注释 · `dev/tools/equiv-fixtures/broken.md` 的用例描述。
-2. **误伤回归**：在现有全部表（自举 29 张 + 样例 8 张 = 37 张）上跑 `scripts/table_to_dsl.py --check`，要求 **0 条 hard 增量**。
+2. **误伤回归**：在现有全部表（自举 30 张 + 样例 8 张 = 38 张）上跑 `scripts/table_to_dsl.py --check`，要求 **0 条 hard 增量**。
 
 ### 7.2 已知的代码接缝（实现 L0 / L1 时必改）
 
