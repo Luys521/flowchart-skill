@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-r"""accept.py — **验收：一条命令跑完十道门，只给一个结论**。
+r"""accept.py — **验收：一条命令跑完十一道门，只给一个结论**。
 
 **为什么**：用户只做最终环节的验收。前面四件仪器各答一个问题、各有一条命令，收口时却要人把
 五六条命令按顺序跑完再自己汇总——那不叫验收，那叫"人肉 CI"。本工具把收口清单固化成一台仪器：
 `python dev/tools/accept.py` 跑完、印一份回执、用**退出码**说结论。
 
-十道门（判据**全部从被跑命令的输出里读**，不写死任何计数——写死会在下次改动后变成假绿）：
+十一道门（判据**全部从被跑命令的输出里读**，不写死任何计数——写死会在下次改动后变成假绿）：
 
 | 门 | 覆盖 | 判据来源 |
 | --- | --- | --- |
@@ -19,12 +19,13 @@ r"""accept.py — **验收：一条命令跑完十道门，只给一个结论**�
 | ⑧ 卫生 | scripts/*.py 的未用 import／死函数归零 | hygiene.py 退出码（0 过 / 1 有白写 / 其它=仪器故障）；**射程只有 scripts/**，见 D-88 |
 | ⑨ 审美 | 三条审美律的读数不许退化（偏心 / 绕行 / 通道半径） | `aesthetic.py` 的读数与退出码；阈值见 `references/visual-spec.md` §0.1（当前收口值，见 G12） |
 | ⑩ 等价 | 夹具自身有效 + 工作树可观测行为与底本 tag 逐字节相同 | `table_to_dsl --check` 对 `equiv-fixtures/*.md` 的期望结果；`equiv.py make-base` / `suite` 的退出码 |
+| ⑪ 材料链与漂移 | `drift.py` 的判据 D1—D5 与 `check` 的账目对账（每条正反各一例） | `drift-fixtures/suite.py` 的 `PASS/FAIL` 行 + 退出码；夹具在系统临时目录里现造现跑 |
 
 **门⑤在仓库外的副本上跑**：`build.py` 会往树里写 html / drawio / `.bak` / yaml。验收**不改产物**，
 所以先把树整棵复制到临时目录再 build——副本的根目录仍叫 `self-boot`，产物名（`self-boot-flow.html`
 这类，`artifact.artifact_stem` 取的是目录名）与实际交付**逐字一致**。副本目录**每次唯一**
 （`mkdtemp`），**不用"先删再建"**（撞批量删除的安全钩子会把"门全过"变成"命令报错"）；
-跑完**只报临时目录路径、不删**——退出码只由十道门决定，清理动作不参与判分（见 `main` 收尾注释）。
+跑完**只报临时目录路径、不删**——退出码只由十一道门决定，清理动作不参与判分（见 `main` 收尾注释）。
 
 **门⑥是回执型门**：摘要没有阈值，它"不过"只意味着树为空或读不了。之所以并列成一道门，是因为
 收口时**必须报出**"这份结论对应哪一版树"——否则数字和树对不上账。它印**两个口径**，因为两件事
@@ -38,7 +39,7 @@ r"""accept.py — **验收：一条命令跑完十道门，只给一个结论**�
 
 | 码 | 含义 |
 | --- | --- |
-| `0` | 十道门全过 |
+| `0` | 十一道门全过 |
 | `1` | 有门未过（命令跑起来了、结论是"不过"） |
 | `2` | **仪器故障**：表树不存在 / 命令起不来 / 输出解析不了（此时树是半成品或结论不可信） |
 
@@ -670,12 +671,40 @@ def gate_equiv(g, scratch):
     return g.broken(f'equiv.py suite 退 {r.returncode}（它的合约是 0/1/2）')
 
 
+# ----------------------------------------------------------------门⑪ 材料链与漂移
+def gate_drift(g):
+    """门⑪：循环的发动机（`PIPELINE-SPEC` §5）**每轮验收都跑一遍**，用合成夹具钉住判据与对账。
+
+    **为什么它够格当一道门**：`scripts/drift.py` 的判据有两半——「读得对不对」（D1—D5 命中什么）
+    与「账查得严不严」（`check` 能不能抓住说谎与过期）。后一半**只能用合成夹具验**（真实材料造不出
+    "故意标错"），而在这之前它只有人手动跑：`coding-spec` G14 记的就是这个缺口。
+    实测抓到的两件真问题（都在夹具里现形）：`check` 原先**只查了"已修是否真修"、没查"现在的命中是否
+    漏在账外"**；伴生表**一行少一列被静默当成"没给"**（D2 静默不跑，表头还写"跳过了 D2"）。
+    两件都是「没人跑它」养出来的，所以把它接进来。
+
+    **夹具不进仓库的产物**：`suite.py` 在系统临时目录里现造现跑现清，验收不写任何字节到树里。
+    """
+    try:
+        r = run([PY, TOOLS / 'drift-fixtures' / 'suite.py'])
+    except OSError as e:
+        return g.broken(f'材料链夹具起不来（{type(e).__name__}: {e}）')
+    if r.returncode not in (0, 1):
+        return g.broken(f'drift 夹具退 {r.returncode}（它的合约是 0/1/2，2 = 夹具自身造不出来）')
+    for ln in (r.stdout or '').splitlines():
+        if ln.startswith(('PASS', 'FAIL', '——')):
+            g.note(ln.strip())
+    if r.returncode == 0:
+        return g.passed()
+    return g.failed('漂移判据或账目对账与夹具预期不符（上面点了具体路径）——'
+                    '夹具是"每条判据正反各一例"，红一条就是这条判据或这条守卫坏了')
+
+
 def main(argv=None):
     sys.stdout.reconfigure(encoding='utf-8')
     ap = argparse.ArgumentParser(
-        description='验收：一条命令跑完十道门，只给一个结论',
+        description='验收：一条命令跑完十一道门，只给一个结论',
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog='退出码：0 十道门全过 / 1 有门未过 / 2 仪器故障（树不存在、命令起不来、输出解析不了）')
+        epilog='退出码：0 十一道门全过 / 1 有门未过 / 2 仪器故障（树不存在、命令起不来、输出解析不了）')
     ap.add_argument('--tables-root', default=str(DEFAULT_TABLES),
                     help=f'流程表树根（默认 {rel(DEFAULT_TABLES, ROOT)}）')
     ap.add_argument('--scratch', help='临时目录（默认落在仓库内 .accept_tmp/；见下方注释）')
@@ -702,7 +731,8 @@ def main(argv=None):
             ('⑨', '审美 visual-spec §0.1（偏心/绕行/通道半径）',
              lambda g: gate_aesthetic(g, tables_root)),
             ('⑩', '等价 equiv（夹具 + 可观测行为逐字节）',
-             lambda g: gate_equiv(g, scratch))]
+             lambda g: gate_equiv(g, scratch)),
+            ('⑪', '材料链与漂移 drift-fixtures 夹具', lambda g: gate_drift(g))]
     for num, title, fn in plan:
         g = Gate(num, title)
         print(f'\n=== 门{num} {title} ===')
@@ -725,7 +755,7 @@ def main(argv=None):
     for g in gates:
         print(f'  {g.mark} 门{g.name} {g.title}'
               + (f'   {g.reason}' if g.ok is not True else ''))
-    print(f'十道门：{npass} 过 / {len(failed)} 未过 / {len(broken)} 仪器故障')
+    print(f'十一道门：{npass} 过 / {len(failed)} 未过 / {len(broken)} 仪器故障')
     missing = tables_is_missing(tables_root) if broken else ''
     if missing:
         print(f'  ⚠ {len(broken)} 道门无法裁决，根因是同一件事：{missing}')
@@ -737,11 +767,11 @@ def main(argv=None):
         verdict = '有门未过，未收口'
     else:
         code = 0
-        verdict = '十道门全过'
+        verdict = '十一道门全过'
     print(f'退出码 {code}：{verdict}')
     # 收尾：**只报路径、不删**。临时目录可再生，删不删都不影响结论；
     # 而"批量删除"会撞安全钩子（尤其套在自动化里跑时），一旦被拦，退出码就从 0 变成非 0——
-    # 用户看到的是"命令报错了"，而**十道门其实全过**。所以：结论先印完，退出码只由九道门决定，
+    # 用户看到的是"命令报错了"，而**十一道门其实全过**。所以：结论先印完，退出码只由各道门决定，
     # 清理动作一律不许参与判分。要腾空间请用户自己删这个目录。
     # 注：默认目录**在仓库内**（见 `_pinned_scratch` 的说明——系统临时目录的子目录截不出图），
     # 已由 .gitignore 挡住，所以留着也不会进版本库；但它会占约 2 MB，跑完想清就清。
