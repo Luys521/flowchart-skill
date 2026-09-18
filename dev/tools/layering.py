@@ -74,6 +74,7 @@ MODULE = {
     'parse_text',     # → elements[] JSON（纯文本：md / txt / csv / json，PIPELINE-SPEC §1.4）
     'render_pages',   # → 每页 PNG + 待填 vlm 骨架（转图片，PIPELINE-SPEC §1.5 手段 2）
     'intake',         # → intake.md（L1 材料卡片 + 卡片校验器，PIPELINE-SPEC §3）
+    'plan',           # → plan.md（L2 计划：流程清单 + 澄清申请 + 排除清单，PIPELINE-SPEC §4）
     'recon',          # → 侦查结论表草稿（难度排序 + 结构缩样，PIPELINE-SPEC §1.5）
     'drift',          # → drift.md（漂移清单 + 缺口清单，PIPELINE-SPEC §5 循环的发动机）
     'query',          # → stdout 的一小批证据（点名取子集 + 游标，PIPELINE-SPEC §5.3）

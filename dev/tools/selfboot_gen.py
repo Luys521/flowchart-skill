@@ -197,7 +197,7 @@ SUBJECTS = ('AI', '用户', SUBJECT)
 # 元组顺序即流水线顺序；`_root_rows` 按模块查表，查不到就抛错（仪器失效，不静默留空）。
 PIPELINE_STAGES = (
     ('接管与解析', ('probe', 'recon', 'parse', 'textquality', 'pptx_text', 'parse_ooxml', 'parse_pdf',
-                    'parse_legacy', 'parse_text', 'render_pages', 'ledger', 'intake',
+                    'parse_legacy', 'parse_text', 'render_pages', 'ledger', 'intake', 'plan',
                     'flowtable', 'semantics', 'artifact')),
     ('结构校验', ('flowtable_check',)),
     ('布局与配色', ('flowtable_layout', 'flowtable_colors')),

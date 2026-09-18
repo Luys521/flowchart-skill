@@ -46,6 +46,7 @@ RECON_CMD = REPO / 'scripts' / 'recon.py'          # 名字带 _CMD：本文件�
 OOXML_CMD = REPO / 'scripts' / 'parse_ooxml.py'
 PARSE_CMD = REPO / 'scripts' / 'parse.py'
 INTAKE_CMD = REPO / 'scripts' / 'intake.py'
+PLAN_CMD = REPO / 'scripts' / 'plan.py'
 SPEC = REPO / 'dev' / 'PIPELINE-SPEC.md'
 
 # 合成 pptx 的标题（第 2 张含「审批」——后面的取子集断言就找它）
@@ -92,7 +93,7 @@ INTAKE_AI = {
     'M04': ('⚠ 采购流程', '是 ⚠ 有审批步骤', '互补(M05)', '—'),
     'M05': ('⚠ 补充约定', '是 ⚠ 补充的也是审批步骤', '互补(M04)', '`M05#p001`'),
     'M06': ('⚠ 全套流程', '是 ⚠ 合订本含审批环节', '独立', '`M06#p001`'),
-    'M07': ('⚠ 流程图白板', '是 ⚠ 白板上画的就是流程', '独立', '`M07#p001`'),
+    'M07': ('⚠ 流程图白板', '是 ⚠ 白板上画的就是流程', '不确定', '`M07#p001`'),
 }
 
 
@@ -362,13 +363,92 @@ def spec_paths():
     sys.path.insert(0, str(REPO / 'scripts'))
     import drift
     import intake
+    import plan
     import recon
     spec = SPEC.read_text(encoding='utf-8')
     want = (('drift.DRIFT_COLUMNS', drift.DRIFT_COLUMNS), ('drift.GAP_COLUMNS', drift.GAP_COLUMNS),
-            ('intake.COLUMNS', intake.COLUMNS), ('recon.CARD_COLUMNS', recon.CARD_COLUMNS))
+            ('intake.COLUMNS', intake.COLUMNS), ('recon.CARD_COLUMNS', recon.CARD_COLUMNS),
+            ('plan.FLOW_COLUMNS', plan.FLOW_COLUMNS), ('plan.ASK_COLUMNS', plan.ASK_COLUMNS),
+            ('plan.EXCL_COLUMNS', plan.EXCL_COLUMNS))
     missing = [name for name, cols in want if '| ' + ' | '.join(cols) + ' |' not in spec]
-    return [('㊶ 规范 ↔ 仪器：§1.5 / §3 / §5.3 / §5.4 的表头逐字等于仪器列规范',
+    return [('㊶ 规范 ↔ 仪器：§1.5 / §3 / §4.1 / §5.3 / §5.4 的表头逐字等于仪器列规范',
              not missing, 0, ('PIPELINE-SPEC 里找不到：' + '、'.join(missing)) if missing else '')]
+
+
+def plan_paths(root):
+    """L2 计划链 3 条路径：机器列（种子 / 强合并 / 排除清单）· 收口后过 `check` · 反例九连。
+
+    这是 `PIPELINE-SPEC` §4 的仪器：§4.4 的两条可机器核（材料集都在清点里 · 流程数 = 目录数）
+    外加"`待澄清` 必须有账"——**那条正是 §5.4 收敛口径里的"澄清申请"**，以前它没有仪器。
+    """
+    cards = (root / 'intake.md').read_text(encoding='utf-8')
+    plan_file = root / 'plan.md'
+    cases = []
+    rc, out = run([sys.executable, str(PLAN_CMD), 'build', str(root / 'intake.md'),
+                   '-o', str(plan_file)])
+    draft = plan_file.read_text(encoding='utf-8') if plan_file.exists() else ''
+    # 机器列：F## 按"材料集里最小 M##"排 · 互补的两份**并成一条** · 排除清单 = 「含流程 = 否」·
+    # 澄清申请种子 = 版本关系 `不确定` 的那份
+    f_rows = [l for l in draft.splitlines() if l.startswith('| `F')]
+    ok = (rc == 0 and len(f_rows) == 4 and '`M04`、`M05`' in f_rows[1] and '`M02`' in f_rows[0]
+          and draft.count('\n| `M') == 2 and '| `M01` |' in draft and '无过程步骤' in draft
+          and '| `Q01` | — | — | `M07` |' in draft)
+    cases.append(('㊸ plan：机器列（种子 / 强合并 / `F##` 排序 / 排除清单 / 澄清种子）', ok, rc,
+                  (out[-200:] + draft[:300]) if not ok else ''))
+    # 收口：填 AI 那几列（名字 / 角色 / 挂在 / 与其它流程 / 并行组 / 澄清问题）
+    ai = {'F01': ('资质审查', '主', '—', '—', '`G1`', ''), 'F02': ('采购申请', '主', '—', '—', '`G1`', ''),
+          'F03': ('结算付款', '子', '`F02`#03', '接力(`F01`)', '`G2`', ''),
+          'F04': ('白板流程', '主', '—', '—', '`G2`', '')}
+    lines = []
+    for line in draft.splitlines():
+        if line.startswith('| `F'):
+            c = [x.strip() for x in line.strip().strip('|').split('|')]
+            fid = c[0].split('`')[1]
+            name, role, mount, rel, grp, _ = ai[fid]
+            c[0], c[1], c[2], c[4], c[5] = f'`{fid}` {name}', role, mount, rel, grp
+            c[6] = '待澄清' if name == '白板流程' else ('可落表' if c[6] == '—' else c[6])
+            line = '| ' + ' | '.join(c) + ' |'
+        elif line.startswith('| `Q01`'):
+            line = '| `Q01` | 白板与合订本哪份算数？ | 取合订本 | `M07` |'
+        lines.append(line)
+    filled = '\n'.join(lines) + '\n'
+    (root / 'plan-ok.md').write_text(filled, encoding='utf-8', newline='\n')
+    rc, out = run([sys.executable, str(PLAN_CMD), 'check', str(root / 'plan-ok.md'),
+                   '--intake', str(root / 'intake.md')])
+    cases.append(('㊹ plan 正例：收口后过 `check`（§4.4 ① · 排除清单双向 · `待澄清` 有账）',
+                  rc == 0 and '✓' in out, rc, out[-200:]))
+    # 反例九连：每条只错一处，都必须被抓住（rc 1 = 计划有问题 / 2 = 表头坏了，仪器故障）
+    negs = (('材料集造材料', filled.replace('`M04`、`M05`', '`M04`、`M99`'), 1),
+            ('不确定没标待澄清', filled.replace('| 待澄清 |', '| 可落表 |'), 1),
+            ('排除清单少一条',
+             '\n'.join(x for x in filled.splitlines() if not x.startswith('| `M03`')) + '\n', 1),
+            ('共享是空话', filled.replace('接力(`F01`)', '共享(M03)'), 1),
+            ('接力与同组并存', filled.replace('接力(`F01`)', '接力(`F04`)'), 1),
+            ('并行组写歪', filled.replace('| `G1` |', '| 第一组 |'), 1),
+            ('接力指向不存在', filled.replace('接力(`F01`)', '接力(`F09`)'), 1),
+            ('挂在指向不存在', filled.replace('`F02`#03', '`F09`#03'), 1),
+            ('表头坏', filled.replace('| 流程 | 角色 |', '| 流程 | 角色X |'), 2))
+    bad = []
+    for name, text, want in negs:
+        (root / 'plan-bad.md').write_text(text, encoding='utf-8', newline='\n')
+        rc2, out2 = run([sys.executable, str(PLAN_CMD), 'check', str(root / 'plan-bad.md'),
+                         '--intake', str(root / 'intake.md')])
+        if rc2 != want:
+            bad.append(f'{name}(rc={rc2}≠{want})')
+    cases.append(('㊺ plan 反例九连：造材料 / 不确定不标 / 排除漏项 / 共享空话 / 接力撞并行组 / '
+                  '组名歪 / 接力悬空 / 挂在悬空 / 表头坏', not bad, 1, '；'.join(bad)))
+    # §4.4 ②：流程数 = `<流程名>/` 目录数（少一个要报，补齐后要过）
+    dirs = root / 'plan-dirs'
+    for n in ('资质审查', '采购申请', '结算付款'):
+        (dirs / n).mkdir(parents=True, exist_ok=True)
+    rc1, out1 = run([sys.executable, str(PLAN_CMD), 'check', str(root / 'plan-ok.md'),
+                     '--intake', str(root / 'intake.md'), '--root', str(dirs)])
+    (dirs / '白板流程').mkdir(exist_ok=True)
+    rc2, out2 = run([sys.executable, str(PLAN_CMD), 'check', str(root / 'plan-ok.md'),
+                     '--intake', str(root / 'intake.md'), '--root', str(dirs)])
+    cases.append(('㊻ §4.4 ②：计划 4 条 / 目录 3 个 ⇒ 退 1（点出缺哪条）；补齐 ⇒ 退 0',
+                  rc1 == 1 and '白板流程' in out1 and rc2 == 0, rc1, (out1[-160:] + out2[-160:])))
+    return cases
 
 
 def query_run(root, *args):
@@ -953,8 +1033,9 @@ def main(argv=None):
     head = '✓ 漂移 3 条 · 缺口 3 条' in out
     print(f'{"PASS" if rc == 0 and head else "FAIL"}  ⓪ 读数：{out.splitlines()[0] if out else "（无输出）"}')
     bad = 0 if (rc == 0 and head) else 1
-    for name, good, rc, out in (paths(root, draft) + intake_paths(root) + query_paths(root)
-                                + pptx_paths(root) + materials_paths(root) + spec_paths()):
+    for name, good, rc, out in (paths(root, draft) + intake_paths(root) + plan_paths(root)
+                                + query_paths(root) + pptx_paths(root) + materials_paths(root)
+                                + spec_paths()):
         print(f'{"PASS" if good else "FAIL"}  {name}  （rc={rc}）')
         if not good:
             print('      ' + out.strip().replace('\n', '\n      ')[:500])
