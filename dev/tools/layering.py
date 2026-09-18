@@ -74,6 +74,7 @@ MODULE = {
     'parse_legacy',   # → elements[] JSON（legacy 走外部转换器，PIPELINE-SPEC §1.4）
     'parse_text',     # → elements[] JSON（纯文本：md / txt / csv / json，PIPELINE-SPEC §1.4）
     'render_pages',   # → 每页 PNG + 待填 vlm 骨架（转图片，PIPELINE-SPEC §1.5 手段 2）
+    'import_table',   # → flowtable.md（外部节点表 → 契约流程表，PIPELINE-SPEC §4）
     'intake',         # → intake.md（L1 材料卡片 + 卡片校验器，PIPELINE-SPEC §3）
     'plan',           # → plan.md（L2 计划：流程清单 + 澄清申请 + 排除清单，PIPELINE-SPEC §4）
     'recon',          # → 侦查结论表草稿（难度排序 + 结构缩样，PIPELINE-SPEC §1.5）

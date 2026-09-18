@@ -51,6 +51,7 @@ QUERY = REPO / 'scripts' / 'query.py'
 PROBE_CMD = REPO / 'scripts' / 'probe.py'
 RECON_CMD = REPO / 'scripts' / 'recon.py'          # 名字带 _CMD：本文件的 `RECON` 是**夹具表格文本**
 OOXML_CMD = REPO / 'scripts' / 'parse_ooxml.py'
+IMPORT_CMD = REPO / 'scripts' / 'import_table.py'
 PARSE_CMD = REPO / 'scripts' / 'parse.py'
 INTAKE_CMD = REPO / 'scripts' / 'intake.py'
 PLAN_CMD = REPO / 'scripts' / 'plan.py'
@@ -826,7 +827,59 @@ def _fill_recon_card(text):
     return new
 
 
+def import_paths(root):
+    """外部节点表 → 契约流程表（P2）：**只做机械转换，语义留给 AI**。
+
+    为什么值得一条路径：真材料集上那张 38 行（实为 43 行）的节点表是我**手写**转成 12 列的——
+    列数、编号、`｜` 分支全靠人保证。这条路径钉住三件机械事：认列（同义词，**长者优先**）、
+    规格化写法（`<br>` → `｜` · 类型同义词 → 四种 · 缺列留 `—`）、补 frontmatter 与主体配色；
+    并与**手写版逐节点对账**（差异只允许出现在"AI 该做的那三件"上）。
+    """
+    d = root / 'imp'
+    d.mkdir(exist_ok=True)
+    src = d / '外部节点表.md'
+    src.write_text(
+        '# 外部节点表（夹具）\n\n'
+        '| 环节 | 步骤号 | 事项 | 类型 | 责任方 | 岗位 | 时限 | 下一步 | 备注 |\n'
+        '|---|---|---|---|---|---|---|---|---|\n'
+        '| 受理 | 1 | 收件 | 起点 | 甲方 | 前台 | 1天 | 2 | 拿材料 → 出回执 |\n'
+        '| 受理 | 2 | 分派？ | 决策 | 甲方 | 主管 | — | 是→3<br>否→4 | 按轻重缓急分派 |\n'
+        '| 受理 | 3 | 快速通道 | 处理 | 乙方 | 专员 | 2天 | 5 | |\n'
+        '| 受理 | 4 | 常规通道 | 处理 | 乙方 | 专员 | 5天 | 5 | |\n'
+        '| 受理 | 5 | 归档 | 终点 | 甲方 | 档案 | — | — | |\n', encoding='utf-8')
+    cases = []
+    out_file = d / 'flowtable.md'
+    rc, out = run([sys.executable, str(IMPORT_CMD), str(src), '-o', str(out_file),
+                   '--id', 'importfix', '--title', '外部表导入夹具'])
+    got = out_file.read_text(encoding='utf-8') if out_file.exists() else ''
+    hdr = [ln for ln in got.splitlines() if ln.startswith('| 项目运作阶段')]
+    n_cols = len(hdr[0].strip().strip('|').split('|')) if hdr else 0
+    ok = (rc == 0 and n_cols == 12 and '| 开始 |' in got and '| 结束 |' in got
+          and '是→3 ｜ 否→4' in got and '<br>' not in got and '拿材料 → 出回执' in got
+          and '| 甲方 | #dae8fc |' in got and 'id: importfix' in got)
+    cases.append(('㊾ import：外部表（同义词列 / `<br>` 分支 / 起点终点 / 备注列 / 缺 3 列）→ '
+                  '12 列契约（类型归一 · `<br>`→`｜` · 备注进描述 · 缺列留 `—`）', ok, rc,
+                  (out[-200:] + got[:200]) if not ok else ''))
+    rc2, out2 = run([sys.executable, str(REPO / 'scripts' / 'table_to_dsl.py'), '--check',
+                     str(out_file)])
+    cases.append(('㊿ import 的产物**过 H1—H9**（契约校验才是门；软提示允许）',
+                  rc2 == 0 and '结构校验通过' in out2, rc2, out2[-200:]))
+    # 反例：编号重复 / 表头认不出来 —— 都必须当场退 1（不是产出个坏表让别人去猜）
+    dup = d / 'dup.md'
+    dup.write_text('| 编号 | 名称 | 下一步 |\n|---|---|---|\n| 1 | 甲 | 2 |\n| 1 | 乙 | — |\n',
+                   encoding='utf-8')
+    rc3, out3 = run([sys.executable, str(IMPORT_CMD), str(dup), '-o', str(d / 'x.md')])
+    blind = d / 'blind.md'
+    blind.write_text('| 甲 | 乙 |\n|---|---|\n| 1 | 2 |\n', encoding='utf-8')
+    rc4, out4 = run([sys.executable, str(IMPORT_CMD), str(blind), '-o', str(d / 'y.md')])
+    cases.append(('㊿b import 反例：编号重复 ⇒ 退 1 · 表头认不出来 ⇒ 退 1（都不产出坏表）',
+                  rc3 == 1 and '重复' in out3 and rc4 == 1 and '没认到节点表' in out4, rc3,
+                  out3[-160:] + out4[-160:]))
+    return cases
+
+
 def materials_paths(root):
+
     """材料树 5 条路径：**探测不撒谎 · 整批不崩 · 缩样尽力而为 · 护栏记在行里**。
 
     这是 `coding-spec` G13 要的仪器：审计实测过"三类整批硬失败 + 五类 `recon` 崩溃**全都逃过十道门**"——
@@ -1133,7 +1186,7 @@ def main(argv=None):
     bad += 0 if d1_ok else 1
     for name, good, rc, out in (paths(root, draft) + intake_paths(root) + plan_paths(root)
                                 + query_paths(root) + pptx_paths(root) + materials_paths(root)
-                                + spec_paths()):
+                                + import_paths(root) + spec_paths()):
         print(f'{"PASS" if good else "FAIL"}  {name}  （rc={rc}）')
         if not good:
             print('      ' + out.strip().replace('\n', '\n      ')[:500])
