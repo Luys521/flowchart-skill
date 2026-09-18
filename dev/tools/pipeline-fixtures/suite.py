@@ -227,11 +227,51 @@ def paths(root, draft):
     stale = '\n'.join(l for l in fill(draft).splitlines() if not l.startswith('| `X02`')) + '\n'
     rc, out = check(root, stale)
     cases.append(('⑧ 漏了一条现在的命中 → 不许过', rc == 1 and '没有这一条' in out, rc, out))
-    t = set_disposition(fill(draft), 'X01', '已修', '已给 02 补 ⚠')
-    t = set_disposition(t, 'X02', '已解释', '同一份补充件的两种叫法')
-    t = set_disposition(t, 'X03', '已解释', 'M02 另有直读副本，已在表内注明')
-    rc, out = check(root, t, flowtable=root / 'fixed.md')
-    cases.append(('⑨ 真修掉的那条判「已修」→ 收敛', rc == 0, rc, out))
+    # ⑨ 改完表重出一份账 → 收敛（**账与表必须对得上**：账里记着它是对着哪张表算的，
+    #    拿 A 表的账去 check B 表要报错——那正是"改动后账没跟上"的一种）。
+    #    "标已修却不真修"由 ④ 反向钉住；这里证的是"改完表 → 重出账 → 收敛"这条路通。
+    rc, out = run([sys.executable, str(DRIFT), 'build', str(root / 'fixed.md'),
+                   '--ledger', str(root / 'evidence.json'), '--recon', str(root / 'recon.md'),
+                   '--intake', str(root / 'intake.md'), '-o', str(root / 'd-fixed.md'), '--force'])
+    draft_fixed = (root / 'd-fixed.md').read_text(encoding='utf-8')
+    rc, out = check(root, fill(draft_fixed), flowtable=root / 'fixed.md')
+    cases.append(('⑨ 改完表重出账 → 收敛（拿旧账 check 新表要报"对不上"）', rc == 0, rc, out))
+    rc, out = run([sys.executable, str(DRIFT), 'check', str(root / 'd-fixed.md'),
+                   '--flowtable', str(root / 'flowtable.md'), '--ledger', str(root / 'evidence.json'),
+                   '--recon', str(root / 'recon.md'), '--intake', str(root / 'intake.md')])
+    cases.append(('⑨b 拿 A 表的账 check B 表 → 退 1（账与表对不上）',
+                  rc == 1 and '另一张表' in out, rc, out))
+
+    # ㉟ D4 在**合规** intake.md 上必须仍然命中（审计实测的阻断：drift 要逐字 `=='是'`，
+    #    而 intake 要求同格补理由并标 ⚠ ⇒ 两套语法互斥，D4 永远是死的且死得没声音）
+    ok_intake = (root / 'intake.md').read_text(encoding='utf-8')
+    ok_intake = re.sub(r'\| 是 \|', '| 是 ⚠ 有审批步骤 |', ok_intake)
+    (root / 'intake-ok.md').write_text(ok_intake, encoding='utf-8', newline='\n')
+    rc, out = run([sys.executable, str(DRIFT), 'build', str(root / 'flowtable.md'),
+                   '--ledger', str(root / 'evidence.json'), '--recon', str(root / 'recon.md'),
+                   '--intake', str(root / 'intake-ok.md'), '-o', str(root / 'd-ok.md'), '--force'])
+    d_ok = (root / 'd-ok.md').read_text(encoding='utf-8') if (root / 'd-ok.md').exists() else ''
+    cases.append(('㉟ D4 在合规 intake（含流程=`是 ⚠ 理由`）上仍命中（语法取前缀，不取逐字）',
+                  rc == 0 and 'D4 含流程的材料零引用' in d_ok, rc, d_ok[:200]))
+
+    # ㊱ `check` 少了账里记着的输入 ⇒ 退 1（审计实测的阻断：五条判据全关也照样打印"没有漏在账外"）
+    rc, out = run([sys.executable, str(DRIFT), 'check', str(root / 'd-ok.md'),
+                   '--flowtable', str(root / 'flowtable.md')])
+    cases.append(('㊱ check 少了账里记着的 --ledger → 退 1（不许当橡皮图章）',
+                  rc == 1 and '静默少跑' in out, rc, out[-200:]))
+
+    # ㊲ 事实变了 ⇒ 该命中在账外（键含「事实」）：把节点依据换成视觉推断的证据——正是 D1 要防的那件事
+    swapped = (root / 'flowtable.md').read_text(encoding='utf-8').replace('`M01#p001`', '`M07#p001`')
+    (root / 'swapped.md').write_text(swapped, encoding='utf-8', newline='\n')
+    rc, out = run([sys.executable, str(DRIFT), 'build', str(root / 'swapped.md'),
+                   '--ledger', str(root / 'evidence.json'), '--recon', str(root / 'recon.md'),
+                   '--intake', str(root / 'intake.md'), '-o', str(root / 'd-swap.md'), '--force'])
+    d_swap = (root / 'd-swap.md').read_text(encoding='utf-8') if (root / 'd-swap.md').exists() else ''
+    stale = fill(d_swap).replace('节点 02 | `M01#p001`', '节点 02 | `M07#p001`')   # 事实被手改回旧值
+    rc, out = run([sys.executable, str(DRIFT), 'check', str(root / 'd-swap.md'),
+                   '--flowtable', str(root / 'swapped.md'), '--ledger', str(root / 'evidence.json'),
+                   '--recon', str(root / 'recon.md'), '--intake', str(root / 'intake.md')])
+    cases.append(('㊲ 表里换了成因 ⇒ 旧账不再覆盖（键含「事实」）', 'D1' in d_swap, rc, d_swap[:200]))
     return cases
 
 

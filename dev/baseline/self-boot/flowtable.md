@@ -15,7 +15,7 @@ level: L0
 | 接管与解析 | 02 | 模块 · artifact | 任务 | — | — | — | 脚本 | selfboot | — | →03 | 2 个函数 · ⊞ artifact/flowtable.md |
 | 编排入口 | 03 | 模块 · build | 任务 | — | — | — | 脚本 | selfboot | — | →04 | 25 个函数 · ⊞ build/flowtable.md |
 | 编排入口 | 04 | 模块 · clarify | 任务 | — | — | — | 脚本 | selfboot | — | →05 | 14 个函数 · ⊞ clarify/flowtable.md |
-| 循环与漂移 | 05 | 模块 · drift | 任务 | — | — | — | 脚本 | selfboot | — | →06 | 25 个函数 · ⊞ drift/flowtable.md |
+| 循环与漂移 | 05 | 模块 · drift | 任务 | — | — | — | 脚本 | selfboot | — | →06 | 26 个函数 · ⊞ drift/flowtable.md |
 | 渲染 | 06 | 模块 · engine | 任务 | — | — | — | 脚本 | selfboot | — | →07 | 26 个函数 · ⊞ engine/flowtable.md |
 | 接管与解析 | 07 | 模块 · flowtable | 任务 | — | — | — | 脚本 | selfboot | — | →08 | 27 个函数 · ⊞ flowtable/flowtable.md |
 | 结构校验 | 08 | 模块 · flowtable_check | 任务 | — | — | — | 脚本 | selfboot | — | →09 | 29 个函数 · ⊞ flowtable_check/flowtable.md |

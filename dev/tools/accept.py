@@ -694,13 +694,20 @@ def gate_drift(g):
         return g.broken(f'材料链夹具起不来（{type(e).__name__}: {e}）')
     if r.returncode not in (0, 1):
         return g.broken(f'材料链夹具退 {r.returncode}（它的合约是 0/1/2，2 = 夹具自身造不出来）')
-    for ln in (r.stdout or '').splitlines():
-        if ln.startswith(('PASS', 'FAIL', '——')):
-            g.note(ln.strip())
-    if r.returncode == 0:
+    lines = [ln.strip() for ln in (r.stdout or '').splitlines()
+             if ln.startswith(('PASS', 'FAIL', '——'))]
+    for ln in lines:
+        g.note(ln)
+    n_pass = sum(1 for ln in lines if ln.startswith('PASS'))
+    n_fail = sum(1 for ln in lines if ln.startswith('FAIL'))
+    # **不能只看退出码**（审计实测：rc 0 + 一堆 FAIL、甚至 rc 0 + 零输出都判绿——那门是装饰）。
+    # 判据：至少看到一条 PASS、且一条 FAIL 都没有。
+    if r.returncode == 0 and n_fail == 0 and n_pass >= 20:
         return g.passed()
-    return g.failed('漂移判据 / 取子集边界与夹具预期不符（上面点了具体路径）——'
-                    '夹具是"每条判据与每条边界正反各一例"，红一条就是这条判据或这条守卫坏了')
+    if n_fail or r.returncode != 0:
+        return g.failed(f'材料链夹具：{n_pass} 条 PASS · {n_fail} 条 FAIL（退 {r.returncode}）——'
+                        f'红一条就是这条判据或这条守卫坏了')
+    return g.broken(f'夹具没输出可判的行（只看到 {n_pass} 条 PASS 行）——夹具没跑起来就当仪器故障')
 
 
 def main(argv=None):

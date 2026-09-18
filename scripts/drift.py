@@ -168,11 +168,19 @@ def rule_d3(nodes, mats):
 
 
 def rule_d4(nodes, intake, recon):
-    """D4 含流程的材料零引用 → **缺口**：这份材料的信息没进表（漏读，或读了没落表）。"""
+    """D4 含流程的材料零引用 → **缺口**：这份材料的信息没进表（漏读，或读了没落表）。
+
+    **判据取前缀，不取逐字**（审计实测的阻断）：`intake.py` 的取值是 `^(不确定|是|否)` **且**
+    §3 要求同格补理由并标 `⚠`（实际写出来是 `是 ⚠ 有审批步骤`），而规范自己的样例又是
+    `否（无过程步骤）`——三套写法并存。这里若要求逐字 `=='是'`，**任何合规的 intake.md 都命不中
+    D4**，于是这条判据是死的、而且死得没声音（表头还写着"五条全启用"）。
+    取"以 `是` 开头"就与 `intake.py` 的取值口径同源了；`不确定` 不算命中（它本来就要进澄清）。
+    """
     cited = {i.split('#')[0] for i in _cited(nodes)}
     out = []
     for mid in sorted(intake):
-        if _col(intake[mid], '含流程') == '是' and mid not in cited:
+        flow = str(_col(intake[mid], '含流程') or '').strip()
+        if flow.startswith('是') and mid not in cited:
             out.append(('D4', mid, '表里没有任何节点引用它的证据'))
     return [(r, m, n, _col(recon.get(m, {}), '走哪条路') or '—') for r, m, n in out]
 
@@ -352,10 +360,18 @@ def check_drift_rows(drift, live):
 
     ① 每条处置合法（`已解释` 必写依据）；② 标 `已修` 的**必须真的不再命中**（说谎会被抓住）；
     ③ 现在命中的**必须都在账内**（文件过期会被抓住）。
+
+    **对账键必须含「事实」**（审计实测的绕过路径）：只用 `(判据号, 位置)` 时，
+    ① 同一节点换了成因（例如依据从"带降级留痕的 `M01#p001`"换成"视觉推断的 `M07#p001`"——
+    恰恰是 D1 真正要防的那件事）键**原地不动**，老账上的「已解释」继续生效；
+    ② D2 的位置是聚合的节点列表，两份额外材料由同一节点引用时会渲染出**两行同键**，
+    删掉一行也无人发现（集合差里一条键盖住多条命中）。
+    把 `事实` 并进键之后：事实变了 ⇒ 这条命中在账外 ⇒ 报"文件过期"（该重跑 build 看新事实）。
     """
     errs = []
-    file_keys = {(((r.get('判据') or '').split() or [''])[0], r.get('位置')) for r in drift}
-    live_keys = {(r['rule'], r['pos']) for r in live}
+    file_keys = {(((r.get('判据') or '').split() or [''])[0], r.get('位置'), r.get('事实'))
+                 for r in drift}
+    live_keys = {(r['rule'], r['pos'], r['fact']) for r in live}
     for r in drift:
         rule = ((r.get('判据') or '').split() or [''])[0]
         if rule not in RULES:
@@ -368,10 +384,11 @@ def check_drift_rows(drift, live):
             errs.append(f'{r.get("漂移")}: 还是「待验」——没收敛（§5.4 不许留待验）')
         elif d == '已解释' and _blank(r.get('依据（AI 填）')):
             errs.append(f'{r.get("漂移")}: 判「已解释」必须写依据（不许静默抹平）')
-        elif d == '已修' and (rule, r.get('位置')) in live_keys:
+        elif d == '已修' and (rule, r.get('位置'), r.get('事实')) in live_keys:
             errs.append(f'{r.get("漂移")}: 标了「已修」，但判据 {rule} 在 {r.get("位置")} 仍然命中')
-    for rule, pos in sorted(live_keys - file_keys):
-        errs.append(f'{rule} 在 {pos} 命中，但 `drift.md` 里没有这一条（文件过期？重跑 build --force）')
+    for rule, pos, fact in sorted(live_keys - file_keys):
+        errs.append(f'{rule} 在 {pos} 命中（{str(fact)[:40]}），但 `drift.md` 里没有这一条'
+                    f'（文件过期？重跑 build --force）')
     return errs
 
 
@@ -470,9 +487,49 @@ def cmd_build(a):
     return 0
 
 
+def check_header(text, a, th):
+    """`drift.md` 头部（`>` 行）↔ 本次调用的**输入 / 阈值 / 表** → `(错误, 提示)`。
+
+    为什么要读它（审计实测的阻断）：`check` 原先**完全不看头部**，于是"换个输入再 check"
+    照样打印"✓ 收敛…现在的判据读数没有漏在账外的"——少一个 `--ledger`（五条判据全关）
+    就是一枚橡皮图章：什么都能判"已解释/已修"通过。头部里明明记着当时用的输入、阈值与表，
+    读一眼就能拦住这类"对不上账的绿"。
+
+    **表指纹不一致只给提示、不算错**：循环的正常姿势就是"改完表、再拿旧账 check 有没有真修掉"，
+    拿指纹当错会把这条路堵死。真正的"文件过期"由**事实进键**那条抓（表变了 ⇒ 事实变了 ⇒
+    该命中在账外 ⇒ 报错），那才是精确的判据。
+    """
+    errs, notes = [], []
+    head = '\n'.join(l for l in text.splitlines() if l.startswith('>'))
+    m = re.search(r'`([^`]+)`（sha256 ([0-9a-f]{6,})）', head)
+    if not m:
+        errs.append('头部没有"输入指纹"那一行（这份 drift.md 不是 `build` 出的？）')
+    else:
+        want = m.group(1)
+        if Path(want).resolve() != Path(a.flowtable).resolve():
+            errs.append(f'这份账是对着另一张表算的（账里 `{want}` ≠ 本次 `{a.flowtable}`）')
+        else:
+            now = hashlib.sha256(Path(a.flowtable).read_text(encoding='utf-8-sig')
+                                 .encode('utf-8')).hexdigest()[:12]
+            if now != m.group(2):
+                notes.append(f'流程表自上次 build 起改过了（账里 {m.group(2)} → 现在 {now}）：'
+                             f'这正是"改完表再对账"的正常姿势；若"已修"仍被报命中，就是没真修')
+    for key, flag in (('账本', a.ledger), ('假设账', getattr(a, 'recon', None)),
+                      ('清点', getattr(a, 'intake', None))):
+        if flag is None:
+            errs.append(f'账里记着用过「{key}」，这次 check 没给——**判据会静默少跑**，'
+                        f'那种绿不算收敛（补上 `--{ {"账本": "ledger", "假设账": "recon", "清点": "intake"}[key] }`）')
+    mt = re.search(r'`coverage_min_elements=(\d+)`', head)
+    if mt and int(mt.group(1)) != th['coverage_min_elements']:
+        errs.append(f'阈值对不上（账里 coverage_min_elements={mt.group(1)}，'
+                    f'本次 {th["coverage_min_elements"]}）——阈值变了要重跑 build')
+    return errs, notes
+
+
 def cmd_check(a):
     """查收敛：**拿当前表重跑判据**，与文件里的处置对账（§5.4）。"""
-    drift, gaps, err = parse_doc(Path(a.card).read_text(encoding='utf-8-sig'))
+    text = Path(a.card).read_text(encoding='utf-8-sig')
+    drift, gaps, err = parse_doc(text)
     if err:
         print(f'✗ {a.card}: {err}')
         return 2
@@ -485,6 +542,14 @@ def cmd_check(a):
     if got['bad']:
         print(f'✗ 伴生表读坏了：{got["bad"]}')
         return 2
+    head_bad, head_notes = check_header(text, a, got['th'])
+    for n in head_notes:
+        print(f'  · {n}')
+    if head_bad:
+        print(f'✗ 账与本次调用对不上（{len(head_bad)} 条）：')
+        for e in head_bad[:10]:
+            print(f'   · {e}')
+        return 1
     rows_bad = check_drift_rows(drift, got['drift']) + check_gap_rows(gaps, got['gaps'])
     if rows_bad:
         print(f'✗ 没收敛：{len(rows_bad)} 条')
