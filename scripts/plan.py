@@ -19,12 +19,17 @@ r"""plan.py — L2 计划（PIPELINE-SPEC §4）：`intake.md` → `plan.md`（�
 **表列规范只有一份**（这里）：`FLOW_COLUMNS` / `ASK_COLUMNS` / `EXCL_COLUMNS`。
 `PIPELINE-SPEC` §4.1 里那三张样例表的表头是它们的**抄本**，门⑪ 的 ㊶ 会逐字核。
 
-**`check` 能拦什么**（§4.4 的两条可机器核是前两条，其余是它们的必要前提）：
+**`check` 能拦什么**（§4.4 的三条可机器核是前三条，其余是它们的必要前提）：
+0. **表头写了主体与目的**（§4.0 前置澄清）——**没填就没澄清，直接退 1**。这一条排在最前面不是形式：
+   拆解算法的每一步都以"主体是谁"为前提；真材料集上现形过（合作框架是「怡云智 × 珈伟」的，
+   模板与标准却是「怡亚通」的，主体不定就开始拆，四条流程里两条要推倒）；
 1. **材料集里的每个 `M##` 都在 `intake.md` 里**（§4.4 ①）——计划不许凭空造材料；
 2. **流程数 = 成果根下的 `<流程名>/` 目录数**（§4.4 ②，要 `--root`；**不给就跳过并打印**，
    不静默）——计划说做几张，就得真做出几张；
 3. 角色 / 状态 / 并行组取值封闭；`子` 必须写 `挂在` 且父流程在本表里；`主` 的 `挂在` 必须是 `—`；
-4. **排除清单与清点双向一致**（§4.1 ③：抄「含流程 = 否」的材料），理由非空；
+4. **排除清单两支**（§4.1 ③）：`含流程 = 否` 的**必须齐全**（漏一个就报）；**含流程 = 是 的材料
+   只能靠"`范围外…`"的理由进来**（说清它为什么不在本次主体 / 目的范围内）——两条路都行，
+   静默塞进来不行；
 5. **`不确定` 的材料 ⇒ 它所在流程的状态必须是 `待澄清`**（§3 判据表："判不出 → 进澄清申请，不许猜"）；
    **`待澄清` 的流程 ⇒ 澄清申请里必须有一条指向它**（否则"待澄清"是个凭空的状态）。
    ——这两条合起来就是 §5.4 收敛口径里那个**"澄清申请"**：以前它没有仪器（`plan.md` 未实现），
@@ -80,6 +85,17 @@ FLOW_NO = re.compile(r'^否')
 GROUP_RE = re.compile(r'^`?G\d+`?$')
 # 流程名列：`` `F01` 名称 ``；名字留空写成 `—`（check 会把"没填"当错）
 FLOW_CELL = re.compile(r'^`(F\d{2,})`\s*(.*)$')
+# **§4.0 前置澄清**：主体是谁、要图来干什么——必须在**拆解之前**问清楚，答复落进表头这一行。
+# 为什么它是硬要求而不是礼貌：§4.2 的每一步（种子 / 合并 / 命名 / 定关系）都以"主体"为前提——
+# 材料跨两个主体时（真实材料集实测：合作框架是「怡云智 × 珈伟」的，模板与标准却是「怡亚通」的），
+# 主体不定，种子该出几条、命名该按谁的体系、哪些材料算"配套制度"全是悬的。
+# 而目的决定**交付粒度**（汇报全貌 vs SOP 落地）。
+SCOPE_RE = re.compile(r'^> \*\*本任务\*\*：主体 = (?P<who>.+?) · 目的 = (?P<why>.+?)\s*$', re.M)
+SCOPE_BLANK = '> **本任务**：主体 = — · 目的 = —'
+# 排除清单的**第二支**（§4.1 ③）：含流程=否 的材料当然不进流程；**含流程、但不在本次主体/目的范围内**
+# 的材料也要有地方放——否则只能把它塞进流程清单（凭空多一条图）或删掉（静默消失）。
+# 机器可核的形式：这类行的理由必须以它开头。
+OUT_OF_SCOPE = '范围外'
 
 
 def rel_of(cell):
@@ -144,6 +160,10 @@ def build_plan(cards):
              '> 由 `scripts/plan.py` 从 `intake.md` 生成：**机器可算的格子已填**（种子 / 强合并 / `F##` 编号 / '
              '排除清单 / 澄清申请的种子），语义格子留 `—` 待 AI 按 `PIPELINE-SPEC` §4 填'
              '（流程名 · 角色 · `挂在` · 与其它流程 · 并行组 · 澄清问题与推荐答案）。',
+             SCOPE_BLANK,
+             '> ↑ **这两格要先问用户**（§4.0 前置澄清）：`主体` = 这几张图覆盖谁；`目的` = 给谁看、'
+             '用来干什么（它决定交付粒度）。**没填这两格，`check` 直接退 1**——拆解算法的每一步都以'
+             '"主体是谁"为前提，主体不定就开始拆，拆出来的东西迟早要推倒（真材料集上现形过一次）。',
              '> **强合并只并"纯事实"**：§4.2 步骤 2 的 `重复` / `互补` / `替代` / `被替代` 来自清点卡片'
              '（§3 判据表），不是判断；弱合并（共享 ≥2 个起止点 / 交付物）留给 AI，宁可多出一条流程。',
              '> `check` 会核 §4.4 的三条：① 计划里的 `M##` 都在 `intake.md` 里；'
@@ -334,9 +354,22 @@ def _check_dirs(names, root):
     return errs
 
 
-def check_plan(cards, rows, asks, excl, root=None):
+def _scope_of(text):
+    """`plan.md` 表头那一行 → `(主体, 目的)`；没有那一行就返回两个空串（`check` 会当错）。"""
+    hit = SCOPE_RE.search(str(text or ''))
+    return (hit.group('who').strip(), hit.group('why').strip()) if hit else ('', '')
+
+
+def check_plan(cards, rows, asks, excl, root=None, scope=('', '')):
     """计划 vs 清点（+ 成果根）→ 错误清单（空 = 过）。**只报不改**。"""
     errs, names = [], {}
+    who, why = scope
+    if not who and not why:
+        errs.append('计划表头没有「本任务：主体 = … · 目的 = …」这一行——§4.0 前置澄清：**先问清主体与目的，'
+                    '再拆解**（拆解的每一步都以"主体是谁"为前提）')
+    elif who in BLANK or why in BLANK:
+        errs.append(f'计划的「本任务」没填完（主体 = {who or "空"} · 目的 = {why or "空"}）——'
+                    f'没澄清就不该开工（§4.0）')
     for r in rows:                                    # `_names` 内联：只被本函数用一次（见文件头）
         hit = FLOW_CELL.match(str(r.get('流程', '')).strip())
         if hit:
@@ -381,14 +414,17 @@ def check_plan(cards, rows, asks, excl, root=None):
         errs += _check_links(r, fid, names, rows)
     for r in excl:
         m = _id_of(r.get('材料', ''), 'M')
+        why_ = str(r.get('理由', '')).strip()
         if not m:
             errs.append(f'排除清单有一行没有 `M##`：{str(r.get("材料", ""))[:30]}')
             continue
         if m not in cards:
             errs.append(f'排除清单里的 `{m}` 在 `intake.md` 里没有')
-        elif m not in no_flow:
-            errs.append(f'排除清单里的 `{m}` 在清点里不是「含流程 = 否」（排除清单只装这类材料）')
-        if str(r.get('理由', '')).strip() in BLANK:
+        elif m not in no_flow and not why_.startswith(OUT_OF_SCOPE):
+            errs.append(f'排除清单 `{m}`：它在清点里是「含流程 = 是」，不是"没流程"。含流程的材料'
+                        f'要么进流程清单，要么把理由写成「{OUT_OF_SCOPE}…」说清它为什么不在本次'
+                        f'主体 / 目的范围内（两条路都行，静默塞进来不行）')
+        if why_ in BLANK:
             errs.append(f'排除清单 `{m}`：没写理由（"为什么它不参与"要能复核）')
     for m in sorted(no_flow - {_id_of(r.get('材料', ''), 'M') for r in excl}):
         errs.append(f'`{m}` 在清点里是「含流程 = 否」，排除清单里却没有它（§4.1 ③：这份清单是从清点抄的）')
@@ -445,7 +481,7 @@ def cmd_check(a):
           f' · 清点 `{a.intake}` · 流程 {len(rows)} / 澄清 {len(asks)} / 排除 {len(excl)}')
     if not a.root:
         print('> **跳过了 §4.4 ②**（流程数 = `<流程名>/` 目录数）：没给 `--root`。')
-    errs = check_plan(cards, rows, asks, excl, a.root)
+    errs = check_plan(cards, rows, asks, excl, a.root, _scope_of(text))
     waiting = sum(1 for r in rows if str(r.get('状态', '')).strip() == '待澄清')
     if errs:
         print(f'✗ 计划校验未过（{len(errs)} 条；**只报不改**。改计划 → 再落流程表，§4.4）：')
