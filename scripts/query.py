@@ -42,6 +42,8 @@ import re
 import sys
 from pathlib import Path
 
+from textquality import element_haystack
+
 DICT_NAME = 'dictionary.yaml'
 
 # 默认值 = "人给的圆整默认"，`dictionary.yaml` 的 `query:` 段按名覆盖（数值只有一个家，§1.2）。
@@ -55,15 +57,6 @@ SEL_KINDS = ('pages', 'lines', 'sheet')       # 决定"哪几条被选中"；`ro
 
 
 # ----------------------------------------------------------------逐条取字段（都在一处，免得各写一份口径）
-def haystack(el):
-    """一条证据的**可搜面**：正文 + 表格全部单元格 + 出处摘录（朴素子串匹配的靶子）。"""
-    parts = [str(el.get('text') or '')]
-    for row in (el.get('rows') or []):
-        parts += [str(c) for c in (row if isinstance(row, list) else [row])]
-    parts.append(str((el.get('location') or {}).get('quote') or ''))
-    return '\n'.join(parts).lower()
-
-
 def parse_range(spec):
     """`'pages=40-60'` → `('pages', 40, 60)`；`'sheet=清单'` → `('sheet', '清单', '清单')`。
 
@@ -103,10 +96,10 @@ def in_range(el, ordinal, ranges):
 
 
 def matches(el, material, grep):
-    """材料号与关键词两关（都为空 = 不筛）。"""
+    """材料号与关键词两关（都为空 = 不筛）。可搜面来自公共层（与 `parse.py --grep` 同一句）。"""
     if material and el.get('material_id') not in material:
         return False
-    return not grep or grep.lower() in haystack(el)
+    return not grep or grep.lower() in element_haystack(el)
 
 
 def loc_text(el):

@@ -483,6 +483,43 @@ def materials_paths(root):
     rec2 = (d / 'recon-small.md').read_text(encoding='utf-8') if (d / 'recon-small.md').exists() else ''
     cases.append(('㉔ 超护栏：`max_open_bytes` 调到 512 后记在行里（不打开结构、不崩）',
                   rc == 0 and '超护栏' in rec2, rc, out[-300:] if rc != 0 else ''))
+
+    # ㉕ 抽取时收窄（§5.3 的执行面）：**只要两份 + 只留含关键词的片段**，其余记「本轮未取」
+    rc, out = run([sys.executable, str(PARSE_CMD), '--materials', str(d / 'materials.json'),
+                   '--only', 'M06,M07', '--grep', '审批',
+                   '--elements', str(d / 'e-only.json'), '--notes', str(d / 'n-only.json'),
+                   '--ledger', str(d / 'led-only.json'), '--task', 'narrow'])
+    led = {}
+    if (d / 'led-only.json').exists():
+        try:
+            led = json.loads((d / 'led-only.json').read_text(encoding='utf-8'))
+        except ValueError:
+            led = {}
+    ms = {m['id']: m for m in led.get('materials', [])}
+    els = led.get('elements', [])
+    ok = (rc == 0
+          and {e['material_id'] for e in els} == {'M06'}                 # 只有 f.txt 含「审批」
+          and ms.get('M07', {}).get('status') == 'skipped'               # 被滤空的那份：记「未取」
+          and '未取' in (ms.get('M07', {}).get('reason') or '')
+          and all(m.get('status') == 'skipped' for k, m in ms.items() if k not in ('M06', 'M07'))
+          and all('本轮收窄' in (e.get('degraded') or '') for e in els))
+    cases.append(('㉕ 抽取时收窄（--only + --grep）：只留该留的，其余记「本轮未取」而不是读不动',
+                  ok, rc, (out[-300:] + str({k: v.get('status') for k, v in ms.items()})) if not ok else ''))
+
+    # ㉖ 范围收窄下沉到适配器：xlsx 只要一张子表 + 只要第 2 行（逐条记 degraded）
+    rc, out = run([sys.executable, str(PARSE_CMD), '--materials', str(d / 'materials.json'),
+                   '--only', 'M02', '--sheet', '短名单', '--rows', '2-2',
+                   '--elements', str(d / 'e-row.json'), '--notes', str(d / 'n-row.json')])
+    row_els = []
+    if (d / 'e-row.json').exists():
+        try:
+            row_els = json.loads((d / 'e-row.json').read_text(encoding='utf-8'))
+        except ValueError:
+            row_els = []
+    ok = (rc == 0 and len(row_els) == 1 and row_els[0].get('rows') == [['1', '甲公司']]
+          and '--rows 只要第 2–2 行' in (row_els[0].get('degraded') or ''))
+    cases.append(('㉖ 范围收窄（--sheet + --rows）：只回那一张表的第 2 行，且带降级留痕',
+                  ok, rc, (out[-200:] + str(row_els)[:200]) if not ok else ''))
     return cases
 
 

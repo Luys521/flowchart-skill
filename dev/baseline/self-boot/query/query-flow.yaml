@@ -21,21 +21,9 @@ nodes:
   row: 0
   col: 0
   stage: 入口
-  route: 1→11
+  route: 1→10
   desc: 流程起点（结构性节点，不是函数） · 入口：1→main
 - id: '02'
-  name: haystack
-  lines:
-  - haystack
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 6
-  col: 0
-  stage: 模块级
-  route: →12
-  desc: ★ 一条证据的**可搜面**：正文 + 表格全部单元格 + 出处摘录（朴素子串匹配的靶子）。 · L58 · 函数
-- id: '03'
   name: parse_range
   lines:
   - parse_range
@@ -45,9 +33,9 @@ nodes:
   row: 2
   col: 0
   stage: 模块级
-  route: →12
-  desc: ★ `'pages=40-60'` → `('pages', 40, 60)`；`'sheet=清单'` → `('she… · L67 · 函数
-- id: '04'
+  route: →11
+  desc: ★ `'pages=40-60'` → `('pages', 40, 60)`；`'sheet=清单'` → `('she… · L60 · 函数
+- id: '03'
   name: in_range
   lines:
   - in_range
@@ -57,9 +45,9 @@ nodes:
   row: 4
   col: 0
   stage: 模块级
-  route: →12
-  desc: ★ 这条落在任一范围里吗（`ranges` 为空 = 不筛）。`ordinal` 是该材料内第几条（1 起）。 · L90 · 函数
-- id: '05'
+  route: →11
+  desc: ★ 这条落在任一范围里吗（`ranges` 为空 = 不筛）。`ordinal` 是该材料内第几条（1 起）。 · L83 · 函数
+- id: '04'
   name: matches
   lines:
   - matches
@@ -69,33 +57,34 @@ nodes:
   row: 5
   col: 0
   stage: 模块级
-  route: →02
-  desc: ★ 材料号与关键词两关（都为空 = 不筛）。 · L105 · 函数
-- id: '06'
+  route: →11
+  desc: ★ 材料号与关键词两关（都为空 = 不筛）。可搜面来自公共层（与 `parse.py --grep` 同一句）。 · L98 · 函数 · ⇢ 依赖
+    textquality.element_haystack
+- id: '05'
   name: loc_text
   lines:
   - loc_text
   type: task
   subject: 脚本
   executor: selfboot
-  row: 8
+  row: 7
   col: 0
   stage: 模块级
-  route: →12
-  desc: ★ `location` → 一句人能读的位置（页 / 子表!单元格 / 图内坐标 / 实在没有就报"没有出处"）。 · L112 · 函数
-- id: '07'
+  route: →11
+  desc: ★ `location` → 一句人能读的位置（页 / 子表!单元格 / 图内坐标 / 实在没有就报"没有出处"）。 · L105 · 函数
+- id: '06'
   name: excerpt
   lines:
   - excerpt
   type: task
   subject: 脚本
   executor: selfboot
-  row: 10
+  row: 9
   col: 0
   stage: 模块级
-  route: →12
-  desc: ★ 一条证据的**短摘录**：有正文用正文；表格给"行×列 + 头一行"；都没有就用 id（不装空）。 · L125 · 函数
-- id: 08
+  route: →11
+  desc: ★ 一条证据的**短摘录**：有正文用正文；表格给"行×列 + 头一行"；都没有就用 id（不装空）。 · L118 · 函数
+- id: '07'
   name: select
   lines:
   - select
@@ -105,35 +94,35 @@ nodes:
   row: 3
   col: 0
   stage: 模块级
-  route: 1→04｜2→05
-  desc: ★ 账本元素 → `(这一批的行, 命中总数)`。顺序 = 账本原序（阅读序），**同输入同输出**。 · L148 · 函数 · 分支：1→in_range
+  route: 1→03｜2→04
+  desc: ★ 账本元素 → `(这一批的行, 命中总数)`。顺序 = 账本原序（阅读序），**同输入同输出**。 · L141 · 函数 · 分支：1→in_range
     2→matches
-- id: 09
+- id: 08
   name: render
   lines:
   - render
   type: task
   subject: 脚本
   executor: selfboot
-  row: 7
+  row: 6
   col: 0
   stage: 模块级
-  route: 1→06｜2→07
-  desc: ★ 这一批（markdown）+ **游标行**——AI 靠它决定"要不要再要一口"，而不是一次把全部灌进去。 · L159 · 函数 · 分支：1→loc_text
+  route: 1→05｜2→06
+  desc: ★ 这一批（markdown）+ **游标行**——AI 靠它决定"要不要再要一口"，而不是一次把全部灌进去。 · L152 · 函数 · 分支：1→loc_text
     2→excerpt
-- id: '10'
+- id: 09
   name: load_defaults
   lines:
   - load_defaults
   type: task
   subject: 脚本
   executor: selfboot
-  row: 9
+  row: 8
   col: 0
   stage: 模块级
-  route: →12
-  desc: ★ 默认值 = 内置 + `dictionary.yaml` 的 `query:` 段（读不到就用内置，**不报错**）。 · L174 · 函数
-- id: '11'
+  route: →11
+  desc: ★ 默认值 = 内置 + `dictionary.yaml` 的 `query:` 段（读不到就用内置，**不报错**）。 · L167 · 函数
+- id: '10'
   name: main
   lines:
   - main
@@ -143,102 +132,98 @@ nodes:
   row: 1
   col: 0
   stage: 模块级
-  route: 1→03｜2→06｜3→07｜4→08｜5→09｜6→10
-  desc: ★ 命令行入口：读账本 → 解析范围 → 取一批 → 打印（或 `--json`）。 · L190 · 函数 · 分支：1→parse_range
+  route: 1→02｜2→05｜3→06｜4→07｜5→08｜6→09
+  desc: ★ 命令行入口：读账本 → 解析范围 → 取一批 → 打印（或 `--json`）。 · L183 · 函数 · 分支：1→parse_range
     2→loc_text 3→excerpt 4→select 5→render 6→load_defaults
-- id: '12'
+- id: '11'
   name: 结束
   lines:
   - 结束
   type: end
   subject: 脚本
   executor: selfboot
-  row: 11
+  row: 10
   col: 0
   stage: 出口
   route: —
   desc: 流程终点（结构性节点，不是函数）
 edges:
 - from: '01'
-  to: '11'
+  to: '10'
   kind: spine
   polarity: main
   label: '1'
 - from: '02'
-  to: '12'
+  to: '11'
   kind: jumpR
   polarity: main
 - from: '03'
-  to: '12'
+  to: '11'
   kind: jumpR
   polarity: main
 - from: '04'
-  to: '12'
+  to: '11'
   kind: jumpR
   polarity: main
 - from: '05'
-  to: '02'
-  kind: spine
+  to: '11'
+  kind: jumpR
   polarity: main
 - from: '06'
-  to: '12'
-  kind: jumpR
+  to: '11'
+  kind: spine
   polarity: main
 - from: '07'
-  to: '12'
-  kind: spine
-  polarity: main
-- from: 08
-  to: '04'
-  kind: spine
-  polarity: main
-  label: '1'
-- from: 08
-  to: '05'
-  kind: jumpR
-  polarity: main
-  label: '2'
-- from: 09
-  to: '06'
-  kind: spine
-  polarity: main
-  label: '1'
-- from: 09
-  to: '07'
-  kind: jumpR
-  polarity: main
-  label: '2'
-- from: '10'
-  to: '12'
-  kind: jumpR
-  polarity: main
-- from: '11'
   to: '03'
   kind: spine
   polarity: main
   label: '1'
-- from: '11'
+- from: '07'
+  to: '04'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: 08
+  to: '05'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: 08
   to: '06'
   kind: jumpR
   polarity: main
   label: '2'
-- from: '11'
-  to: '07'
+- from: 09
+  to: '11'
+  kind: jumpR
+  polarity: main
+- from: '10'
+  to: '02'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '10'
+  to: '05'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '10'
+  to: '06'
   kind: jumpR
   polarity: main
   label: '3'
-- from: '11'
-  to: 08
+- from: '10'
+  to: '07'
   kind: jumpR
   polarity: main
   label: '4'
-- from: '11'
-  to: 09
+- from: '10'
+  to: 08
   kind: jumpR
   polarity: main
   label: '5'
-- from: '11'
-  to: '10'
+- from: '10'
+  to: 09
   kind: jumpR
   polarity: main
   label: '6'

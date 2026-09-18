@@ -22,6 +22,20 @@ r"""textquality.py — 抽取质量判据（PIPELINE-SPEC §1.5「手段 0」）
 """
 from pathlib import Path
 
+
+def element_haystack(el):
+    """一条证据的**可搜面**：正文 + 表格全部单元格 + 出处摘录（**小写**，供朴素子串匹配）。
+
+    **放公共层是因为有两个消费者**：`query.py --grep`（取子集）与 `parse.py --grep`（抽取时收窄）。
+    两边各写一份的话，同一句命令行在两个环节会命中不同的集合——"取子集时说有、收窄时却把它滤掉"
+    这种不一致最难查（本仓的分层纪律：共用能力下沉到公共层，模块之间不许互相 import）。
+    """
+    parts = [str(el.get('text') or '')]
+    for row in (el.get('rows') or []):
+        parts += [str(c) for c in (row if isinstance(row, list) else [row])]
+    parts.append(str((el.get('location') or {}).get('quote') or ''))
+    return '\n'.join(parts).lower()
+
 TEXT_KINDS = ('paragraph', 'heading', 'list_item', 'caption', 'code')
 
 # 默认阈值（`dictionary.yaml` 的 `material_quality:` 段按名覆盖；**代码里这份只是兜底**）

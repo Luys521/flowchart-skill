@@ -29,12 +29,13 @@ r"""parse.py — 解析分派器（**编排层**；PIPELINE-SPEC §1.4）：材�
 """
 import argparse
 import json
+import re
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
-from textquality import load_thresholds, scar, verdict
+from textquality import element_haystack, load_thresholds, scar, verdict
 
 SCRIPTS = Path(__file__).resolve().parent
 
@@ -62,10 +63,12 @@ def _last_line(text):
 def _adapter_args(name, a):
     """按适配器给参数——**不认得的选项不硬塞**（argparse 会当场报用法错，那是假故障）。"""
     if name == 'parse_ooxml':
-        return ['--max-rows', str(a.max_rows), '--max-cols', str(a.max_cols),
-                '--max-slides', str(a.max_slides)]
+        return _opt(['--max-rows', str(a.max_rows), '--max-cols', str(a.max_cols),
+                     '--max-slides', str(a.max_slides)],
+                    ['--slides', a.slides, '--sheet', a.sheet, '--rows', a.rows])
     if name == 'parse_pdf':
-        return ['--max-pages', str(a.max_pages), '--max-chars', str(a.max_chars)]
+        return _opt(['--max-pages', str(a.max_pages), '--max-chars', str(a.max_chars)],
+                    ['--pages', a.pages])
     if name == 'parse_legacy':
         args = ['--timeout', str(a.timeout)]
         return args + (['--soffice', a.soffice] if a.soffice else [])
@@ -74,6 +77,65 @@ def _adapter_args(name, a):
                 '--max-cols', str(a.max_cols)]
         return args + (['--encoding', a.encoding] if a.encoding else [])
     return []
+
+
+def _opt(base, pairs):
+    """把 `(选项, 值)` 对里**有值的那几对**接在 base 后面（空值 = 没收窄，不传）。"""
+    out = list(base)
+    for i in range(0, len(pairs), 2):
+        if pairs[i + 1]:
+            out += [pairs[i], str(pairs[i + 1])]
+    return out
+
+
+def _span(spec):
+    """`'40-60'` / `'7'` → `(40, 60)` / `(7, 7)`；空或写歪 → `None`（写歪时给个明白的错更好，但这里只收窄）。"""
+    m = re.fullmatch(r'\s*(\d+)\s*(?:-\s*(\d+)\s*)?', str(spec or ''))
+    if not m:
+        return None
+    a = int(m.group(1))
+    return (a, int(m.group(2)) if m.group(2) else a)
+
+
+def narrow_materials(materials, only):
+    """`--only M03,M15` → `(可选中的那些, 被排除的那些)`。**空集合 = 不筛**（不是"一份都不要"）。"""
+    want = {x.strip() for x in str(only or '').split(',') if x.strip()}
+    if not want:
+        return materials, []
+    picked = [m for m in materials if m.get('id') in want]
+    return picked, [m for m in materials if m.get('id') not in want]
+
+
+def apply_narrowing(elements, grep, lines):
+    """抽取后收窄：`--grep` 只留含这个词的片段、`--lines A-B` 只留该材料内第 A–B 条。
+
+    **每一条被丢掉的都要记账**（挂在该材料**留下**的每条上）：不记的话，下游只会以为
+    "这份材料本来就这么点内容"（§2.4 不许静默截断）。返回 `(留下的, [(材料, 丢了几条, 说明)])`。
+    """
+    if not grep and not lines:
+        return elements, []
+    keep, dropped = [], {}
+    seen = {}
+    for el in elements:
+        mid = el.get('material_id')
+        seen[mid] = seen.get(mid, 0) + 1
+        hit_word = not grep or grep.lower() in element_haystack(el)
+        hit_line = True
+        if lines:
+            a, b = lines
+            hit_line = a <= seen[mid] <= b
+        if hit_word and hit_line:
+            keep.append(el)
+        else:
+            dropped[mid] = dropped.get(mid, 0) + 1
+    how = '；'.join(x for x in (
+        f'只保留含「{grep}」的片段' if grep else '',
+        f'只保留本材料第 {lines[0]}–{lines[1]} 条' if lines else '') if x)
+    for el in keep:
+        n = dropped.get(el.get('material_id'), 0)
+        el['degraded'] = ((el['degraded'] + '；') if el.get('degraded') else '') + \
+                         f'本轮收窄：{how}' + (f'（同材料另 {n} 条未入账）' if n else '')
+    return keep, sorted((mid, n) for mid, n in dropped.items())
 
 
 def run_adapter(name, materials, workdir, extra):
@@ -250,6 +312,13 @@ def main(argv=None):
     ap.add_argument('--soffice', help='[parse_legacy] 显式指定转换器命令')
     ap.add_argument('--timeout', type=int, default=180, help='[parse_legacy] 单份材料转换 / 抽取超时秒数')
     ap.add_argument('--encoding', default='', help='[parse_text] 显式指定编码（如 gbk）；默认只认 UTF-8 / UTF-16')
+    ap.add_argument('--only', default='', help='只解析这几份（逗号分隔的 M##）；其余记「本轮未取」，不当漏认')
+    ap.add_argument('--grep', default='', help='只保留含这个词的片段（可搜面与 query.py --grep 同一句）')
+    ap.add_argument('--lines', help='只保留每份材料内第 A-B 条元素（1 起，闭区间；与 query.py 的 lines= 同义）')
+    ap.add_argument('--pages', help='[parse_pdf] 只要这几页（A-B，1 起）')
+    ap.add_argument('--slides', help='[parse_ooxml] pptx 只要这几张（A-B，1 起）')
+    ap.add_argument('--sheet', default='', help='[parse_ooxml] 只要这个子表（逐字相等）')
+    ap.add_argument('--rows', help='[parse_ooxml] 每张 sheet 只要这几行（A-B，1 起）')
     ap.add_argument('--verbose', action='store_true', help='把各适配器的完整输出也打出来')
     a = ap.parse_args(argv)
 
@@ -263,9 +332,17 @@ def main(argv=None):
         return 2
 
     per_elements, per_notes, briefs = [], [], []
+    picked, left_out = narrow_materials(materials, a.only)
     with tempfile.TemporaryDirectory(prefix='parse_dispatch_') as td:
+        # `--only` 时**换材料层给适配器**（省掉不该读的那几份的解析代价）；账本仍然按**全量**材料落，
+        # 被排除的那几份在下面补注成 `skipped`——不补的话它们在账本上就是"status=ok 却零证据"，
+        # 那正是分派器要拦的"漏认"（把"我有意没读"说成"读不出来"是两回事）。
+        mats_path = a.materials
+        if left_out:
+            mats_path = Path(td) / 'materials.only.json'
+            _write_json(picked, mats_path)
         for name in ADAPTERS:
-            elements, notes, brief, err = run_adapter(name, a.materials, td, _adapter_args(name, a))
+            elements, notes, brief, err = run_adapter(name, mats_path, td, _adapter_args(name, a))
             if err:
                 print(f'⚠ {err}', file=sys.stderr)
                 if briefs and a.verbose:
@@ -290,6 +367,33 @@ def main(argv=None):
     if q_notes:                                        # 质量门的补注**覆盖**适配器那条（谁抽的仍记着）
         killed = {n.get('material_id') for n in q_notes}
         notes = [n for n in notes if n.get('material_id') not in killed] + q_notes
+
+    # 收窄在**质量门之后**：门判的是"这份材料抽得干不干净"（按整份统计），先滤后判会让统计失真
+    elements, dropped = apply_narrowing(elements, a.grep, _span(a.lines))
+    if a.grep or a.lines:
+        print(f'本轮收窄：' + ' · '.join(x for x in (
+            f'只保留含「{a.grep}」的片段' if a.grep else '',
+            f'只保留每份第 {a.lines} 条' if a.lines else '') if x)
+            + (f' · 丢掉 {sum(n for _m, n in dropped)} 条（**已逐条记账**，见元素的 degraded）'
+               if dropped else ''))
+        # **整份被滤空**的材料：留痕没地方挂（`degraded` 挂在留下的元素上）⇒ 改记材料级 `skipped`。
+        # 不记的话它在账本上就是"status=ok 却零证据"——读的人分不清"本来就没有"与"被我滤掉了"。
+        emptied = [(m, n) for m, n in dropped
+                   if not any(e.get('material_id') == m for e in elements)]
+        if emptied:
+            notes += [{'material_id': m, 'status': 'skipped',
+                       'reason': f'本轮未取（收窄把它原有的 {n} 条片段全滤掉了）：'
+                                 f'{"、".join(x for x in (f"--grep {a.grep}" if a.grep else "", f"--lines {a.lines}" if a.lines else "") if x)}'
+                                 f'；放宽条件重跑即可——**这不是读不动**'}
+                      for m, n in emptied]
+            print(f'  · {len(emptied)} 份材料被滤空（记「本轮未取」，不是漏认）：'
+                  f'{"、".join(m for m, _n in emptied)}')
+    if left_out:
+        notes += [{'material_id': m['id'], 'status': 'skipped',
+                   'reason': f'本轮 --only 未取（只要了 {"、".join(sorted(x["id"] for x in picked))}）；'
+                             f'下一轮补上——**这不是读不动**'}
+                  for m in left_out]
+        print(f'本轮 --only：解析 {len(picked)} 份 · 其余 {len(left_out)} 份记「未取」（不是漏认、也不是读不动）')
 
     rows, gaps = survey(materials, elements, notes, q_of)
     if a.verbose:

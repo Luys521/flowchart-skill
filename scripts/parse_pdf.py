@@ -21,6 +21,7 @@ r"""parse_pdf.py — PDF **文本层**解析适配器（PIPELINE-SPEC §1.4）�
 import argparse
 import importlib
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -51,7 +52,15 @@ def _write_notes(notes, path):
     Path(path).write_bytes((json.dumps(notes, ensure_ascii=False, indent=2) + '\n').encode('utf-8'))
 
 
-def parse_pdf(path, mid, max_pages, max_chars):
+def _page_span(spec):
+    """`'40-60'` / `'7'` → `(40, 60)` / `(7, 7)`；空或写歪 → `None`（**不猜**：歪了就按全量走，不静默换口径）。"""
+    m = re.fullmatch(r'\s*(\d+)\s*(?:-\s*(\d+)\s*)?', str(spec or ''))
+    if not m:
+        return None
+    return (int(m.group(1)), int(m.group(2)) if m.group(2) else int(m.group(1)))
+
+
+def parse_pdf(path, mid, max_pages, max_chars, pages=None):
     """`.pdf` → `(elements, 采样说明, 报错文案)`。只抽文本层；空页跳过（不伪造 element）。
 
     降级记两档，**粒度不同**（§2.4"降级必须留痕"，但留痕要留在对的地方）：
@@ -69,6 +78,8 @@ def parse_pdf(path, mid, max_pages, max_chars):
             if pno > max_pages:
                 shared.append(f'只取前 {max_pages} 页（共 {total} 页）')
                 break
+            if pages and not (pages[0] <= pno <= pages[1]):
+                continue                                # `--pages`：**只要这几页**（收窄，见下 shared 记账）
             try:
                 text = (page.extract_text() or '').strip()
             except Exception as e:                      # 单页坏不让整份失败
@@ -87,6 +98,10 @@ def parse_pdf(path, mid, max_pages, max_chars):
                 el['degraded'] = f'第 {pno} 页正文截断到 {max_chars} 字'
             out.append(el)
     note = '；'.join(dict.fromkeys(shared))              # 去重但保序
+    if pages:
+        # 收窄是**材料级**事实（这份材料整体只取了那几页）⇒ 挂到它的每条上（与页数上限同一档）
+        note = (f'本轮 --pages 只要第 {pages[0]}–{pages[1]} 页（共 {total} 页）' if not note
+                else note + f'；本轮 --pages 只要第 {pages[0]}–{pages[1]} 页')
     if note:
         for e in out:                                   # 材料级说明挂在**该材料的每条**上
             e['degraded'] = (e['degraded'] + '；' if e.get('degraded') else '') + note
@@ -95,7 +110,7 @@ def parse_pdf(path, mid, max_pages, max_chars):
     return out, summary, ''
 
 
-def parse_materials(materials, max_pages, max_chars):
+def parse_materials(materials, max_pages, max_chars, pages=None):
     """材料层 → `(elements, 补注, 摘要, 跳过清单, 报错文案)`。非 PDF / 非 T2 一律跳过并记账。
 
     **补注（notes）**是解析阶段对材料层的记账（§2.1 的 `status`/`reason`/`extractor`）：
@@ -124,7 +139,7 @@ def parse_materials(materials, max_pages, max_chars):
             skipped.append(f'{mid}: 扫描件（T3）走视觉 / OCR，不在这里抽')
             continue
         try:
-            got, note, err = parse_pdf(path, mid, max_pages, max_chars)
+            got, note, err = parse_pdf(path, mid, max_pages, max_chars, pages)
         except Exception as e:
             skipped.append(f'{mid}: 解析失败 {type(e).__name__}: {e}')
             continue
@@ -146,6 +161,7 @@ def main(argv=None):
     ap.add_argument('--notes', help='材料层补注写到哪里（status / reason / extractor，交给 ledger.py --notes）')
     ap.add_argument('--max-pages', type=int, default=50, help='最多抽多少页（超了记 degraded）')
     ap.add_argument('--max-chars', type=int, default=4000, help='单页最多多少字（超了截断并记账）')
+    ap.add_argument('--pages', help='只要这几页（A-B，1 起）；收窄会逐条记 degraded（§2.4）')
     a = ap.parse_args(argv)
 
     try:
@@ -157,7 +173,8 @@ def main(argv=None):
         print('⚠ 输入必须是 JSON 数组（materials[]）', file=sys.stderr)
         return 2
 
-    elements, notes, done, skipped, err = parse_materials(materials, a.max_pages, a.max_chars)
+    elements, notes, done, skipped, err = parse_materials(materials, a.max_pages, a.max_chars,
+                                                          _page_span(a.pages))
     if err:
         print(f'⚠ {err}', file=sys.stderr)
         return 2

@@ -238,7 +238,7 @@ nodes:
   col: 0
   stage: 接管与解析
   route: →20
-  desc: 11 个函数 · ⊞ parse/flowtable.md
+  desc: 15 个函数 · ⊞ parse/flowtable.md
 - id: '20'
   name: 模块 · parse_legacy
   lines:
@@ -262,7 +262,7 @@ nodes:
   col: 0
   stage: 接管与解析
   route: →22
-  desc: 10 个函数 · ⊞ parse_ooxml/flowtable.md
+  desc: 11 个函数 · ⊞ parse_ooxml/flowtable.md
 - id: '22'
   name: 模块 · parse_pdf
   lines:
@@ -274,7 +274,7 @@ nodes:
   col: 0
   stage: 接管与解析
   route: →23
-  desc: 6 个函数 · ⊞ parse_pdf/flowtable.md
+  desc: 7 个函数 · ⊞ parse_pdf/flowtable.md
 - id: '23'
   name: 模块 · parse_text
   lines:
@@ -322,7 +322,7 @@ nodes:
   col: 0
   stage: 循环与漂移
   route: →27
-  desc: 10 个函数 · ⊞ query/flowtable.md
+  desc: 9 个函数 · ⊞ query/flowtable.md
 - id: '27'
   name: 模块 · recon
   lines:
@@ -466,7 +466,7 @@ nodes:
   col: 0
   stage: 接管与解析
   route: →39
-  desc: 7 个函数 · ⊞ textquality/flowtable.md
+  desc: 8 个函数 · ⊞ textquality/flowtable.md
 - id: '39'
   name: 模块 · validate
   lines:

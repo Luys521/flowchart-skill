@@ -19,6 +19,7 @@ import argparse
 import importlib
 import io
 import json
+import re
 import sys
 import zipfile
 from pathlib import Path
@@ -92,10 +93,12 @@ def parse_docx(blob, path, mid):
                         'extractor': 'py:docx', 'certainty': 'direct'})
     return out, ''
 
-def parse_xlsx(blob, path, mid, max_rows, max_cols):
+def parse_xlsx(blob, path, mid, max_rows, max_cols, sheet='', rows_span=None):
     """`.xlsx` **字节** → `(elements, 报错文案)`。**一张 sheet 一个 element**（`rows` 承载内容，§2.1）。
 
     超上限就截断并标 `degraded`（§2.4 降级必须记账）—大表（实测有 72 万字符的测算表）靠这条不炸账本。
+    `sheet=` / `rows_span=` 是 `--sheet` / `--rows` 的收窄：**只要一张子表、只要其中几行**——
+    一张十万行的"计算器"表，侦查说「只取摘要」时靠它落地（同样逐条记 `degraded`）。
     **从内存打开（`BytesIO`）**：`openpyxl.load_workbook` 收路径时**按扩展名投票**——审计实测
     "合法 xlsx 改名 `.et`" 会被它 `InvalidFileException` 拒绝，于是没人认领、整条链判漏认退 1。
     内容对就该读得动，名字不该决定这件事。
@@ -107,9 +110,13 @@ def parse_xlsx(blob, path, mid, max_rows, max_cols):
     out = []
     try:
         for n, ws in enumerate(wb.worksheets, 1):
+            if sheet and ws.title != sheet:
+                continue
             rows, cut = [], False
-            for i, row in enumerate(ws.iter_rows(values_only=True)):
-                if i >= max_rows:
+            for i, row in enumerate(ws.iter_rows(values_only=True), 1):
+                if rows_span and not (rows_span[0] <= i <= rows_span[1]):
+                    continue
+                if len(rows) >= max_rows:
                     cut = True
                     break
                 if len(row) > max_cols:
@@ -121,14 +128,25 @@ def parse_xlsx(blob, path, mid, max_rows, max_cols):
                   'text': ws.title, 'rows': rows,
                   'location': {'path': path.as_posix(), 'sheet': ws.title},
                   'extractor': 'py:openpyxl', 'certainty': 'direct'}
-            if cut:
-                el['degraded'] = f'超上限截断（行 > {max_rows} 或列 > {max_cols}）'
+            note = '；'.join(x for x in (
+                f'超上限截断（行 > {max_rows} 或列 > {max_cols}）' if cut else '',
+                f'本轮 --rows 只要第 {rows_span[0]}–{rows_span[1]} 行' if rows_span else '') if x)
+            if note:
+                el['degraded'] = note
             out.append(el)
     finally:
         wb.close()
     return out, ''
 
-def parse_pptx(blob, path, mid, max_slides):
+def _span(spec):
+    """`'40-60'` / `'7'` → `(40, 60)` / `(7, 7)`；空或写歪 → `None`（**不猜**：歪了按全量走）。"""
+    m = re.fullmatch(r'\s*(\d+)\s*(?:-\s*(\d+)\s*)?', str(spec or ''))
+    if not m:
+        return None
+    return (int(m.group(1)), int(m.group(2)) if m.group(2) else int(m.group(1)))
+
+
+def parse_pptx(blob, path, mid, max_slides, slides_span=None):
     """`.pptx` **字节** → `(elements, 报错文案)`。**一张幻灯片一个 element**（零依赖，见 `pptx_text`）。
 
     **一张一个**（而不是一页拆成标题 + 若干段落）：幻灯片是"一屏一屏"读的，页码就是它天然的坐标，
@@ -138,6 +156,8 @@ def parse_pptx(blob, path, mid, max_slides):
     下游只会以为"这份材料本来就这么点内容"（§2.4）。
     """
     got = slides(blob, max_slides)
+    if slides_span:                                  # `--slides`：只要这几张（收窄，逐条记账）
+        got = [(n, lines) for n, lines in got if slides_span[0] <= n <= slides_span[1]]
     if not got:
         return [], ''                                 # 空稿 / 全是图：**由调用方统一记"没抽出文字"**，不当致命错
     out, cut = [], []
@@ -147,6 +167,8 @@ def parse_pptx(blob, path, mid, max_slides):
               'text': text, 'location': {'path': path.as_posix(), 'page': n, 'quote': text},
               'extractor': 'py:pptx', 'certainty': 'direct'}
         out.append(el)
+    if slides_span:
+        cut.append(f'本轮 --slides 只要第 {slides_span[0]}–{slides_span[1]} 张')
     if max_slides and len(got) >= max_slides:
         cut.append(f'只取前 {max_slides} 张（按序号）')
     note = '；'.join(cut)
@@ -175,7 +197,8 @@ def container_kind(blob):
         return 'pptx'
     return None
 
-def parse_materials(materials, max_rows, max_cols, max_slides):
+def parse_materials(materials, max_rows, max_cols, max_slides, sheet='', rows_span=None,
+                    slides_span=None):
     """材料层 → `(elements, 补注, 摘要, 跳过清单, 报错文案)`。非 OOXML / 非 ok 的一律**跳过并记账**。
 
     **补注**只写"抽到了、走的是哪条路"（§2.1 的 `extractor`）：这一档的跳过全是"**不归我管**"
@@ -201,9 +224,9 @@ def parse_materials(materials, max_rows, max_cols, max_slides):
             if kind == 'docx':
                 got, err = parse_docx(blob, path, mid)
             elif kind == 'xlsx':
-                got, err = parse_xlsx(blob, path, mid, max_rows, max_cols)
+                got, err = parse_xlsx(blob, path, mid, max_rows, max_cols, sheet, rows_span)
             else:
-                got, err = parse_pptx(blob, path, mid, max_slides)
+                got, err = parse_pptx(blob, path, mid, max_slides, slides_span)
         except Exception as e:                       # 单份坏不让整批失败（§1.4 硬要求 2）
             skipped.append(f'{mid}: 解析失败 {type(e).__name__}: {e}')
             # **容器认出来了、正文却是坏的 ⇒ 必须补注读不动**：不然它在账本上就是
@@ -243,6 +266,9 @@ def main(argv=None):
     ap.add_argument('--max-rows', type=int, default=200, help='每张 sheet 的行上限（超了记 degraded）')
     ap.add_argument('--max-cols', type=int, default=50, help='每张 sheet 的列上限')
     ap.add_argument('--max-slides', type=int, default=200, help='pptx 最多读多少张幻灯片（超了记 degraded）')
+    ap.add_argument('--slides', help='pptx 只要这几张（A-B，1 起）；收窄逐条记 degraded')
+    ap.add_argument('--sheet', default='', help='xlsx 只要这个子表（逐字相等）')
+    ap.add_argument('--rows', help='xlsx 每张子表只要这几行（A-B，1 起）')
     a = ap.parse_args(argv)
 
     try:
@@ -254,7 +280,9 @@ def main(argv=None):
         print('⚠ 输入必须是 JSON 数组（materials[]）', file=sys.stderr)
         return 2
 
-    elements, notes, done, skipped, err = parse_materials(materials, a.max_rows, a.max_cols, a.max_slides)
+    elements, notes, done, skipped, err = parse_materials(materials, a.max_rows, a.max_cols,
+                                                          a.max_slides, a.sheet,
+                                                          _span(a.rows), _span(a.slides))
     if err:
         print(f'⚠ {err}', file=sys.stderr)
         return 2
