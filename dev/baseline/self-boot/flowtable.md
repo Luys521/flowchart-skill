@@ -19,7 +19,7 @@ level: L0
 | 循环与漂移 | 06 | 模块 · drift | 任务 | — | — | — | 脚本 | selfboot | — | →07 | 26 个函数 · ⊞ drift/flowtable.md |
 | 渲染 | 07 | 模块 · engine | 任务 | — | — | — | 脚本 | selfboot | — | →08 | 26 个函数 · ⊞ engine/flowtable.md |
 | 接管与解析 | 08 | 模块 · flowtable | 任务 | — | — | — | 脚本 | selfboot | — | →09 | 27 个函数 · ⊞ flowtable/flowtable.md |
-| 结构校验 | 09 | 模块 · flowtable_check | 任务 | — | — | — | 脚本 | selfboot | — | →10 | 29 个函数 · ⊞ flowtable_check/flowtable.md |
+| 结构校验 | 09 | 模块 · flowtable_check | 任务 | — | — | — | 脚本 | selfboot | — | →10 | 33 个函数 · ⊞ flowtable_check/flowtable.md |
 | 布局与配色 | 10 | 模块 · flowtable_colors | 任务 | — | — | — | 脚本 | selfboot | — | →11 | 8 个函数 · ⊞ flowtable_colors/flowtable.md |
 | 布局与配色 | 11 | 模块 · flowtable_layout | 任务 | — | — | — | 脚本 | selfboot | — | →12 | 21 个函数 · ⊞ flowtable_layout/flowtable.md |
 | 渲染 | 12 | 模块 · geometry | 任务 | — | — | — | 脚本 | selfboot | — | →13 | 33 个函数 · ⊞ geometry/flowtable.md |

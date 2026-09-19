@@ -34,7 +34,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 单元格转义：ASCII 竖线 → 全角 `｜`（竖线是表格列分隔符，不换就**切错列**——与 `selfboot_g… · L56 · 函数
+  desc: ★ 单元格转义：ASCII 竖线 → 全角 `｜`（竖线是表格列分隔符，不换就**切错列**——与 `selfboot_g… · L57 · 函数
 - id: '03'
   name: duplicate_pairs
   lines:
@@ -46,7 +46,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: '★ 材料层 → `({M##: 被重复的 M##}, [(原件, 副本), …])`。**判重只看 `sha256`**（… · L61 · 函数'
+  desc: '★ 材料层 → `({M##: 被重复的 M##}, [(原件, 副本), …])`。**判重只看 `sha256`**（… · L62 · 函数'
 - id: '04'
   name: _line_of
   lines:
@@ -58,7 +58,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →02
-  desc: ★ 一条证据 → 摘要里的一行（表格给行列数，其余给原文节选：压成单行 + 截断）。 · L77 · 函数
+  desc: ★ 一条证据 → 摘要里的一行（表格给行列数，其余给原文节选：压成单行 + 截断）。 · L78 · 函数
 - id: '05'
   name: _digest_lines
   lines:
@@ -70,7 +70,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →04
-  desc: ★ 一份材料的线索：证据条数 / 种类分布 / 头几处可引用的原文（填「主题 / 依据」时从这里挑）。 · L91 · 函数
+  desc: ★ 一份材料的线索：证据条数 / 种类分布 / 头几处可引用的原文（填「主题 / 依据」时从这里挑）。 · L92 · 函数
 - id: '06'
   name: build_card
   lines:
@@ -82,7 +82,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→03｜3→05
-  desc: ★ 账本 → `intake.md` 全文。机器可算的格子已填，语义格子留 `—`（check 会把未填当错）。 · L121 · 函数 · 分支：1→escape
+  desc: ★ 账本 → `intake.md` 全文。机器可算的格子已填，语义格子留 `—`（check 会把未填当错）。 · L122 · 函数 · 分支：1→escape
     2→duplicate_pairs 3→_digest_lines
 - id: '07'
   name: parse_cards
@@ -95,7 +95,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: '★ `intake.md` → `(表头, {M##: {列: 值}}, 报错)`。表头必须逐字对得上（列规范 §3）。 · L161 · 函数'
+  desc: '★ `intake.md` → `(表头, {M##: {列: 值}}, 报错)`。表头必须逐字对得上（列规范 §3）。 · L162 · 函数'
 - id: 08
   name: check_cards
   lines:
@@ -107,8 +107,8 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→09
-  desc: ★ 卡片 vs 账本 → 错误清单（空 = 过）。**只报不改**（§3 纪律 1：清点不改账本）。 · L189 · 函数 · 分支：1→escape
-    2→_check_relation
+  desc: ★ 卡片 vs 账本 → 错误清单（空 = 过）。**只报不改**（§3 纪律 1：清点不改账本）。 · L190 · 函数 · 分支：1→escape
+    2→_check_relation · ⇢ 依赖 flowtable_check.citations
 - id: 09
   name: _check_relation
   lines:
@@ -120,7 +120,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 版本关系：取值封闭 + **双向一致**（§3 的硬要求，单向声明按错处理）。 · L219 · 函数
+  desc: ★ 版本关系：取值封闭 + **双向一致**（§3 的硬要求，单向声明按错处理）。 · L228 · 函数
 - id: '10'
   name: main
   lines:
@@ -132,7 +132,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→03｜2→06｜3→07｜4→08
-  desc: L257 · 函数 · 分支：1→duplicate_pairs 2→build_card 3→parse_cards 4→check_cards
+  desc: L266 · 函数 · 分支：1→duplicate_pairs 2→build_card 3→parse_cards 4→check_cards
     · ⇢ 依赖 cells.dump、cells.todo_from_doc
 - id: '11'
   name: 结束

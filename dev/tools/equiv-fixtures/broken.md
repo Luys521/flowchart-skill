@@ -3,7 +3,7 @@ id: broken
 level: L1x
 parent: ""
 refs: 单条字符串
-description: equiv 自测用：故意写坏，覆盖 H1–H9 报错文案
+description: equiv 自测用：故意写坏，覆盖 H1–H9 报错文案（H10 要账本，夹具没有 ⇒ 这一层跳过）
 ---
 
 # 等价性自测：故意写坏的表

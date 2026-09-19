@@ -162,7 +162,7 @@ python dev/tools/accept.py --allow-soft        # 门②不因软提示报红（�
 | 门 | 覆盖 | 谁决定它过不过 |
 |---|---|---|
 | ① 套件 | `dev/verify/run.py` 四面：contract / gates / invariants / e2e | 每面 `【面…】N/M 通过` 行 + 套件退出码 |
-| ② 结构 | 表树每张 `flowtable.md` 过 H1–H8 + 表头 H9 | `table_to_dsl.py --check --json` 的 `hard` / `soft` 条数 |
+| ② 结构 | 表树每张 `flowtable.md` 过 H1–H8 + 表头 H9（H10 要账本；自举树没有 ⇒ 它由门⑪ 的材料链夹具覆盖） | `table_to_dsl.py --check --json` 的 `hard` / `soft` 条数 |
 | ③ 覆盖 | 每个函数都画进表了吗 | `coverage.py --tables-root` 的覆盖率行与 `✓/✗` 结论行 |
 | ④ 几何 | 每张**模块表**的几何单独过 `validate` | `validate.py <模块>-flow.yaml` 的退出码 |
 | ⑤ 出图 | 根表能不能 build 成三份产物（html / drawio / svg） | `build.py` 退出码 + `⚠` 告警**分类计数**（13 族；每行 `⚠` 必须**恰好**归一族，否则仪器故障） |

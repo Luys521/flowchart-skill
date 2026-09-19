@@ -281,8 +281,12 @@ def run_face(tmp=None):
     # 以前这条断言盯着 table_to_dsl.py 的 docstring，等于**逼代码抄一份规则表**——
     # 代码里的重复就是这么来的。改盯文档；代码侧只要求三层函数与统一入口还在。
     spec_t = (SKILL / 'references' / 'flowtable-spec.md').read_text(encoding='utf-8')
-    h = sorted(set(re.findall(r'H(\d)', spec_t)))
-    c.check(h == list('123456789'), 'flowtable-spec 里 H1–H9 齐全', f'实际 {h}')
+    # H 编号是**两位以内**的（H10 一度让这条断言"看着变红"：它抓的是单个数字字符）。
+    # 判据改成"从 H1 连续到最大的那个编号"，加 H11 时只需在文档里写出来。
+    nums = sorted({int(n) for n in re.findall(r'\bH(\d{1,2})\b', spec_t)})
+    c.check(nums == list(range(1, len(nums) + 1)) and nums[-1] >= 9,
+            'flowtable-spec 里的 H 编号从 H1 连续到 H10',
+            f'实际 {["H" + str(n) for n in nums]}')
     t2d = (SCRIPTS / 'flowtable_check.py').read_text(encoding='utf-8')
     layers = ['check_nodes', 'check_by_type', 'check_relations', 'run_checks']
     miss = [f for f in layers if f'def {f}(' not in t2d]

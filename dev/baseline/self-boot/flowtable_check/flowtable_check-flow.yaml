@@ -8,8 +8,8 @@ meta:
 layout:
   col_x:
   - 400
-  width: 1720
-  origin_x: 0
+  width: 1880
+  origin_x: -80
 nodes:
 - id: '01'
   name: 开始
@@ -21,8 +21,8 @@ nodes:
   row: 0
   col: 0
   stage: 入口
-  route: 1→30｜2→31
-  desc: 流程起点（结构性节点，不是函数） · 入口：1→check_header 2→run_checks
+  route: 1→30｜2→34｜3→35
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→check_header 2→check_evidence 3→run_checks
 - id: '02'
   name: _split_row_cells
   lines:
@@ -30,10 +30,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 16
+  row: 20
   col: 0
   stage: 模块级
-  route: →32
+  route: →36
   desc: ★ 补齐到 N_COLS 并按 ICOM 序切成 · L39 · 函数 · ⇢ 依赖 flowtable.split_row_cells
 - id: '03'
   name: _check_node_id
@@ -42,10 +42,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 17
+  row: 21
   col: 0
   stage: 模块级
-  route: →32
+  route: →36
   desc: ★ H2：编号重复与编号格式校验，合法与否都记入 seen（跨行查重）。 · L45 · 函数
 - id: '04'
   name: _check_node_semantics
@@ -54,10 +54,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 18
+  row: 22
   col: 0
   stage: 模块级
-  route: →32
+  route: →36
   desc: ★ H7：名称/执行主体/节点类型/执行者/行动所需时间；类型非法兜底成「任务」并返回该类型。 · L62 · 函数
 - id: '05'
   name: _check_basis
@@ -66,10 +66,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 19
+  row: 23
   col: 0
   stage: 模块级
-  route: →32
+  route: →36
   desc: ★ 「依据」与 `⚠` 的咬合（字段登记表见 flowtable-spec §2）：判断节点要么写清判据，要么标 `⚠`。 · L81 · 函数 ·
     ⇢ 依赖 semantics.pending_kind
 - id: '06'
@@ -79,7 +79,7 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 15
+  row: 19
   col: 0
   stage: 模块级
   route: 1→02｜2→03｜3→04｜4→05
@@ -92,10 +92,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 21
+  row: 25
   col: 0
   stage: 模块级
-  route: →32
+  route: →36
   desc: ★ 按 id 建出/入边邻接表 → (out_e, in_e)，②③ 两层共用。 · L118 · 函数
 - id: 08
   name: _check_min_count
@@ -104,10 +104,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 22
+  row: 26
   col: 0
   stage: 模块级
-  route: →32
+  route: →36
   desc: ★ H1：每种类型的节点总数不得低于 TYPE_RULES 声明的 min_count。 · L128 · 函数
 - id: 09
   name: _check_out_rule
@@ -116,10 +116,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 23
+  row: 27
   col: 0
   stage: 模块级
-  route: →32
+  route: →36
   desc: ★ H5/H8：单个节点的出边要求——forbid 却有出边报 H5，need 却无出边且被指过报死胡同。 · L138 · 函数 · ⇢ 依赖 flowtable.wrote_route
 - id: '10'
   name: _check_decision_branches
@@ -128,10 +128,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 24
+  row: 28
   col: 0
   stage: 模块级
-  route: →32
+  route: →36
   desc: ★ H4/H8：判断节点自身——分支下限、缺标签、分支指向同一目标、分支标签重复。 · L154 · 函数
 - id: '11'
   name: check_by_type
@@ -140,7 +140,7 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 20
+  row: 24
   col: 0
   stage: 模块级
   route: 1→07｜2→08｜3→09｜4→10
@@ -153,10 +153,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 25
+  row: 29
   col: 0
   stage: 模块级
-  route: →32
+  route: →36
   desc: ★ H3：引用完整——「下个节点」指向的目标必须真实存在。 · L196 · 函数
 - id: '13'
   name: _reachable_from_starts
@@ -165,10 +165,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 26
+  row: 30
   col: 0
   stage: 模块级
-  route: →32
+  route: →36
   desc: ★ 从所有「开始」节点做一次可达性扩散 → 可达 id 集合。 · L203 · 函数
 - id: '14'
   name: _check_node_reach
@@ -177,10 +177,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 27
+  row: 31
   col: 0
   stage: 模块级
-  route: →32
+  route: →36
   desc: ★ H8：单个节点的连通判定——一个节点只报最可操作的一条（让位规则见 flowtable-spec §3）。 · L216 · 函数 · ⇢ 依赖
     flowtable.wrote_route
 - id: '15'
@@ -190,7 +190,7 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 12
+  row: 16
   col: 0
   stage: 模块级
   route: 1→07｜2→12｜3→13｜4→14｜5→19
@@ -203,10 +203,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 14
+  row: 18
   col: 0
   stage: 模块级
-  route: →32
+  route: →36
   desc: ★ 删掉所有判断节点（及其邻接边）后的子图邻接表——只剩纯任务/起止之间的边。 · L270 · 函数
 - id: '17'
   name: _walk_cycle
@@ -215,7 +215,7 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 28
+  row: 32
   col: 0
   stage: 模块级
   route: →18
@@ -227,10 +227,10 @@ nodes:
   type: decision
   subject: 脚本
   executor: selfboot
-  row: 29
+  row: 33
   col: 0
   stage: 拆环
-  route: 是→32｜否→17
+  route: 是→36｜否→17
   desc: 结构性判断（拆环）：_walk_cycle 直接递归自己。是 → 收尾（结束）；否 → 走下一跳（_walk_cycle）。
 - id: '19'
   name: check_deadloop
@@ -239,7 +239,7 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 13
+  row: 17
   col: 0
   stage: 模块级
   route: 1→16｜2→17
@@ -251,10 +251,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 30
+  row: 34
   col: 0
   stage: 模块级
-  route: →32
+  route: →36
   desc: ★ 分支标签过长 → 软提示。标签画在连线上，过长会撑爆徽章底框、挤占版面。 · L316 · 函数
 - id: '21'
   name: _derived_level
@@ -266,7 +266,7 @@ nodes:
   row: 5
   col: 0
   stage: 模块级
-  route: →32
+  route: →36
   desc: ★ 沿 parent/▣ 链向上数跳数 → 派生层级（L0=主流程）。环与断链按已走跳数计。 · L334 · 函数 · ⇢ 依赖 flowtable.find_parent_table
 - id: '22'
   name: _check_meta_keys
@@ -278,7 +278,7 @@ nodes:
   row: 2
   col: 0
   stage: 模块级
-  route: →32
+  route: →36
   desc: ★ 身份区键封闭：未知键报 H9，▣ 派生量键（层级/子表/构建顺序）单独给文案（D-56）。 · L351 · 函数
 - id: '23'
   name: _check_header_entries
@@ -290,7 +290,7 @@ nodes:
   row: 3
   col: 0
   stage: 模块级
-  route: →32
+  route: →36
   desc: ★ 表头区（frontmatter 之后、主表之前）不放 `- 条目` 式元信息（D-57）。 · L367 · 函数
 - id: '24'
   name: _check_level
@@ -314,7 +314,7 @@ nodes:
   row: 6
   col: 0
   stage: 模块级
-  route: →32
+  route: →36
   desc: ★ parent：双向一致（D-58）——非空则文件须存在，且父表里要有 ▣ 指回本表。 · L401 · 函数 · ⇢ 依赖 flowtable._has_backref
 - id: '26'
   name: _check_refs
@@ -326,7 +326,7 @@ nodes:
   row: 7
   col: 0
   stage: 模块级
-  route: →32
+  route: →36
   desc: ★ refs：依赖路径必须真实存在（单条字符串按单元素列表处理）。 · L418 · 函数
 - id: '27'
   name: _check_meta_id
@@ -338,7 +338,7 @@ nodes:
   row: 8
   col: 0
   stage: 模块级
-  route: →32
+  route: →36
   desc: ★ id：写了却为空 → H9（缺省取文件 stem，可整行删除）。 · L430 · 函数
 - id: '28'
   name: _check_color_dup
@@ -350,7 +350,7 @@ nodes:
   row: 9
   col: 0
   stage: 模块级
-  route: →32
+  route: →36
   desc: ★ 同一主体在「主体配色」里声明了两种不同的颜色 → H9。 · L437 · 函数
 - id: '29'
   name: _check_table_columns
@@ -362,7 +362,7 @@ nodes:
   row: 10
   col: 0
   stage: 模块级
-  route: →32
+  route: →36
   desc: ★ H9：主表的列名必须逐字等于 `flowtable.COLUMNS`。 · L444 · 函数 · ⇢ 依赖 flowtable.header_cells
 - id: '30'
   name: check_header
@@ -379,26 +379,75 @@ nodes:
     分支：1→_check_meta_keys 2→_check_header_entries 3→_check_level 4→_check_parent 5→_check_refs
     6→_check_meta_id 7→_check_color_dup 8→_check_table_columns
 - id: '31'
-  name: run_checks
+  name: find_task_ledger
   lines:
-  - run_checks
+  - find_task_ledger
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 12
+  col: 0
+  stage: 模块级
+  route: →36
+  desc: ★ 从某个产物所在目录**向上**找 `evidence.json`（任务级产物住成果根）。找不到 → `None`。 · L501 · 函数
+- id: '32'
+  name: ledger_element_ids
+  lines:
+  - ledger_element_ids
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 13
+  col: 0
+  stage: 模块级
+  route: →36
+  desc: ★ 账本里的 element id 集合；**读不动返回 `None`**（＝无从判断，不许当成"表写错了"）。 · L516 · 函数
+- id: '33'
+  name: citations
+  lines:
+  - citations
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 14
+  col: 0
+  stage: 模块级
+  route: →36
+  desc: ★ 文本里出现的 element id（按出现顺序，去重）。id 是**封闭语法**（§2.2），正则认得出来。 · L529 · 函数
+- id: '34'
+  name: check_evidence
+  lines:
+  - check_evidence
   type: task
   subject: 脚本
   executor: selfboot
   row: 11
   col: 0
   stage: 模块级
+  route: 1→31｜2→32｜3→33
+  desc: ★ **H10.1 引用完整**：产物里出现的每个 element id 都必须在账本里存在。 · L539 · 函数 · 分支：1→find_task_ledger
+    2→ledger_element_ids 3→citations
+- id: '35'
+  name: run_checks
+  lines:
+  - run_checks
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 15
+  col: 0
+  stage: 模块级
   route: 1→06｜2→11｜3→15｜4→20
-  desc: ★ 按 ① → ② → ③ 跑完整套结构校验；返回 (nodes, edges, errs)。 · L490 · 函数 · 分支：1→check_nodes
+  desc: ★ 按 ① → ② → ③ 跑完整套结构校验；返回 (nodes, edges, errs)。 · L576 · 函数 · 分支：1→check_nodes
     2→check_by_type 3→check_relations 4→check_label_length · ⇢ 依赖 flowtable.build_edges、flowtable_layout.apply_swimlane、flowtable_layout.assign_slots
-- id: '32'
+- id: '36'
   name: 结束
   lines:
   - 结束
   type: end
   subject: 脚本
   executor: selfboot
-  row: 31
+  row: 35
   col: 0
   stage: 出口
   route: —
@@ -410,24 +459,29 @@ edges:
   polarity: main
   label: '1'
 - from: '01'
-  to: '31'
+  to: '34'
   kind: jumpR
   polarity: main
   label: '2'
+- from: '01'
+  to: '35'
+  kind: jumpR
+  polarity: main
+  label: '3'
 - from: '02'
-  to: '32'
+  to: '36'
   kind: jumpR
   polarity: main
 - from: '03'
-  to: '32'
+  to: '36'
   kind: jumpR
   polarity: main
 - from: '04'
-  to: '32'
+  to: '36'
   kind: jumpR
   polarity: main
 - from: '05'
-  to: '32'
+  to: '36'
   kind: jumpR
   polarity: main
 - from: '06'
@@ -451,19 +505,19 @@ edges:
   polarity: main
   label: '4'
 - from: '07'
-  to: '32'
+  to: '36'
   kind: jumpR
   polarity: main
 - from: 08
-  to: '32'
+  to: '36'
   kind: jumpR
   polarity: main
 - from: 09
-  to: '32'
+  to: '36'
   kind: jumpR
   polarity: main
 - from: '10'
-  to: '32'
+  to: '36'
   kind: jumpR
   polarity: main
 - from: '11'
@@ -487,15 +541,15 @@ edges:
   polarity: main
   label: '4'
 - from: '12'
-  to: '32'
+  to: '36'
   kind: jumpR
   polarity: main
 - from: '13'
-  to: '32'
+  to: '36'
   kind: jumpR
   polarity: main
 - from: '14'
-  to: '32'
+  to: '36'
   kind: jumpR
   polarity: main
 - from: '15'
@@ -524,7 +578,7 @@ edges:
   polarity: main
   label: '5'
 - from: '16'
-  to: '32'
+  to: '36'
   kind: jumpR
   polarity: main
 - from: '17'
@@ -532,7 +586,7 @@ edges:
   kind: spine
   polarity: main
 - from: '18'
-  to: '32'
+  to: '36'
   kind: jumpR
   polarity: main
   label: 是
@@ -552,19 +606,19 @@ edges:
   polarity: main
   label: '2'
 - from: '20'
-  to: '32'
+  to: '36'
   kind: spine
   polarity: main
 - from: '21'
-  to: '32'
+  to: '36'
   kind: jumpR
   polarity: main
 - from: '22'
-  to: '32'
+  to: '36'
   kind: jumpR
   polarity: main
 - from: '23'
-  to: '32'
+  to: '36'
   kind: jumpR
   polarity: main
 - from: '24'
@@ -572,23 +626,23 @@ edges:
   kind: spine
   polarity: main
 - from: '25'
-  to: '32'
+  to: '36'
   kind: jumpR
   polarity: main
 - from: '26'
-  to: '32'
+  to: '36'
   kind: jumpR
   polarity: main
 - from: '27'
-  to: '32'
+  to: '36'
   kind: jumpR
   polarity: main
 - from: '28'
-  to: '32'
+  to: '36'
   kind: jumpR
   polarity: main
 - from: '29'
-  to: '32'
+  to: '36'
   kind: jumpR
   polarity: main
 - from: '30'
@@ -632,21 +686,48 @@ edges:
   polarity: main
   label: '8'
 - from: '31'
+  to: '36'
+  kind: jumpR
+  polarity: main
+- from: '32'
+  to: '36'
+  kind: jumpR
+  polarity: main
+- from: '33'
+  to: '36'
+  kind: jumpR
+  polarity: main
+- from: '34'
+  to: '31'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '34'
+  to: '32'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '34'
+  to: '33'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '35'
   to: '06'
   kind: jumpR
   polarity: main
   label: '1'
-- from: '31'
+- from: '35'
   to: '11'
   kind: jumpR
   polarity: main
   label: '2'
-- from: '31'
+- from: '35'
   to: '15'
   kind: spine
   polarity: main
   label: '3'
-- from: '31'
+- from: '35'
   to: '20'
   kind: jumpR
   polarity: main

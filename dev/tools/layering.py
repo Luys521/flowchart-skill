@@ -44,7 +44,7 @@ PUBLIC = {
     'pptx_text',          # .pptx 取文字（zip + ppt/slides/*.xml）：摘要器与读者共用同一句；出度 0
     'flowtable_layout',   # 行列与槽位计算；出度 0
     'flowtable',          # 《流程表》解析
-    'flowtable_check',    # 结构校验 H1–H8 三层 + 表头 H9
+    'flowtable_check',    # 结构校验 H1–H8 三层 + 表头 H9 + 证据层 H10（有账本时才跑）
     'flowtable_colors',   # 执行主体配色与跨层继承
     'router',             # 流程布局布线
     'lane_router',        # 泳道布局布线（与 router 同接口两实现）

@@ -29,6 +29,7 @@ import sys
 from pathlib import Path
 
 import cells
+import flowtable_check
 
 COLUMNS = ('材料', '档位', '主题', '含流程', '版本关系', '读不动', '依据')
 # 「AI 要填的格子」的登记：`cells.py fill` 按**列名**回写（AI 不再手改表格，见 `cells.py` 的文件头）
@@ -190,6 +191,7 @@ def check_cards(ledger, rows):
     """卡片 vs 账本 → 错误清单（空 = 过）。**只报不改**（§3 纪律 1：清点不改账本）。"""
     errs, mats = [], {m.get('id'): m for m in ledger['materials']}
     have_evidence = {e.get('material_id') for e in ledger['elements']}
+    elem_ids = {e.get('id') for e in ledger['elements'] if e.get('id')}
     for mid in sorted(set(mats) - set(rows)):
         errs.append(f'{mid}: 账本里有这份材料，卡片里没有（材料必须一一对应）')
     for mid in sorted(set(rows) - set(mats)):
@@ -213,6 +215,13 @@ def check_cards(ledger, rows):
             errs.append(f'{mid}: 主题是语义推断，必须标 `⚠`')
         if mid in have_evidence and cell['依据'] in (NO_FLOW, ''):
             errs.append(f'{mid}: 有证据却没填「依据」（填 element id；H10 会核它存不存在）')
+        elif cell['依据'] not in (NO_FLOW, ''):
+            # **H10.1 引用完整**（§6）：卡片里的 element id 必须真在账本里。
+            # 这条以前只写了半句承诺（"H10 会核它存不存在"）而没人核——现在核了。
+            miss = [i for i in flowtable_check.citations(cell['依据']) if i not in elem_ids]
+            if miss:
+                errs.append(f'{mid}: 「依据」引用了账本里不存在的 element id：{"、".join(miss[:6])}'
+                            f'—— 改成真存在的 id，或降级成 `⚠` 推断')
     return errs
 
 

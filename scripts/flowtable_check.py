@@ -486,6 +486,92 @@ def check_header(meta, ft_path, errs):
     _check_color_dup(meta, errs)
 
 
+# ----------------------------------------------------------------H10 证据完整性（PIPELINE-SPEC §6）
+# **只在这一条上落地机器核**：引用完整性（H10.1）。§6 原稿还列了 H10.2 / H10.3 两条，
+# 2026-09-18 逐条查过**现行实现**后判定它们与已发口径打架，故**不重复设判据**（理由写进 §6 与 G20）：
+#   · H10.2「描述以 ⚠ 开头 ⇒ 依据非空」与 `flowtable-spec` §2 的「依据 / ⚠ **二选一**」相反，
+#     而已发的是后者（`_check_basis` 那条软提示，见上）；
+#   · H10.3「⚠? 节点必须在**澄清申请**里有条目」——`plan.md` 的澄清申请表**没有承载节点编号的列**
+#     （列是 编号/问题/推荐答案/指向，指向的是 `M##`），而"⚠? 有没有账"早已由 `clarify.py` 的
+#     frontier（前驱已定的 ⚠?）覆盖 ⇒ 判据无处安放，且需求已被满足。
+ID_RE = re.compile(r'\bM\d{2,}#[A-Za-z]+\d+\b')
+LEDGER_SEARCH_UP = 4          # 成果根与各流程目录平级，向上找几层够用（子表在 parts/ 下，要多一层）
+
+
+def find_task_ledger(start):
+    """从某个产物所在目录**向上**找 `evidence.json`（任务级产物住成果根）。找不到 → `None`。"""
+    d = Path(start)
+    if d.is_file():
+        d = d.parent
+    for _ in range(LEDGER_SEARCH_UP):
+        c = d / 'evidence.json'
+        if c.is_file():
+            return c
+        if d.parent == d:
+            break
+        d = d.parent
+    return None
+
+
+def ledger_element_ids(path):
+    """账本里的 element id 集合；**读不动返回 `None`**（＝无从判断，不许当成"表写错了"）。"""
+    try:
+        import json
+        got = json.loads(Path(path).read_text(encoding='utf-8'))
+    except (OSError, ValueError, TypeError):
+        return None
+    els = got.get('elements') if isinstance(got, dict) else None
+    if not isinstance(els, list):
+        return None
+    return {e.get('id') for e in els if isinstance(e, dict) and e.get('id')}
+
+
+def citations(text):
+    """文本里出现的 element id（按出现顺序，去重）。id 是**封闭语法**（§2.2），正则认得出来。"""
+    out, seen = [], set()
+    for m in ID_RE.finditer(text or ''):
+        if m.group(0) not in seen:
+            seen.add(m.group(0))
+            out.append(m.group(0))
+    return out
+
+
+def check_evidence(text, ft_path, errs):
+    """**H10.1 引用完整**：产物里出现的每个 element id 都必须在账本里存在。
+
+    **启用条件**（§6 最要紧的一条）：**这次任务有账本**（`evidence.json` 够得着）时才启用——
+    纯口头需求、示例表、自举树都没有账本 ⇒ 跳过、不报错（新判据不许误伤合法的旧表）。
+
+    两种失败分得清：
+      · 引了不存在的 id ⇒ **硬错误**（点名是哪个 id、且它不在账本里）；
+      · 账本**读不动**却又引了 id ⇒ 也是硬错误，但话不一样（"无从判断"不是"你写错了"，
+        只是**不可追溯的引用不许交付**）；一句 id 都没引 ⇒ 不报（没有引用就没有可追溯性可谈）。
+    """
+    led = find_task_ledger(ft_path)
+    errs.evidence_checked = bool(led)     # 记账：这一层**这次到底跑没跑**（调用方要如实打印，不许默默不用）
+    if not led:
+        return False
+    ids = ledger_element_ids(led)
+    cited = citations(text)
+    if ids is None:
+        if cited:
+            errs.err(f'H10 账本读不动，无法核对 {len(cited)} 处引用（{led.name}）：'
+                     f'先修账本或重新解析材料，再校验',
+                     subject='证据完整性',
+                     fix=f'检查 {led} 是不是合法 JSON；重跑 `probe → parse → ledger` 生成新账本')
+            return True
+        return False
+    miss = [i for i in cited if i not in ids]
+    if miss:
+        errs.err(f'H10 引用了账本里不存在的 element id：{"、".join(miss[:6])}'
+                 f'{f"（共 {len(miss)} 个）" if len(miss) > 6 else ""}'
+                 f'—— 账本 {led.name} 里共 {len(ids)} 条证据',
+                 subject='证据完整性',
+                 fix='改成账本里真实存在的 id（`query.py <账本> --grep 关键词` 找回它），'
+                     '或把这条依据降级成 ⚠ 推断')
+    return True
+
+
 # ----------------------------------------------------------------入口
 def run_checks(rows, mode='flow', errs=None, lane_order=None, notes=None):
     """按 ① → ② → ③ 跑完整套结构校验；返回 (nodes, edges, errs)。

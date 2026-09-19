@@ -16,7 +16,7 @@ from pathlib import Path
 from artifact import artifact_stem
 from geometry import snap, ceil_to, DEFAULT_COL_X, DEFAULT_GRID
 from flowtable import Errors, COLOR_KEY, parse_table
-from flowtable_check import run_checks, check_header
+from flowtable_check import run_checks, check_header, check_evidence
 from flowtable_colors import resolve_colors, subject_map
 from flowtable_layout import (parse_lane_order, auto_layout,
                               reuse_hint, merge_parallel_branches)
@@ -88,6 +88,9 @@ def _run_checks(p, tbl_meta, rows):
     errs = Errors()
     # H9 表头规范先于一切：键笔误丢的语义与 H1–H8 同级，且要和 H1–H8 一起列出（D-56）
     check_header(tbl_meta, p, errs)
+    # H10 证据完整性（§6）：**有账本时才启用**——它核的是"依据指的东西真的在账本里"，
+    # 没有账本（口头需求 / 示例表 / 自举树）就跳过，不许误伤（§8.1 的误伤回归也是这条）
+    check_evidence(p.read_text(encoding='utf-8-sig'), p, errs)
     mode = 'swimlane' if '泳道' in (tbl_meta.get('输出布局') or '') else 'flow'
     lane_order = parse_lane_order(tbl_meta.get('泳道列序')) if mode == 'swimlane' else []
     # 配色在结构校验**之前**解析：它是硬错误（声明写错要拦下），且错误要跟 H1~H8 一起列出，
@@ -116,7 +119,10 @@ def _report_checks(title, nodes, edges, errs, slot_notes, as_json):
                 print('   -', m)
         else:
             print('✓ 结构校验通过（①节点 ②类型 ③关系）：'
-                  'H1起止 · H2编号 · H3引用 · H4分支 · H5结束 · H6死循环 · H7语义 · H8连通 · H9表头')
+                  'H1起止 · H2编号 · H3引用 · H4分支 · H5结束 · H6死循环 · H7语义 · H8连通 · H9表头'
+                  + (' · H10引用完整' if getattr(errs, 'evidence_checked', False) else ''))
+        if not getattr(errs, 'evidence_checked', False):
+            print('ℹ H10 引用完整这一层跳过：本表附近没有证据账本（纯口头需求 / 示例表 / 自举树都属这类）')
         if errs.soft:
             print('⚠ 软提示（不阻断，请 AI 处理并打 ⚠ 留痕）：')
             for m in errs.soft:

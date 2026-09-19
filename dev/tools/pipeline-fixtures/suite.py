@@ -1290,6 +1290,47 @@ def materials_paths(root):
     cases.append(('53 尺子二（文本层薄）：每页元素数相同、只差每页字数 ⇒ 薄的那份逐条挂降级 + 建议转图片，'
                   '密的**不许**被误判（两个量一起看）',
                   ok, rc, (f"thin {len(thin_els)} / dense {len(dense_els)} · {out[-200:]}") if not ok else ''))
+
+    # 54 **H10.1 引用完整**（§6）：四条路径一次钉住——有账本且引用都对 ⇒ 退 0 且**打印这一层跑了**；
+    #    引了不存在的 id ⇒ 退 1 且点名；没有账本 ⇒ **整层跳过、不报错**（不许误伤旧表）；账本坏且引了 id ⇒ 退 1。
+    #    这条判据是**通用**的：与具体项目无关，任何"成果根 + 账本"的任务都受它保护。
+    h10_d = root / 'h10'
+    h10_d.mkdir(exist_ok=True)
+    led = {'schema': 2, 'task': 'h10', 'materials': [
+        {'id': 'M01', 'path': '材料/甲.md', 'sha256': 'a' * 64, 'bytes': 10,
+         'mtime': '2026-09-01T10:00:00', 'tier': 'T1', 'kind': 'text', 'probe': '夹具', 'status': 'ok'}],
+        'elements': [{'id': 'M01#p001', 'material_id': 'M01', 'kind': 'paragraph', 'text': '一句',
+                      'location': {'path': '材料/甲.md', 'quote': '一句'},
+                      'extractor': 'py:text', 'certainty': 'direct'}]}
+    (h10_d / 'evidence.json').write_text(json.dumps(led, ensure_ascii=False), encoding='utf-8')
+    head = ('---\nid: h10\nlevel: L0\n---\n\n# H10 夹具\n\n## 流程表\n\n'
+            '| 项目运作阶段 | 节点编号 | 节点名称 | 节点类型 | 输入 | 依据 | 输出 | 执行主体 | 执行者 '
+            '| 行动所需时间 | 下个节点 | 节点描述 |\n|---|---|---|---|---|---|---|---|---|---|---|---|\n')
+    ok_row = '| 起 | 01 | 收料 | 开始 | — | `M01#p001` | 材料 | 甲 | 甲 | — | →02 | — |\n'
+    end_row = '| 起 | 02 | 归档 | 结束 | 材料 | `M01#p001` | — | 甲 | 甲 | — | — | — |\n'
+    (h10_d / 'flowtable.md').write_text(head + ok_row + end_row, encoding='utf-8')
+    rc_h10, out_h10 = run([sys.executable, str(REPO / 'scripts' / 'table_to_dsl.py'), '--check', str(h10_d / 'flowtable.md')])
+    (h10_d / 'bad.md').write_text(head + ok_row.replace('M01#p001', 'M01#p999') + end_row, encoding='utf-8')
+    rc_bad, out_bad = run([sys.executable, str(REPO / 'scripts' / 'table_to_dsl.py'), '--check', str(h10_d / 'bad.md')])
+    # "没有账本"这一支**必须放在整棵夹具树之外**：H10 是**向上**找账本的，而夹具树自己有一份账本
+    # （实测踩到两次：放在 h10/no-ledger 里、放在 root 下，那一支都照样跑起了 H10 —— 夹具自己骗了自己）。
+    # 所以借一个**独立临时目录**（跑完自动删），顺便钉住"向上找"的射程：平级就够，绝不越界到别的任务。
+    with tempfile.TemporaryDirectory(prefix='h10-noledger-') as td:
+        p = pathlib.Path(td) / 'flowtable.md'
+        p.write_text(head + ok_row + end_row, encoding='utf-8')
+        rc_none, out_none = run([sys.executable, str(REPO / 'scripts' / 'table_to_dsl.py'), '--check', str(p)])
+    (h10_d / 'broken').mkdir(exist_ok=True)
+    (h10_d / 'broken' / 'evidence.json').write_text('{ 这不是 JSON', encoding='utf-8')
+    (h10_d / 'broken' / 'flowtable.md').write_text(head + ok_row + end_row, encoding='utf-8')
+    rc_brok, out_brok = run([sys.executable, str(REPO / 'scripts' / 'table_to_dsl.py'), '--check', str(h10_d / 'broken' / 'flowtable.md')])
+    ok = (rc_h10 == 0 and 'H10引用完整' in out_h10
+          and rc_bad == 1 and 'M01#p999' in out_bad
+          and rc_none == 0 and 'H10引用完整' not in out_none and '跳过' in out_none
+          and rc_brok == 1 and '账本读不动' in out_brok)
+    cases.append(('54 H10.1 引用完整（§6）：有账本且引用都对 ⇒ 退 0 并打印这一层跑了 · 引错 ⇒ 退 1 点名 · '
+                  '**没有账本 ⇒ 整层跳过不报错** · 账本坏且引了 id ⇒ 退 1',
+                  ok, rc_h10, (f'ok={rc_h10}/{out_h10[-80:]} bad={rc_bad}/{out_bad[-90:]} '
+                               f'none={rc_none}/{out_none[-70:]} brok={rc_brok}/{out_brok[-70:]}') if not ok else ''))
     return cases
 
 

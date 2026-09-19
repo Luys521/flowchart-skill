@@ -10,7 +10,7 @@ r"""accept.py — **验收：一条命令跑完十一道门，只给一个结论
 | 门 | 覆盖 | 判据来源 |
 | --- | --- | --- |
 | ① 套件 | `dev/verify/run.py` 四面（contract / gates / invariants / e2e） | 逐面 `【面…】N/M 通过` 行 + 进程退出码 |
-| ② 结构 | 自举树每张 `flowtable.md` 过 H1–H8 + 表头 H9 | `table_to_dsl.py --check --json` 的 `len(hard)` / `len(soft)` |
+| ② 结构 | 自举树每张 `flowtable.md` 过 H1–H8 + 表头 H9（H10 要账本，自举树没有 ⇒ 这一层跳过） | `table_to_dsl.py --check --json` 的 `len(hard)` / `len(soft)` |
 | ③ 覆盖 | 每个函数都画进表了吗 | `coverage.py --tables-root` 的覆盖率行 + `✓/✗` 结论行 + 退出码 |
 | ④ 几何 | 每张**模块表**的几何单独过 `validate` | `validate.py <模块>-flow.yaml` 的退出码与条目数 |
 | ⑤ 出图 | 根表能不能 build 成三份产物（html / drawio / svg） | `build.py` 退出码 + `⚠` 告警**分类计数** |
@@ -732,7 +732,7 @@ def main(argv=None):
           f'（数字只对这一刻的树与脚本成立）')
     gates = []
     plan = [('①', '套件 dev/verify/run.py 四面', lambda g: gate_suite(g, scratch)),
-            ('②', '结构 H1–H8 + 表头 H9', lambda g: gate_structure(g, tables_root, a.allow_soft)),
+            ('②', '结构 H1–H8 + 表头 H9', lambda g: gate_structure(g, tables_root, a.allow_soft)),   # H10 有账本才启用，自举树不覆盖它
             ('③', '覆盖 coverage.py', lambda g: gate_coverage(g, tables_root)),
             ('④', '几何 validate.py 逐张', lambda g: gate_geometry(g, tables_root)),
             ('⑤', '出图 build.py', lambda g: gate_build(g, tables_root, scratch)),
