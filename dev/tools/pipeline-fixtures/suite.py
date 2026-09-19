@@ -379,11 +379,12 @@ def spec_paths():
     import recon
     spec = SPEC.read_text(encoding='utf-8')
     want = (('drift.DRIFT_COLUMNS', drift.DRIFT_COLUMNS), ('drift.GAP_COLUMNS', drift.GAP_COLUMNS),
+            ('drift.READOUT_COLUMNS', drift.READOUT_COLUMNS),
             ('intake.COLUMNS', intake.COLUMNS), ('recon.CARD_COLUMNS', recon.CARD_COLUMNS),
             ('plan.FLOW_COLUMNS', plan.FLOW_COLUMNS), ('plan.ASK_COLUMNS', plan.ASK_COLUMNS),
             ('plan.EXCL_COLUMNS', plan.EXCL_COLUMNS))
     missing = [name for name, cols in want if '| ' + ' | '.join(cols) + ' |' not in spec]
-    return [('㊶ 规范 ↔ 仪器：§1.5 / §3 / §4.1 / §5.3 / §5.4 的表头逐字等于仪器列规范',
+    return [('㊶ 规范 ↔ 仪器：§1.5 / §3 / §4.1 / §5.3 / §5.4 / §5.6 的表头逐字等于仪器列规范',
              not missing, 0, ('PIPELINE-SPEC 里找不到：' + '、'.join(missing)) if missing else '')]
 
 
@@ -1331,6 +1332,45 @@ def materials_paths(root):
                   '**没有账本 ⇒ 整层跳过不报错** · 账本坏且引了 id ⇒ 退 1',
                   ok, rc_h10, (f'ok={rc_h10}/{out_h10[-80:]} bad={rc_bad}/{out_bad[-90:]} '
                                f'none={rc_none}/{out_none[-70:]} brok={rc_brok}/{out_brok[-70:]}') if not ok else ''))
+
+    # 55 **依据分布**（§5.6，读数不是判据）：受控的表序把"连续段"算准——01,02 只引 M01（一条 2 长的段）、
+    #    03 只引 M02（单节点段**不报**）、04,05 引 M01（新起一段）。同时验它**不进** check 的收敛口径。
+    dep_d = root / 'depreadout'
+    dep_d.mkdir(exist_ok=True)
+    (dep_d / 'evidence.json').write_text(json.dumps(
+        {'schema': 2, 'task': 'dep', 'materials': [
+            {'id': m, 'path': f'材料/{m}.md', 'sha256': c * 64, 'bytes': 10,
+             'mtime': '2026-09-01T10:00:00', 'tier': 'T1', 'kind': 'text', 'probe': '夹具', 'status': 'ok'}
+            for m, c in (('M01', 'a'), ('M02', 'b'))],
+         'elements': [{'id': f'{m}#p001', 'material_id': m, 'kind': 'paragraph', 'text': '一句',
+                       'location': {'path': f'材料/{m}.md', 'quote': '一句'},
+                       'extractor': 'py:text', 'certainty': 'direct'} for m in ('M01', 'M02')]},
+        ensure_ascii=False), encoding='utf-8')
+    dep_head = ('---\nid: dep\nlevel: L0\n---\n\n# 依据分布夹具\n\n## 流程表\n\n'
+                '| 项目运作阶段 | 节点编号 | 节点名称 | 节点类型 | 输入 | 依据 | 输出 | 执行主体 | 执行者 '
+                '| 行动所需时间 | 下个节点 | 节点描述 |\n|---|---|---|---|---|---|---|---|---|---|---|---|\n')
+    dep = [('01', '开始', 'M01#p001', '→02'), ('02', '甲步', 'M01#p001', '→03'),
+           ('03', '乙步', 'M02#p001', '→04'), ('04', '丙步', 'M01#p001', '→05'),
+           ('05', '收尾', '`M01#p001`、`M02#p001`', '—')]
+    typ = {'01': '开始', '05': '结束'}                 # 01 必须是「开始」，否则整表不可达（第一版漏了这行）
+    body = ''.join(f'| 段 | {i} | {n} | {typ.get(i, "任务")} | — | `{b}` | — | 甲 | 甲 '
+                   f'| — | {nx} | — |\n' for i, n, b, nx in dep)
+    (dep_d / 'flowtable.md').write_text(dep_head + body, encoding='utf-8')
+    rc_dep, out_dep = run([sys.executable, str(DRIFT), 'build', str(dep_d / 'flowtable.md'),
+                           '--ledger', str(dep_d / 'evidence.json'), '--out', str(dep_d / 'drift.md')])
+    readout = ''
+    if (dep_d / 'drift.md').is_file():
+        text_d = (dep_d / 'drift.md').read_text(encoding='utf-8')
+        readout = text_d[text_d.index('## ③'):] if '## ③' in text_d else ''
+    # 节点 01/02/04/05 引 M01、03/05 引 M02 ⇒ M01 4 个（80%）、M02 2 个（40%）；
+    # 只引一份材料的相邻节点里：01,02 连成一段（2），04 单独一个（单节点段**不报**），03 同理
+    ok = (rc_dep == 0 and '| 材料 | 撑着的节点 | 占比 | 材料状态 | 连续段 |' in readout
+          and '01–02（2）' in readout and '03–' not in readout
+          and '| `M01` | 4 | 80% |' in readout and '| `M02` | 2 | 40% |' in readout
+          and '依据分布' in out_dep)
+    cases.append(('55 依据分布（§5.6）：节点级占比 + **连续段**（只引一份材料的相邻节点）算得准 · '
+                  '单节点段不报 · 它是读数（不进 `check` 的收敛口径）',
+                  ok, rc_dep, (readout[:400] or out_dep[-300:]) if not ok else ''))
     return cases
 
 

@@ -85,6 +85,9 @@ RULES = {
 DRIFT_COLUMNS = ('漂移', '判据', '位置', '事实', '处置（AI 填）', '依据（AI 填）')
 GAP_COLUMNS = ('缺口', '触发', '需要哪份材料', '要哪一片（AI 填）', '走哪条路',
                '状态（AI 填）', '说明（AI 填）')
+# ③ 依据分布：**读数，不是判据**（§5.6）。没有 AI 列、不进 `check` 的收敛口径——
+# 它回答"这张表的事实面到底有多宽"，而"要不要因此去取证"是 AI 的判断（§0.1）。
+READOUT_COLUMNS = ('材料', '撑着的节点', '占比', '材料状态', '连续段')
 DISPOSITIONS = ('已修', '已解释', '待验')
 GAP_STATES = ('待取证', '已取证', '已放弃')
 # **只算"浏览摘录"的那一类降级**（D1 要跳过它，见 `rule_d1`）：`ledger.degrade` 给每条摘录超限的
@@ -231,6 +234,48 @@ def rule_d5(els, cited, recon, th):
     return out
 
 
+def rule_readout(nodes, els, mats):
+    """**依据分布**（§5.6，读数不是判据）→ `(每份材料一行, 汇总一句)`。
+
+    为什么要有它（2026-09-18 观察，见 `dev/NODE-AUDIT.md` §八）：现有的 D4 / D5 是**材料级**的
+    （"这份材料没人引 / 读了没用上"），而真表上真正会出事的是**节点级**的那一面——
+    实测那张 43 节点的表：**M04 撑 23 个节点（53%）、M02 撑 19 个**，两份材料撑着 42/43；
+    而 M02 是**转述件**（它的原件后来被发现写的是"每 5MW"、转述件写"每 10MW"）。
+    **"这段流程只靠一份材料"是取证的方向，不是表的错**——所以它只报读数，不报漂移、不出缺口。
+
+    两件事分开报：**占比**（这张表的事实面有多宽）与**连续段**（哪一段只落在一份材料上）。
+    连续段比占比更可操作：整表 50% 可能没事，但"结算段 7 个节点全在 M02 上"就是该去核对原件的地方。
+    """
+    per, runs = {}, []
+    for nd in nodes:                                    # 只看「依据」列（描述里的引用是补充说明）
+        ms = sorted({m.group(0) for m in ID_RE.finditer(nd.get('basis') or '') if '#' in m.group(0)})
+        mids = sorted({i.split('#')[0] for i in ms})
+        for mid in mids:
+            per.setdefault(mid, []).append(nd['id'])
+        if len(mids) == 1:                              # 单材料节点：连着数就是"段"
+            if runs and runs[-1][0] == mids[0]:
+                runs[-1][2].append(nd['id'])
+            else:
+                runs.append([mids[0], nd['id'], [nd['id']]])
+    covered = [nd for nd in nodes if nd.get('basis') and ID_RE.search(nd['basis'] or '')]
+    rows = []
+    for mid in sorted(per, key=lambda m: (-len(per[m]), m)):
+        ids = per[mid]
+        share = len(ids) / len(covered) if covered else 0.0
+        st = mats.get(mid, {}) if isinstance(mats, dict) else {}
+        seg = ' · '.join(f'{r[1]}–{r[2][-1]}（{len(r[2])}）' for r in runs if r[0] == mid and len(r[2]) > 1)
+        rows.append((mid, len(ids), share, f'{st.get("status", "?")}/{st.get("kind", "?")}', seg))
+    if not rows:
+        return [], '依据分布：表里没有一条 element id 引用（要么整表按 ⚠ 推断，要么依据写的是散文）'
+    top = rows[0]
+    two = sum(r[1] for r in rows[:2]) / len(covered) if covered else 0.0
+    lone = [r for r in rows if r[1] == 1]
+    summary = (f'依据分布：{len(covered)}/{len(nodes)} 个节点引了 element id，落在 {len(rows)} 份材料上；'
+               f'头名 `{top[0]}` 撑 {top[1]} 个（{top[2]:.0%}），前二合计 {two:.0%}'
+               + (f'；只有 1 个节点引用的材料 {len(lone)} 份（{"、".join(r[0] for r in lone)}）' if lone else ''))
+    return rows, summary
+
+
 def collect(nodes, _edges, els, mats, recon, intake, th):
     """跑全部**启用**的判据 → `(漂移行, 缺口行)`。缺哪个输入就整条跳过（§5.2 启用条件）。
 
@@ -344,13 +389,21 @@ def prepare(a):
     els, mats, recon, intake, bad = inputs_of(a)
     th = load_thresholds(a.dict)
     drift, gaps = collect(nodes, edges, els, mats, recon, intake, th)
+    # ③ 依据分布（§5.6）：**读数**，与判据分开算、分开渲——它没有启用条件，也不需要 AI 填任何格子
+    readout, readout_sum = rule_readout(nodes, els, mats)
     off = (list(RULES) if not els else ([] if recon else ['D2']) + ([] if intake else ['D4']))
-    return {'drift': drift, 'gaps': gaps, 'th': th, 'hard': errs.hard, 'bad': bad, 'off': off}
+    return {'drift': drift, 'gaps': gaps, 'th': th, 'hard': errs.hard, 'bad': bad, 'off': off,
+            'readout': readout, 'readout_sum': readout_sum}
 
 
 # ----------------------------------------------------------------产物解析与对账
 def parse_doc(text):
-    """`drift.md` → `(漂移行, 缺口行, 报错)`。两张表的表头**必须逐字对得上**（列规范在代码里只有一份）。"""
+    """`drift.md` → `(漂移行, 缺口行, 报错)`。三张表的表头**必须逐字对得上**（列规范在代码里只有一份）。
+
+    ③ 依据分布那张表**不装 AI 格子、也不进对账**（§5.6：读数不是判据）——但解析器必须认得它，
+    否则它的行会被拿去跟 ② 的表头比列数（实测：5 列 vs 7 列，`check` 报"有一行列数对不上"）。
+    认得的方式与另两张一样：**表头逐字匹配**，认到就把该表整段跳过。
+    """
     drift, gaps, header, mode, err = [], [], None, None, ''
     for line in text.splitlines():
         if not line.startswith('|'):
@@ -358,9 +411,10 @@ def parse_doc(text):
         cells = [c.strip() for c in line.strip().strip('|').split('|')]
         if all(set(c) <= set('-: ') for c in cells):
             continue
-        if tuple(cells) in (DRIFT_COLUMNS, GAP_COLUMNS):
+        if tuple(cells) in (DRIFT_COLUMNS, GAP_COLUMNS, READOUT_COLUMNS):
             header = tuple(cells)
-            mode = 'drift' if header == DRIFT_COLUMNS else 'gap'
+            mode = ('drift' if header == DRIFT_COLUMNS else
+                    'gap' if header == GAP_COLUMNS else 'readout')
             continue
         if header is None:
             err = err or '第一张表的表头不是本脚本的列规范：' + ' | '.join(cells)
@@ -368,6 +422,8 @@ def parse_doc(text):
         if len(cells) != len(header):
             err = err or f'有一行列数 {len(cells)} ≠ 表头 {len(header)}：{line[:50]}'
             continue
+        if mode == 'readout':
+            continue                                   # 读数表：只认表头，行不进任何账
         (drift if mode == 'drift' else gaps).append(dict(zip(header, cells)))
     if header is None:
         err = err or '没解析到漂移清单（表头行 + 至少一行）'
@@ -443,7 +499,7 @@ def _esc(s):
     return str(s if s is not None else '').replace('|', '｜').replace('\n', ' ').strip()
 
 
-def render(drift, gaps, meta):
+def render(drift, gaps, meta, readout=(), readout_sum=''):
     """漂移清单 + 缺口清单（markdown）。**表头先写输入指纹、跳过的判据与本次阈值**——
 
     不然"漂移 0 条"这种结论事后没法复核（它是"对着哪一版表、在什么阈值下"算出来的）。
@@ -469,6 +525,14 @@ def render(drift, gaps, meta):
     for i, (rule, mid, note, path) in enumerate(gaps, 1):
         lines.append(f'| `Q{i:02d}` | {rule} {RULES[rule][0]}：{_esc(note)} | `{mid}` |  | '
                      f'{_esc(path)} | 待取证 |  |')
+    lines += ['', '## ③ 依据分布（**读数，不是判据**）', '',
+              f'> {_esc(readout_sum)}',
+              '> 口径见 `PIPELINE-SPEC` §5.6：**连续段**是"这一段流程只落在一份材料上"——'
+              '它是取证的方向（去核对原件 / 找第二份能对上的材料），不是表的错。', '',
+              '| ' + ' | '.join(READOUT_COLUMNS) + ' |',
+              '|' + '---|' * len(READOUT_COLUMNS)]
+    for mid, n, share, st, seg in readout:
+        lines.append(f'| `{mid}` | {n} | {share:.0%} | {_esc(st)} | {_esc(seg) or "—"} |')
     return '\n'.join(lines) + '\n'
 
 
@@ -500,11 +564,13 @@ def cmd_build(a):
                 f'账本 `{a.ledger}`' if a.ledger else '',
                 f'假设账 `{a.recon}`' if a.recon else '',
                 f'清点 `{a.intake}`' if a.intake else '') if x) or '（只有流程表）'}
-    out.write_text(render(got['drift'], got['gaps'], meta), encoding='utf-8', newline='\n')
+    out.write_text(render(got['drift'], got['gaps'], meta, got['readout'], got['readout_sum']),
+                   encoding='utf-8', newline='\n')
     if getattr(a, 'todo', None):
         cells.dump(cells.todo_from_doc(out, TODO_TABLES), a.todo)   # 见 cells.py 的文件头
         print(f'  · 待填清单已写出 {a.todo}：AI 填完它再跑 '
               f'`python scripts/cells.py fill {out.name} <答案>.json`')
+    print(f'  · {got["readout_sum"]}')                  # ③ 依据分布：读数，不是判据（§5.6）
     print(f'✓ 漂移 {len(got["drift"])} 条 · 缺口 {len(got["gaps"])} 条 → {out}')
     print(f'  · 跳过：{meta["off"]} · 输入：{meta["inputs"]}')
     print('  · 下一步：AI 填「处置 / 依据」与「要哪一片 / 状态 / 说明」，再跑')
@@ -587,6 +653,7 @@ def cmd_check(a):
     explained = sum(1 for r in drift if r.get('处置（AI 填）') == '已解释')
     print(f'✓ 收敛：文件里 {len(drift)} 条漂移全部处置完（其中 {explained} 条判「已解释」）· '
           f'缺口 {len(gaps)} 条全部有结论；现在的判据读数没有漏在账外的')
+    print(f'  · {got["readout_sum"]}')                  # ③ 依据分布：读数，供 AI 判断要不要取证
     return 0
 
 

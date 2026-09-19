@@ -10,7 +10,7 @@
   - **L1 子流程** `build/flowtable.md`——《build.py 函数流程表》（id: selfboot-build）（27 节点）
   - **L1 子流程** `cells/flowtable.md`——《cells.py 函数流程表》（id: selfboot-cells）（12 节点）
   - **L1 子流程** `clarify/flowtable.md`——《clarify.py 函数流程表》（id: selfboot-clarify）（16 节点）
-  - **L1 子流程** `drift/flowtable.md`——《drift.py 函数流程表》（id: selfboot-drift）（28 节点）
+  - **L1 子流程** `drift/flowtable.md`——《drift.py 函数流程表》（id: selfboot-drift）（29 节点）
   - **L1 子流程** `engine/flowtable.md`——《engine.py 函数流程表》（id: selfboot-engine）（28 节点）
   - **L1 子流程** `flowtable/flowtable.md`——《flowtable.py 函数流程表》（id: selfboot-flowtable）（29 节点）
   - **L1 子流程** `flowtable_check/flowtable.md`——《flowtable_check.py 函数流程表》（id: selfboot-flowtable_check）（36 节点）
