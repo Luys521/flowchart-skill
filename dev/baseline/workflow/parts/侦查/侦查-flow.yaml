@@ -1,0 +1,172 @@
+meta:
+  title: 侦查：先排序、再假设、别让一份坏材料把整批带崩
+  subjects:
+    用户:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+    AI:
+      fill: '#d5e8d4'
+      stroke: '#82b366'
+    脚本:
+      fill: '#ffe6cc'
+      stroke: '#d79b00'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  width: 680
+  origin_x: -100
+nodes:
+- id: 04a
+  name: 读材料层
+  lines:
+  - 读材料层
+  type: start
+  subject: 脚本
+  executor: recon.py
+  row: 0
+  col: 0
+  stage: 入口
+  route: →04b
+  desc: 只读探测给的档位 / 类型 / 指纹 / 修改时间，**不重判**——"这是什么"的唯一判据源是 `probe`，这里再判一次就是两份真值
+  input: '`materials[]`'
+  basis: 探测分档（`SKILL.md` 读材料段）
+  output: 每份材料一行事实
+- id: 04b
+  name: 结构缩样
+  lines:
+  - 结构缩样
+  type: task
+  subject: 脚本
+  executor: recon.py
+  row: 1
+  col: 0
+  stage: 缩样
+  route: →04c
+  desc: docx 读大纲与非空段 / 表 · xlsx 读子表尺寸 · pptx 读张数与每张标题 · pdf 粗数页数 · 图片读像素 · 文本读行数与头几行。**legacy
+    明说"摘要不可得"**——那是诚实的极限，不是漏做；读不了的逐份记原因，**绝不让一份坏材料把整批带崩**
+  time: 2-10 秒
+  input: 每份材料一行
+  basis: 每一种类型都要有交代（`SKILL.md` 读材料段）
+  output: 每份材料的规模数字
+- id: 04c
+  name: 难度排序
+  lines:
+  - 难度排序
+  type: task
+  subject: 脚本
+  executor: recon.py
+  row: 2
+  col: 0
+  stage: 排序
+  route: →04d
+  desc: 分档要**可复现**：同输入两次跑必须同顺序——否则"先读易的"这句话根本没法执行（每次排序都不一样）。⚠ 规模是拿结构缩样**量**出来的，不是拿字节数估的
+  input: 规模数字
+  basis: 排序键 =(档位, 规模)，**同输入同顺序**
+  output: 易 / 中 / 难 / 最难
+- id: 04d
+  name: 给处置建议
+  lines:
+  - 给处置建议
+  type: task
+  subject: 脚本
+  executor: recon.py
+  row: 3
+  col: 0
+  stage: 处置
+  route: →04e
+  desc: '**建议不是判决**：判"只取摘要"的仍由 05 决定取哪几片；判"不参与"的仍要进清点的排除清单（**不许静默消失**）；判"转图片"的归 23'
+  input: 难度 + 规模 + 类型
+  basis: 全量解析 / 只取摘要 / 不参与 / 转图片
+  output: 每份材料一条建议
+- id: 04e
+  name: 填假设表四列
+  lines:
+  - 填假设表四列
+  type: task
+  subject: AI
+  executor: AI
+  row: 4
+  col: 0
+  stage: 假设
+  route: →04f
+  desc: ★ 这张表是**假设账**：记的是"我猜这份材料是什么、凭什么、怎么验"。四列缺一不可（判不出写 `—`，**留空算错**）；被推翻的写成"假设 X
+    → 实际 Y → 已改"，**不许悄悄改掉**——账的意义就在于能看出我错过
+  input: '`recon.md` 草稿'
+  basis: 假设要落盘、被推翻也要留痕（`SKILL.md` 读材料段）
+  output: 假设角色 / 依据 / 验证方式 / 状态
+- id: 04f
+  name: 脚本列对得上吗？
+  lines:
+  - 脚本列对得上吗？
+  type: decision
+  subject: 脚本
+  executor: recon.py
+  row: 5
+  col: 0
+  stage: 验收
+  route: 对得上→04g ｜ 对不上→04h
+  desc: 防的是"有人改了脚本列而没重跑"：AI 只许动那四列，脚本列一律由机器重算比对。形状坏 / 读不了算**仪器故障**（退 2），对不上算**内容问题**（退
+    1）——两者不许混成一句话
+  input: '`recon.md`'
+  basis: '`check` 用**同一批函数**重算脚本列再比'
+  output: 对得上 / 对不上
+- id: 04g
+  name: 侦查表可用，交解析
+  lines:
+  - 侦查表可用，交解析
+  type: end
+  subject: 脚本
+  executor: recon.py
+  row: 6
+  col: 0
+  stage: 收尾
+  route: —
+  desc: 处置三选一交给 05 执行。**本表不解析、不入账**——它的产物只有"难度 + 假设 + 建议"
+  input: 校验通过的侦查表
+  output: '`recon.md`'
+- id: 04h
+  name: 报出对不上的格子
+  lines:
+  - 报出对不上的格子
+  type: end
+  subject: 脚本
+  executor: recon.py
+  row: 7
+  col: 0
+  stage: 阻断
+  route: —
+  desc: 说清是哪一份、哪一个脚本列对不上；别让人去猜是脚本坏了还是表被手改了
+  input: 对不上的格子
+  output: 逐条报错
+edges:
+- from: 04a
+  to: 04b
+  kind: spine
+  polarity: main
+- from: 04b
+  to: 04c
+  kind: spine
+  polarity: main
+- from: 04c
+  to: 04d
+  kind: spine
+  polarity: main
+- from: 04d
+  to: 04e
+  kind: spine
+  polarity: main
+- from: 04e
+  to: 04f
+  kind: spine
+  polarity: main
+- from: 04f
+  to: 04g
+  kind: spine
+  polarity: main
+  label: 对得上
+- from: 04f
+  to: 04h
+  kind: jumpR
+  polarity: main
+  label: 对不上

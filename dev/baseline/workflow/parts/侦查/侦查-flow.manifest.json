@@ -1,0 +1,60 @@
+{
+ "title": "侦查：先排序、再假设、别让一份坏材料把整批带崩",
+ "layout": "flow",
+ "source": "flowtable.md",
+ "dsl_sha256": "430151c4fa237903",
+ "source_sha256": "077cf76d1eb8d274",
+ "counts": {
+  "nodes": 8,
+  "edges": 7,
+  "by_type": {
+   "decision": 1,
+   "end": 2,
+   "start": 1,
+   "task": 4
+  },
+  "labeled_edges": 2,
+  "loop_edges": 0,
+  "pending_nodes": 0
+ },
+ "node_ids": [
+  "04a",
+  "04b",
+  "04c",
+  "04d",
+  "04e",
+  "04f",
+  "04g",
+  "04h"
+ ],
+ "edges": [
+  [
+   "04a",
+   "04b"
+  ],
+  [
+   "04b",
+   "04c"
+  ],
+  [
+   "04c",
+   "04d"
+  ],
+  [
+   "04d",
+   "04e"
+  ],
+  [
+   "04e",
+   "04f"
+  ],
+  [
+   "04f",
+   "04g"
+  ],
+  [
+   "04f",
+   "04h"
+  ]
+ ]
+}

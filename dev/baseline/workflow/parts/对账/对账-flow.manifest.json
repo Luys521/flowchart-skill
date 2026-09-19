@@ -1,0 +1,69 @@
+{
+ "title": "对账：拿表去比\"已经知道的\"，把\"表错了\"和\"还没看\"分开",
+ "layout": "flow",
+ "source": "flowtable.md",
+ "dsl_sha256": "a6c71666800b5b3a",
+ "source_sha256": "b7f6cb4bb2ebf019",
+ "counts": {
+  "nodes": 9,
+  "edges": 9,
+  "by_type": {
+   "decision": 2,
+   "end": 2,
+   "start": 1,
+   "task": 4
+  },
+  "labeled_edges": 4,
+  "loop_edges": 0,
+  "pending_nodes": 0
+ },
+ "node_ids": [
+  "20a",
+  "20b",
+  "20c",
+  "20d",
+  "20e",
+  "20f",
+  "20g",
+  "20h",
+  "20i"
+ ],
+ "edges": [
+  [
+   "20a",
+   "20b"
+  ],
+  [
+   "20b",
+   "20c"
+  ],
+  [
+   "20c",
+   "20d"
+  ],
+  [
+   "20c",
+   "20e"
+  ],
+  [
+   "20d",
+   "20f"
+  ],
+  [
+   "20e",
+   "20f"
+  ],
+  [
+   "20f",
+   "20g"
+  ],
+  [
+   "20g",
+   "20h"
+  ],
+  [
+   "20g",
+   "20i"
+  ]
+ ]
+}

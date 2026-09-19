@@ -30,11 +30,14 @@
             <mxGeometry x="280" y="460" width="160" height="60" as="geometry" />
           </mxCell>
         </object>
-        <object id="04" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;侦查：排序与假设&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;recon.py&lt;/div&gt;&lt;div style=&quot;color:#b45309;font-size:10px;font-weight:bold;&quot;&gt;2-10 秒&lt;/div&gt;">
+        <object id="04" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;侦查：排序与假设&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;recon.py&lt;/div&gt;&lt;div style=&quot;color:#b45309;font-size:10px;font-weight:bold;&quot;&gt;2-10 秒&lt;/div&gt;" link="data:pageId=sub-72a2bec2ab90;⊞ 下钻">
           <mxCell style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
             <mxGeometry x="280" y="560" width="160" height="60" as="geometry" />
           </mxCell>
         </object>
+        <mxCell id="04-sub" value="" style="rounded=1;arcSize=6;fillColor=none;strokeColor=#d79b00;strokeWidth=1;opacity=55;flowchartSkillSub=1;" vertex="1" parent="1">
+          <mxGeometry x="282" y="562" width="156" height="56" as="geometry" />
+        </mxCell>
         <object id="05" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;解析入账&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;parse.py → ledger.py&lt;/div&gt;&lt;div style=&quot;color:#b45309;font-size:10px;font-weight:bold;&quot;&gt;5-60 秒&lt;/div&gt;">
           <mxCell style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
             <mxGeometry x="280" y="660" width="160" height="60" as="geometry" />
@@ -128,11 +131,14 @@
         <mxCell id="19-sub" value="" style="rounded=1;arcSize=6;fillColor=none;strokeColor=#d79b00;strokeWidth=1;opacity=55;flowchartSkillSub=1;" vertex="1" parent="1">
           <mxGeometry x="282" y="2302" width="156" height="56" as="geometry" />
         </mxCell>
-        <object id="20" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;对账：漂移&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;drift.py&lt;/div&gt;&lt;div style=&quot;color:#b45309;font-size:10px;font-weight:bold;&quot;&gt;2-10 秒&lt;/div&gt;">
+        <object id="20" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;对账：漂移&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;drift.py&lt;/div&gt;&lt;div style=&quot;color:#b45309;font-size:10px;font-weight:bold;&quot;&gt;2-10 秒&lt;/div&gt;" link="data:pageId=sub-b1e71369350b;⊞ 下钻">
           <mxCell style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
             <mxGeometry x="280" y="2440" width="160" height="60" as="geometry" />
           </mxCell>
         </object>
+        <mxCell id="20-sub" value="" style="rounded=1;arcSize=6;fillColor=none;strokeColor=#d79b00;strokeWidth=1;opacity=55;flowchartSkillSub=1;" vertex="1" parent="1">
+          <mxGeometry x="282" y="2442" width="156" height="56" as="geometry" />
+        </mxCell>
         <object id="21" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;收敛了吗？&lt;/div&gt;">
           <mxCell style="rhombus;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;flowchartSkillNative=1;" vertex="1" parent="1">
             <mxGeometry x="280" y="2530" width="160" height="80" as="geometry" />
@@ -381,6 +387,83 @@
         </mxCell>
         <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;" edge="1" parent="1" source="02e" target="02f">
           <mxGeometry relative="1" as="geometry"></mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="sub-72a2bec2ab90" name="侦查：先排序、再假设、别让一份坏材料把整批带崩">
+    <mxGraphModel dx="1422" dy="798" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="700" pageHeight="1010" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="侦查：先排序、再假设、别让一份坏材料把整批带崩&lt;br&gt;&lt;span style=&quot;font-size:11px;font-weight:400&quot;&gt;&lt;span style=&quot;background:#dae8fc;border:1px solid #6c8ebf&quot;&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/span&gt; 用户执行　&lt;span style=&quot;background:#d5e8d4;border:1px solid #82b366&quot;&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/span&gt; AI执行　&lt;span style=&quot;background:#ffe6cc;border:1px solid #d79b00&quot;&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/span&gt; 脚本执行　&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontFamily=Microsoft YaHei;" vertex="1" parent="1">
+          <mxGeometry x="40" y="8" width="600" height="64" as="geometry" />
+        </mxCell>
+        <object id="04a" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;读材料层&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;recon.py&lt;/div&gt;">
+          <mxCell style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
+            <mxGeometry x="220" y="160" width="160" height="60" as="geometry" />
+          </mxCell>
+        </object>
+        <object id="04b" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;结构缩样&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;recon.py&lt;/div&gt;&lt;div style=&quot;color:#b45309;font-size:10px;font-weight:bold;&quot;&gt;2-10 秒&lt;/div&gt;">
+          <mxCell style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
+            <mxGeometry x="220" y="260" width="160" height="60" as="geometry" />
+          </mxCell>
+        </object>
+        <object id="04c" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;难度排序&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;recon.py&lt;/div&gt;">
+          <mxCell style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
+            <mxGeometry x="220" y="360" width="160" height="60" as="geometry" />
+          </mxCell>
+        </object>
+        <object id="04d" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;给处置建议&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;recon.py&lt;/div&gt;">
+          <mxCell style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
+            <mxGeometry x="220" y="460" width="160" height="60" as="geometry" />
+          </mxCell>
+        </object>
+        <object id="04e" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;填假设表四列&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;AI&lt;/div&gt;">
+          <mxCell style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
+            <mxGeometry x="220" y="560" width="160" height="60" as="geometry" />
+          </mxCell>
+        </object>
+        <object id="04f" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;脚本列对得上吗？&lt;/div&gt;">
+          <mxCell style="rhombus;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;flowchartSkillNative=1;" vertex="1" parent="1">
+            <mxGeometry x="220" y="650" width="160" height="80" as="geometry" />
+          </mxCell>
+        </object>
+        <object id="04g" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;侦查表可用，交解析&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;recon.py&lt;/div&gt;">
+          <mxCell style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
+            <mxGeometry x="220" y="800" width="160" height="60" as="geometry" />
+          </mxCell>
+        </object>
+        <object id="04h" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;报出对不上的格子&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;recon.py&lt;/div&gt;">
+          <mxCell style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
+            <mxGeometry x="220" y="900" width="160" height="60" as="geometry" />
+          </mxCell>
+        </object>
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;" edge="1" parent="1" source="04a" target="04b">
+          <mxGeometry relative="1" as="geometry"></mxGeometry>
+        </mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;" edge="1" parent="1" source="04b" target="04c">
+          <mxGeometry relative="1" as="geometry"></mxGeometry>
+        </mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;" edge="1" parent="1" source="04c" target="04d">
+          <mxGeometry relative="1" as="geometry"></mxGeometry>
+        </mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;" edge="1" parent="1" source="04d" target="04e">
+          <mxGeometry relative="1" as="geometry"></mxGeometry>
+        </mxCell>
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;" edge="1" parent="1" source="04e" target="04f">
+          <mxGeometry relative="1" as="geometry"></mxGeometry>
+        </mxCell>
+        <mxCell id="e6" value="对得上" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;" edge="1" parent="1" source="04f" target="04g">
+          <mxGeometry relative="1" as="geometry"></mxGeometry>
+        </mxCell>
+        <mxCell id="e7" value="对不上" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=1.0;entryY=0.5;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;" edge="1" parent="1" source="04f" target="04h">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="420" y="690" />
+              <mxPoint x="420" y="930" />
+            </Array>
+          </mxGeometry>
         </mxCell>
       </root>
     </mxGraphModel>
@@ -884,6 +967,102 @@
             <Array as="points">
               <mxPoint x="440" y="390" />
               <mxPoint x="440" y="630" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="sub-b1e71369350b" name="对账：拿表去比&quot;已经知道的&quot;，把&quot;表错了&quot;和&quot;还没看&quot;分开">
+    <mxGraphModel dx="1422" dy="798" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="720" pageHeight="1050" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="对账：拿表去比&amp;quot;已经知道的&amp;quot;，把&amp;quot;表错了&amp;quot;和&amp;quot;还没看&amp;quot;分开&lt;br&gt;&lt;span style=&quot;font-size:11px;font-weight:400&quot;&gt;&lt;span style=&quot;background:#dae8fc;border:1px solid #6c8ebf&quot;&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/span&gt; 用户执行　&lt;span style=&quot;background:#d5e8d4;border:1px solid #82b366&quot;&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/span&gt; AI执行　&lt;span style=&quot;background:#ffe6cc;border:1px solid #d79b00&quot;&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/span&gt; 脚本执行　&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontFamily=Microsoft YaHei;" vertex="1" parent="1">
+          <mxGeometry x="50" y="8" width="600" height="64" as="geometry" />
+        </mxCell>
+        <object id="20a" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;读表与三本账&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;drift.py&lt;/div&gt;">
+          <mxCell style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
+            <mxGeometry x="40" y="160" width="160" height="60" as="geometry" />
+          </mxCell>
+        </object>
+        <object id="20b" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;跑 D1—D5&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;drift.py&lt;/div&gt;&lt;div style=&quot;color:#b45309;font-size:10px;font-weight:bold;&quot;&gt;2-10 秒&lt;/div&gt;">
+          <mxCell style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
+            <mxGeometry x="40" y="260" width="160" height="60" as="geometry" />
+          </mxCell>
+        </object>
+        <object id="20c" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;命中的是哪一类？&lt;/div&gt;">
+          <mxCell style="rhombus;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;flowchartSkillNative=1;" vertex="1" parent="1">
+            <mxGeometry x="40" y="350" width="160" height="80" as="geometry" />
+          </mxCell>
+        </object>
+        <object id="20d" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;出漂移账&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;drift.py&lt;/div&gt;">
+          <mxCell style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
+            <mxGeometry x="40" y="500" width="160" height="60" as="geometry" />
+          </mxCell>
+        </object>
+        <object id="20e" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;出缺口清单&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;drift.py&lt;/div&gt;">
+          <mxCell style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
+            <mxGeometry x="500" y="500" width="160" height="60" as="geometry" />
+          </mxCell>
+        </object>
+        <object id="20f" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;算依据分布&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;drift.py&lt;/div&gt;">
+          <mxCell style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
+            <mxGeometry x="40" y="600" width="160" height="60" as="geometry" />
+          </mxCell>
+        </object>
+        <object id="20g" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;账目对得上吗？&lt;/div&gt;">
+          <mxCell style="rhombus;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;flowchartSkillNative=1;" vertex="1" parent="1">
+            <mxGeometry x="40" y="690" width="160" height="80" as="geometry" />
+          </mxCell>
+        </object>
+        <object id="20h" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;账目自洽，交收敛判断&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;drift.py&lt;/div&gt;">
+          <mxCell style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
+            <mxGeometry x="40" y="840" width="160" height="60" as="geometry" />
+          </mxCell>
+        </object>
+        <object id="20i" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;退 1，报出对不上的地方&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;drift.py&lt;/div&gt;">
+          <mxCell style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
+            <mxGeometry x="40" y="940" width="160" height="60" as="geometry" />
+          </mxCell>
+        </object>
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;" edge="1" parent="1" source="20a" target="20b">
+          <mxGeometry relative="1" as="geometry"></mxGeometry>
+        </mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;" edge="1" parent="1" source="20b" target="20c">
+          <mxGeometry relative="1" as="geometry"></mxGeometry>
+        </mxCell>
+        <mxCell id="e3" value="漂移" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;" edge="1" parent="1" source="20c" target="20d">
+          <mxGeometry relative="1" as="geometry"></mxGeometry>
+        </mxCell>
+        <mxCell id="e4" value="缺口" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=0.5;entryY=0.0;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;" edge="1" parent="1" source="20c" target="20e">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="580" y="390" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;" edge="1" parent="1" source="20d" target="20f">
+          <mxGeometry relative="1" as="geometry"></mxGeometry>
+        </mxCell>
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=1.0;entryY=0.5;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;" edge="1" parent="1" source="20e" target="20f">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="580" y="630" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;" edge="1" parent="1" source="20f" target="20g">
+          <mxGeometry relative="1" as="geometry"></mxGeometry>
+        </mxCell>
+        <mxCell id="e8" value="对得上" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;" edge="1" parent="1" source="20g" target="20h">
+          <mxGeometry relative="1" as="geometry"></mxGeometry>
+        </mxCell>
+        <mxCell id="e9" value="对不上" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=1.0;entryY=0.5;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;" edge="1" parent="1" source="20g" target="20i">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="240" y="730" />
+              <mxPoint x="240" y="970" />
             </Array>
           </mxGeometry>
         </mxCell>
