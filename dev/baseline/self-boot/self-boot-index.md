@@ -17,7 +17,7 @@
   - **L1 子流程** `flowtable_colors/flowtable.md`——《flowtable_colors.py 函数流程表》（id: selfboot-flowtable_colors）（10 节点）
   - **L1 子流程** `flowtable_layout/flowtable.md`——《flowtable_layout.py 函数流程表》（id: selfboot-flowtable_layout）（23 节点）
   - **L1 子流程** `geometry/flowtable.md`——《geometry.py 函数流程表》（id: selfboot-geometry）（35 节点）
-  - **L1 子流程** `import_table/flowtable.md`——《import_table.py 函数流程表》（id: selfboot-import_table）（10 节点）
+  - **L1 子流程** `import_table/flowtable.md`——《import_table.py 函数流程表》（id: selfboot-import_table）（13 节点）
   - **L1 子流程** `init/flowtable.md`——《init.py 函数流程表》（id: selfboot-init）（6 节点）
   - **L1 子流程** `intake/flowtable.md`——《intake.py 函数流程表》（id: selfboot-intake）（11 节点）
   - **L1 子流程** `label/flowtable.md`——《label.py 函数流程表》（id: selfboot-label）（11 节点）

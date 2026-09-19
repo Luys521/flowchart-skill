@@ -8,8 +8,8 @@ meta:
 layout:
   col_x:
   - 400
-  width: 800
-  origin_x: -140
+  width: 940
+  origin_x: -180
 nodes:
 - id: '01'
   name: 开始
@@ -21,7 +21,7 @@ nodes:
   row: 0
   col: 0
   stage: 入口
-  route: 1→09
+  route: 1→12
   desc: 流程起点（结构性节点，不是函数） · 入口：1→main
 - id: '02'
   name: _cells
@@ -30,11 +30,11 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 4
+  row: 6
   col: 0
   stage: 模块级
-  route: →10
-  desc: ★ 一行 markdown 表格 → 单元格列表。 · L62 · 函数
+  route: →13
+  desc: ★ 一行 markdown 表格 → 单元格列表。 · L72 · 函数
 - id: '03'
   name: header_of
   lines:
@@ -42,11 +42,11 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 2
+  row: 4
   col: 0
   stage: 模块级
   route: 1→02｜2→04
-  desc: ★ 外部表 → `(表头, 数据行, 报错)`。认**第一张"像节点表"的表**（至少认出编号与名称两列）。 · L67 · 函数 · 分支：1→_cells
+  desc: ★ 外部表 → `(表头, 数据行, 报错)`。认**第一张"像节点表"的表**（至少认出编号与名称两列）。 · L77 · 函数 · 分支：1→_cells
     2→map_columns
 - id: '04'
   name: map_columns
@@ -55,61 +55,97 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 3
+  row: 5
   col: 0
   stage: 模块级
-  route: →10
-  desc: '★ 表头 → `({下标: 契约列}, 认不出的列名)`。**按"最长的同义词"取胜**，不是"先命中先得"。 · L92 · 函数'
+  route: →13
+  desc: '★ 表头 → `({下标: 契约列}, 认不出的列名)`。**按"最长的同义词"取胜，平局按关键列**。 · L102 · 函数'
 - id: '05'
-  name: norm_next
+  name: norm_id
   lines:
-  - norm_next
+  - norm_id
   type: task
   subject: 脚本
   executor: selfboot
-  row: 6
+  row: 3
   col: 0
   stage: 模块级
-  route: →10
-  desc: ★ `下个节点` 归一：`<br>` / 真换行 → `｜`（规范里唯一的分隔符），`回 X ...` → `→回 X .… · L113 · 函数
+  route: →13
+  desc: ★ 外部编号 → 契约写法。**只做"同一身份的写法归一"**（`1.` / `（1）` / `1、` → `01`）。 · L148 · 函数
 - id: '06'
-  name: norm_type
+  name: merge_same_id
   lines:
-  - norm_type
+  - merge_same_id
   type: task
   subject: 脚本
   executor: selfboot
   row: 7
   col: 0
   stage: 模块级
-  route: →10
-  desc: ★ 类型同义词 → 四种之一；认不出的记一笔（H7 会再拦一次）。 · L126 · 函数
+  route: →13
+  desc: ★ **同一编号出现多行**：只有"其余列一致、仅仅是分支不同"才合并（真实表最常见的"一行一分支"）。 · L165 · 函数
 - id: '07'
-  name: rows_of
+  name: _fix_target
   lines:
-  - rows_of
+  - _fix_target
   type: task
   subject: 脚本
   executor: selfboot
-  row: 5
+  row: 9
   col: 0
   stage: 模块级
-  route: 1→05｜2→06
-  desc: '★ 数据行 → `[(编号, {契约列: 值})]`（缺列写 `—`；`下个节点` / `节点类型` 过规格化）。 · L136 · 函数 · 分支：1→norm_next
-    2→norm_type'
+  route: →13
+  desc: ★ 一条分支里的**目标编号**归一（`→2` / `→2.` / `→（3）` / `→回 3` 都成 `→02` / … · L206 · 函数
 - id: 08
-  name: render
+  name: norm_next
   lines:
-  - render
+  - norm_next
   type: task
   subject: 脚本
   executor: selfboot
   row: 8
   col: 0
   stage: 模块级
-  route: →10
-  desc: ★ 转好的行 → 契约流程表全文（frontmatter + 主体配色 + 十二列表）。 · L157 · 函数
+  route: →07
+  desc: ★ `下个节点` 归一：各种箭头 → `→`、各种分隔符 → `｜`（规范里唯一的分隔符）、`回 X` → `→回 X`、 · L224 · 函数
 - id: 09
+  name: norm_type
+  lines:
+  - norm_type
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 10
+  col: 0
+  stage: 模块级
+  route: →13
+  desc: ★ 类型同义词 → 四种之一。**区分两件事**：这一列**根本没有**（要 AI 判定）与**值认不出**。 · L242 · 函数
+- id: '10'
+  name: rows_of
+  lines:
+  - rows_of
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: 模块级
+  route: 1→05｜2→06｜3→08｜4→09
+  desc: '★ 数据行 → `[(编号, {契约列: 值})]`（缺列写 `—`；编号 / `下个节点` / 类型过规格化）。 · L252 · 函数 · 分支：1→norm_id
+    2→merge_same_id 3→norm_next 4→norm_type'
+- id: '11'
+  name: render
+  lines:
+  - render
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 11
+  col: 0
+  stage: 模块级
+  route: →13
+  desc: ★ 转好的行 → 契约流程表全文（frontmatter + 主体配色 + 十二列表）。 · L279 · 函数
+- id: '12'
   name: main
   lines:
   - main
@@ -119,28 +155,28 @@ nodes:
   row: 1
   col: 0
   stage: 模块级
-  route: 1→03｜2→04｜3→07｜4→08
-  desc: L174 · 函数 · 分支：1→header_of 2→map_columns 3→rows_of 4→render
-- id: '10'
+  route: 1→03｜2→04｜3→10｜4→11
+  desc: L296 · 函数 · 分支：1→header_of 2→map_columns 3→rows_of 4→render
+- id: '13'
   name: 结束
   lines:
   - 结束
   type: end
   subject: 脚本
   executor: selfboot
-  row: 9
+  row: 12
   col: 0
   stage: 出口
   route: —
   desc: 流程终点（结构性节点，不是函数）
 edges:
 - from: '01'
-  to: 09
+  to: '12'
   kind: spine
   polarity: main
   label: '1'
 - from: '02'
-  to: '10'
+  to: '13'
   kind: jumpR
   polarity: main
 - from: '03'
@@ -154,48 +190,70 @@ edges:
   polarity: main
   label: '2'
 - from: '04'
-  to: '10'
+  to: '13'
   kind: jumpR
   polarity: main
 - from: '05'
-  to: '10'
+  to: '13'
   kind: jumpR
   polarity: main
 - from: '06'
-  to: '10'
+  to: '13'
   kind: jumpR
   polarity: main
 - from: '07'
+  to: '13'
+  kind: jumpR
+  polarity: main
+- from: 08
+  to: '07'
+  kind: spine
+  polarity: main
+- from: 09
+  to: '13'
+  kind: jumpR
+  polarity: main
+- from: '10'
   to: '05'
   kind: spine
   polarity: main
   label: '1'
-- from: '07'
+- from: '10'
   to: '06'
   kind: jumpR
   polarity: main
   label: '2'
-- from: 08
-  to: '10'
+- from: '10'
+  to: 08
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '10'
+  to: 09
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '11'
+  to: '13'
   kind: spine
   polarity: main
-- from: 09
+- from: '12'
   to: '03'
-  kind: spine
+  kind: jumpR
   polarity: main
   label: '1'
-- from: 09
+- from: '12'
   to: '04'
   kind: jumpR
   polarity: main
   label: '2'
-- from: 09
-  to: '07'
-  kind: jumpR
+- from: '12'
+  to: '10'
+  kind: spine
   polarity: main
   label: '3'
-- from: 09
-  to: 08
+- from: '12'
+  to: '11'
   kind: jumpR
   polarity: main
   label: '4'

@@ -338,10 +338,12 @@ def run_face(tmp=None):
     dp = SKILL / 'dev' / 'DECISIONS.md'
     if c.check(dp.exists(), 'DECISIONS.md 存在'):
         dt = dp.read_text(encoding='utf-8')
-        ids = re.findall(r'^## (D-\d\d) ', dt, re.M)
+        # **编号是"两位以上"**（2026-09-18 实测）：原先只认 `D-\d\d`，于是第 100 条决策**不被算成一条**，
+        # 它的正文被并进 D-99 一起数 ⇒ 报"D-99 超长"。同一类假设在 H 系列上也踩过一次（`H(\d)` 只认单个数字）。
+        ids = re.findall(r'^## (D-\d{2,}) ', dt, re.M)
         c.check(len(ids) == len(set(ids)), 'D 编号不重复', f'{len(ids)} 条')
-        c.check(ids == sorted(ids), 'D 编号按序排列', f'{ids[:3]}…')
-        ents = re.split(r'^## D-\d\d ', dt, flags=re.M)[1:]
+        c.check(ids == sorted(ids, key=lambda s: int(s[2:])), 'D 编号按序排列', f'{ids[:3]}…')
+        ents = re.split(r'^## D-\d{2,} ', dt, flags=re.M)[1:]
         over = [ids[i] for i, e in enumerate(ents) if len(e.rstrip().splitlines()) > 16]
         c.check(not over, '每条决策 ≤16 行（是日志不是公案）', '超长 ' + '、'.join(over))
         rd = _mds()[SKILL / 'README.md']

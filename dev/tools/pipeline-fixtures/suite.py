@@ -565,6 +565,46 @@ def plan_paths(root):
     cases.append(('56 plan 的三处口径：辅助目录（`shots/`）不算流程目录 · `待澄清` 的流程不要求目录 · '
                   '表头三格按**字段名**取值（`；` + 散文照样认）且缺哪格点哪格',
                   ok56, rc1, (out1[-200:] + out2[-200:] + out3[-260:]) if not ok56 else ''))
+    # 57 外部表的**五种真实形态**（2026-09-18 用它们撞过 `import_table`，四处修 + 两处判定"不该硬转"）：
+    #    ① 英文表头 + 英文类型值 ② 一行一分支（同编号多行）③ 中文点号编号 + 裸编号引用
+    #    ④ 字母编号 ⇒ **不改节点身份、报清楚**（H3：有些形态不该由它硬转）
+    imp_d = root / 'imports5'
+    imp_d.mkdir(exist_ok=True)
+    shapes = {
+        'en.md': ('| Step | Node Name | Type | Owner | Next |\n| --- | --- | --- | --- | --- |\n'
+                  '| 1 | 提交申请 | Start | 申请人 | 2 |\n| 2 | 资料齐全? | Decision | 窗口 | 齐全->3<br>不齐->4 |\n'
+                  '| 3 | 科室审核 | Task | 科长 | 5 |\n| 4 | 补正材料 | Task | 申请人 | 2 |\n'
+                  '| 5 | 归档 | End | 档案室 | — |\n'),
+        'rows.md': ('| 序号 | 节点名称 | 节点类型 | 下个节点 |\n| --- | --- | --- | --- |\n'
+                    '| 01 | 提交 | 开始 | →02 |\n| 02 | 超限? | 判断 | 超限→回 03 |\n'
+                    '| 02 | 超限? | 判断 | 未超→04 |\n| 03 | 招标 | 任务 | →04 |\n'
+                    '| 04 | 归档 | 结束 | — |\n'),
+        'dot.md': ('| 序号 | 处理步骤 | 下一步 |\n| --- | --- | --- |\n'
+                   '| 1. | 受理 | 2. |\n| 2. | 判定 | 3. / 4. |\n| 3. | 排查 | 5. |\n'
+                   '| 4. | 协商 | 5. |\n| 5. | 关闭 | — |\n'),
+        'letter.md': ('| 编号 | 环节 | 流转 |\n| --- | --- | --- |\n| A | 收草案 | →B |\n| B | 法务评审 | →C |\n'),
+    }
+    for name, text in shapes.items():
+        (imp_d / name).write_text('# 外部表\n\n' + text, encoding='utf-8', newline='\n')
+    got = {}
+    for name in shapes:
+        rc_i, out_i = run([sys.executable, str(IMPORT_CMD), str(imp_d / name),
+                           '-o', str(imp_d / ('out-' + name))])
+        body_i = (imp_d / ('out-' + name)).read_text(encoding='utf-8') if (imp_d / ('out-' + name)).exists() else ''
+        rc_c, _out_c = (run([sys.executable, str(REPO / 'scripts' / 'table_to_dsl.py'), '--check',
+                             str(imp_d / ('out-' + name))]) if body_i else (1, ''))
+        got[name] = (rc_i, out_i, body_i, rc_c)
+    ok57 = (got['en.md'][0] == 0 and got['en.md'][3] == 0                 # 英文表头 → 直接过契约校验
+            and '齐全→03 ｜ 不齐→04' in got['en.md'][2]
+            and got['rows.md'][0] == 0 and got['rows.md'][3] == 0         # 一行一分支 ⇒ 合并
+            and '超限→回 03 ｜ 未超→04' in got['rows.md'][2]
+            and got['dot.md'][0] == 0                                     # `1.` → `01`、`3. / 4.` → `→03 ｜ →04`
+            and '| 01 | 受理' in got['dot.md'][2] and '→03 ｜ →04' in got['dot.md'][2]
+            and got['letter.md'][0] == 1 and '不改节点身份' in got['letter.md'][1])
+    cases.append(('57 外部表五种真实形态：英文表头 / 一行一分支（合并） / 中文点号编号+裸编号引用 ⇒ 都能过契约校验；'
+                  '**字母编号 ⇒ 退 1 并说清"不改节点身份"**（不硬转）',
+                  ok57, got['en.md'][0],
+                  '；'.join(f'{k}: import={v[0]} check={v[3]}' for k, v in got.items()) if not ok57 else ''))
     return cases
 
 
@@ -921,7 +961,7 @@ def import_paths(root):
     hdr = [ln for ln in got.splitlines() if ln.startswith('| 项目运作阶段')]
     n_cols = len(hdr[0].strip().strip('|').split('|')) if hdr else 0
     ok = (rc == 0 and n_cols == 12 and '| 开始 |' in got and '| 结束 |' in got
-          and '是→3 ｜ 否→4' in got and '<br>' not in got and '拿材料 → 出回执' in got
+          and '是→03 ｜ 否→04' in got and '| 01 |' in got and '<br>' not in got and '拿材料 → 出回执' in got
           and '| 甲方 | #dae8fc |' in got and 'id: importfix' in got)
     cases.append(('㊾ import：外部表（同义词列 / `<br>` 分支 / 起点终点 / 备注列 / 缺 3 列）→ '
                   '12 列契约（类型归一 · `<br>`→`｜` · 备注进描述 · 缺列留 `—`）', ok, rc,

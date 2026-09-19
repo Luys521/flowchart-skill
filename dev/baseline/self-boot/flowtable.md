@@ -23,7 +23,7 @@ level: L0
 | 布局与配色 | 10 | 模块 · flowtable_colors | 任务 | — | — | — | 脚本 | selfboot | — | →11 | 8 个函数 · ⊞ flowtable_colors/flowtable.md |
 | 布局与配色 | 11 | 模块 · flowtable_layout | 任务 | — | — | — | 脚本 | selfboot | — | →12 | 21 个函数 · ⊞ flowtable_layout/flowtable.md |
 | 渲染 | 12 | 模块 · geometry | 任务 | — | — | — | 脚本 | selfboot | — | →13 | 33 个函数 · ⊞ geometry/flowtable.md |
-| 接管与解析 | 13 | 模块 · import_table | 任务 | — | — | — | 脚本 | selfboot | — | →14 | 8 个函数 · ⊞ import_table/flowtable.md |
+| 接管与解析 | 13 | 模块 · import_table | 任务 | — | — | — | 脚本 | selfboot | — | →14 | 11 个函数 · ⊞ import_table/flowtable.md |
 | 编排入口 | 14 | 模块 · init | 任务 | — | — | — | 脚本 | selfboot | — | →15 | 4 个函数 · ⊞ init/flowtable.md |
 | 接管与解析 | 15 | 模块 · intake | 任务 | — | — | — | 脚本 | selfboot | — | →16 | 9 个函数 · ⊞ intake/flowtable.md |
 | 渲染 | 16 | 模块 · label | 任务 | — | — | — | 脚本 | selfboot | — | →17 | 9 个函数 · ⊞ label/flowtable.md |
