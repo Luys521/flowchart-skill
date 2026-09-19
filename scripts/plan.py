@@ -108,8 +108,17 @@ FLOW_CELL = re.compile(r'^`(F\d{2,})`\s*(.*)$')
 # 而目的决定**交付粒度**（汇报全貌 vs SOP 落地）；**材料根**决定"手上这些东西够不够"——
 # 实测踩过：只算了用户当场递过来的那一个文件夹，于是把用户**早就转述好**的补充协议当成"读不动"
 # 记进了澄清申请（它就在同一个项目的另一个工作目录里）。三者缺一，拆出来的表迟早要推倒。
-SCOPE_RE = re.compile(r'^> \*\*本任务\*\*：主体 = (?P<who>.+?)\s*·\s*目的 = (?P<why>.+?)'
-                      r'\s*·\s*材料根 = (?P<root>.+?)\s*$', re.M)
+# **按字段名取值**（2026-09-18 端到端实测后定的口径）：真样本里那一行是这么写的——
+# "> **本任务**：主体 = 甲（…）× 乙（…）的 EPC 合作链；材料包里属「丙」体系的模板 … · 目的 = …"
+# 它**用 `；` 分隔、还夹着散文**，于是原先那条要求 `·` 且不许有多余文字的正则**匹配不上**，
+# 校验报的是"没有这一行"——**诊断错在仪器**：真正缺的是 `材料根` 一个字段。
+# 现在的口径：把「本任务」那一块拿出来，**按字段名找**，值取到下一个字段名之前。
+# **块只取"本任务那一行 + 紧随其后的折行"**：计划里后面还跟着一串 `> **…**：` 的说明行，
+# 早先把它们一并吞进来，于是 `目的` 的值一直吃到最后一个说明（实测：报错信息里贴了整整一屏）。
+# 判据：续行以 `>` 开头、且**不含 `**`**（说明行都带加粗标签）；最多接两行。
+SCOPE_BLOCK_RE = re.compile(r'^(>.*\*\*本任务\*\*.*(?:\n>(?![^\n]*\*\*)[^\n]*){0,2})', re.M)
+SCOPE_FIELD = re.compile(r'(主体|目的|材料根)\s*[=:：]\s*', re.M)
+SCOPE_SHOW = 60                  # 报错里每格最多露多少字（三格都贴全了反而看不清缺哪格）
 SCOPE_BLANK = '> **本任务**：主体 = — · 目的 = — · 材料根 = —'
 # 排除清单的**第二支**（§4.1 ③）：含流程=否 的材料当然不进流程；**含流程、但不在本次主体/目的范围内**
 # 的材料也要有地方放——否则只能把它塞进流程清单（凭空多一条图）或删掉（静默消失）。
@@ -334,6 +343,34 @@ def read_cards(text):
     return cards, ''
 
 
+def _clip(s, n=None):
+    """读数太长就截断（报错信息是给人看的，三格各贴一整段反而看不出缺哪格）。"""
+    s = str(s or '').strip()
+    n = n or SCOPE_SHOW
+    return s if len(s) <= n else s[:n] + '…'
+
+
+def scope_of(text):
+    """计划表头 → `(主体, 目的, 材料根)`。**按字段名取值**（不是按分隔符），取不到就是空串。
+
+    两种写法都认：`主体 = … · 目的 = … · 材料根 = …`（模板那种）与散文式
+    `主体 = …；… · 目的 = …`（真样本那种）。值取到**下一个字段名之前**为止——
+    所以值里带逗号、分号、破折号、括号都不影响；**只认字段名**这件事本身是硬的（§4.0 三格必填）。
+    """
+    m = SCOPE_BLOCK_RE.search(text)
+    if not m:
+        return ('', '', '')
+    block = m.group(0)
+    hits = list(SCOPE_FIELD.finditer(block))
+    if not hits:
+        return ('', '', '')
+    got = {}
+    for i, h in enumerate(hits):
+        end = hits[i + 1].start() if i + 1 < len(hits) else len(block)
+        got[h.group(1)] = block[h.end():end].strip().strip('·；;、, ').strip()
+    return (got.get('主体', ''), got.get('目的', ''), got.get('材料根', ''))
+
+
 def parse_doc(text):
     """`plan.md` → `(流程行, 申请行, 排除行, 报错)`。三张表各按**自己的表头**认（列规范在代码里只有一份）。
 
@@ -454,8 +491,12 @@ def check_plan(cards, rows, asks, excl, root=None, scope=('', '', '')):
                     '**先问清主体、目的与材料根，再拆解**（拆解的每一步都以"主体是谁"为前提，'
                     '而"材料根"决定手上这些够不够）')
     elif who in BLANK or why in BLANK or mroot in BLANK:
-        errs.append(f'计划的「本任务」没填完（主体 = {who or "空"} · 目的 = {why or "空"} · '
-                    f'材料根 = {mroot or "空"}）——没澄清就不该开工（§4.0）')
+        # **逐格点名缺哪一格**（2026-09-18 端到端实测）：原先只说"没填完"，而真样本缺的是
+        # `材料根` 一个字段——泛泛一句"没澄清就不该开工"让 AI 得自己回去数三格。缺哪格就说哪格。
+        lack = [n for n, v in (('主体', who), ('目的', why), ('材料根', mroot)) if v in BLANK]
+        cur = ' · '.join(f'{n} = {_clip(v) or "空"}' for n, v in
+                         (('主体', who), ('目的', why), ('材料根', mroot)))
+        errs.append(f'计划的「本任务」缺 {"、".join(lack)}（当前：{cur}）——§4.0：没澄清就不该开工')
     for r in rows:                                    # `_names` 内联：只被本函数用一次（见文件头）
         hit = FLOW_CELL.match(str(r.get('流程', '')).strip())
         if hit:
@@ -517,13 +558,25 @@ def check_plan(cards, rows, asks, excl, root=None, scope=('', '', '')):
     errs += _check_asks(rows, asks, cards, names)
     if root:
         # §4.4 ②：流程数 = 成果根下的 `<流程名>/` 目录数（名字逐个对，多的少的都报）。
-        # （这段原先是个 `_check_dirs` 助手，只被这里调一次 ⇒ 内联；见文件头的读数说明。）
+        # **"流程目录"的定义 = 里面有一张 `flowtable.md`**（2026-09-18 端到端实测）：成果根里允许住
+        # **辅助目录**——`render_pages.py` 的 `shots/`（转图片 + `vision.json`）就是一例。
+        # 原先按"任何子目录"算，于是一次 T3 视觉取证就让计划校验凭空多报一条"目录不在计划里"；
+        # 改成只数带流程表的目录之后，"计划里有的没做出来"那条判据不受影响（它按名字比）。
+        # **"流程目录"的定义**（2026-09-18 端到端实测后校准）：**计划里点过名的目录照算**
+        # （哪怕里面还没落表——那是"做没做完"的事，不是"有没有这个目录"），
+        # **没点名、且里面也没有 `flowtable.md` 的目录不算**——`render_pages.py` 的 `shots/`
+        # （转图片 + `vision.json`）就是一例；原先按"任何子目录"算，一次 T3 视觉取证就会让
+        # 计划校验凭空多报一条"目录不在计划里"。
         try:
-            dirs = {p.name for p in Path(root).iterdir() if p.is_dir()}
+            subdirs = {p.name for p in Path(root).iterdir() if p.is_dir()}
         except OSError as e:
             errs.append(f'成果根读不了：{e}')
-            dirs = set(names.values())
-        want = {n for n in names.values() if n not in BLANK}
+            subdirs = set(names.values())
+        # **`待澄清` 的流程不要求目录**：§5.4 的收敛口径要求 `待澄清` = 0，即它**还不该落表**
+        # （材料没定、要不要拆没定）；一边要它零条、一边要它的目录，是两句互相打架的话。
+        st = {_id_of(r.get('流程', ''), 'F'): str(r.get('状态', '')).strip() for r in rows}
+        want = {n for fid, n in names.items() if n not in BLANK and st.get(fid) != '待澄清'}
+        dirs = {n for n in subdirs if n in want or (Path(root) / n / 'flowtable.md').is_file()}
         miss, extra = sorted(want - dirs), sorted(dirs - want)
         if miss:
             errs.append(f'计划里有 {len(miss)} 条流程还没有目录（§4.4 ②：计划说做几张就得真做出几张）：'
@@ -601,11 +654,8 @@ def cmd_check(a):
           f' · 清点 `{a.intake}` · 流程 {len(rows)} / 澄清 {len(asks)} / 排除 {len(excl)}')
     if not a.root:
         print('> **跳过了 §4.4 ②**（流程数 = `<流程名>/` 目录数）：没给 `--root`。')
-    # 表头那一行 → `(主体, 目的, 材料根)`；没有这一行就是三个空串（§4.0：没澄清就不该开工）。
-    # （原先是个 `_scope_of` 助手，只被这里调一次 ⇒ 内联；见文件头的读数说明。）
-    hit = SCOPE_RE.search(text)
-    scope = (hit.group('who').strip(), hit.group('why').strip(), hit.group('root').strip()) \
-        if hit else ('', '', '')
+    # 表头那一段 → `(主体, 目的, 材料根)`；取不到就是三个空串（§4.0：没澄清就不该开工）。
+    scope = scope_of(text)
     errs = check_plan(cards, rows, asks, excl, a.root, scope)
     waiting = sum(1 for r in rows if str(r.get('状态', '')).strip() == '待澄清')
     if errs:

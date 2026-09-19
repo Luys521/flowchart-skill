@@ -30,7 +30,7 @@
   - **L1 子流程** `parse_ooxml/flowtable.md`——《parse_ooxml.py 函数流程表》（id: selfboot-parse_ooxml）（13 节点）
   - **L1 子流程** `parse_pdf/flowtable.md`——《parse_pdf.py 函数流程表》（id: selfboot-parse_pdf）（11 节点）
   - **L1 子流程** `parse_text/flowtable.md`——《parse_text.py 函数流程表》（id: selfboot-parse_text）（15 节点）
-  - **L1 子流程** `plan/flowtable.md`——《plan.py 函数流程表》（id: selfboot-plan）（19 节点）
+  - **L1 子流程** `plan/flowtable.md`——《plan.py 函数流程表》（id: selfboot-plan）（21 节点）
   - **L1 子流程** `pptx_text/flowtable.md`——《pptx_text.py 函数流程表》（id: selfboot-pptx_text）（10 节点）
   - **L1 子流程** `probe/flowtable.md`——《probe.py 函数流程表》（id: selfboot-probe）（14 节点）
   - **L1 子流程** `query/flowtable.md`——《query.py 函数流程表》（id: selfboot-query）（11 节点）

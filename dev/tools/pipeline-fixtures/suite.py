@@ -461,16 +461,20 @@ def plan_paths(root):
                   '组名歪 / 接力悬空 / 挂在悬空 / **表头没澄清** / **含流程的塞进排除清单** / 表头坏',
                   not bad, 1, '；'.join(bad)))
     # §4.4 ②：流程数 = `<流程名>/` 目录数（少一个要报，补齐后要过）
+    #    2026-09-18 校准：**只对「可落表」的流程要求目录**——`白板流程` 的状态是 `待澄清`
+    #    （材料 `不确定`），而 §5.4 的收敛口径要 `待澄清` = 0，也就是说它**还不该落表**；
+    #    一边要它零条、一边要它的目录，是两句互相打架的话（真根上跑出来的）。
     dirs = root / 'plan-dirs'
-    for n in ('资质审查', '采购申请', '结算付款'):
+    for n in ('资质审查', '采购申请'):
         (dirs / n).mkdir(parents=True, exist_ok=True)
     rc1, out1 = run([sys.executable, str(PLAN_CMD), 'check', str(root / 'plan-ok.md'),
                      '--intake', str(root / 'intake.md'), '--root', str(dirs)])
-    (dirs / '白板流程').mkdir(exist_ok=True)
+    (dirs / '结算付款').mkdir(exist_ok=True)
     rc2, out2 = run([sys.executable, str(PLAN_CMD), 'check', str(root / 'plan-ok.md'),
                      '--intake', str(root / 'intake.md'), '--root', str(dirs)])
-    cases.append(('㊻ §4.4 ②：计划 4 条 / 目录 3 个 ⇒ 退 1（点出缺哪条）；补齐 ⇒ 退 0',
-                  rc1 == 1 and '白板流程' in out1 and rc2 == 0, rc1, (out1[-160:] + out2[-160:])))
+    cases.append(('㊻ §4.4 ②：3 条「可落表」的流程只做出 2 个目录 ⇒ 退 1 并点名缺哪条；补齐 ⇒ 退 0 · '
+                  '**`待澄清` 的流程不要求目录**（它还落不了表）',
+                  rc1 == 1 and '结算付款' in out1 and rc2 == 0, rc1, (out1[-200:] + out2[-160:])))
 
     # ㊼ 清点里「含流程 = 不确定」的材料**必须有人问**（真材料集上现形的那条：5 份读不动的材料
     #    既不是流程、也不在排除清单里，计划里一份都没出现，而谁也没注意到少了 5 份）。
@@ -535,6 +539,32 @@ def plan_paths(root):
                   ok_split and rc3 == 2 and '静默消失' in out3
                   and (root / 'plan-split.md').read_bytes() == before,
                   rc1, (out1[-200:] + frow + out2[-260:] + out3[-200:]) if not ok_split else ''))
+    # 56 plan 的三处口径（2026-09-18 端到端跑真根时现形的三条，都已修）：
+    #    ① 成果根里的**辅助目录**（`render_pages.py` 的 `shots/`）不算"流程目录"——它没有流程表；
+    #    ② `待澄清` 的流程**不要求**目录（§5.4 要它零条 = 它还不该落表，两句不能互相打架）；
+    #    ③ 表头三格**按字段名取值**：真样本用 `；` 分隔、夹着散文；缺哪一格就点哪一格的名。
+    (root / 'shots').mkdir(exist_ok=True)
+    (root / 'shots' / 'M13-p001.png').write_bytes(b'\x89PNG\r\n\x1a\n' + b'\x00' * 16)
+    rc1, out1 = run([sys.executable, str(PLAN_CMD), 'check', str(root / 'plan-split.md'),
+                     '--intake', str(root / 'intake.md'), '--root', str(root)])
+    txt = (root / 'plan-split.md').read_text(encoding='utf-8')
+    prose = ('> **本任务**：主体 = 甲（…）× 乙（…）的 **合作链**；材料包里属「丙」体系的模板按 §4.0 '
+             '移出本次范围 · 目的 = **合作全貌** + **SOP 落地**；先出全貌，再挑一条细化 · 材料根 = `D:\\材料包`')
+    (root / 'plan-prose.md').write_text(re.sub(r'^> \*\*本任务\*\*：.*$', prose, txt, count=1, flags=re.M),
+                                        encoding='utf-8', newline='\n')
+    rc2, out2 = run([sys.executable, str(PLAN_CMD), 'check', str(root / 'plan-prose.md'),
+                     '--intake', str(root / 'intake.md'), '--root', str(root)])
+    (root / 'plan-noroot.md').write_text(
+        re.sub(r'^> \*\*本任务\*\*：.*$', prose.replace(' · 材料根 = `D:\\材料包`', ''), txt, count=1, flags=re.M),
+        encoding='utf-8', newline='\n')
+    rc3, out3 = run([sys.executable, str(PLAN_CMD), 'check', str(root / 'plan-noroot.md'),
+                     '--intake', str(root / 'intake.md'), '--root', str(root)])
+    ok56 = (rc1 == 0 and 'shots' not in out1 and '还没有目录' not in out1
+            and rc2 == 0 and '主体 = 甲' in (root / 'plan-prose.md').read_text(encoding='utf-8')
+            and rc3 == 1 and '缺 材料根' in out3)
+    cases.append(('56 plan 的三处口径：辅助目录（`shots/`）不算流程目录 · `待澄清` 的流程不要求目录 · '
+                  '表头三格按**字段名**取值（`；` + 散文照样认）且缺哪格点哪格',
+                  ok56, rc1, (out1[-200:] + out2[-200:] + out3[-260:]) if not ok56 else ''))
     return cases
 
 
