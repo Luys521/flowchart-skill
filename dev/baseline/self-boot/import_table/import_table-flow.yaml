@@ -34,7 +34,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →10
-  desc: ★ 一行 markdown 表格 → 单元格列表。 · L59 · 函数
+  desc: ★ 一行 markdown 表格 → 单元格列表。 · L62 · 函数
 - id: '03'
   name: header_of
   lines:
@@ -46,7 +46,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→04
-  desc: ★ 外部表 → `(表头, 数据行, 报错)`。认**第一张"像节点表"的表**（至少认出编号与名称两列）。 · L64 · 函数 · 分支：1→_cells
+  desc: ★ 外部表 → `(表头, 数据行, 报错)`。认**第一张"像节点表"的表**（至少认出编号与名称两列）。 · L67 · 函数 · 分支：1→_cells
     2→map_columns
 - id: '04'
   name: map_columns
@@ -59,7 +59,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →10
-  desc: '★ 表头 → `({下标: 契约列}, 认不出的列名)`。**按"最长的同义词"取胜**，不是"先命中先得"。 · L89 · 函数'
+  desc: '★ 表头 → `({下标: 契约列}, 认不出的列名)`。**按"最长的同义词"取胜**，不是"先命中先得"。 · L92 · 函数'
 - id: '05'
   name: norm_next
   lines:
@@ -71,7 +71,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →10
-  desc: ★ `下个节点` 归一：`<br>` / 真换行 → `｜`（规范里唯一的分隔符），`回 X ...` → `→回 X .… · L110 · 函数
+  desc: ★ `下个节点` 归一：`<br>` / 真换行 → `｜`（规范里唯一的分隔符），`回 X ...` → `→回 X .… · L113 · 函数
 - id: '06'
   name: norm_type
   lines:
@@ -83,7 +83,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →10
-  desc: ★ 类型同义词 → 四种之一；认不出的记一笔（H7 会再拦一次）。 · L123 · 函数
+  desc: ★ 类型同义词 → 四种之一；认不出的记一笔（H7 会再拦一次）。 · L126 · 函数
 - id: '07'
   name: rows_of
   lines:
@@ -95,7 +95,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→05｜2→06
-  desc: '★ 数据行 → `[(编号, {契约列: 值})]`（缺列写 `—`；`下个节点` / `节点类型` 过规格化）。 · L133 · 函数 · 分支：1→norm_next
+  desc: '★ 数据行 → `[(编号, {契约列: 值})]`（缺列写 `—`；`下个节点` / `节点类型` 过规格化）。 · L136 · 函数 · 分支：1→norm_next
     2→norm_type'
 - id: 08
   name: render
@@ -108,7 +108,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →10
-  desc: ★ 转好的行 → 契约流程表全文（frontmatter + 主体配色 + 十二列表）。 · L154 · 函数
+  desc: ★ 转好的行 → 契约流程表全文（frontmatter + 主体配色 + 十二列表）。 · L157 · 函数
 - id: 09
   name: main
   lines:
@@ -120,7 +120,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→03｜2→04｜3→07｜4→08
-  desc: L171 · 函数 · 分支：1→header_of 2→map_columns 3→rows_of 4→render
+  desc: L174 · 函数 · 分支：1→header_of 2→map_columns 3→rows_of 4→render
 - id: '10'
   name: 结束
   lines:
