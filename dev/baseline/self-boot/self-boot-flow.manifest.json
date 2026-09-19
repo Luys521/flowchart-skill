@@ -2,8 +2,8 @@
  "title": "self-boot — 模块索引",
  "layout": "flow",
  "source": "flowtable.md",
- "dsl_sha256": "1f26add0a90923d9",
- "source_sha256": "030c502e8d634f37",
+ "dsl_sha256": "0a7991d0e5edb5d3",
+ "source_sha256": "2fefa0f6fc1f7393",
  "counts": {
   "nodes": 45,
   "edges": 44,

@@ -68,6 +68,49 @@ def _page_span(spec):
     return (a, b)
 
 
+DEFAULT_TEXT_LAYER = {'min_pages': 4, 'max_elements_per_page': 1.2, 'min_chars_per_page': 300}
+THIN_ACTION = ('文字层可能只是页眉 / 标签，正文多半在图里：建议走 §1.5 手段 2'
+               '（`render_pages` 转图片 → 视觉）核对后再引用')
+DICT_NAME = 'dictionary.yaml'
+
+
+def load_thresholds(path=None):
+    """阈值 = 内置默认 + `dictionary.yaml` 的 `pdf_text_layer:` 段（读不到就用默认，**不报错**）。"""
+    th = dict(DEFAULT_TEXT_LAYER)
+    p = Path(path) if path else Path(__file__).with_name(DICT_NAME)
+    try:
+        import yaml
+        with open(p, encoding='utf-8') as fh:
+            got = (yaml.safe_load(fh) or {}).get('pdf_text_layer') or {}
+    except Exception:
+        return th
+    for k, v in got.items():
+        if k in th and isinstance(v, (int, float)) and not isinstance(v, bool):
+            th[k] = v
+    return th
+
+
+def thin_note(total, elements, th=None):
+    """**尺子二**（§1.6）：`"抽出来太少"` → 一句降级说明；不判薄返回空串。
+
+    与质量门（尺子一）分工：那一把吃**已经抽出来的那几行**（单字行占比 / 平均行长），
+    这一把只吃**量**（每页元素数 **且** 每页字数）——实测两种病能"读数全正常"地躺在同一批材料里
+    （808 KB / 11 页只抽出 11 条、2.3 MB / 4 页只抽出 2 条，而单字行占比与平均行长都好看）。
+    **适用面只有 PDF**：只有它存在"文本层整层缺失"这回事（扫描件 / 矢量文字）；
+    docx / pptx / 纯文本没有这个先验，一份五段的 docx 抽五条是**正常**。
+    """
+    th = dict(th or DEFAULT_TEXT_LAYER)
+    if total < th['min_pages'] or not elements:
+        return ''                                       # 样本太小不判（一页的封面天然薄）
+    chars = sum(len(e.get('text') or '') for e in elements)
+    per_el, per_ch = len(elements) / total, chars / total
+    if per_el <= th['max_elements_per_page'] and per_ch <= th['min_chars_per_page']:
+        return (f'文字层薄（{total} 页只有 {len(elements)} 条元素 / 共 {chars} 字 ⇒ 每页 {per_el:.1f} 条、'
+                f'{per_ch:.0f} 字；阈值「≤ {th["max_elements_per_page"]} 条且 ≤ {th["min_chars_per_page"]} 字」）：'
+                f'{THIN_ACTION}')
+    return ''
+
+
 def parse_pdf(path, mid, max_pages, max_chars, pages=None):
     """`.pdf` → `(elements, 采样说明, 报错文案)`。只抽文本层；空页跳过（不伪造 element）。
 
@@ -105,6 +148,9 @@ def parse_pdf(path, mid, max_pages, max_chars, pages=None):
             if cut:
                 el['degraded'] = f'第 {pno} 页正文截断到 {max_chars} 字'
             out.append(el)
+    thin = thin_note(total, out, load_thresholds())
+    if thin:
+        shared.append(thin)                             # 材料级说明：挂到这份材料的每条上（与页数上限同档）
     note = '；'.join(dict.fromkeys(shared))              # 去重但保序
     if pages:
         # 收窄是**材料级**事实（这份材料整体只取了那几页）⇒ 挂到它的每条上（与页数上限同一档）

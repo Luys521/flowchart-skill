@@ -8,8 +8,8 @@ meta:
 layout:
   col_x:
   - 400
-  width: 740
-  origin_x: -220
+  width: 840
+  origin_x: -80
 nodes:
 - id: '01'
   name: 开始
@@ -21,7 +21,7 @@ nodes:
   row: 0
   col: 0
   stage: 入口
-  route: 1→08
+  route: 1→10
   desc: 流程起点（结构性节点，不是函数） · 入口：1→main
 - id: '02'
   name: _import_dep
@@ -33,7 +33,7 @@ nodes:
   row: 7
   col: 0
   stage: 模块级
-  route: →09
+  route: →11
   desc: ★ import 一个必须依赖 → `(模块, 报错文案)`（缺了给可执行的提示）。 · L36 · 函数
 - id: '03'
   name: _read_json
@@ -45,7 +45,7 @@ nodes:
   row: 2
   col: 0
   stage: 模块级
-  route: →09
+  route: →11
   desc: ★ 读 JSON（容忍 BOM）。 · L45 · 函数
 - id: '04'
   name: _write_notes
@@ -57,7 +57,7 @@ nodes:
   row: 3
   col: 0
   stage: 模块级
-  route: →09
+  route: →11
   desc: ★ 写材料层补注：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 `ledger.dump`… · L50 · 函数
 - id: '05'
   name: _page_span
@@ -69,9 +69,33 @@ nodes:
   row: 4
   col: 0
   stage: 模块级
-  route: →09
+  route: →11
   desc: ★ `'40-60'` / `'7'` → `(40, 60)`；空 → `None`；**写歪/反区间要报错，不许静默按… · L55 · 函数
 - id: '06'
+  name: load_thresholds
+  lines:
+  - load_thresholds
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 8
+  col: 0
+  stage: 模块级
+  route: →11
+  desc: ★ 阈值 = 内置默认 + `dictionary.yaml` 的 `pdf_text_layer:` 段（读不到就用默认… · L77 · 函数
+- id: '07'
+  name: thin_note
+  lines:
+  - thin_note
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 9
+  col: 0
+  stage: 模块级
+  route: →11
+  desc: ★ **尺子二**（§1.6）：`"抽出来太少"` → 一句降级说明；不判薄返回空串。 · L93 · 函数
+- id: 08
   name: parse_pdf
   lines:
   - parse_pdf
@@ -81,9 +105,10 @@ nodes:
   row: 6
   col: 0
   stage: 模块级
-  route: →02
-  desc: ★ `.pdf` → `(elements, 采样说明, 报错文案)`。只抽文本层；空页跳过（不伪造 element）。 · L71 · 函数
-- id: '07'
+  route: 1→02｜2→06｜3→07
+  desc: ★ `.pdf` → `(elements, 采样说明, 报错文案)`。只抽文本层；空页跳过（不伪造 element）。 · L114 · 函数 ·
+    分支：1→_import_dep 2→load_thresholds 3→thin_note
+- id: 09
   name: parse_materials
   lines:
   - parse_materials
@@ -93,9 +118,9 @@ nodes:
   row: 5
   col: 0
   stage: 模块级
-  route: →06
-  desc: ★ 材料层 → `(elements, 补注, 摘要, 跳过清单, 报错文案)`。非 PDF / 非 T2 一律跳过并记账。 · L121 · 函数
-- id: 08
+  route: →08
+  desc: ★ 材料层 → `(elements, 补注, 摘要, 跳过清单, 报错文案)`。非 PDF / 非 T2 一律跳过并记账。 · L167 · 函数
+- id: '10'
   name: main
   lines:
   - main
@@ -105,67 +130,86 @@ nodes:
   row: 1
   col: 0
   stage: 模块级
-  route: 1→03｜2→04｜3→05｜4→07
-  desc: L171 · 函数 · 分支：1→_read_json 2→_write_notes 3→_page_span 4→parse_materials
-- id: 09
+  route: 1→03｜2→04｜3→05｜4→09
+  desc: L217 · 函数 · 分支：1→_read_json 2→_write_notes 3→_page_span 4→parse_materials
+- id: '11'
   name: 结束
   lines:
   - 结束
   type: end
   subject: 脚本
   executor: selfboot
-  row: 8
+  row: 10
   col: 0
   stage: 出口
   route: —
   desc: 流程终点（结构性节点，不是函数）
 edges:
 - from: '01'
-  to: 08
+  to: '10'
   kind: spine
   polarity: main
   label: '1'
 - from: '02'
-  to: 09
-  kind: spine
+  to: '11'
+  kind: jumpR
   polarity: main
 - from: '03'
-  to: 09
+  to: '11'
   kind: jumpR
   polarity: main
 - from: '04'
-  to: 09
+  to: '11'
   kind: jumpR
   polarity: main
 - from: '05'
-  to: 09
+  to: '11'
   kind: jumpR
   polarity: main
 - from: '06'
-  to: '02'
-  kind: spine
+  to: '11'
+  kind: jumpR
   polarity: main
 - from: '07'
-  to: '06'
+  to: '11'
   kind: spine
   polarity: main
 - from: 08
-  to: '03'
+  to: '02'
   kind: spine
   polarity: main
   label: '1'
 - from: 08
-  to: '04'
+  to: '06'
   kind: jumpR
   polarity: main
   label: '2'
 - from: 08
+  to: '07'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: 09
+  to: 08
+  kind: spine
+  polarity: main
+- from: '10'
+  to: '03'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '10'
+  to: '04'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '10'
   to: '05'
   kind: jumpR
   polarity: main
   label: '3'
-- from: 08
-  to: '07'
+- from: '10'
+  to: 09
   kind: jumpR
   polarity: main
   label: '4'

@@ -742,6 +742,38 @@ def _pdf_bytes(with_font):
             b'\nendstream endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n')
 
 
+def _pdf_pages(page_texts):
+    """**pdfplumber 读得动**的最小多页 PDF（带真 xref 表），每页一段 ASCII 正文。
+
+    与 `_pdf_bytes` 分工：那个故意不带 xref（考"读不动的材料只影响它自己"），
+    这个要能被真抽出来——**尺子二（文本层薄）只能在这种"抽得出来、但抽得太少"的材料上考**。
+    """
+    def esc(s):
+        return s.replace('\\', r'\\').replace('(', r'\(').replace(')', r'\)')
+
+    n = len(page_texts)
+    font_no = 3 + 2 * n
+    objs = [b'<</Type/Catalog/Pages 2 0 R>>',
+            ('<</Type/Pages/Kids[' + ' '.join(f'{3 + 2 * i} 0 R' for i in range(n))
+             + f']/Count {n}>>').encode()]
+    for i, txt in enumerate(page_texts):
+        body = b'BT /F1 12 Tf 40 800 Td (' + esc(txt).encode('ascii', 'replace') + b') Tj ET'
+        objs.append((f'<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]'
+                     f'/Resources<</Font<</F1 {font_no} 0 R>>>>/Contents {4 + 2 * i} 0 R>>').encode())
+        objs.append(b'<</Length ' + str(len(body)).encode() + b'>>stream\n' + body + b'\nendstream')
+    objs.append(b'<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>')
+    out, offsets = bytearray(b'%PDF-1.4\n'), []
+    for i, o in enumerate(objs, 1):
+        offsets.append(len(out))
+        out += f'{i} 0 obj\n'.encode() + o + b'\nendobj\n'
+    xref = len(out)
+    out += f'xref\n0 {len(objs) + 1}\n'.encode() + b'0000000000 65535 f \n'
+    for off in offsets:
+        out += f'{off:010d} 00000 n \n'.encode()
+    out += (f'trailer\n<</Size {len(objs) + 1}/Root 1 0 R>>\nstartxref\n{xref}\n%%EOF\n').encode()
+    return bytes(out)
+
+
 def _ole_bytes(stream):
     """假 OLE 字节，**带上真族标记**：`<流名>` 按 UTF-16LE 写进去（真 OLE 的目录就是这么存的）。
 
@@ -1229,6 +1261,35 @@ def materials_paths(root):
     cases.append(('52 文本层两条边界：markdown 表格**按行成块**（一行一条证据）· `noisy` 判决并排打'
                   '「丢前 / 丢完」两次读数、纯碎片那条不进账本',
                   ok, rc, (f'table 元素 {len(t_els)} · row3 {len(row3)} · noisy 元素 {len(n_els)}') if not ok else ''))
+
+    # 53 **尺子二：文本层薄**（§1.6）——两种 PDF 的**每页元素数一样（都 1 条）**，只差每页字数：
+    #    这份对照就是判据本身（"两个量一起看"）：光看元素数会把"一页一整篇"也判成薄。
+    pt_d = root / 'thinpdf'
+    pt_d.mkdir(exist_ok=True)
+    (pt_d / 'thin.pdf').write_bytes(_pdf_pages([f'Page {i}' for i in range(1, 6)]))
+    (pt_d / 'dense.pdf').write_bytes(_pdf_pages(['word ' * 120 for _ in range(5)]))
+    rc_tp, out_tp = run([sys.executable, str(PROBE_CMD), str(pt_d), '--json'])
+    (pt_d / 'materials.json').write_text(out_tp[out_tp.index('['):], encoding='utf-8')
+    rc, out = run([sys.executable, str(PARSE_CMD), '--materials', str(pt_d / 'materials.json'),
+                   '-o', str(pt_d / 'els.json'), '--notes', str(pt_d / 'notes.json'),
+                   '--ledger', str(pt_d / 'led.json')])
+    pt_mats, pt_els = {}, []
+    try:
+        got = json.loads((pt_d / 'led.json').read_text(encoding='utf-8'))
+        pt_mats = {pathlib.Path(m.get('path', '')).name: m for m in got['materials']}
+        pt_els = got['elements']
+    except (OSError, ValueError, KeyError):
+        pass
+    thin_els = [e for e in pt_els if e.get('material_id') == pt_mats.get('thin.pdf', {}).get('id')]
+    dense_els = [e for e in pt_els if e.get('material_id') == pt_mats.get('dense.pdf', {}).get('id')]
+    ok = (rc_tp == 0 and rc == 0
+          and pt_mats.get('thin.pdf', {}).get('tier') == 'T2' and len(thin_els) == 5
+          and thin_els and all('文字层薄' in (e.get('degraded') or '') for e in thin_els)
+          and len(dense_els) == 5
+          and not any('文字层薄' in (e.get('degraded') or '') for e in dense_els))
+    cases.append(('53 尺子二（文本层薄）：每页元素数相同、只差每页字数 ⇒ 薄的那份逐条挂降级 + 建议转图片，'
+                  '密的**不许**被误判（两个量一起看）',
+                  ok, rc, (f"thin {len(thin_els)} / dense {len(dense_els)} · {out[-200:]}") if not ok else ''))
     return cases
 
 
