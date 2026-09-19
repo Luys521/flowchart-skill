@@ -358,7 +358,9 @@ def run_face(tmp=None):
                  for p in sorted(list((SKILL / 'scripts').glob('*.py'))
                                  + list((SKILL / 'dev').rglob('*.py')))]
         for p, t in srcs:
-            for m in re.findall(r'D-\d\d', t):
+            # **两位以上**（2026-09-18，与上面 D / H 两处同一类假设）：原先写 `D-\d\d`，
+            # 于是 `D-101` 被截成 `D-10` 去查——指空恰好被 D-10 存在挡住了，属于"蒙对"。
+            for m in re.findall(r'D-\d{2,}', t):
                 refs.setdefault(m, set()).add(p.name)
         missing = sorted(k for k in refs if k not in set(ids))
         c.check(not missing, '被引用的 D 编号都存在（指针不许指空）',
