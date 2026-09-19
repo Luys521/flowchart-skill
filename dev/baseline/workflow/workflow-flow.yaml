@@ -10,12 +10,15 @@ meta:
     脚本:
       fill: '#ffe6cc'
       stroke: '#d79b00'
+    AI ↔ 用户:
+      fill: '#fff2cc'
+      stroke: '#bf9000'
   layout: flow
 layout:
   col_x:
   - 400
-  width: 680
-  origin_x: -80
+  width: 880
+  origin_x: -40
 nodes:
 - id: '01'
   name: 收到材料
@@ -28,8 +31,8 @@ nodes:
   col: 0
   stage: 读材料
   route: →01a
-  desc: ⚠? 材料没写「从哪一步开始、到哪一步结束」时**必须问用户拍板**——起止范围不同，整张表的边界就不同（不同选法后果不同）。触发形态不限：口头需求
-    / 合同文档 / 表格 / 图片白板 / **已被直接改过的流程表**；**07 的答复也从这里进来**——每轮补充的信息都是新材料，这张表的入口不止开一次
+  desc: 一次任务的入口：目录 / 单份文件 / 一段口头需求都算，**材料只读、永不修改**。触发形态不限：口头需求 / 合同文档 / 表格 / 图片白板
+    / **已被直接改过的流程表**；**15 的答复也从这里进来**——每轮补充的信息都是新材料，这张表的入口不止开一次
   input: 原始材料、起止范围
   output: 原始材料（转交 01a）
 - id: 01a
@@ -43,11 +46,12 @@ nodes:
   col: 0
   stage: 建目录
   route: →02
-  desc: ⚠ 材料没给流程名时按材料主题起一个（原文未写、按惯例补）。`init.py` 建 `output/<名称>/` 并把 `templates/` 两份模板拷进去——**目录名就是流程身份**，产物名跟着它走
+  desc: ⚠ 材料没给流程名时按材料主题起一个（原文未写、按惯例补）。`init.py <流程名> -d <成果根>` 建目录并把 `templates/`
+    两份模板拷进去——**目录名就是流程身份**，产物名跟着它走
   time: 1-2 秒
   input: 流程名称
-  basis: 两份模板与目录约定（`SKILL.md` 第 1 环）
-  output: '`output/<名称>/` + 两份模板'
+  basis: 两份模板与目录约定（`SKILL.md` 读材料段）
+  output: '`<成果根>/<流程名>/` + 两份模板'
 - id: '02'
   name: 读回现状对齐口径
   lines:
@@ -60,169 +64,364 @@ nodes:
   stage: 读材料
   route: →03
   desc: ⊞ parts/读回现状/flowtable.md；**每轮开工第一件事：手上有什么就读什么**——已有流程表就用 `clarify.py` 读回来（它只读不写），报出哪些是
-    AI 推断、哪些还没定；没有表就把材料要点复述一遍，给用户当场纠正的机会。**已定的不重复问**——「还剩哪些要问」由 06 独家算
+    AI 推断、哪些还没定；没有表就把材料要点复述一遍，给用户当场纠正的机会。**已定的不重复问**——「还剩哪些要问」由 14 独家算
   input: 已有流程表（可无）
   basis: '`⚠` / `⚠?` 的分拣口径（`references/flowtable-spec.md` §2）'
   output: 现状复述
 - id: '03'
+  name: 探测分档
+  lines:
+  - 探测分档
+  type: task
+  subject: 脚本
+  executor: probe.py
+  row: 3
+  col: 0
+  stage: 读材料
+  route: →04
+  desc: '**按内容判，不按扩展名**：同一个 `.pdf` 可以跨两档、改名件按魔数认。分档是**记账**不是门槛——读不动的逐份写明原因并给出路，探测结论一律进账，不许**默默用**、也不许**默默不用**'
+  time: 1-2 秒
+  input: 材料目录
+  basis: '`SKILL.md` 读材料段（探测）'
+  output: '`materials[]`：档位 + 类型 + sha256 + 修改时间'
+- id: '04'
+  name: 侦查：排序与假设
+  lines:
+  - 侦查：排序与假设
+  type: task
+  subject: 脚本
+  executor: recon.py
+  row: 4
+  col: 0
+  stage: 读材料
+  route: →05
+  desc: 先廉价后昂贵：元数据 → 难度排序 → 先读易的。脚本只给机器可算的列（档位 / 规模 / 处置建议）；**「假设角色 / 依据 / 验证方式 /
+    状态」由 AI 填**，被推翻也要留痕
+  time: 2-10 秒
+  input: '`materials[]`'
+  basis: '`SKILL.md` 读材料段（侦查）'
+  output: '`recon.md`（难度排序 + 结构缩样 + 假设表草稿）'
+- id: '05'
+  name: 解析入账
+  lines:
+  - 解析入账
+  type: task
+  subject: 脚本
+  executor: parse.py → ledger.py
+  row: 5
+  col: 0
+  stage: 读材料
+  route: →06
+  desc: 适配器按固定顺序跑，收窄（`--only` / `--pages` / `--slides` / `--grep`）一律留痕。**这一步之后下游只许引用
+    element id，不许回头读原件**——「依据」列指的就是它们。⚠ 清洗的四条不许（不改字 / 不合并去重 / 不语义分类 / 不"修好"读不动的）在这里生效
+  time: 5-60 秒
+  input: '`materials[]`'
+  basis: '`references/flowtable-spec.md` §3（证据层）· `references/material-to-nodes.md`
+    §6'
+  output: '`evidence.json`（唯一事实源）'
+- id: '06'
+  name: 定范围：主体 / 目的 / 材料根
+  lines:
+  - 定范围：主体 / 目的 / 材料根
+  type: task
+  subject: AI ↔ 用户
+  executor: AI 问、用户答
+  row: 6
+  col: 0
+  stage: 读材料
+  route: →07
+  desc: ⚠? **唯一一件值得在切句前打断的事**：答不出就先问，**不许拿"材料里最强的那条流程"当默认**（盲读实测里那么干过：表全绿、却答了另一条流程）。⚠
+    放在认料之后是刻意的——没看见材料全貌之前，"主体是谁"问不到点子上；纪律只要求**在拆解之前**问清
+  input: 已读到的材料 + 侦查结论
+  basis: '`references/material-to-nodes.md` §1（先定主体与目的）'
+  output: 三格答复（落 `plan.md` 表头）
+- id: '07'
+  name: 要分堆吗？
+  lines:
+  - 要分堆吗？
+  type: decision
+  subject: AI
+  executor: AI
+  row: 7
+  col: 0
+  stage: 清点
+  route: 是→08 ｜ 否→11
+  desc: ⚠ "分堆不可跳过"与"清点、计划是**工位**不是开工前的关卡"这两句同时成立 ⇒ 它只能落成一个**判断**：单份材料 / 单条流程时平凡成立、直接落表；多份材料才先分堆。纪律：**宁可多拆一条，不可错并两条**
+  input: 含流程的材料 ≥ 3 份
+  basis: '`SKILL.md` 清点段'
+  output: 分堆结论（材料 ↔ 流程归属）
+- id: 08
+  name: 清点成卡片
+  lines:
+  - 清点成卡片
+  type: task
+  subject: AI
+  executor: AI（脚本 build/check）
+  row: 8
+  col: 0
+  stage: 清点
+  route: →09
+  desc: 脚本先填机器列（档位 / 读不动 / `重复`）；**「主题 / 含流程 / 版本关系 / 依据」是 AI 填的**（`是` / `否` 必须给理由并标
+    `⚠`）。卡片是账本的**标注层**：只标注、不新增真值
+  input: '`evidence.json`'
+  basis: '`SKILL.md` 清点段'
+  output: '`intake.md`（一份材料一行）'
+- id: 09
+  name: 拆解成计划
+  lines:
+  - 拆解成计划
+  type: task
+  subject: AI
+  executor: AI（脚本 build/check）
+  row: 9
+  col: 0
+  stage: 计划
+  route: →10
+  desc: 出种子 → 强合并（脚本做）→ 弱合并（AI 判：共享 ≥2 个起止点 / 交付物）→ 命名 → 定甲 / 乙 / 丙 → 并行分组。**要不要拆子流程、该并还是拆，是
+    AI 的判断**（写进「注记」并标 `⚠`），**不许写成澄清申请的问句**
+  input: '`intake.md`'
+  basis: '`SKILL.md` 计划段'
+  output: '`plan.md`（做几张 / 谁依赖谁 / 谁能并行）'
+- id: '10'
+  name: 计划要改吗？
+  lines:
+  - 计划要改吗？
+  type: decision
+  subject: 用户
+  executor: 用户
+  row: 10
+  col: 0
+  stage: 计划
+  route: 改→回 09 ｜ 不改→11
+  desc: '**人审这一层最便宜**：在计划阶段说一句"这两条其实是一条"，比画完两张图才发现便宜一个数量级。⚠ `plan.md` 不进机器门禁——两条 `check`
+    只核可机器核的那几条，不核"拆得对不对"'
+  input: '`plan.md`'
+  basis: '`SKILL.md` 计划段'
+  output: 用户的纠正
+- id: '11'
   name: 落流程表
   lines:
   - 落流程表
   type: task
   subject: AI
   executor: AI
-  row: 3
+  row: 11
   col: 0
   stage: 落表
-  route: →04
-  desc: ⊞ parts/落表/flowtable.md；★ 全流程**唯一**的语义落笔点：校验不通过、用户答复、图上的语义改动、表被直改，都回到这里改表。**列填不满的地方，就是流程没说清的地方**——主动提问、给出候选、补上缺失项
-  input: 材料 + 缺失列的答复
+  route: →12
+  desc: ⊞ parts/落表/flowtable.md；★ 全流程**唯一**的语义落笔点：校验不通过、用户答复、图上的语义改动、表被直改、缺口派活，都回到这里改表。**列填不满的地方，就是流程没说清的地方**——主动提问、给出候选、补上缺失项
+  input: 材料 + 答复 + 计划
   basis: 字段登记表（`references/flowtable-spec.md` §2）
   output: 十二列流程表
-- id: '04'
+- id: '12'
   name: 结构校验？
   lines:
   - 结构校验？
   type: decision
   subject: 脚本
   executor: table_to_dsl.py
-  row: 4
+  row: 12
   col: 0
   stage: 校验
-  route: 通过→05 ｜ 不通过→回 03 修正
-  desc: ⊞ parts/结构校验/flowtable.md；三层校验（① 节点：编号 / 语义 · ② 类型：起止、出边、分支 · ③ 关系：引用、连通、回路），硬错误**阻断渲染**
+  route: 通过→13 ｜ 不通过→回 11 修正
+  desc: ⊞ parts/结构校验/flowtable.md；三层校验（① 节点：编号 / 语义 · ② 类型：起止、出边、分支 · ③ 关系：引用、连通、回路），硬错误**阻断渲染**。它拦得住**写错**的表，拦不住**理解错**的表
   input: 流程表
-  basis: H1–H8 + 表头 H9（`references/flowtable-spec.md` §3）
+  basis: H1–H8 + 表头 H9 + 证据层 H10（`references/flowtable-spec.md` §3）
   output: 通过，或逐条硬错误
-- id: '05'
+- id: '13'
   name: 逐行回看内容出处
   lines:
   - 逐行回看内容出处
   type: task
   subject: AI
   executor: AI
-  row: 5
+  row: 13
   col: 0
   stage: 标注
-  route: →06
-  desc: ⊞ parts/回看出处/flowtable.md；材料说的照写；AI 按常理补的打 `⚠` 并写明依据；推不出的打 `⚠?`。**打标不阻断**——标完照常往下，仍未决的由
-    06 报出
+  route: →14
+  desc: ⊞ parts/回看出处/flowtable.md；材料说的照写并指到 element id；AI 按常理补的打 `⚠` 并写明依据；推不出的打 `⚠?`。**打标不阻断**——标完照常往下，仍未决的由
+    14 报出
   input: 流程表
-  basis: 依据不来自材料就标 `⚠`（`references/flowtable-spec.md` §2）
+  basis: 依据不来自材料就标 `⚠`（`references/material-to-nodes.md` §6）
   output: '`⚠` / `⚠?` 留痕'
-- id: '06'
+- id: '14'
   name: 有待裁决项？
   lines:
   - 有待裁决项？
   type: decision
   subject: 脚本
   executor: clarify.py
-  row: 6
+  row: 14
   col: 0
   stage: 标注
-  route: 有→07 ｜ 没有→08
+  route: 有→15 ｜ 没有→16
   desc: '`clarify.py` 算出 frontier（当前能问的）——这是**算出来的状态**，不是看法；**只问 frontier 里的**，上游还没定的先不问。frontier
     为空即收敛'
   input: 流程表
   basis: frontier = 前驱已定的 `⚠?`，只问当前可问的
   output: frontier 清单
-- id: '07'
+- id: '15'
   name: 问并收答复
   lines:
   - 问并收答复
   type: task
   subject: 用户
   executor: 用户
-  row: 7
+  row: 15
   col: 0
   stage: 标注
   route: →回 01 当新材料
-  desc: 每问附 AI 的推荐答案，用户只需否决。**与 03 的分工**：03 问的是「列填不满」，这里问的是「两条路都说得通、必须业务方拍板」。**答复是新材料**——收完回
+  desc: 每问附 AI 的推荐答案，用户只需否决。**与 11 的分工**：11 问的是「列填不满」，这里问的是「两条路都说得通、必须业务方拍板」。**答复是新材料**——收完回
     01 重走一圈再落表，不在问答处就地改表。仍有未决的照常交付，但交付时如实报「仍未决 N 处」
   input: frontier 清单
   output: 答复（新材料）
-- id: 08
+- id: '16'
   name: 渲染三份视图
   lines:
   - 渲染三份视图
   type: task
   subject: 脚本
   executor: build.py
-  row: 8
+  row: 16
   col: 0
   stage: 出图
-  route: →09
+  route: →17
   desc: ⊞ parts/渲染/flowtable.md；一条命令跑六环，任一环不过即 exit 1 并把产物还原——盘上不留没审过的交付物
   time: 5-30 秒
   input: 通过校验的流程表
   basis: 六环 + 产物侧九项判据（`references/visual-spec.md` §4.1）
   output: 三份产物 + 层级索引 + sha256 回执
-- id: 09
+- id: '17'
   name: 视觉自检通过？
   lines:
   - 视觉自检通过？
   type: decision
   subject: AI
   executor: AI
-  row: 9
+  row: 17
   col: 0
   stage: 看
-  route: 通过→10 ｜ 有问题→回 08 调几何
+  route: 通过→18 ｜ 有问题→回 16 调几何
   desc: ⊞ parts/视觉自检/flowtable.md；用 `shot.py` 出图后**由 AI 看着核对**：交叉是否多到影响追踪、标签是否居中压线、分支走向是否反直觉。质量门禁只管几何，好不好看必须看图
   input: 三份产物
   basis: 看三样：交叉多不多 / 标签压不压线 / 走向反不反直觉（`references/visual-spec.md` §2）
   output: 看过的结论
-- id: '10'
+- id: '18'
   name: 表被直改过吗？
   lines:
   - 表被直改过吗？
   type: decision
   subject: 脚本
   executor: table_to_dsl.py
-  row: 10
+  row: 18
   col: 0
   stage: 回流
-  route: 有→回 03 重走 ｜ 没有→11
+  route: 有→回 11 重走 ｜ 没有→19
   desc: ★ 拿 `flowtable.md` 现算指纹，对照上次渲染写进 `<流程名>-flow.manifest.json` 的那一份（`table_to_dsl.py
-    --fresh`）：**变过**说明有人绕过流水线改了事实源，回 03 重走校验与出图——**不许走 11**（回灌是按图里的节点集合重建表格行的，手工加的节点会被删掉、改过的名字会被覆盖）；**没变**→11
+    --fresh`）：**变过**说明有人绕过流水线改了事实源，回 11 重走校验与出图——**不许走 19**（回灌是按图里的节点集合重建表格行的，手工加的节点会被删掉、改过的名字会被覆盖）；**没变**→19
     看图上动了什么。没有基线时 `--fresh` 报「无从判断」，照样按「改过」走保守路线
   input: 流程表 + 上次渲染记进契约的指纹
   basis: 现算指纹 vs `source_sha256`（`references/dsl-spec.md` §3）
   output: 同版 / 已过期
-- id: '11'
+- id: '19'
   name: 读回并分拣改动
   lines:
   - 读回并分拣改动
   type: task
   subject: 脚本
   executor: sync.py
-  row: 11
+  row: 19
   col: 0
   stage: 回流
-  route: 都没变→12 ｜ 改了语义→回 03 重落表 ｜ 只动几何→回 08 重布局
-  desc: ⊞ parts/同步回写/flowtable.md；**图这一面不另存指纹——本来就要解析**：元素与关系都没变、只有坐标位移 → 几何，回 08
-    交算法判吸附阈值（**像素不作终值**）；**增删节点 / 改关系 / 改文字（含名称、标签、形状）→ 语义**，先回写进流程表，再回 03 重走校验与出图。两者都有时按语义走；**diff
-    为空即静默通过**，不许因格式噪声把人拉回 03
+  route: 都没变→20 ｜ 改了语义→回 11 重落表 ｜ 只动几何→回 16 重布局
+  desc: ⊞ parts/同步回写/flowtable.md；**图这一面不另存指纹——本来就要解析**：元素与关系都没变、只有坐标位移 → 几何，回 16
+    交算法判吸附阈值（**像素不作终值**）；**增删节点 / 改关系 / 改文字（含名称、标签、形状）→ 语义**，先回写进流程表，再回 11 重走校验与出图。两者都有时按语义走；**diff
+    为空即静默通过**，不许因格式噪声把人拉回 11
   time: 2-10 秒
   input: drawio + 流程表
   basis: 差异四分类（增删节点 / 关系变化 / 文字变化 / 坐标位移）
   output: 回写后的流程表
-- id: '12'
+- id: '20'
+  name: 对账：漂移
+  lines:
+  - 对账：漂移
+  type: task
+  subject: 脚本
+  executor: drift.py
+  row: 20
+  col: 0
+  stage: 循环
+  route: →21
+  desc: ★ **循环的发动机**：拿表去比"已经知道的"（账本 / 假设账 / 清点）。分得清两类：**"表写错了"** → 漂移账；**"还有东西没看"**
+    → 缺口清单，它**派活**。对不上的逐条给「走哪条路」，AI 只需填处置与依据
+  time: 2-10 秒
+  input: 流程表 + 账本 + 假设账 + 清点
+  basis: '`SKILL.md` 循环段（D1—D5 与缺口清单）'
+  output: '`drift.md`（漂移账 + 缺口清单 + 依据分布）'
+- id: '21'
+  name: 收敛了吗？
+  lines:
+  - 收敛了吗？
+  type: decision
+  subject: 脚本
+  executor: drift.py check
+  row: 21
+  col: 0
+  stage: 循环
+  route: 收敛→24 ｜ 没收敛→22
+  desc: ★ 收敛才许交付：每条漂移都要有处置（`已修` 会被重跑判据验真，`已解释` 必须写依据），每条缺口都要有结论（`已取证` 写清要哪一片、`已放弃`
+    写理由）。⚠ 超预算（每份材料攻坚上限 2 轮）的落 `⚠?` 交用户——**不许无限重试**
+  input: '`drift.md`'
+  basis: 收敛判据：硬漂移 0 且缺口清单空（`SKILL.md` 循环段）
+  output: 收敛结论
+- id: '22'
+  name: 缺口在哪一头？
+  lines:
+  - 缺口在哪一头？
+  type: decision
+  subject: AI
+  executor: AI
+  row: 22
+  col: 0
+  stage: 循环
+  route: 材料侧→23 ｜ 表侧→回 11
+  desc: 分得清才派得对活：**材料侧** = 还有东西没看（去 23 撬开）；**表侧** = 看过了没写进去（回 11 改表）。这一问不许跳过——把两类混成一句"再补补"，等于没派活
+  input: 缺口清单
+  basis: 两类缺口的二分（`SKILL.md` 循环段）
+  output: 材料侧 / 表侧
+- id: '23'
+  name: 攻坚：点名取子集再读
+  lines:
+  - 攻坚：点名取子集再读
+  type: task
+  subject: 脚本
+  executor: query.py · render_pages.py
+  row: 23
+  col: 0
+  stage: 循环
+  route: →回 05 重新入账
+  desc: '`query.py` 按材料 / 词 / 行段点名取子集；`render_pages.py` 把扫描件与质量门不过的材料渲成图交给会看图的模型（**视觉来源一律按推断档**：`certainty`
+    不是逐字引用）。取回的东西**必须回 05 重新入账**，不许直接落表——绕过账本等于给「依据」列造一条查不到的引用'
+  time: 1-5 秒
+  input: 缺口清单
+  basis: 只查不抽 · 一批一小口 + 游标（`SKILL.md` 循环段）
+  output: 只取该看的那几处（不灌满上下文）
+- id: '24'
   name: 交付
   lines:
   - 交付
   type: end
   subject: 用户
   executor: 用户
-  row: 12
+  row: 24
   col: 0
   stage: 交付
   route: —
   desc: 三份视图（html 评审 / drawio 协作 / svg 中间态）+ `flowtable.md`（唯一事实源）+ `checklist.md`（自检报告）+
-    `<流程名>-index.md`（层级索引，多张表时的构建顺序）。**有子表就一并发 `parts/`**——它和主表是同一份交付。产物末尾打印 sha256
-    回执
-  input: 11 的回写结果 + 全部产物
-  output: 三份视图 + `flowtable.md` + `checklist.md` + `<流程名>-index.md`（子表在 `parts/` 下）
+    `<流程名>-index.md`（层级索引，多张表时的构建顺序）。**有子表就一并发 `parts/`**。产物末尾打印 sha256 回执。**仍未决的
+    `⚠?` 照常交付**，但交付说明里如实报「仍未决 N 处」
+  input: 19 的回写结果 + 全部产物
+  output: 三视图 + `flowtable.md` + `checklist.md` + 层级索引
 edges:
 - from: '01'
   to: 01a
@@ -244,12 +443,6 @@ edges:
   to: '05'
   kind: spine
   polarity: main
-  label: 通过
-- from: '04'
-  to: '03'
-  kind: loop
-  polarity: negative
-  label: 不通过
 - from: '05'
   to: '06'
   kind: spine
@@ -258,16 +451,16 @@ edges:
   to: '07'
   kind: spine
   polarity: main
-  label: 有
-- from: '06'
+- from: '07'
   to: 08
+  kind: spine
+  polarity: main
+  label: 是
+- from: '07'
+  to: '11'
   kind: jumpR
   polarity: main
-  label: 没有
-- from: '07'
-  to: '01'
-  kind: loop
-  polarity: negative
+  label: 否
 - from: 08
   to: 09
   kind: spine
@@ -276,34 +469,112 @@ edges:
   to: '10'
   kind: spine
   polarity: main
-  label: 通过
-- from: 09
-  to: 08
-  kind: loop
-  polarity: negative
-  label: 有问题
 - from: '10'
-  to: '03'
+  to: 09
   kind: loop
   polarity: negative
-  label: 有
+  label: 改
 - from: '10'
   to: '11'
   kind: spine
   polarity: main
-  label: 没有
+  label: 不改
 - from: '11'
   to: '12'
   kind: spine
   polarity: main
+- from: '12'
+  to: '13'
+  kind: spine
+  polarity: main
+  label: 通过
+- from: '12'
+  to: '11'
+  kind: loop
+  polarity: negative
+  label: 不通过
+- from: '13'
+  to: '14'
+  kind: spine
+  polarity: main
+- from: '14'
+  to: '15'
+  kind: spine
+  polarity: main
+  label: 有
+- from: '14'
+  to: '16'
+  kind: jumpR
+  polarity: main
+  label: 没有
+- from: '15'
+  to: '01'
+  kind: loop
+  polarity: negative
+- from: '16'
+  to: '17'
+  kind: spine
+  polarity: main
+- from: '17'
+  to: '18'
+  kind: spine
+  polarity: main
+  label: 通过
+- from: '17'
+  to: '16'
+  kind: loop
+  polarity: negative
+  label: 有问题
+- from: '18'
+  to: '11'
+  kind: loop
+  polarity: negative
+  label: 有
+- from: '18'
+  to: '19'
+  kind: spine
+  polarity: main
+  label: 没有
+- from: '19'
+  to: '20'
+  kind: spine
+  polarity: main
   label: 都没变
-- from: '11'
-  to: '03'
+- from: '19'
+  to: '11'
   kind: loop
   polarity: negative
   label: 改了语义
-- from: '11'
-  to: 08
+- from: '19'
+  to: '16'
   kind: loop
   polarity: negative
   label: 只动几何
+- from: '20'
+  to: '21'
+  kind: spine
+  polarity: main
+- from: '21'
+  to: '24'
+  kind: jumpR
+  polarity: main
+  label: 收敛
+- from: '21'
+  to: '22'
+  kind: spine
+  polarity: main
+  label: 没收敛
+- from: '22'
+  to: '23'
+  kind: spine
+  polarity: main
+  label: 材料侧
+- from: '22'
+  to: '11'
+  kind: loop
+  polarity: negative
+  label: 表侧
+- from: '23'
+  to: '05'
+  kind: loop
+  polarity: negative

@@ -16,7 +16,7 @@ layout:
   width: 1160
   origin_x: -280
 nodes:
-- id: 09a
+- id: 17a
   name: 截图
   lines:
   - 截图
@@ -26,12 +26,12 @@ nodes:
   row: 0
   col: 1
   stage: 出图
-  route: →09b ｜ →09c ｜ →09d
+  route: →17b ｜ →17c ｜ →17d
   desc: 全图或 `--crop 0:1200` 只看一段；三样一起看，不分先后
   input: '`<流程名>-flow.html`'
   basis: 截图规则（`SKILL.md` 看段）
   output: 位图（自检中间物，非交付物）
-- id: 09b
+- id: 17b
   name: 看交叉
   lines:
   - 看交叉
@@ -41,12 +41,12 @@ nodes:
   row: 1
   col: 1
   stage: 看
-  route: →09e
+  route: →17e
   desc: 判据是"影响追踪"，不是"有几处交叉"——两处交叉卡在主干上也是缺陷
   input: 位图
   basis: 交叉是否多到**影响追踪**
   output: 交叉结论
-- id: 09c
+- id: 17c
   name: 看标签
   lines:
   - 看标签
@@ -56,12 +56,12 @@ nodes:
   row: 1
   col: 0
   stage: 看
-  route: →09e
+  route: →17e
   desc: 压线可以（徽章白底压线是本 SKILL 的画法），**压节点**不行
   input: 位图
   basis: 标签是否居中压线
   output: 标签结论
-- id: 09d
+- id: 17d
   name: 看走向
   lines:
   - 看走向
@@ -71,12 +71,12 @@ nodes:
   row: 1
   col: 2
   stage: 看
-  route: →09e
+  route: →17e
   desc: 反直觉的典型：回环画在了右边、并排分支从右往左倒着走
   input: 位图
   basis: 分支走向是否反直觉
   output: 走向结论
-- id: 09e
+- id: 17e
   name: 有问题吗？
   lines:
   - 有问题吗？
@@ -86,12 +86,12 @@ nodes:
   row: 2
   col: 1
   stage: 判定
-  route: 有→09f ｜ 没有→09h
+  route: 有→17f ｜ 没有→17h
   desc: 由 AI **看着核对**：这一关没有脚本判据，所以才必须由人来判
   input: 三样结论
   basis: 三样里任一不过（`SKILL.md` 看段）
   output: 有 / 没有
-- id: 09f
+- id: 17f
   name: 先查标签是否过长
   lines:
   - 先查标签是否过长
@@ -101,12 +101,12 @@ nodes:
   row: 3
   col: 1
   stage: 归因
-  route: →09g
+  route: →17g
   desc: 先怀疑语义：多数"标签压线 / 线交叉"是标签太长挤出来的，改几何是治标
   input: 问题清单
   basis: 标签过长（> 6 字）先改流程表（`references/flowtable-spec.md` §2 分支标签）
   output: 归因结论
-- id: 09g
+- id: 17g
   name: 调几何（不手改端口）
   lines:
   - 调几何（不手改端口）
@@ -116,15 +116,15 @@ nodes:
   row: 4
   col: 1
   stage: 调几何
-  route: →09i
+  route: →17i
   desc: ★ "只有线没箭头"= 端口朝向与走向矛盾：**把手写的 `gutter`/`channel`/`gapx` 删掉**让 router 重规划，别手工改端口
   input: 归因结论
   basis: 一次只改一个诊断项；一轮无改善即停（`SKILL.md` 看段）
   output: 调过几何的 `<流程名>-flow.yaml`
-- id: 09h
-  name: 通过，交 10
+- id: 17h
+  name: 通过，交 18
   lines:
-  - 通过，交 10
+  - 通过，交 18
   type: end
   subject: AI
   executor: AI
@@ -135,10 +135,10 @@ nodes:
   desc: 质量门禁只管几何，好不好看必须看图
   input: 三样结论
   output: 视觉自检结论
-- id: 09i
-  name: 回 08 重出图
+- id: 17i
+  name: 回 16 重出图
   lines:
-  - 回 08 重出图
+  - 回 16 重出图
   type: end
   subject: AI
   executor: AI
@@ -146,49 +146,49 @@ nodes:
   col: 1
   stage: 回炉
   route: —
-  desc: 本表终点；"回 08"是**主表**的走向——几何改动要经 08 重渲染，再走一遍本表
+  desc: 本表终点；"回 16"是**主表**的走向——几何改动要经 16 重渲染，再走一遍本表
   input: 归因结论 + 调过的几何
   output: 待重渲染的几何改动
 edges:
-- from: 09a
-  to: 09b
+- from: 17a
+  to: 17b
   kind: spine
   polarity: main
-- from: 09a
-  to: 09c
+- from: 17a
+  to: 17c
   kind: jumpR
   polarity: main
-- from: 09a
-  to: 09d
+- from: 17a
+  to: 17d
   kind: jumpR
   polarity: main
-- from: 09b
-  to: 09e
+- from: 17b
+  to: 17e
   kind: spine
   polarity: main
-- from: 09c
-  to: 09e
+- from: 17c
+  to: 17e
   kind: jumpR
   polarity: main
-- from: 09d
-  to: 09e
+- from: 17d
+  to: 17e
   kind: jumpR
   polarity: main
-- from: 09e
-  to: 09f
+- from: 17e
+  to: 17f
   kind: spine
   polarity: main
   label: 有
-- from: 09e
-  to: 09h
+- from: 17e
+  to: 17h
   kind: jumpR
   polarity: main
   label: 没有
-- from: 09f
-  to: 09g
+- from: 17f
+  to: 17g
   kind: spine
   polarity: main
-- from: 09g
-  to: 09i
+- from: 17g
+  to: 17i
   kind: jumpR
   polarity: main

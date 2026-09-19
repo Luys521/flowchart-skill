@@ -42,7 +42,7 @@ nodes:
     time: 5个工作日           # 可省
     row: 0                  # 可手调
     col: 0                  # 可手调
-    route: 通过→05 ｜ 不通过→回 03 修正
+    route: 通过→13 ｜ 不通过→回 11 修正
     desc: 完整描述…
 edges:
   - {from: "13", to: "14", kind: spine, label: 通过}

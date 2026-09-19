@@ -17,7 +17,7 @@ layout:
   width: 680
   origin_x: -80
 nodes:
-- id: 11a
+- id: 19a
   name: 读回 drawio
   lines:
   - 读回 drawio
@@ -27,13 +27,13 @@ nodes:
   row: 0
   col: 0
   stage: 读回
-  route: →11b
+  route: →19b
   desc: 用户在图上可以自由编辑，读回时不做限制：**能读回的只有名称、形状、连线与坐标**——语义属性图里一个都不写（见 `references/visual-spec.md`
     §1），所以读不回也不该读回
   input: drawio 文件
   basis: 外部图的读回规则（`references/import-existing.md` §1）
   output: 节点 / 边 / 几何
-- id: 11b
+- id: 19b
   name: 与流程表比差异
   lines:
   - 与流程表比差异
@@ -43,13 +43,13 @@ nodes:
   row: 1
   col: 0
   stage: 对比
-  route: →11c
+  route: →19c
   desc: 差异分四类：**增删节点**、**关系变化**、**文字变化**（名称 / 类型 / 标签）、**坐标位移**。前三类是语义，只有第四类是几何；**四类都空就是图上什么都没动**（主表据此直接交付）；判据是
     `(标签, 目标)` 配对——没碰过的分支，回写后一字不差
   input: 图 + 流程表
   basis: 差异四分类（增删节点 / 关系变化 / 文字变化 / 坐标位移）
   output: 差异清单
-- id: 11c
+- id: 19c
   name: 「下个节点」冲突？
   lines:
   - 「下个节点」冲突？
@@ -59,12 +59,12 @@ nodes:
   row: 2
   col: 0
   stage: 冲突
-  route: 有→11d ｜ 没有→11e
+  route: 有→19d ｜ 没有→19e
   desc: ★ 表说某条分支去 A、图里却去 B：这是方向性冲突，不是正常增删，不能静默覆盖
   input: 差异清单
   basis: '`(标签, 目标)` 配对——表说 A、图说 B'
   output: 有 / 没有
-- id: 11d
+- id: 19d
   name: 拦下并回报
   lines:
   - 拦下并回报
@@ -75,10 +75,10 @@ nodes:
   col: 0
   stage: 拦截
   route: —
-  desc: 退出码 1，流程表不动；哪边对由主表 03 裁决——表对就重跑 08 让图跟上，图对就回 03 把表改对
+  desc: 退出码 1，流程表不动；哪边对由主表 11 裁决——表对就重跑 16 让图跟上，图对就回 11 把表改对
   input: 冲突清单
   output: 拦截报告（退出码 1）
-- id: 11e
+- id: 19e
   name: 回写流程表
   lines:
   - 回写流程表
@@ -90,26 +90,26 @@ nodes:
   stage: 回写
   route: —
   desc: 语义（名称 / 类型 / 标签 / 走向 / 输入 / 依据 / 输出）的落点是流程表，写回完毕即本表终点；"接下来往哪走"是主表的判断（都没变→交付
-    ｜ 改了语义→回 03 重落表 ｜ 只动几何→回 08 重布局）。几何只落进 DSL，交回算法定终值
+    ｜ 改了语义→回 11 重落表 ｜ 只动几何→回 16 重布局）。几何只落进 DSL，交回算法定终值
   input: 差异清单 + 原表
   basis: 最小差异原则（原文一致的分支逐字回填）
   output: 更新后的流程表
 edges:
-- from: 11a
-  to: 11b
+- from: 19a
+  to: 19b
   kind: spine
   polarity: main
-- from: 11b
-  to: 11c
+- from: 19b
+  to: 19c
   kind: spine
   polarity: main
-- from: 11c
-  to: 11d
+- from: 19c
+  to: 19d
   kind: spine
   polarity: main
   label: 有
-- from: 11c
-  to: 11e
+- from: 19c
+  to: 19e
   kind: jumpR
   polarity: main
   label: 没有

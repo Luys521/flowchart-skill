@@ -5,7 +5,7 @@
 
 ## 层级树
 
-- **L0 主流程** `flowtable.md`——《flowchart-skill 自举：一条流程从材料到交付》（id: workflow）（13 节点）
+- **L0 主流程** `flowtable.md`——《flowchart-skill 自举：一条流程从材料到交付》（id: workflow）（25 节点）
   - **L1 子流程** `parts/同步回写/flowtable.md`——《同步闭环：读回 → 回写 → 重渲染》（id: 同步回写）（5 节点）
   - **L1 子流程** `parts/回看出处/flowtable.md`——《回看出处：逐行问"这条凭什么"》（id: 回看出处）（8 节点）
   - **L1 子流程** `parts/渲染/flowtable.md`——《渲染：一条命令跑六环》（id: 渲染）（10 节点）

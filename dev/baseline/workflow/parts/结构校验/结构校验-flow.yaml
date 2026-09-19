@@ -17,7 +17,7 @@ layout:
   width: 680
   origin_x: -80
 nodes:
-- id: 04a
+- id: 12a
   name: 读流程表十二列
   lines:
   - 读流程表十二列
@@ -27,12 +27,12 @@ nodes:
   row: 0
   col: 0
   stage: 读表
-  route: →04b
+  route: →12b
   desc: ★ 列名或列序不对直接报 H9——列是按位置读的，串列不会自己报错
   input: 流程表文件
   basis: 字段登记表（`references/flowtable-spec.md` §2）的列名与列序
   output: 解析后的行
-- id: 04b
+- id: 12b
   name: 节点层校验
   lines:
   - 节点层校验
@@ -42,12 +42,12 @@ nodes:
   row: 1
   col: 0
   stage: ① 节点层
-  route: →04c
+  route: →12c
   desc: 只看这一行自己：编号非空且唯一（01 / 01a，`10aa` 拦下）、名称与执行主体非空、节点类型属四种之一
   input: 解析后的行
   basis: H2 编号 · H7 语义（`references/flowtable-spec.md` §3）
   output: 节点列表 + 硬错误
-- id: 04c
+- id: 12c
   name: 类型层校验
   lines:
   - 类型层校验
@@ -57,12 +57,12 @@ nodes:
   row: 2
   col: 0
   stage: ② 类型层
-  route: →04d
+  route: →12d
   desc: 四种类型各查各的：开始 ≥1、结束不许有出边、判断必须 ≥2 个带标签分支（《类型登记表》见 `flowtable-spec` §2）
   input: 节点列表
   basis: H1 起止 · H4 分支 · H5 出边（`references/flowtable-spec.md` §3）
   output: 类型层结论
-- id: 04d
+- id: 12d
   name: 关系层校验
   lines:
   - 关系层校验
@@ -72,12 +72,12 @@ nodes:
   row: 3
   col: 0
   stage: ③ 关系层
-  route: →04e
+  route: →12e
   desc: 整张图一起看：引用存在、无孤儿、无死胡同、结束可达、回路不共线反向
   input: 节点列表 + 边
   basis: H3 引用 · H6 回路 · H8 连通（`references/flowtable-spec.md` §3）
   output: 关系层结论
-- id: 04e
+- id: 12e
   name: 有硬错误？
   lines:
   - 有硬错误？
@@ -87,12 +87,12 @@ nodes:
   row: 4
   col: 0
   stage: 判定
-  route: 有→04f ｜ 没有→04g
+  route: 有→12f ｜ 没有→12g
   desc: 只数硬错误：软提示不算，别拿提示堵住流程
   input: 三层结论
   basis: 硬错误与软提示的二分（`references/flowtable-spec.md` §3）
   output: 有 / 没有
-- id: 04f
+- id: 12f
   name: 逐条报出并 exit 1
   lines:
   - 逐条报出并 exit 1
@@ -106,7 +106,7 @@ nodes:
   desc: 报清第几行第几列错在哪，改完重跑
   input: 硬错误清单
   output: 逐条报错（含 `subject` / `fix`）
-- id: 04g
+- id: 12g
   name: 通过，放行渲染
   lines:
   - 通过，放行渲染
@@ -121,29 +121,29 @@ nodes:
   input: 三层结论
   output: 放行信号
 edges:
-- from: 04a
-  to: 04b
+- from: 12a
+  to: 12b
   kind: spine
   polarity: main
-- from: 04b
-  to: 04c
+- from: 12b
+  to: 12c
   kind: spine
   polarity: main
-- from: 04c
-  to: 04d
+- from: 12c
+  to: 12d
   kind: spine
   polarity: main
-- from: 04d
-  to: 04e
+- from: 12d
+  to: 12e
   kind: spine
   polarity: main
-- from: 04e
-  to: 04f
+- from: 12e
+  to: 12f
   kind: spine
   polarity: main
   label: 有
-- from: 04e
-  to: 04g
+- from: 12e
+  to: 12g
   kind: jumpR
   polarity: main
   label: 没有

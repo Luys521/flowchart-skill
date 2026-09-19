@@ -30,10 +30,25 @@ description: 用户要把流程、SOP、审批链路、合同或白板整理成�
 
 ## 输出契约
 
-交付 **3 份产物** + 2 份源文件：
+**成果根**：**任务级**产物住成果根，与各流程目录**平级**；一个流程一个目录。
 
 ```text
-output/<名称>/
+<成果根>/
+├── materials.json      ← 探测分档（档位 / 类型 / 指纹，只记账）
+├── recon.md            ← 侦查结论（难度排序 + 假设表）
+├── evidence.json       ← 证据账本（**唯一事实源**：下游只许引用 element id）
+├── intake.md           ← 清点卡片（一份材料一行）
+├── plan.md             ← 计划（做几张图 / 谁依赖谁 / 谁能并行）
+├── drift.md            ← 漂移账 + 缺口清单（循环的燃料）
+└── <名称>/             ← 每个流程一个目录，里面的东西见下
+```
+
+成果根**默认是用户给的路径**（"帮我看看这个目录"里的那个目录）；没给就用仓库 `output/`。**每次回显路径**。
+
+每个流程目录里交付 **3 份产物** + 2 份源文件：
+
+```text
+<成果根>/<名称>/
 ├── flowtable.md        ← 事实源，也交付（语义变更的唯一入口）
 ├── checklist.md        ← 自检报告（AI 推断项在此留痕）
 ├── <名称>-index.md     ← 层级索引（派生物，build 自动刷新）
@@ -46,7 +61,7 @@ output/<名称>/
 
 `<名称>` 用英文短名（如 `workflow`）。**同一个流程的迭代始终在这一个目录内**，不要每轮另起新名。产物名 = `<流程名>-flow.*`，流程名取**目录名**（表名是约定名 `flowtable` 时）或表名。
 
-> **格式基准 = `examples/workflow/`**：本 SKILL 把自身工作流画成的图。**上表第一列的阶段名，就是下面八个二级标题的名字**（与图上「项目运作阶段」列的取值同一套）；每一行是一个**节点**。拿不准怎么写时对照它。
+> **格式基准 = `examples/workflow/`**：本 SKILL 把自身工作流画成的图。**上表第一列的阶段名，就是下面十一个二级标题的名字**（与图上「项目运作阶段」列的取值同一套）；每一行是一个**节点**。拿不准怎么写时对照它。
 
 ## 标准处理流程
 
@@ -54,38 +69,85 @@ output/<名称>/
 
 | 阶段 | 节点 | 执行主体 | 输入 | 依据 | 输出 | 下个节点 |
 |---|---|---|---|---|---|---|
-| 读材料 | 01 收到材料 | 用户 | 原始材料 + 起止范围 | — | — | →02 |
+| 读材料 | 01 收到材料 | 用户 | 原始材料 + 起止范围 | — | — | →01a |
+| 读材料 | 01a 建目录 | 脚本 | 流程名 | 两份模板与目录约定 | `<成果根>/<流程名>/` + 两份模板 | →02 |
 | 读材料 | 02 读回现状对齐口径 | AI | 已有流程表（可无） | `⚠` / `⚠?` 的分拣口径 | 现状复述 | →03 |
-| 落表 | 03 落流程表 | AI | 材料 + 缺失列的答复 | 字段登记表 | 十二列流程表 | →04 |
-| 校验 | 04 结构校验？ | 脚本 | 流程表 | H1–H8 + 表头 H9 + H10（有账本时） | 通过，或逐条硬错误 | 通过→05 ｜ 不通过→**回 03** |
-| 标注 | 05 逐行回看内容出处 | AI | 流程表 | 依据不来自材料就标 `⚠` | `⚠` / `⚠?` 留痕 | →06 |
-| 标注 | 06 有待裁决项？ | 脚本 | 流程表 | frontier = 前驱已定的 `⚠?` | frontier 清单 | 有→07 ｜ 没有→08 |
-| 标注 | 07 问并收答复 | 用户 | frontier 清单 | — | 答复（新材料） | 答完→**回 01** |
-| 出图 | 08 渲染三份视图 | 脚本 | 通过校验的流程表 | 六环 + 产物侧九项 | 三份产物 + sha256 回执 | →09 |
-| 看 | 09 视觉自检通过？ | AI | 三份产物 | 看三样：交叉 / 标签 / 走向 | 视觉自检结论 | 通过→10 ｜ 有问题→**回 08** |
-| 回流 | 10 表被直改过吗？ | 脚本 | 流程表 + 上次渲染的指纹 | 现算指纹 vs `source_sha256` | 与契约同版 / 已过期 | 有→**回 03** ｜ 没有→11 |
-| 回流 | 11 读回并分拣改动 | 脚本 | drawio + 流程表 | 差异四分类 | 回写后的流程表 | 都没变→12 ｜ 改了语义→**回 03** ｜ 只动几何→**回 08** |
-| 交付 | 12 交付 | 用户 | — | — | 三视图 + `flowtable.md` + `checklist.md` | — |
+| 读材料 | 03 探测分档 | 脚本 | 材料根 | 按内容判，不按扩展名 | `materials[]`（档位 / 类型 / 指纹） | →04 |
+| 读材料 | 04 侦查：排序与假设 | 脚本 + AI | `materials[]` | 先廉价后昂贵；假设要落盘 | `recon.md` | →05 |
+| 读材料 | 05 解析入账 | 脚本 | `materials[]` | 清洗四条不许；收窄必留痕 | `evidence.json`（唯一事实源） | →06 |
+| 读材料 | 06 定范围：主体 / 目的 / 材料根 | AI ↔ 用户 | 已读到的材料 | `⚠?` 唯一该在切句前打断的一次 | 三格答复 | →07 |
+| 清点 | 07 要分堆吗？ | AI | 含流程的材料 ≥ 3 份 | 宁可多拆一条，不可错并两条 | 分堆结论 | 是→08 ｜ 否→11 |
+| 清点 | 08 清点成卡片 | AI | `evidence.json` | 一份材料一行；`是` / `否` 要给理由 | `intake.md` | →09 |
+| 计划 | 09 拆解成计划 | AI | `intake.md` | 拆解是 AI 的职责 | `plan.md` | →10 |
+| 计划 | 10 计划要改吗？ | 用户 | `plan.md` | 人审这一层最便宜 | 用户的纠正 | 改→**回 09** ｜ 不改→11 |
+| 落表 | 11 落流程表 | AI | 材料 + 答复 + 计划 | 字段登记表 | 十二列流程表 | →12 |
+| 校验 | 12 结构校验？ | 脚本 | 流程表 | H1–H8 + 表头 H9 + H10（有账本时） | 通过，或逐条硬错误 | 通过→13 ｜ 不通过→**回 11** |
+| 标注 | 13 逐行回看内容出处 | AI | 流程表 | 依据不来自材料就标 `⚠` | `⚠` / `⚠?` 留痕 | →14 |
+| 标注 | 14 有待裁决项？ | 脚本 | 流程表 | frontier = 前驱已定的 `⚠?` | frontier 清单 | 有→15 ｜ 没有→16 |
+| 标注 | 15 问并收答复 | 用户 | frontier 清单 | — | 答复（新材料） | 答完→**回 01** |
+| 出图 | 16 渲染三份视图 | 脚本 | 通过校验的流程表 | 六环 + 产物侧九项 | 三份产物 + sha256 回执 | →17 |
+| 看 | 17 视觉自检通过？ | AI | 三份产物 | 看三样：交叉 / 标签 / 走向 | 视觉自检结论 | 通过→18 ｜ 有问题→**回 16** |
+| 回流 | 18 表被直改过吗？ | 脚本 | 流程表 + 上次渲染的指纹 | 现算指纹 vs `source_sha256` | 与契约同版 / 已过期 | 有→**回 11** ｜ 没有→19 |
+| 回流 | 19 读回并分拣改动 | 脚本 | drawio + 流程表 | 差异四分类 | 回写后的流程表 | 都没变→20 ｜ 改了语义→**回 11** ｜ 只动几何→**回 16** |
+| 循环 | 20 对账：漂移 | 脚本 | 流程表 + 账本 + 假设账 + 清点 | D1—D5：表写错了→漂移，还有没看→缺口 | `drift.md` | →21 |
+| 循环 | 21 收敛了吗？ | 脚本 | `drift.md` | 硬漂移 0 且缺口清单空 | 收敛结论 | 收敛→24 ｜ 没收敛→22 |
+| 循环 | 22 缺口在哪一头？ | AI | 缺口清单 | 材料侧＝没看 · 表侧＝没写 | 材料侧 / 表侧 | 材料侧→23 ｜ 表侧→**回 11** |
+| 循环 | 23 攻坚：点名取子集再读 | 脚本 | 缺口清单 | 只查不抽；取回必须重新入账 | 该看的那几处 | →**回 05** |
+| 交付 | 24 交付 | 用户 | — | — | 三视图 + `flowtable.md` + `checklist.md` | — |
 
 「执行主体」一列决定你此刻该行动、还是该等用户；「输入」= 这一步需要用户提供什么，「输出」= 这一步交给用户什么，「依据」= 这一步凭什么这样做（见 `references/flowtable-spec.md` §2 的字段登记表）。
 
-下面八节只写**命令、判据与失败处理**——执行主体与下个节点不在节里重复。
+下面十一节只写**命令、判据与失败处理**——执行主体与下个节点不在节里重复。
 
-### 读材料（01–02）
-
-```bash
-python scripts/clarify.py "output/<名称>/flowtable.md"   # 已有流程表时读回现状（只读、不写文件）
-```
-
-它报出哪些是 AI 推断、哪些还没定。**已问过并已定的不重复问**——"还剩哪些要问"由 `06` 独家算，这里只把现状摆出来。"首轮无表就直接往下"不算空转：先看清现状，再动笔。
-
-### 落表（03）
+### 读材料（01–06）
 
 ```bash
-python scripts/init.py <名称>                           # 建 output/<名称>/ 并放入两份模板
+python scripts/clarify.py "<成果根>/<名称>/flowtable.md"   # 02：已有流程表时读回现状（只读、不写文件）
+python scripts/init.py <流程名> -d <成果根>                # 01a：建 <成果根>/<流程名>/ 并放入两份模板
+python scripts/probe.py <材料根> --json > <成果根>/materials.json
+python scripts/recon.py build --materials <成果根>/materials.json -o <成果根>/recon.md --todo <成果根>/recon.todo.json
+python scripts/parse.py --materials <成果根>/materials.json -o <成果根>/elements.json --notes <成果根>/notes.json --ledger <成果根>/evidence.json --task <任务名>
+python scripts/cells.py fill <成果根>/recon.md <答案>.json      # AI 填那四列
 ```
 
-按 `templates/flowtable-template.md` 的列规范填写 `output/<名称>/flowtable.md`；列含义见 `references/flowtable-spec.md`。
+**每轮开工第一件事：手上有什么就读什么**。`clarify.py` 报出哪些是 AI 推断、哪些还没定；**已问过并已定的不重复问**——"还剩哪些要问"由 `14` 独家算。"首轮无表就直接往下"不算空转：先看清现状，再动笔。
+
+**分档按内容判，不按扩展名**：同一个 `.pdf` 可以跨两档、改名件按魔数认。探测只**记账**（档位 / 类型 / sha256 / 修改时间），不改材料；读不动的逐份写明原因**并给出路**，整批不崩。
+
+`evidence.json` 是这条链的**唯一事实源**：这一步之后**只许引用 element id，不许回头读原件**——「依据」列指的就是它们。收窄（`--only` / `--pages` / `--slides` / `--grep` / `--rows`）一律留痕。
+
+**清洗的四条不许**：不改字 · 不合并去重 · 不语义分类 · 不"修好"读不动的。抽出来是碎片或坏字符主导的，**不许当证据入账**；每一步**要么可逆、要么留痕**。
+
+侦查表里的「假设角色 / 依据 / 验证方式 / 状态」是 **AI 填**的——那是假设账，被推翻也要留痕（"假设 X → 实际 Y → 已改"）。
+
+**定范围（06）**：主体（这几张图讲的是**谁与谁**）/ 目的（给谁看、用来干什么）/ 材料根（材料从哪几个目录来，**含用户手边的其它工作目录**）。答不出就**先问**——这是唯一值得在切句前打断的一次；**不许拿"材料里最强的那条流程"当默认**（盲读实测里那么干过：表全绿、却答了另一条流程）。⚠ 放在认料之后是刻意的：没看见材料全貌之前，"主体是谁"问不到点子上。
+
+### 清点（07–08）
+
+```bash
+python scripts/intake.py build <成果根>/evidence.json -o <成果根>/intake.md --todo <成果根>/intake.todo.json
+python scripts/cells.py fill <成果根>/intake.md <答案>.json
+python scripts/intake.py check <成果根>/intake.md --ledger <成果根>/evidence.json
+```
+
+一份材料一行。脚本填**机器列**（档位 / 读不动 / `重复`），**「主题 / 含流程 / 版本关系 / 依据」是 AI 填的**：`是` / `否` 必须给理由并标 `⚠`。卡片是账本的**标注层**——只标注、不新增真值。
+
+**分堆是这一步的目的**：哪几份材料属于**同一条流程**，由 AI 判（不是问用户）；纪律是**宁可多拆一条，不可错并两条**。含流程 = `否` 的一份都不许漏进排除清单。
+
+### 计划（09–10）
+
+```bash
+python scripts/plan.py build <成果根>/intake.md -o <成果根>/plan.md --scope <答复>.json --split <拆解>.json
+python scripts/plan.py check <成果根>/plan.md --intake <成果根>/intake.md --root <成果根>
+```
+
+回答**"做几张图、谁是谁的子、谁依赖谁、谁能并行"**。**这一层交用户审**——在计划阶段说一句"这两条其实是一条"，比画完两张图才发现便宜一个数量级。
+
+三对关系：**甲**（某节点的展开 ⇒ 子表）· **乙**（接力）· **丙**（共享）。**要不要拆子流程、该并还是拆，是 AI 的判断**：写进「注记」并标 `⚠`，**不许写成澄清申请的问句**。澄清申请只装"推不出、且必须业务方拍板"的事（口径冲突 / 外部约束 / 材料缺席）。
+
+### 落表（11）
+
+按 `templates/flowtable-template.md` 的列规范填写 `<成果根>/<名称>/flowtable.md`；列含义见 `references/flowtable-spec.md`。
 
 - **判断节点**：每个可能结果都要有一条出口，且每条出口都带标签（≤4 字）。**要"选一条走"只能用判断**；
   其余类型的多出口一律**并行**（全都走），标签只是路线名。四种类型与三个形状见 `references/flowtable-spec.md` §2《类型登记表》。
@@ -94,10 +156,10 @@ python scripts/init.py <名称>                           # 建 output/<名称>/
   **机器只核"自洽"，"该不该有"归你**：拿不准就按那份文档的判据定性，并把不确定标成 `⚠`。
 - **子表**：某节点的「节点描述」里写 `⊞ parts/<名字>.md`，该节点框内就多一道**内衬线**（静态可见、不带动画；悬浮框在节点名右侧用灰字提示「点击查看流程详情」）、单击下钻。子表是一张**独立的流程表**（自身可校验、可出图），它的分支只能指向**本表内**的节点；主表 `build` 会内嵌全部子孙子表，`<流程名>-index.md` 列出层级与构建顺序。
 
-### 校验（04）
+### 校验（12）
 
 ```bash
-python scripts/table_to_dsl.py --check "output/<名称>/flowtable.md"
+python scripts/table_to_dsl.py --check "<成果根>/<名称>/flowtable.md"
 ```
 
 失败即**阻断渲染**：把错误逐条反馈用户，改表后重跑。`build.py` 也会先跑这一关，未过不产出。
@@ -107,14 +169,14 @@ python scripts/table_to_dsl.py --check "output/<名称>/flowtable.md"
 - 元信息只住文件头 frontmatter：键封闭（笔误键会静默丢语义）；「层级号 / 子表清单」不收；「父表」须与父表的 `⊞` 双向一致。
 - **三层各管一段**：孤儿、死胡同、不可达只有 ③ 拦得住，而八项质量门禁照样全绿。
 
-### 标注（05–07）
+### 标注（13–15）
 
 ```bash
-python scripts/clarify.py "output/<名称>/flowtable.md"          # frontier：现在能问的
-python scripts/clarify.py "output/<名称>/flowtable.md" --json   # 机器可读，供组提问
+python scripts/clarify.py "<成果根>/<名称>/flowtable.md"          # frontier：现在能问的
+python scripts/clarify.py "<成果根>/<名称>/flowtable.md" --json   # 机器可读，供组提问
 ```
 
-按 `templates/checklist-template.md` 自查，产出 `output/<名称>/checklist.md`。标注写进「节点描述」，两类：
+按 `templates/checklist-template.md` 自查，产出 `<成果根>/<名称>/checklist.md`。标注写进「节点描述」，两类：
 
 | 标记 | 含义 | 渲染 |
 |---|---|---|
@@ -125,13 +187,13 @@ python scripts/clarify.py "output/<名称>/flowtable.md" --json   # 机器可读
 
 仍有 `⚠?` 未答时**照常渲染交付**（绝不卡住），交付说明里如实报「仍未决 N 处」。
 
-### 出图（08）
+### 出图（16）
 
 ```bash
-python scripts/build.py "output/<名称>/flowtable.md"                     # 默认 standard
-python scripts/build.py "output/<名称>/flowtable.md" --quality showcase  # 软提示也阻断
-python scripts/build.py "output/<名称>/flowtable.md" --no-layout         # 丢弃旧几何、重排
-python scripts/build.py "output/<名称>/flowtable.md" --no-pages          # drawio 不铺子表附加页
+python scripts/build.py "<成果根>/<名称>/flowtable.md"                     # 默认 standard
+python scripts/build.py "<成果根>/<名称>/flowtable.md" --quality showcase  # 软提示也阻断
+python scripts/build.py "<成果根>/<名称>/flowtable.md" --no-layout         # 丢弃旧几何、重排
+python scripts/build.py "<成果根>/<名称>/flowtable.md" --no-pages          # drawio 不铺子表附加页
 ```
 
 一条命令跑六环（节点类型分析 → 节点关系分析 → 空间规划 → 节点连接 → 碰撞检测 → 产物审核），任一环不过即 `exit 1` **并把产物还原**。第 3、4 环的实现细节（行距列宽、通道族、泳道走廊）见 `references/visual-spec.md`。
@@ -144,24 +206,24 @@ python scripts/build.py "output/<名称>/flowtable.md" --no-pages          # dra
 - **碰撞检测未过时只许改几何字段**（`row`/`col`/`gutter`/`gapx`/`channel`/`sdye`/`dye`；泳道布局只有 `row`/`col`/`sdye`/`dye`），**禁止改语义**；一次只改一个诊断项（`--json` 给出 `subject` 与建议修法），连续两轮无改善就停下如实报告。字段含义见 `references/dsl-spec.md`。
 - **`<流程名>-flow.yaml` 是派生文件**：`build.py` 每次整份重写它（注释留不住，理由写进流程表）；几何可手调、语义禁改。复用旧几何时新增节点一律落 `col=0`，用 `--no-layout` 重排。
 
-### 看（09）
+### 看（17）
 
 ```bash
-python scripts/shot.py "output/<名称>/<名称>-flow.html"                # 全图
-python scripts/shot.py "output/<名称>/<名称>-flow.html" --crop 0:1200  # 只看某一段
+python scripts/shot.py "<成果根>/<名称>/<名称>-flow.html"                # 全图
+python scripts/shot.py "<成果根>/<名称>/<名称>-flow.html" --crop 0:1200  # 只看某一段
 ```
 
 质量门禁只管几何，好不好看必须看图，看三样：交叉是否多到影响追踪、标签是否居中压线、分支走向是否反直觉。发现问题先查流程表标签是否过长，再调几何。截图是自检中间物、非交付物。
 
 **"只有线没有箭头"**：端口朝向与走向矛盾，折线横穿了自身的源/目标节点。**不要手工改端口**——把手写的 `gutter`/`channel`/`gapx` 从 yaml 删掉，让 router 重新规划。
 
-### 回流（10–11）
+### 回流（18–19）
 
 ```bash
-python scripts/table_to_dsl.py --fresh "output/<名称>/flowtable.md"     # 表与契约同版吗（rc 1 = 已过期或无从判断）
-python scripts/sync.py "output/<名称>/<名称>-flow.drawio" "output/<名称>/flowtable.md"              # 预览，不覆盖原表
-python scripts/xml_reader.py "output/<名称>/<名称>-flow.drawio" --diff "output/<名称>/flowtable.md"  # 结构 diff + 逐字节复核
-python scripts/sync.py "output/<名称>/<名称>-flow.drawio" "output/<名称>/flowtable.md" --apply      # 确认差异无误后
+python scripts/table_to_dsl.py --fresh "<成果根>/<名称>/flowtable.md"     # 表与契约同版吗（rc 1 = 已过期或无从判断）
+python scripts/sync.py "<成果根>/<名称>/<名称>-flow.drawio" "<成果根>/<名称>/flowtable.md"              # 预览，不覆盖原表
+python scripts/xml_reader.py "<成果根>/<名称>/<名称>-flow.drawio" --diff "<成果根>/<名称>/flowtable.md"  # 结构 diff + 逐字节复核
+python scripts/sync.py "<成果根>/<名称>/<名称>-flow.drawio" "<成果根>/<名称>/flowtable.md" --apply      # 确认差异无误后
 ```
 
 **先比指纹**：`--fresh` 拿表现算指纹，对照上次渲染写进 `<流程名>-flow.manifest.json` 的那一份。**为什么必须比**：手工改了表而没重跑 `build` 时「契约已过期」不响（yaml 一个字没动），八项质量门禁照样全绿，盘上却是一份旧事实源的图。
@@ -173,7 +235,7 @@ python scripts/sync.py "output/<名称>/<名称>-flow.drawio" "output/<名称>/f
 | 元素与关系都没变，只有坐标位移 | 几何 | 回 `build` 由**算法**判吸附阈值、重排版式；**像素不作终值**——改动要先经 `sync` 回流到 yaml，只跑 `build` 读不到图上的位移 |
 | 增删节点 / 关系变化 / 文字变化（含名称、形状） | 语义 | 回写进《流程表》，再从表出发重走校验与出图 |
 
-两者同时出现时按**语义**走（`03` 那条链最后也要经过 `build`）；差异为空才交付。`build` 覆盖旧产物前会留一份 `.flow.<ext>.bak`——**手工调过的几何走 `sync`，别直接重跑 `build`**。
+两者同时出现时按**语义**走（`11` 那条链最后也要经过 `build`）；差异为空才交付。`build` 覆盖旧产物前会留一份 `.flow.<ext>.bak`——**手工调过的几何走 `sync`，别直接重跑 `build`**。
 
 **回写按最小差异原则**：`(分支标签 + 目标编号)` 与原文一致的分支逐字回填原文（分支顺序、注解、`回` 标记、换行符都原样保住），只对新增/改动的边生成新文本。所以**预览里的每一行都是你真的动过的**；没动过的行也变了，那是缺陷，不要 `--apply`（见 `references/drawio-loop.md`）。
 
@@ -182,6 +244,24 @@ python scripts/sync.py "output/<名称>/<名称>-flow.drawio" "output/<名称>/f
 - **表自上次渲染后改过** → 回灌是按**图里的节点集合**重建表格行的：你在表里手工加的节点会被删掉、改过的名字会被覆盖回去。正路是重跑 `build` 让图跟上，或在表里改对。
 - **分支走向冲突**（表说去 A、图里说去 B）→ 先裁决哪边对；确认以图为准才加 `--force`，它把图里的走向落进表。
 
-### 交付（12）
+### 循环（20–23）
+
+```bash
+python scripts/drift.py build "<成果根>/<名称>/flowtable.md" --ledger <成果根>/evidence.json --recon <成果根>/recon.md --intake <成果根>/intake.md -o <成果根>/drift.md --todo <成果根>/drift.todo.json
+python scripts/cells.py fill <成果根>/drift.md <答案>.json
+python scripts/drift.py check <成果根>/drift.md --flowtable "<成果根>/<名称>/flowtable.md" --ledger <成果根>/evidence.json --recon <成果根>/recon.md --intake <成果根>/intake.md
+python scripts/query.py <成果根>/evidence.json --grep 审批 --batch 8      # 点名取子集：只查不抽
+python scripts/render_pages.py build --materials <成果根>/materials.json --out-dir <成果根>/shots --only M13,M15
+```
+
+**这是循环的发动机**：拿表去比"已经知道的"（账本 / 假设账 / 清点）。它分得清两类——**"表写错了"进漂移账**（等级拔高 · 假设被推翻仍在用 · 建立在读不动的材料上）、**"还有东西没看"进缺口清单**（含流程的材料零引用 · 读了没用上）。后者不指责表，它**派活**，每条给「走哪条路」。
+
+**缺口分两头，别混成一句"再补补"**：**材料侧** = 还有东西没看 → `query.py` 点名取子集（一批一小口 + 游标，只查不抽）或 `render_pages.py` 转图片；**表侧** = 看过了没写进去 → 回 `11` 改表。**取回的东西必须回 `05` 重新入账**——绕过账本等于给「依据」列造一条查不到的引用。
+
+**收敛判据**：**硬漂移 0 且缺口清单空**。每条漂移都要有处置：`已修`（会被重跑判据验真，说谎会被抓住）· `已解释`（必须写依据）· 不留 `待验`；每条缺口都要有结论：`已取证`（写清要哪一片）· `已放弃`（写理由）。⚠ 超预算（每份材料攻坚上限 2 轮）的落 `⚠?` 交用户——**不许无限重试**。
+
+`drift.md` 里还有一张**依据分布**读数（哪些材料撑着哪些节点、哪一段只落在一份材料上）：它是**读数不是判据**，用来决定"去核对哪一段"，不阻断交付。
+
+### 交付（24）
 
 `build.py` 末尾打印每份产物的 sha256（前 16 位 + 字节数），转发或归档时拿它核对是不是审过的那一版。交付清单见上文「输出契约」。

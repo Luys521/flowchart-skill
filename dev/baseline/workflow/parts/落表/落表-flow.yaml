@@ -17,7 +17,7 @@ layout:
   width: 680
   origin_x: -80
 nodes:
-- id: 03a
+- id: 11a
   name: 读列规范
   lines:
   - 读列规范
@@ -27,12 +27,12 @@ nodes:
   row: 0
   col: 0
   stage: 备料
-  route: →03b
+  route: →11b
   desc: 先看列规范再动笔；`init.py` 已把两份模板放进 `output/<名称>/`
   input: 模板与列规范
   basis: 字段登记表（`references/flowtable-spec.md` §2）
   output: 十二列的填写口径
-- id: 03b
+- id: 11b
   name: 提骨架
   lines:
   - 提骨架
@@ -42,12 +42,12 @@ nodes:
   row: 1
   col: 0
   stage: 落骨架
-  route: →03c
+  route: →11c
   desc: 先立骨架后填肉：骨架错了，后面每一列都要重搬
   input: 材料要点
   basis: 插入编号 · 类型登记表（`references/flowtable-spec.md` §2）
   output: 阶段 / 编号 / 名称 / 类型
-- id: 03c
+- id: 11c
   name: 提四支箭头
   lines:
   - 提四支箭头
@@ -57,12 +57,12 @@ nodes:
   row: 2
   col: 0
   stage: 落箭头
-  route: →03d
+  route: →11d
   desc: 一个节点 = 一个盒子 + 四支箭头；判据只有一句：**它被消耗或改变了吗**
   input: 材料要点
   basis: ICOM：被消耗或改变 = 输入，只决定能不能做 = 依据（`references/flowtable-spec.md` §2）
   output: 输入 / 依据 / 输出 / 执行主体与执行者
-- id: 03d
+- id: 11d
   name: 还有填不满的列吗？
   lines:
   - 还有填不满的列吗？
@@ -72,12 +72,12 @@ nodes:
   row: 3
   col: 0
   stage: 找缺口
-  route: 有→03e ｜ 没有→03g
+  route: 有→11e ｜ 没有→11g
   desc: 缺口不是"我没查到"，是**材料没说**——它正是该问用户的地方
   input: 十二列草稿
   basis: 列填不满 = 流程没说清（`SKILL.md` 落表段）
   output: 有 / 没有
-- id: 03e
+- id: 11e
   name: 提问并附候选
   lines:
   - 提问并附候选
@@ -87,12 +87,12 @@ nodes:
   row: 4
   col: 0
   stage: 提问
-  route: →03f
-  desc: ★ **这里问的是"列填不满"（缺输入 / 缺主体 / 缺依据），不是 07 的 `⚠?` 裁决**：07 问的是"两条路都说得通、要业务方拍板"，答复一律回
+  route: →11f
+  desc: ★ **这里问的是"列填不满"（缺输入 / 缺主体 / 缺依据），不是 15 的 `⚠?` 裁决**：15 问的是"两条路都说得通、要业务方拍板"，答复一律回
     01 重走一圈；本表问完就地补上
   input: 缺口清单
   output: 用户答复
-- id: 03f
+- id: 11f
   name: 逐列落笔
   lines:
   - 逐列落笔
@@ -102,12 +102,12 @@ nodes:
   row: 5
   col: 0
   stage: 落笔
-  route: →03g
+  route: →11g
   desc: ★ 每问附候选答案，用户只需否决；写不出处就打 `⚠`，**不要在这里编**
   input: 用户答复 + 草稿
   basis: 三类标记（`★` / `⚠` / `⊞`）写进描述列（`references/flowtable-spec.md` §2）
   output: 十二列流程表
-- id: 03g
+- id: 11g
   name: 十二列齐，交校验
   lines:
   - 十二列齐，交校验
@@ -122,33 +122,33 @@ nodes:
   input: 十二列流程表
   output: 可校验的流程表
 edges:
-- from: 03a
-  to: 03b
+- from: 11a
+  to: 11b
   kind: spine
   polarity: main
-- from: 03b
-  to: 03c
+- from: 11b
+  to: 11c
   kind: spine
   polarity: main
-- from: 03c
-  to: 03d
+- from: 11c
+  to: 11d
   kind: spine
   polarity: main
-- from: 03d
-  to: 03e
+- from: 11d
+  to: 11e
   kind: spine
   polarity: main
   label: 有
-- from: 03d
-  to: 03g
+- from: 11d
+  to: 11g
   kind: jumpR
   polarity: main
   label: 没有
-- from: 03e
-  to: 03f
+- from: 11e
+  to: 11f
   kind: spine
   polarity: main
-- from: 03f
-  to: 03g
+- from: 11f
+  to: 11g
   kind: spine
   polarity: main

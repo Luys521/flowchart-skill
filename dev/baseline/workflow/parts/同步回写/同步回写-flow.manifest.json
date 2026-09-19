@@ -2,8 +2,8 @@
  "title": "同步闭环：读回 → 回写 → 重渲染",
  "layout": "flow",
  "source": "flowtable.md",
- "dsl_sha256": "067fc00eb6089933",
- "source_sha256": "597075ae70ace279",
+ "dsl_sha256": "6dc0d7f2b2f77d07",
+ "source_sha256": "5297b8ce0a9711e4",
  "counts": {
   "nodes": 5,
   "edges": 4,
@@ -18,28 +18,28 @@
   "pending_nodes": 0
  },
  "node_ids": [
-  "11a",
-  "11b",
-  "11c",
-  "11d",
-  "11e"
+  "19a",
+  "19b",
+  "19c",
+  "19d",
+  "19e"
  ],
  "edges": [
   [
-   "11a",
-   "11b"
+   "19a",
+   "19b"
   ],
   [
-   "11b",
-   "11c"
+   "19b",
+   "19c"
   ],
   [
-   "11c",
-   "11d"
+   "19c",
+   "19d"
   ],
   [
-   "11c",
-   "11e"
+   "19c",
+   "19e"
   ]
  ]
 }
