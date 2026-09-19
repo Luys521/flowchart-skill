@@ -35,7 +35,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from textquality import element_haystack, load_thresholds, scar, verdict
+from textquality import element_haystack, load_thresholds, readout, scar, verdict
 
 SCRIPTS = Path(__file__).resolve().parent
 
@@ -243,8 +243,11 @@ def apply_quality(elements, materials, adapter_notes, th):
         frozen += drop
         if level == 'noisy':
             scar(keep, why)
+            # **两次读数并排打**：`why` 是丢纯碎片**之前**的比例，`readout(keep)` 是账本里真正留下的那批。
+            # 不并排打，看的人会以为读数在说谎（实测：同一份 PDF 62% vs 37%，而丢掉的 91 行全是单字行）。
             lines.append(f'{mid} noisy：{why}'
-                         + (f' → 丢掉纯碎片 {len(drop)} 条，其余每条挂 degraded' if drop else ' → 每条挂 degraded'))
+                         + (f' → 丢掉纯碎片 {len(drop)} 条，其余每条挂 degraded' if drop else ' → 每条挂 degraded')
+                         + (f'；**丢完读数**：{readout(keep)}' if drop else ''))
         elif drop:
             lines.append(f'{mid} ok（整份判据干净）：丢掉纯碎片 {len(drop)} 条'
                          f'（那几条自己就是一页水印/碎片，留进账本只会让「依据」引到读不出意思的东西）')

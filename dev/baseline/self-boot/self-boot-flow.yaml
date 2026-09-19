@@ -274,7 +274,7 @@ nodes:
   col: 0
   stage: 接管与解析
   route: →23
-  desc: 14 个函数 · ⊞ parse_legacy/flowtable.md
+  desc: 25 个函数 · ⊞ parse_legacy/flowtable.md
 - id: '23'
   name: 模块 · parse_ooxml
   lines:
@@ -502,7 +502,7 @@ nodes:
   col: 0
   stage: 接管与解析
   route: →42
-  desc: 8 个函数 · ⊞ textquality/flowtable.md
+  desc: 9 个函数 · ⊞ textquality/flowtable.md
 - id: '42'
   name: 模块 · validate
   lines:

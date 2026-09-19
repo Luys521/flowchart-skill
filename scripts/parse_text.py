@@ -29,11 +29,17 @@ import argparse
 import csv
 import io
 import json
+import re
 import sys
 from pathlib import Path
 
 # 别的适配器的地盘：按魔数判（与 probe 同一套判据，但这里问的是"**该谁读**"，不是"属于哪一档"）
 OTHER_MAGIC = ((b'PK', 'OOXML 容器'), (b'%PDF', 'PDF'), (b'\xd0\xcf\x11\xe0', 'OLE（legacy）'))
+
+# markdown 表格行：**只认"行的边界"，不认列语义**——一行自成一格，`依据` 才指得到"第几项"
+# （2026-09-18 盲读实测：一份 16 项的流程表被并成一个 2781 字的块，引用只能写成"第 7 项"这种**人话**）。
+TABLE_ROW = re.compile(r'^\s*\|.*\|\s*$')
+TABLE_RULE_CHARS = set('|-: ')               # 分隔行（`|---|---|`）只由这些字符组成：没有内容，不占元素
 
 CSV_EXTS = ('csv', 'tsv')                             # 这两种出 `table` + `rows`
 CODE_KINDS = ('json', 'yaml', 'yml', 'xml', 'html', 'htm')   # 这两种只影响 `kind` 标签，不解析内容
@@ -122,9 +128,12 @@ def _element(mid, prefix, seq, kind, text, path, extractor, max_chars):
 
 
 def _blocks(text, mid, path, which, max_chars):
-    """文本 → **按行打块**：空行收一块，块满 `max_chars` 也收 → 一块一个 element。
+    """文本 → **按行打块**：空行收一块、**表格行自成一格**、块满 `max_chars` 也收 → 一块一个 element。
 
-    这里**没有结构判断**（不认标题 / 列表 / 表格）：那是模型直读要干的事。
+    这里**没有结构判断**（不认标题 / 列表 / 表格语义）：那是模型直读要干的事。
+    唯一的例外是**表格行的边界**——它不是语义，是**排版事实**（和"空行 = 块边界"同一类），
+    而它决定"引用能不能指到第几项"：一份 16 项的表格并成一个块，`依据` 就只能写成"第 7 项"这种人话，
+    机器核不了（实测：盲读者被迫自己写 `M04#p002（表内序号 1）` 来补这个缺陷）。
     "块"只是引用粒度——`kind` 只说明"这份是文本还是标记/数据"（**必须落在 §2.1 的封闭枚举里**：
     文本块记 `paragraph`、标记/数据块记 `code`；`extractor` 记 `py:text` / `py:code`）。
     """
@@ -143,6 +152,13 @@ def _blocks(text, mid, path, which, max_chars):
     for line in text.splitlines():
         if not line.strip():
             flush()                                   # 空行 = 天然的块边界（排版事实，不是语义判断）
+            continue
+        if TABLE_ROW.match(line):
+            if set(line.strip()) <= TABLE_RULE_CHARS:
+                continue                              # 表格的分隔行没有内容，不占元素
+            flush()                                   # 表格行自成一格：它是可引用的最小单位
+            buf.append(line.strip())
+            flush()
             continue
         if buf and used + len(line) + 1 > max_chars:
             flush()                                   # **先收上一块、再放这一行**：块不许超上限

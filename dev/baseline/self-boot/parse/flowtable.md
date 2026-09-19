@@ -23,9 +23,9 @@ parent: ../flowtable.md
 | 模块级 | 09 | apply_narrowing | 任务 | — | — | — | 脚本 | selfboot | — | →17 | ★ 抽取后收窄：`--grep` 只留含这个词的片段、`--lines A-B` 只留该材料内第 A–B 条。 · L133 · 函数 · ⇢ 依赖 textquality.element_haystack |
 | 模块级 | 10 | run_adapter | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→04 | ★ 跑一个适配器 → `(elements, notes, 摘要行, 报错文案)`。走**子进程 + 产物**（模块层不许… · L165 · 函数 · 分支：1→_read_json 2→_last_line |
 | 模块级 | 11 | merge_elements | 任务 | — | — | — | 脚本 | selfboot | — | →17 | ★ `[(适配器名, elements)]` → `(合并后的 elements, 冲突说明)`。 · L188 · 函数 |
-| 模块级 | 12 | apply_quality | 任务 | — | — | — | 脚本 | selfboot | — | →17 | ★ 抽取质量门（§1.5「手段 0」）→ `(留下的元素, 覆盖用的补注, 丢掉的元素 id, 读数行, {M##: 级别… · L207 · 函数 · ⇢ 依赖 textquality.scar、textquality.verdict |
-| 模块级 | 13 | merge_notes | 任务 | — | — | — | 脚本 | selfboot | — | →17 | ★ `[(适配器名, notes)]` → `(合并后的 notes, 冲突说明)`。 · L254 · 函数 |
-| 模块级 | 14 | survey | 任务 | — | — | — | 脚本 | selfboot | — | →17 | ★ 材料层 × 证据 × 补注 → `(每份材料一行, 漏认清单)`。**漏认 = status=ok 却既无元素也无补注… · L272 · 函数 |
-| 模块级 | 15 | _print_survey | 任务 | — | — | — | 脚本 | selfboot | — | →17 | ★ 人读摘要：一份材料一行。**没有证据也没有补注的当场标出来**（那是漏认，不是"空材料"）。 · L305 · 函数 |
-| 模块级 | 16 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→03｜3→04｜4→05｜5→07｜6→08｜7→09｜8→10｜9→11｜10→12｜11→13｜12→14｜13→15 | L321 · 函数 · 分支：1→_read_json 2→_write_json 3→_last_line 4→_adapter_args 5→_span 6→narrow_materials 7→apply_narrowing 8→run_adapter 9→merge_elements 10→apply_quality 11→merge_notes 12→survey 13→_print_survey · ⇢ 依赖 textquality.load_thresholds |
+| 模块级 | 12 | apply_quality | 任务 | — | — | — | 脚本 | selfboot | — | →17 | ★ 抽取质量门（§1.5「手段 0」）→ `(留下的元素, 覆盖用的补注, 丢掉的元素 id, 读数行, {M##: 级别… · L207 · 函数 · ⇢ 依赖 textquality.readout、textquality.scar、textquality.verdict |
+| 模块级 | 13 | merge_notes | 任务 | — | — | — | 脚本 | selfboot | — | →17 | ★ `[(适配器名, notes)]` → `(合并后的 notes, 冲突说明)`。 · L257 · 函数 |
+| 模块级 | 14 | survey | 任务 | — | — | — | 脚本 | selfboot | — | →17 | ★ 材料层 × 证据 × 补注 → `(每份材料一行, 漏认清单)`。**漏认 = status=ok 却既无元素也无补注… · L275 · 函数 |
+| 模块级 | 15 | _print_survey | 任务 | — | — | — | 脚本 | selfboot | — | →17 | ★ 人读摘要：一份材料一行。**没有证据也没有补注的当场标出来**（那是漏认，不是"空材料"）。 · L308 · 函数 |
+| 模块级 | 16 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→03｜3→04｜4→05｜5→07｜6→08｜7→09｜8→10｜9→11｜10→12｜11→13｜12→14｜13→15 | L324 · 函数 · 分支：1→_read_json 2→_write_json 3→_last_line 4→_adapter_args 5→_span 6→narrow_materials 7→apply_narrowing 8→run_adapter 9→merge_elements 10→apply_quality 11→merge_notes 12→survey 13→_print_survey · ⇢ 依赖 textquality.load_thresholds |
 | 出口 | 17 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |

@@ -1156,6 +1156,79 @@ def materials_paths(root):
     cases.append(('㊳ 纯文本不猜编码：GBK 记读不动 + 可执行提示 · `--encoding gbk` 读出来并改回 `ok` · '
                   'UTF-8 材料不受影响', ok, rc2,
                   (str(n_before)[:160] + str(n_after)[:120]) if not ok else ''))
+
+    # 51 legacy 的**自包含降级读法**（§1.6）：没有转换器时，真 OLE 里按 UTF-16LE 捞文本 run 就能读；
+    #    但"捞得出来"不等于"都是正文"——纯二进制、以及**错位读出来的怪字**都必须挡在门外（记读不动）。
+    #    这一条考的是**通用能力**：任何 OLE 材料（含 `.wps` / `.dps` 这类 WPS 后缀）都走它，与具体项目无关。
+    ole_d = root / 'oletext'
+    ole_d.mkdir(exist_ok=True)
+    body = '本合同项下，甲方每5MW或每半年向乙方支付一次工程款，付款比例另行约定。' * 12
+    (ole_d / 'a.doc').write_bytes(_ole_bytes('WordDocument') + body.encode('utf-16-le'))
+    (ole_d / 'b.doc').write_bytes(_ole_bytes('WordDocument')
+                                  + bytes([(i * 7 + 3) % 256 for i in range(6000)]))
+    # `00 3a` 反复：按 UTF-16LE 读成一串"低字节恒为 0"的合法汉字（实测在真材料里抓到过这种噪声）
+    (ole_d / 'c.doc').write_bytes(_ole_bytes('WordDocument') + b'\x00\x3a' * 300)
+    rc_p, out_p = run([sys.executable, str(PROBE_CMD), str(ole_d), '--json'])
+    (ole_d / 'materials.json').write_text(out_p[out_p.index('['):], encoding='utf-8')
+    rc, out = run([sys.executable, str(PARSE_CMD), '--materials', str(ole_d / 'materials.json'),
+                   '-o', str(ole_d / 'els.json'), '--notes', str(ole_d / 'notes.json'),
+                   '--ledger', str(ole_d / 'led.json')])
+    ole_mats, ole_els = {}, []
+    try:
+        got = json.loads((ole_d / 'led.json').read_text(encoding='utf-8'))
+        ole_mats = {pathlib.Path(m.get('path', '')).name: m for m in got['materials']}
+        ole_els = got['elements']
+    except (OSError, ValueError, KeyError):
+        pass
+    m_a, m_b, m_c = (ole_mats.get('a.doc', {}), ole_mats.get('b.doc', {}), ole_mats.get('c.doc', {}))
+    a_els = [e for e in ole_els if e.get('material_id') == m_a.get('id')]
+    ok = (rc_p == 0 and rc == 0
+          and m_a.get('status') == 'ok' and m_a.get('extractor') == 'py:oletext'
+          and a_els and all(e.get('extractor') == 'py:oletext'
+                            and 'py:oletext' in (e.get('degraded') or '') for e in a_els)
+          and any('5MW' in (e.get('text') or '') for e in a_els)
+          and m_b.get('status') == 'unreadable' and '另存为' in (m_b.get('reason') or '')
+          and m_c.get('status') == 'unreadable')
+    cases.append(('51 legacy 降级读法（§1.6）：真 OLE 捞 UTF-16LE 正文（extractor=py:oletext + 逐条挂 degraded）· '
+                  '纯二进制与"错位读出的怪字"都不许当正文',
+                  ok, rc, (str({k: (v.get('status'), v.get('extractor')) for k, v in ole_mats.items()})
+                           + f' a.doc 元素 {len(a_els)}') if not ok else ''))
+
+    # 52 两份**通用**材料的边界（同样与具体项目无关）：
+    #    ① markdown 表格**按行成块**——`依据` 要指得到"第几项"（盲读实测：一整张表并成一个块，只能写人话）；
+    #    ② `noisy` 判决要把**丢之前 / 丢之后**两次读数并排打（同一份材料 62% vs 37%，不说清就像读数说谎）。
+    tb_d = root / 'textblocks'
+    tb_d.mkdir(exist_ok=True)
+    rows = '\n'.join(f'| 阶段{i} | {i:02d} 第{i}项动作 | 任务 | →{i + 1:02d} |' for i in range(1, 9))
+    (tb_d / 'table.md').write_text('# 一张表\n\n| 阶段 | 节点 | 类型 | 下个节点 |\n| --- | --- | --- | --- |\n'
+                                   + rows + '\n', encoding='utf-8')
+    # 40 行里 18 行是单字行（占 45%：≥ noisy 的 25%、< garbled 的 75%）⇒ 判 noisy；
+    # 那 18 行**自成一块**（空行隔开）⇒ 元素级判据把它整条丢掉，丢完读数与丢前不同
+    noisy_lines = ['验'] * 18 + [''] + [f'第 {i} 条正文内容，这一行是一句完整的话。' for i in range(1, 23)]
+    (tb_d / 'noisy.txt').write_text('\n'.join(noisy_lines) + '\n', encoding='utf-8')
+    rc_tp, out_tp = run([sys.executable, str(PROBE_CMD), str(tb_d), '--json'])
+    (tb_d / 'materials.json').write_text(out_tp[out_tp.index('['):], encoding='utf-8')
+    rc, out = run([sys.executable, str(PARSE_CMD), '--materials', str(tb_d / 'materials.json'),
+                   '-o', str(tb_d / 'els.json'), '--notes', str(tb_d / 'notes.json'),
+                   '--ledger', str(tb_d / 'led.json')])
+    tb_mats, tb_els = {}, []
+    try:
+        got = json.loads((tb_d / 'led.json').read_text(encoding='utf-8'))
+        tb_mats = {pathlib.Path(m.get('path', '')).name: m['id'] for m in got['materials']}
+        tb_els = got['elements']
+    except (OSError, ValueError, KeyError):
+        pass
+    t_els = [e for e in tb_els if e.get('material_id') == tb_mats.get('table.md')]
+    row3 = [e for e in t_els if '第3项动作' in (e.get('text') or '')]
+    n_els = [e for e in tb_els if e.get('material_id') == tb_mats.get('noisy.txt')]
+    ok = (rc_tp == 0 and rc == 0
+          and row3 and '第4项动作' not in row3[0]['text']          # 一行一格：第 3 项自己就是一条证据
+          and '丢完读数' in out and 'noisy' in out
+          and n_els and all('抽取质量有保留' in (e.get('degraded') or '') for e in n_els)
+          and not any(set((e.get('text') or '').strip()) == {'验'} for e in n_els))
+    cases.append(('52 文本层两条边界：markdown 表格**按行成块**（一行一条证据）· `noisy` 判决并排打'
+                  '「丢前 / 丢完」两次读数、纯碎片那条不进账本',
+                  ok, rc, (f'table 元素 {len(t_els)} · row3 {len(row3)} · noisy 元素 {len(n_els)}') if not ok else ''))
     return cases
 
 

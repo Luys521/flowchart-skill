@@ -32,7 +32,7 @@ level: L0
 | 接管与解析 | 19 | 模块 · ledger | 任务 | — | — | — | 脚本 | selfboot | — | →20 | 9 个函数 · ⊞ ledger/flowtable.md |
 | 产物审核 | 20 | 模块 · manifest | 任务 | — | — | — | 脚本 | selfboot | — | →21 | 29 个函数 · ⊞ manifest/flowtable.md |
 | 接管与解析 | 21 | 模块 · parse | 任务 | — | — | — | 脚本 | selfboot | — | →22 | 15 个函数 · ⊞ parse/flowtable.md |
-| 接管与解析 | 22 | 模块 · parse_legacy | 任务 | — | — | — | 脚本 | selfboot | — | →23 | 14 个函数 · ⊞ parse_legacy/flowtable.md |
+| 接管与解析 | 22 | 模块 · parse_legacy | 任务 | — | — | — | 脚本 | selfboot | — | →23 | 25 个函数 · ⊞ parse_legacy/flowtable.md |
 | 接管与解析 | 23 | 模块 · parse_ooxml | 任务 | — | — | — | 脚本 | selfboot | — | →24 | 11 个函数 · ⊞ parse_ooxml/flowtable.md |
 | 接管与解析 | 24 | 模块 · parse_pdf | 任务 | — | — | — | 脚本 | selfboot | — | →25 | 7 个函数 · ⊞ parse_pdf/flowtable.md |
 | 接管与解析 | 25 | 模块 · parse_text | 任务 | — | — | — | 脚本 | selfboot | — | →26 | 13 个函数 · ⊞ parse_text/flowtable.md |
@@ -51,7 +51,7 @@ level: L0
 | 渲染 | 38 | 模块 · swimlane | 任务 | — | — | — | 脚本 | selfboot | — | →39 | 19 个函数 · ⊞ swimlane/flowtable.md |
 | 同步闭环 | 39 | 模块 · sync | 任务 | — | — | — | 脚本 | selfboot | — | →40 | 10 个函数 · ⊞ sync/flowtable.md |
 | DSL 装配 | 40 | 模块 · table_to_dsl | 任务 | — | — | — | 脚本 | selfboot | — | →41 | 14 个函数 · ⊞ table_to_dsl/flowtable.md |
-| 接管与解析 | 41 | 模块 · textquality | 任务 | — | — | — | 脚本 | selfboot | — | →42 | 8 个函数 · ⊞ textquality/flowtable.md |
+| 接管与解析 | 41 | 模块 · textquality | 任务 | — | — | — | 脚本 | selfboot | — | →42 | 9 个函数 · ⊞ textquality/flowtable.md |
 | 产物审核 | 42 | 模块 · validate | 任务 | — | — | — | 脚本 | selfboot | — | →43 | 39 个函数 · ⊞ validate/flowtable.md |
 | 同步闭环 | 43 | 模块 · writeback | 任务 | — | — | — | 脚本 | selfboot | — | →44 | 21 个函数 · ⊞ writeback/flowtable.md |
 | 同步闭环 | 44 | 模块 · xml_reader | 任务 | — | — | — | 脚本 | selfboot | — | →45 | 40 个函数 · ⊞ xml_reader/flowtable.md |

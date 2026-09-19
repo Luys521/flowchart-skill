@@ -8,8 +8,8 @@ meta:
 layout:
   col_x:
   - 400
-  width: 940
-  origin_x: -80
+  width: 1180
+  origin_x: 0
 nodes:
 - id: '01'
   name: 开始
@@ -21,7 +21,7 @@ nodes:
   row: 0
   col: 0
   stage: 入口
-  route: 1→15
+  route: 1→26
   desc: 流程起点（结构性节点，不是函数） · 入口：1→main
 - id: '02'
   name: no_converter_reason
@@ -30,11 +30,11 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 8
+  row: 9
   col: 0
   stage: 模块级
-  route: →16
-  desc: ★ 缺转换器时的**按族给话**：这份是什么、最省事的下一步是什么。 · L68 · 函数
+  route: →27
+  desc: ★ 缺转换器时的**按族给话**：这份是什么、最省事的下一步是什么。 · L87 · 函数
 - id: '03'
   name: _read_json
   lines:
@@ -45,8 +45,8 @@ nodes:
   row: 2
   col: 0
   stage: 模块级
-  route: →16
-  desc: ★ 读 JSON（容忍 BOM）。 · L80 · 函数
+  route: →27
+  desc: ★ 读 JSON（容忍 BOM）。 · L99 · 函数
 - id: '04'
   name: _head
   lines:
@@ -54,11 +54,11 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 10
+  row: 11
   col: 0
   stage: 模块级
-  route: →16
-  desc: ★ 前 n 字节；读不动返回空（调用方按读不动记账，不崩）。 · L85 · 函数
+  route: →27
+  desc: ★ 前 n 字节；读不动返回空（调用方按读不动记账，不崩）。 · L104 · 函数
 - id: '05'
   name: ole_kind
   lines:
@@ -66,11 +66,11 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 9
+  row: 10
   col: 0
   stage: 模块级
   route: →04
-  desc: ★ OLE 复合文档 → `'docx'` / `'xlsx'` / `'pptx'`；不是 OLE 或判不出返回 Non… · L94 · 函数
+  desc: ★ OLE 复合文档 → `'docx'` / `'xlsx'` / `'pptx'`；不是 OLE 或判不出返回 Non… · L113 · 函数
 - id: '06'
   name: _argv_of
   lines:
@@ -81,8 +81,8 @@ nodes:
   row: 4
   col: 0
   stage: 模块级
-  route: →16
-  desc: ★ `--soffice` 的取值 → argv 前缀。**存在就整条当路径**（躲开 `C:\Program Files… · L107 · 函数
+  route: →27
+  desc: ★ `--soffice` 的取值 → argv 前缀。**存在就整条当路径**（躲开 `C:\Program Files… · L126 · 函数
 - id: '07'
   name: _decode
   lines:
@@ -90,11 +90,11 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 12
+  row: 13
   col: 0
   stage: 模块级
-  route: →16
-  desc: ★ 外部转换器的输出 → 文本。**不能假定它说 UTF-8**：Windows 上的 soffice 往管道里写本地编码 · L127 · 函数
+  route: →27
+  desc: ★ 外部转换器的输出 → 文本。**不能假定它说 UTF-8**：Windows 上的 soffice 往管道里写本地编码 · L146 · 函数
 - id: 08
   name: _runs
   lines:
@@ -106,7 +106,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →07
-  desc: ★ 跑一次 `<转换器> --version` → `(退出码, 输出)`；起不来返回 (None, 原因)。 · L142 · 函数
+  desc: ★ 跑一次 `<转换器> --version` → `(退出码, 输出)`；起不来返回 (None, 原因)。 · L161 · 函数
 - id: 09
   name: find_converter
   lines:
@@ -118,7 +118,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→06｜2→08
-  desc: ★ 探测外部转换器 → `(argv 前缀, 版本说明, 报错文案)`。 · L152 · 函数 · 分支：1→_argv_of 2→_runs
+  desc: ★ 探测外部转换器 → `(argv 前缀, 版本说明, 报错文案)`。 · L171 · 函数 · 分支：1→_argv_of 2→_runs
 - id: '10'
   name: convert
   lines:
@@ -126,11 +126,11 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 11
+  row: 12
   col: 0
   stage: 模块级
   route: →07
-  desc: ★ `<转换器> --headless --convert-to <target> --outdir <dir> <材料>… · L175 · 函数
+  desc: ★ `<转换器> --headless --convert-to <target> --outdir <dir> <材料>… · L194 · 函数
 - id: '11'
   name: extract_via_ooxml
   lines:
@@ -138,49 +138,182 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 13
+  row: 14
   col: 0
   stage: 模块级
-  route: →16
-  desc: ★ 子进程调 `parse_ooxml.py` 抽转换产物 → `(elements, 报错文案)`；出处改回原材料。 · L203 · 函数
+  route: →27
+  desc: ★ 子进程调 `parse_ooxml.py` 抽转换产物 → `(elements, 报错文案)`；出处改回原材料。 · L222 · 函数
 - id: '12'
-  name: parse_legacy
+  name: load_thresholds
   lines:
-  - parse_legacy
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 7
-  col: 0
-  stage: 模块级
-  route: 1→02｜2→05｜3→10｜4→11
-  desc: ★ 一份 legacy 材料 → `(elements, 材料补注, 跳过说明, 报错文案)`。 · L232 · 函数 · 分支：1→no_converter_reason
-    2→ole_kind 3→convert 4→extract_via_ooxml
-- id: '13'
-  name: parse_materials
-  lines:
-  - parse_materials
+  - load_thresholds
   type: task
   subject: 脚本
   executor: selfboot
   row: 6
   col: 0
   stage: 模块级
-  route: →12
-  desc: ★ 材料层 → `(elements, 材料补注, 摘要, 跳过清单, 报错文案)`。只认 OLE；别的材料**不归我管*… · L258 · 函数
+  route: →27
+  desc: ★ 阈值 = 内置默认 + `dictionary.yaml` 的 `legacy_text:` 段（读不到就用默认，**… · L252 · 函数
+- id: '13'
+  name: _is_text_unit
+  lines:
+  - _is_text_unit
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 18
+  col: 0
+  stage: 模块级
+  route: →27
+  desc: ★ 这个字符**像正文**吗（拿它当 run 的粘合剂）。 · L272 · 函数
 - id: '14'
+  name: _is_word
+  lines:
+  - _is_word
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 20
+  col: 0
+  stage: 模块级
+  route: →27
+  desc: ★ 算不算"字"（判 run 像不像正文用）：中日韩 + 字母 + 数字。 · L287 · 函数
+- id: '15'
+  name: _word_ratio
+  lines:
+  - _word_ratio
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 19
+  col: 0
+  stage: 模块级
+  route: →14
+  desc: L293 · 函数
+- id: '16'
+  name: _low0_ratio
+  lines:
+  - _low0_ratio
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 21
+  col: 0
+  stage: 模块级
+  route: →27
+  desc: ★ 码位**低字节恒为 0** 的比例——这是"单字节二进制被当成 UTF-16LE 读"的指纹。 · L297 · 函数
+- id: '17'
+  name: _is_common
+  lines:
+  - _is_common
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 23
+  col: 0
+  stage: 模块级
+  route: →27
+  desc: ★ "常用字面"：ASCII / 拉丁补充 / 常用标点 / 中日韩与全角——**真正文几乎全落在这一片里**。 · L308 · 函数
+- id: '18'
+  name: _common_ratio
+  lines:
+  - _common_ratio
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 22
+  col: 0
+  stage: 模块级
+  route: →17
+  desc: ★ 常用字面占比——用来丢"字符撒在几十个文种里"的高熵噪声（那些也是二进制，只是碰巧合了法）。 · L317 · 函数
+- id: '19'
+  name: _emit
+  lines:
+  - _emit
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 17
+  col: 0
+  stage: 模块级
+  route: 1→15｜2→16｜3→18
+  desc: ★ 一条 run 收尾：**够长 · 够"像正文" · 不是错位读的怪字 · 不是多种文字混在一起的高熵噪声**才留。 · L326 · 函数 ·
+    分支：1→_word_ratio 2→_low0_ratio 3→_common_ratio
+- id: '20'
+  name: _runs_at
+  lines:
+  - _runs_at
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 16
+  col: 0
+  stage: 模块级
+  route: 1→13｜2→19
+  desc: ★ 按 `shift` 字节对齐扫一遍 → `[(字节偏移, 文本)]`。 · L336 · 函数 · 分支：1→_is_text_unit 2→_emit
+- id: '21'
+  name: runs_of
+  lines:
+  - runs_of
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 15
+  col: 0
+  stage: 模块级
+  route: →20
+  desc: ★ OLE 原始字节 → `(run 列表, 说明)`。**两种对齐都扫**：正文 run 未必从偶数字节开始。 · L351 · 函数
+- id: '22'
+  name: fallback_elements
+  lines:
+  - fallback_elements
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 24
+  col: 0
+  stage: 模块级
+  route: →27
+  desc: ★ run 列表 → `elements[]`：**并相邻 run → 按 `max_chars` 切块 → 每条挂降级说… · L374 · 函数
+- id: '23'
+  name: parse_legacy
+  lines:
+  - parse_legacy
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 8
+  col: 0
+  stage: 模块级
+  route: 1→02｜2→05｜3→10｜4→11｜5→21｜6→22
+  desc: ★ 一份 legacy 材料 → `(elements, 材料补注, 跳过说明, 报错文案)`。 · L410 · 函数 · 分支：1→no_converter_reason
+    2→ole_kind 3→convert 4→extract_via_ooxml 5→runs_of 6→fallback_elements
+- id: '24'
+  name: parse_materials
+  lines:
+  - parse_materials
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 7
+  col: 0
+  stage: 模块级
+  route: →23
+  desc: ★ 材料层 → `(elements, 材料补注, 摘要, 跳过清单, 报错文案)`。只认 OLE；别的材料**不归我管*… · L448 · 函数
+- id: '25'
   name: _write_json
   lines:
   - _write_json
   type: task
   subject: 脚本
   executor: selfboot
-  row: 14
+  row: 25
   col: 0
   stage: 模块级
-  route: →16
-  desc: ★ 写 JSON：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 ledger.dump）。 · L284 · 函数
-- id: '15'
+  route: →27
+  desc: ★ 写 JSON：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 ledger.dump）。 · L475 · 函数
+- id: '26'
   name: main
   lines:
   - main
@@ -190,36 +323,37 @@ nodes:
   row: 1
   col: 0
   stage: 模块级
-  route: 1→03｜2→09｜3→13｜4→14
-  desc: L289 · 函数 · 分支：1→_read_json 2→find_converter 3→parse_materials 4→_write_json
-- id: '16'
+  route: 1→03｜2→09｜3→12｜4→24｜5→25
+  desc: L480 · 函数 · 分支：1→_read_json 2→find_converter 3→load_thresholds 4→parse_materials
+    5→_write_json
+- id: '27'
   name: 结束
   lines:
   - 结束
   type: end
   subject: 脚本
   executor: selfboot
-  row: 15
+  row: 26
   col: 0
   stage: 出口
   route: —
   desc: 流程终点（结构性节点，不是函数）
 edges:
 - from: '01'
-  to: '15'
+  to: '26'
   kind: spine
   polarity: main
   label: '1'
 - from: '02'
-  to: '16'
+  to: '27'
   kind: jumpR
   polarity: main
 - from: '03'
-  to: '16'
+  to: '27'
   kind: jumpR
   polarity: main
 - from: '04'
-  to: '16'
+  to: '27'
   kind: jumpR
   polarity: main
 - from: '05'
@@ -227,11 +361,11 @@ edges:
   kind: spine
   polarity: main
 - from: '06'
-  to: '16'
+  to: '27'
   kind: jumpR
   polarity: main
 - from: '07'
-  to: '16'
+  to: '27'
   kind: jumpR
   polarity: main
 - from: 08
@@ -253,54 +387,130 @@ edges:
   kind: spine
   polarity: main
 - from: '11'
-  to: '16'
+  to: '27'
   kind: jumpR
   polarity: main
 - from: '12'
+  to: '27'
+  kind: jumpR
+  polarity: main
+- from: '13'
+  to: '27'
+  kind: jumpR
+  polarity: main
+- from: '14'
+  to: '27'
+  kind: jumpR
+  polarity: main
+- from: '15'
+  to: '14'
+  kind: spine
+  polarity: main
+- from: '16'
+  to: '27'
+  kind: jumpR
+  polarity: main
+- from: '17'
+  to: '27'
+  kind: jumpR
+  polarity: main
+- from: '18'
+  to: '17'
+  kind: spine
+  polarity: main
+- from: '19'
+  to: '15'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '19'
+  to: '16'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '19'
+  to: '18'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '20'
+  to: '13'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '20'
+  to: '19'
+  kind: spine
+  polarity: main
+  label: '2'
+- from: '21'
+  to: '20'
+  kind: spine
+  polarity: main
+- from: '22'
+  to: '27'
+  kind: jumpR
+  polarity: main
+- from: '23'
   to: '02'
   kind: spine
   polarity: main
   label: '1'
-- from: '12'
+- from: '23'
   to: '05'
   kind: jumpR
   polarity: main
   label: '2'
-- from: '12'
+- from: '23'
   to: '10'
   kind: jumpR
   polarity: main
   label: '3'
-- from: '12'
+- from: '23'
   to: '11'
   kind: jumpR
   polarity: main
   label: '4'
-- from: '13'
-  to: '12'
+- from: '23'
+  to: '21'
+  kind: jumpR
+  polarity: main
+  label: '5'
+- from: '23'
+  to: '22'
+  kind: jumpR
+  polarity: main
+  label: '6'
+- from: '24'
+  to: '23'
   kind: spine
   polarity: main
-- from: '14'
-  to: '16'
+- from: '25'
+  to: '27'
   kind: spine
   polarity: main
-- from: '15'
+- from: '26'
   to: '03'
   kind: spine
   polarity: main
   label: '1'
-- from: '15'
+- from: '26'
   to: 09
   kind: jumpR
   polarity: main
   label: '2'
-- from: '15'
-  to: '13'
+- from: '26'
+  to: '12'
   kind: jumpR
   polarity: main
   label: '3'
-- from: '15'
-  to: '14'
+- from: '26'
+  to: '24'
   kind: jumpR
   polarity: main
   label: '4'
+- from: '26'
+  to: '25'
+  kind: jumpR
+  polarity: main
+  label: '5'

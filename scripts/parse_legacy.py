@@ -16,6 +16,14 @@ r"""parse_legacy.py — legacy（`.doc` / `.xls` / `.ppt`）解析适配器（PI
 3. **走了哪条路要记账**：成功元素的 `extractor` 写 `soffice+py:docx` / `soffice+py:openpyxl`，
    出处 `location.path` 改回**原材料**路径（内容来自转换副本，但证据指向用户给的那份）。
 
+**没有转换器时不是"读不动"，而是"降级读"**（2026-09-18 盲读实测补，判据见 §1.6）：
+OLE 里的正文本身常常就是一段连续的 **UTF-16LE**，**按字节捞 run 就能拿到成段文字**——
+这条路**自包含**（只用标准库）、**不可靠**（不解析结构、不保证顺序、可能有缺漏），
+所以它**排在转换器之后**，抽出来一律挂 `degraded`、`extractor=py:oletext`，
+**并且照样要过 §1.5 的质量门**（抽出来是碎片就还是不入账）。
+为什么值得有：实测三份真 OLE 都捞回了成段正文，而且**因此抓到"原件与转述件"的一处真差异**——
+只把原件记成"读不动"，那种差异就永远没人看得见。阈值在 `dictionary.yaml` 的 `legacy_text:` 段。
+
 判档**按内容**（§1.2）：OLE 头 `D0 CF 11 E0` 才归本脚本；是 `.doc` 还是 `.xls` **先看 OLE 目录里的
 流名**（`WordDocument` / `Workbook` / `PowerPoint Document`），取不到才退到扩展名——改名件不骗人。
 
@@ -34,6 +42,17 @@ from pathlib import Path
 
 # OLE 复合文档头（§1.2 的魔数判据）
 OLE_MAGIC = b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1'
+
+# ---- 自包含降级读法（`legacy_text`）的默认阈值：**代码里这份只是兜底**，家在 `dictionary.yaml` ----
+DICT_NAME = 'dictionary.yaml'
+DEFAULT_TH = {
+    'min_run': 24, 'min_word_ratio': 0.5, 'max_low0_ratio': 0.4, 'min_common_ratio': 0.85,
+    'min_chars': 200, 'max_chars': 2000, 'max_elements': 200, 'max_scan_bytes': 33554432,
+    'join_gap': 64,
+}
+OLETEXT_EXTRACTOR = 'py:oletext'
+OLETEXT_CAVEAT = ('py:oletext 降级抽取（只捞 UTF-16LE 文本 run：不解析结构、不保证顺序；'
+                  '流名 / 域代码 / 内嵌 XML 这类**短 run 也会被捞进来，别当正文**）')
 
 # OLE 目录里的流名 → 该用哪个 OOXML 读取器（UTF-16LE 存，按字节找；**按内容判，不看扩展名**）
 OLE_STREAMS = (
@@ -229,34 +248,206 @@ def extract_via_ooxml(converted, mid, original, timeout):
     return got, ''
 
 
-def parse_legacy(path, mid, argv, workdir, timeout):
+# ----------------------------------------------------------------自包含降级读法（§1.6）
+def load_thresholds(path=None):
+    """阈值 = 内置默认 + `dictionary.yaml` 的 `legacy_text:` 段（读不到就用默认，**不报错**）。
+
+    与 `textquality.load_thresholds` 同一取舍：这是"多一条降级路"，不是主链依赖——
+    缺 PyYAML / 缺字典时退回默认，比让整条解析链停下来合算。
+    """
+    th = dict(DEFAULT_TH)
+    p = Path(path) if path else Path(__file__).with_name(DICT_NAME)
+    try:
+        import yaml
+        with open(p, encoding='utf-8') as fh:
+            got = (yaml.safe_load(fh) or {}).get('legacy_text') or {}
+    except Exception:
+        return th
+    for k, v in got.items():
+        if k in th and isinstance(v, (int, float)) and not isinstance(v, bool):
+            th[k] = v
+    return th
+
+
+def _is_text_unit(ch):
+    """这个字符**像正文**吗（拿它当 run 的粘合剂）。
+
+    **宽进**是故意的：run 的边界要落在真噪声上（二进制控制符 / 替换字符 / 未配对代理被解成 `\\ufffd`），
+    而不是落在标点或制表符上——不然一段正常的话会被切成十几条碎片。误收的噪声由 `_word_ratio`
+    与 §1.5 的质量门兜住（两道都在）。
+    """
+    o = ord(ch)
+    return (ch in '\t\n\r' or 0x20 <= o <= 0x7e
+            or 0xa0 <= o <= 0x2fff                      # 拉丁补充 / 标点 / 箭头 / 制表符
+            or 0x3000 <= o <= 0x303f or 0x3400 <= o <= 0x4dbf
+            or 0x4e00 <= o <= 0x9fff or 0xf900 <= o <= 0xfaff
+            or 0xfe30 <= o <= 0xfe4f or 0xff00 <= o <= 0xffef)
+
+
+def _is_word(ch):
+    """算不算"字"（判 run 像不像正文用）：中日韩 + 字母 + 数字。"""
+    o = ord(ch)
+    return ch.isalnum() or 0x3400 <= o <= 0x4dbf or 0x4e00 <= o <= 0x9fff
+
+
+def _word_ratio(text):
+    return sum(1 for ch in text if _is_word(ch)) / len(text) if text else 0.0
+
+
+def _low0_ratio(text):
+    """码位**低字节恒为 0** 的比例——这是"单字节二进制被当成 UTF-16LE 读"的指纹。
+
+    为什么它够格当判据：真 UTF-16LE 正文里，低字节与高字节一样是变的（中日韩两字节都有值，
+    ASCII 是"低字节=字符、高字节=0"）；而把**单字节**流按两字节读时，形如 `00 3A 00 3C …` 的字节对
+    会解成一串"低字节全是 0"的怪字（实测抓到一条：`Ȁ㨀㰀䠀䨀怀戀搀琀瘀砀稀踀退鈀鐀鸀`——
+    每个字看起来都是合法汉字，`isalnum()` 全过，只有这个比例能一眼看穿）。
+    """
+    return sum(1 for ch in text if ord(ch) & 0xFF == 0) / len(text) if text else 0.0
+
+
+def _is_common(ch):
+    """"常用字面"：ASCII / 拉丁补充 / 常用标点 / 中日韩与全角——**真正文几乎全落在这一片里**。"""
+    o = ord(ch)
+    return (ch in '\t\n\r' or 0x20 <= o <= 0x7e or 0xa0 <= o <= 0x24f
+            or 0x2000 <= o <= 0x206f or 0x3000 <= o <= 0x303f
+            or 0x3400 <= o <= 0x4dbf or 0x4e00 <= o <= 0x9fff
+            or 0xf900 <= o <= 0xfaff or 0xfe30 <= o <= 0xfe4f or 0xff00 <= o <= 0xffef)
+
+
+def _common_ratio(text):
+    """常用字面占比——用来丢"字符撒在几十个文种里"的高熵噪声（那些也是二进制，只是碰巧合了法）。
+
+    与 `_word_ratio` 分工：后者防"纯符号"，前者防"什么文种的字都有"（实测抓到一条混杂希腊 / 西里尔 /
+    阿拉伯 / 天城文 / 泰文的 run——单个字符全合法，连起来不是任何一种语言）。
+    """
+    return sum(1 for ch in text if _is_common(ch)) / len(text) if text else 0.0
+
+
+def _emit(out, buf, start, th):
+    """一条 run 收尾：**够长 · 够"像正文" · 不是错位读的怪字 · 不是多种文字混在一起的高熵噪声**才留。"""
+    s = ''.join(buf).strip()
+    if (len(s) >= th['min_run'] and _word_ratio(s) >= th['min_word_ratio']
+            and _low0_ratio(s) <= th['max_low0_ratio']
+            and _common_ratio(s) >= th['min_common_ratio']):
+        out.append((start, s))
+    return out
+
+
+def _runs_at(blob, shift, th):
+    """按 `shift` 字节对齐扫一遍 → `[(字节偏移, 文本)]`。"""
+    text = blob[shift:].decode('utf-16-le', errors='replace')
+    out, buf, start = [], [], shift
+    for i, ch in enumerate(text):
+        if _is_text_unit(ch):
+            if not buf:
+                start = shift + 2 * i
+            buf.append(ch)
+            continue
+        _emit(out, buf, start, th)
+        buf = []
+    return _emit(out, buf, start, th)
+
+
+def runs_of(path, th=None):
+    """OLE 原始字节 → `(run 列表, 说明)`。**两种对齐都扫**：正文 run 未必从偶数字节开始。"""
+    th = dict(th or DEFAULT_TH)
+    try:
+        data = Path(path).read_bytes()
+    except OSError as e:
+        return [], f'读不动（{type(e).__name__}: {e}）'
+    cap = max(2, int(th['max_scan_bytes']))
+    cut = len(data) > cap
+    blob = data[:cap]
+    cand = _runs_at(blob, 0, th) + _runs_at(blob, 1, th)
+    # 同一段正文会被两种对齐各命中一次（一次真解、一次错位半格）：按字节区间去重，**留更长的那条**。
+    cand.sort(key=lambda r: (r[0], -len(r[1])))
+    kept = []
+    for off, text in cand:
+        end = off + 2 * len(text)
+        if any(not (end <= a or off >= b) for a, b, _t in kept):
+            continue
+        kept.append((off, end, text))
+    note = f'只扫了前 {cap // 1048576} MiB（材料共 {len(data) / 1048576:.1f} MiB）' if cut else ''
+    return [(o, t) for o, _e, t in kept], note
+
+
+def fallback_elements(mid, path, runs, th, note=''):
+    """run 列表 → `elements[]`：**并相邻 run → 按 `max_chars` 切块 → 每条挂降级说明**。
+
+    `degraded` 挂在这里而不是只印在屏幕上：账本是唯一事实源（§2.5），下游只读账本——
+    "这条是从二进制里捞出来的文本 run"必须跟着证据走，否则引用它的人不知道它不解析结构。
+    """
+    groups, cur, used = [], [], 0
+    for off, text in runs:
+        prev_end = cur[-1][0] + 2 * len(cur[-1][1]) if cur else 0   # runs 的元素是 (起点, 文本)，不是 (起, 止)
+        if cur and (off - prev_end > th['join_gap'] or used + len(text) > th['max_chars']):
+            groups.append(cur)
+            cur, used = [], 0
+        cur.append((off, text))
+        used += len(text)
+    if cur:
+        groups.append(cur)
+    out = []
+    for g in groups[:int(th['max_elements'])]:
+        body = '\n'.join(t for _o, t in g).strip()
+        if not body:
+            continue
+        cut = len(body) > th['max_chars']
+        if cut:
+            body = body[:int(th['max_chars'])] + '…'
+        degraded = OLETEXT_CAVEAT + (f'；{note}' if note else '')
+        if cut:
+            degraded += f'；正文截断到 {int(th["max_chars"])} 字'
+        out.append({'id': f'{mid}#o{len(out) + 1:03d}', 'material_id': mid, 'kind': 'paragraph',
+                    'text': body, 'location': {'path': path.as_posix(), 'quote': body},
+                    'extractor': OLETEXT_EXTRACTOR, 'certainty': 'direct', 'degraded': degraded})
+    if len(groups) > len(out):
+        for e in out:
+            e['degraded'] += f'；只收前 {len(out)} 个元素（捞到的 run 还有更多）'
+    return out
+
+
+def parse_legacy(path, mid, argv, workdir, timeout, th=None):
     """一份 legacy 材料 → `(elements, 材料补注, 跳过说明, 报错文案)`。
 
-    三种结局都要**落到账上**：转成功（产 element + 补注 extractor）、转失败/缺转换器、判不出类型。
+    三种结局都要**落到账上**：转成功（产 element + 补注 extractor）、**降级读出正文**（同上，但 extractor
+    记 `py:oletext`、逐条挂 `degraded`）、真的捞不出来（记读不动 + 可执行提示）。
     """
+    th = dict(th or DEFAULT_TH)
     kind = ole_kind(path)
     if kind is None:
         return [], None, '', ''
-    if argv is None:
-        return [], {'material_id': mid, 'status': 'unreadable', 'reason': no_converter_reason(kind)}, \
-            f'{mid}: 缺转换器', ''
-    target = TARGET_OF[kind]
-    converted, err = convert(argv, path, target, workdir, timeout)
-    if err:
-        return [], {'material_id': mid, 'status': 'unreadable',
-                    'reason': f'转换失败（{err}）：装/修 LibreOffice，或把材料另存为 .{target}'}, \
-            f'{mid}: 转换失败', ''
-    got, err = extract_via_ooxml(converted, mid, path.as_posix(), timeout)
-    if err:
-        return [], {'material_id': mid, 'status': 'unreadable',
-                    'reason': f'转换产物读不了（{err}）：材料可能已损坏，请人工核对'}, \
-            f'{mid}: 转换产物读不了', ''
-    note = {'material_id': mid, 'extractor': f'soffice+{EXTRACTOR_OF.get(target, "py:?")}'}
-    return got, note, f'{mid}({kind}→{target}) {len(got)}', ''
+    why = ''
+    if argv is not None:
+        target = TARGET_OF[kind]
+        converted, err = convert(argv, path, target, workdir, timeout)
+        if err:
+            why = f'转换失败（{err}）'
+        else:
+            got, err = extract_via_ooxml(converted, mid, path.as_posix(), timeout)
+            if not err:
+                note = {'material_id': mid, 'extractor': f'soffice+{EXTRACTOR_OF.get(target, "py:?")}'}
+                return got, note, f'{mid}({kind}→{target}) {len(got)}', ''
+            why = f'转换产物读不了（{err}）'
+    else:
+        why = '本机没探到外部转换器（soffice）'
+    # 转换器这条路走不通 → **降级读**（§1.6）：捞 UTF-16LE 文本 run；捞不出来才记读不动
+    runs, scan = runs_of(path, th)
+    total = sum(len(t) for _o, t in runs)
+    if total >= th['min_chars']:
+        got = fallback_elements(mid, path, runs, th, scan)
+        if got:
+            note = {'material_id': mid, 'status': 'ok', 'extractor': OLETEXT_EXTRACTOR}
+            return got, note, f'{mid}({kind}·降级 {total} 字) {len(got)}', ''
+    return [], {'material_id': mid, 'status': 'unreadable',
+                'reason': (f'{why}；降级读（UTF-16LE 文本 run）也只捞出 {total} 字'
+                           f'（少于 {th["min_chars"]}）。{no_converter_reason(kind)}')}, \
+        f'{mid}: 读不动', ''
 
 
-def parse_materials(materials, argv, timeout):
+def parse_materials(materials, argv, timeout, th=None):
     """材料层 → `(elements, 材料补注, 摘要, 跳过清单, 报错文案)`。只认 OLE；别的材料**不归我管**（不给补注）。"""
+    th = dict(th or DEFAULT_TH)
     elements, notes, done, skipped = [], [], [], []
     with tempfile.TemporaryDirectory(prefix='parse_legacy_out_') as workdir:
         for m in materials:
@@ -266,7 +457,7 @@ def parse_materials(materials, argv, timeout):
                 skipped.append(f'{mid}: status={m.get("status")}（不解析）')
                 continue
             try:
-                got, note, line, err = parse_legacy(path, mid, argv, workdir, timeout)
+                got, note, line, err = parse_legacy(path, mid, argv, workdir, timeout, th)
             except Exception as e:                       # 单份坏不让整批失败
                 skipped.append(f'{mid}: 解析失败 {type(e).__name__}: {e}')
                 continue
@@ -295,6 +486,7 @@ def main(argv=None):
     ap.add_argument('--notes', help='材料层补注写到哪里（status / reason / extractor，交给 ledger.py --notes）')
     ap.add_argument('--soffice', help='显式指定转换器命令（默认识别 PATH 与常见安装位置；判据仍是 --version 能通）')
     ap.add_argument('--timeout', type=int, default=180, help='单份材料的转换 / 抽取超时秒数')
+    ap.add_argument('--dict', help=f'{DICT_NAME}（默认取 scripts/ 下那份；`legacy_text:` 段的阈值）')
     a = ap.parse_args(argv)
 
     try:
@@ -307,17 +499,19 @@ def main(argv=None):
         return 2
 
     started = time.monotonic()
+    th = load_thresholds(a.dict)
     conv, version, err = find_converter(a.soffice, a.timeout)
     if err:
         print(f'⚠ {err}', file=sys.stderr)
         return 2
     if conv is None:
-        print('ℹ 没探到外部转换器（soffice）：legacy 材料一律记读不动 + 可执行提示（§1.4 的"都没有时"那一列）',
+        print('ℹ 没探到外部转换器（soffice）：legacy 材料走**自包含降级读法**（捞 UTF-16LE 文本 run，'
+              '逐条挂 degraded）；捞不出正文的才记读不动 + 可执行提示（§1.4「都没有时」那一列 + §1.6）',
               file=sys.stderr)
     else:
         print(f'ℹ 转换器：{" ".join(conv)}（{version or "版本未报"}）', file=sys.stderr)
 
-    elements, notes, done, skipped, err = parse_materials(materials, conv, a.timeout)
+    elements, notes, done, skipped, err = parse_materials(materials, conv, a.timeout, th)
     if err:
         print(f'⚠ {err}', file=sys.stderr)
         return 2

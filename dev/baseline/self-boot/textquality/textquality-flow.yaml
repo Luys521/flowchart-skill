@@ -8,8 +8,8 @@ meta:
 layout:
   col_x:
   - 400
-  width: 840
-  origin_x: -120
+  width: 940
+  origin_x: -180
 nodes:
 - id: '01'
   name: 开始
@@ -21,8 +21,9 @@ nodes:
   row: 0
   col: 0
   stage: 入口
-  route: 1→02｜2→03｜3→08｜4→09
-  desc: 流程起点（结构性节点，不是函数） · 入口：1→element_haystack 2→load_thresholds 3→verdict 4→scar
+  route: 1→02｜2→03｜3→07｜4→09｜5→10
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→element_haystack 2→load_thresholds 3→readout 4→verdict
+    5→scar
 - id: '02'
   name: element_haystack
   lines:
@@ -30,10 +31,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 3
+  row: 2
   col: 0
   stage: 模块级
-  route: →10
+  route: →11
   desc: ★ 一条证据的**可搜面**：正文 + 表格全部单元格 + 出处摘录（**小写**，供朴素子串匹配）。 · L26 · 函数
 - id: '03'
   name: load_thresholds
@@ -42,10 +43,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 4
+  row: 3
   col: 0
   stage: 模块级
-  route: →10
+  route: →11
   desc: ★ 阈值 = 默认 + `dictionary.yaml` 的 `material_quality:` 段（读不到就用默认… · L55 · 函数
 - id: '04'
   name: _bad_char
@@ -54,10 +55,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 7
+  row: 8
   col: 0
   stage: 模块级
-  route: →10
+  route: →11
   desc: ★ 替换字符 / 控制字符 / 私用区：乱码常落在这三类里。 · L75 · 函数
 - id: '05'
   name: stats
@@ -66,7 +67,7 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 6
+  row: 7
   col: 0
   stage: 模块级
   route: →04
@@ -78,24 +79,36 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 2
+  row: 5
   col: 0
   stage: 模块级
-  route: →10
+  route: →11
   desc: ★ 读数 → 人话（**判据要能被人复核**：比例后面永远跟上原始计数）。 · L111 · 函数
 - id: '07'
+  name: readout
+  lines:
+  - readout
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 4
+  col: 0
+  stage: 模块级
+  route: 1→05｜2→06
+  desc: ★ 一组元素 → **同一句人话形式**的读数（供"丢之前 / 丢之后"两次都打印）。 · L118 · 函数 · 分支：1→stats 2→_why
+- id: 08
   name: element_is_garbage
   lines:
   - element_is_garbage
   type: task
   subject: 脚本
   executor: selfboot
-  row: 5
+  row: 6
   col: 0
   stage: 模块级
   route: →05
-  desc: ★ 单条元素是不是**纯碎片**（元素级判据；行数门槛比材料级低，因为一条元素可能就几行）。 · L118 · 函数
-- id: 08
+  desc: ★ 单条元素是不是**纯碎片**（元素级判据；行数门槛比材料级低，因为一条元素可能就几行）。 · L128 · 函数
+- id: 09
   name: verdict
   lines:
   - verdict
@@ -105,29 +118,29 @@ nodes:
   row: 1
   col: 0
   stage: 模块级
-  route: 1→05｜2→06｜3→07
-  desc: ★ 一组元素 → `(级别, 判据说明, 该丢的元素 id)`。级别 ∈ `ok` / `noisy` / `garble… · L126 · 函数
+  route: 1→05｜2→06｜3→08
+  desc: ★ 一组元素 → `(级别, 判据说明, 该丢的元素 id)`。级别 ∈ `ok` / `noisy` / `garble… · L136 · 函数
     · 分支：1→stats 2→_why 3→element_is_garbage
-- id: 09
+- id: '10'
   name: scar
   lines:
   - scar
   type: task
   subject: 脚本
   executor: selfboot
-  row: 8
+  row: 9
   col: 0
   stage: 模块级
-  route: →10
-  desc: ★ 把"质量有保留"挂到**该材料的每条**上（§2.4 降级必须留痕；与 `parse_pdf` 的采样说明同一口径）。 · L146 · 函数
-- id: '10'
+  route: →11
+  desc: ★ 把"质量有保留"挂到**该材料的每条**上（§2.4 降级必须留痕；与 `parse_pdf` 的采样说明同一口径）。 · L156 · 函数
+- id: '11'
   name: 结束
   lines:
   - 结束
   type: end
   subject: 脚本
   executor: selfboot
-  row: 9
+  row: 10
   col: 0
   stage: 出口
   route: —
@@ -144,25 +157,30 @@ edges:
   polarity: main
   label: '2'
 - from: '01'
-  to: 08
-  kind: spine
+  to: '07'
+  kind: jumpR
   polarity: main
   label: '3'
 - from: '01'
   to: 09
-  kind: jumpR
+  kind: spine
   polarity: main
   label: '4'
-- from: '02'
+- from: '01'
   to: '10'
+  kind: jumpR
+  polarity: main
+  label: '5'
+- from: '02'
+  to: '11'
   kind: jumpR
   polarity: main
 - from: '03'
-  to: '10'
+  to: '11'
   kind: jumpR
   polarity: main
 - from: '04'
-  to: '10'
+  to: '11'
   kind: jumpR
   polarity: main
 - from: '05'
@@ -170,29 +188,39 @@ edges:
   kind: spine
   polarity: main
 - from: '06'
-  to: '10'
+  to: '11'
   kind: jumpR
   polarity: main
 - from: '07'
   to: '05'
-  kind: spine
-  polarity: main
-- from: 08
-  to: '05'
   kind: jumpR
   polarity: main
   label: '1'
-- from: 08
+- from: '07'
   to: '06'
   kind: spine
   polarity: main
   label: '2'
 - from: 08
-  to: '07'
+  to: '05'
+  kind: spine
+  polarity: main
+- from: 09
+  to: '05'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: 09
+  to: '06'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: 09
+  to: 08
   kind: jumpR
   polarity: main
   label: '3'
-- from: 09
-  to: '10'
+- from: '10'
+  to: '11'
   kind: spine
   polarity: main

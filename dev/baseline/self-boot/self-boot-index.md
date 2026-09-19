@@ -26,7 +26,7 @@
   - **L1 子流程** `ledger/flowtable.md`——《ledger.py 函数流程表》（id: selfboot-ledger）（11 节点）
   - **L1 子流程** `manifest/flowtable.md`——《manifest.py 函数流程表》（id: selfboot-manifest）（31 节点）
   - **L1 子流程** `parse/flowtable.md`——《parse.py 函数流程表》（id: selfboot-parse）（17 节点）
-  - **L1 子流程** `parse_legacy/flowtable.md`——《parse_legacy.py 函数流程表》（id: selfboot-parse_legacy）（16 节点）
+  - **L1 子流程** `parse_legacy/flowtable.md`——《parse_legacy.py 函数流程表》（id: selfboot-parse_legacy）（27 节点）
   - **L1 子流程** `parse_ooxml/flowtable.md`——《parse_ooxml.py 函数流程表》（id: selfboot-parse_ooxml）（13 节点）
   - **L1 子流程** `parse_pdf/flowtable.md`——《parse_pdf.py 函数流程表》（id: selfboot-parse_pdf）（9 节点）
   - **L1 子流程** `parse_text/flowtable.md`——《parse_text.py 函数流程表》（id: selfboot-parse_text）（15 节点）
@@ -45,7 +45,7 @@
   - **L1 子流程** `swimlane/flowtable.md`——《swimlane.py 函数流程表》（id: selfboot-swimlane）（21 节点）
   - **L1 子流程** `sync/flowtable.md`——《sync.py 函数流程表》（id: selfboot-sync）（12 节点）
   - **L1 子流程** `table_to_dsl/flowtable.md`——《table_to_dsl.py 函数流程表》（id: selfboot-table_to_dsl）（16 节点）
-  - **L1 子流程** `textquality/flowtable.md`——《textquality.py 函数流程表》（id: selfboot-textquality）（10 节点）
+  - **L1 子流程** `textquality/flowtable.md`——《textquality.py 函数流程表》（id: selfboot-textquality）（11 节点）
   - **L1 子流程** `validate/flowtable.md`——《validate.py 函数流程表》（id: selfboot-validate）（41 节点）
   - **L1 子流程** `writeback/flowtable.md`——《writeback.py 函数流程表》（id: selfboot-writeback）（23 节点）
   - **L1 子流程** `xml_reader/flowtable.md`——《xml_reader.py 函数流程表》（id: selfboot-xml_reader）（42 节点）
