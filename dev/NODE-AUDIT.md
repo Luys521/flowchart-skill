@@ -297,3 +297,71 @@ python scripts/table_to_dsl.py --check .accept_tmp/blind/arm1/flowtable.md
 **顺带看到一条新的过期风险**：新能力会让旧澄清申请过期——这份计划里的 Q02/Q03/Q04 问的是
 "`M01`/`M06`/`M11`/`M14` 读不动，要不要另存为"，而 C23 的 legacy 降级读法**已经能把它们读出来**；
 账本与基于它的判断**绑在同一版能力上**，能力升级后没有人提醒"该回 01 重走"。
+
+
+## 十、自举：用这套工具梳理**它自己**的流程（2026-09-19）
+
+**为什么做这个**（G21 / D-101）：全链已经就位，但 `SKILL.md` 的 12 节点与 `examples/workflow/` 的 13 节点**都只画到"落表"之后**——L0—L2（认料 → 清点 → 计划）只活在 `PIPELINE-SPEC` 里，被 SKILL 加载的 AI 看不见。与其手写一个入口，不如**拿它自己的契约文档当材料，走一遍它自己的流程**。
+
+**材料根**：`output/pipeline-self/materials/`（本仓八份契约文档的副本：PIPELINE-SPEC · SKILL · README · flowtable-spec · material-to-nodes · ARCHITECTURE · REPO-MAP · DECISIONS）。**主体** = 这套 SKILL 自身（AI 提炼 / 脚本认料校验渲染 / 用户拍板）；**目的** = 把它自己的作业流程画成一张流程表。
+
+```bash
+# L0：探测 → 侦查 → 解析 → 账本（一次跑完）
+python scripts/probe.py output/pipeline-self/materials --json > output/pipeline-self/materials.json
+python scripts/recon.py build --materials output/pipeline-self/materials.json -o output/pipeline-self/recon.md --todo output/pipeline-self/recon.todo.json
+python scripts/parse.py --materials output/pipeline-self/materials.json -o output/pipeline-self/elements.json --notes output/pipeline-self/notes.json --ledger output/pipeline-self/evidence.json --task pipeline-self
+# L1：清点骨架 → AI 填四列（cells.py fill）→ 校验
+python scripts/intake.py build output/pipeline-self/evidence.json -o output/pipeline-self/intake.md --todo output/pipeline-self/intake.todo.json
+# L2：计划（AI 的拆解落成 --split JSON，主体/目的/材料根走 --scope）
+python scripts/plan.py build output/pipeline-self/intake.md -o output/pipeline-self/plan.md --scope output/pipeline-self/scope.json --split output/pipeline-self/split.json
+python scripts/plan.py check output/pipeline-self/plan.md --intake output/pipeline-self/intake.md --root output/pipeline-self
+# L3/L4：落表 → 校验 → 出图 → 漂移 → 收敛
+python scripts/table_to_dsl.py --check "output/pipeline-self/材料到出图/flowtable.md"
+python scripts/build.py "output/pipeline-self/材料到出图/flowtable.md"
+python scripts/drift.py build "output/pipeline-self/材料到出图/flowtable.md" --ledger output/pipeline-self/evidence.json --recon output/pipeline-self/recon.md --intake output/pipeline-self/intake.md -o output/pipeline-self/drift.md
+python scripts/drift.py check output/pipeline-self/drift.md --flowtable "output/pipeline-self/材料到出图/flowtable.md" --ledger output/pipeline-self/evidence.json --recon output/pipeline-self/recon.md --intake output/pipeline-self/intake.md
+```
+
+**结果**：材料 **8** · 证据 **1627**（`evidence.json` 1.19 MB）· 计划 **1 条流程**（`F01 材料到出图`，材料集 `M01`/`M03`/`M05`/`M06`，排除 4 条）· 落表 **24 节点 / 33 边** · `--check` **H1—H10 一次过**（**H10 真核了 29 处引用**，全过）· 三份产物 + 层级索引 + sha256 回执 · 漂移 **0** · 缺口 7 条全部有结论 ⇒ `drift check` **收敛**。全程走正式接口，**没有一次性脚本**（第一轮那三个 `_fill_*.py` 的教训）。
+
+**它自己的流程长这样**（24 节点；`F01` 的完整表在 `output/pipeline-self/材料到出图/flowtable.md`）：
+
+| 阶段 | 编号 | 名称 | 类型 | 执行者 | 下个节点 |
+|---|---|---|---|---|---|
+| 读材料 | 01 | 收到材料 | 开始 | 用户 | →02 |
+| 读材料 | 02 | 建目录 | 任务 | init.py | →03 |
+| 读材料 | 03 | 探测分档 | 任务 | probe.py | →04 |
+| 读材料 | 04 | 侦查：排序与假设 | 任务 | recon.py | →05 |
+| 读材料 | 05 | 解析入账 | 任务 | parse.py → ledger.py | →06 |
+| 读材料 | 06 | 定范围：主体 / 目的 / 材料根 | 任务 | AI 问、用户答 | →07 |
+| 清点 | 07 | 要分堆吗？ | 判断 | AI | 是→08 ｜ 否→11 |
+| 清点 | 08 | 清点成卡片 | 任务 | AI（脚本 build/check） | →09 |
+| 计划 | 09 | 拆解成计划 | 任务 | AI（脚本 build/check） | →10 |
+| 计划 | 10 | 计划要改吗？ | 判断 | 用户 | 改→回 09 ｜ 不改→11 |
+| 落表 | 11 | 落流程表 | 任务 | AI | →12 |
+| 校验 | 12 | 结构校验？ | 判断 | table_to_dsl.py | 通过→13 ｜ 不通过→回 11 |
+| 标注 | 13 | 逐行回看出处 | 任务 | AI | →14 |
+| 标注 | 14 | 有待裁决项？ | 判断 | clarify.py | 有→15 ｜ 没有→16 |
+| 标注 | 15 | 问并收答复 | 任务 | 用户 | →回 01 当新材料 |
+| 出图 | 16 | 渲染三份视图 | 任务 | build.py | →17 |
+| 看 | 17 | 视觉自检通过？ | 判断 | AI | 通过→18 ｜ 有问题→回 16 |
+| 回流 | 18 | 表被直改过吗？ | 判断 | table_to_dsl.py --fresh | 改过→回 11 ｜ 没有→19 |
+| 回流 | 19 | 读回并分拣改动 | 任务 | sync.py | 都没变→20 ｜ 改了语义→回 11 ｜ 只动几何→回 16 |
+| 循环 | 20 | 对账：漂移 | 任务 | drift.py | →21 |
+| 循环 | 21 | 收敛了吗？ | 判断 | drift.py check | 收敛→24 ｜ 没收敛→22 |
+| 循环 | 22 | 缺口在哪一头？ | 判断 | AI | 材料侧→23 ｜ 表侧→回 11 |
+| 循环 | 23 | 攻坚：点名取子集再读 | 任务 | query.py · render_pages.py | →回 05 重新入账 |
+| 交付 | 24 | 交付 | 结束 | 用户 | — |
+
+**三个假设**：**H1**「把 L0—L2 插在"落表"之前就完整了」· **H2**「真形状不是线性的，插节点会把表画歪」· **H3**「表能落出来，但上架时与 `SKILL.md` / 模板 / 基线三处打架」。
+
+- **H1 部分成立**：接得上，一次过。但"线性"会抹平两处**真实的**形状（见 H2），所以 H1 的"就完整了"是错的。
+- **H2 成立**：§1.5 第四步写着"**分堆不可跳过**"，同一节又写着"**清点与计划是工位，不是开工前的关卡**"（§0.1 / M03#p041）。两句都成立 ⇒ 07 只能落成一个**判断**（要分堆吗？单材料时平凡成立、允许先落带假设的表），20—23 只能是**回路**（收敛判据 21 才是它的出口）。**这是自举跑出来的唯一一处"材料说法与图形状打架"**。
+- **H3 未验**：这一步只跑到"表 + 三份产物 + 收敛"，**没有上架**（`examples/workflow` / `SKILL.md` 八节 / `templates/` 逐字一致 / `dev/baseline/workflow` 重钉）——上架是下一步，也是 H3 的考场。
+
+**三处自举特有的发现**：
+1. **四份转述件全部止于"落表"之后**：`SKILL.md` 12 节点 · `examples/workflow` 13 节点 · `ARCHITECTURE.md` 的"五步" · `REPO-MAP.md` 的"七个环节"——**没有一份提到 L0—L2**。这不是四份文档各自写漏，是**同一条链的两个半截**（前半只在 `PIPELINE-SPEC` 里）。
+2. **依据分布把这件事量出来了**（§5.6 读数）：头名 `M03` 撑 **14** 个（58%）· `M06` 撑 **9** 个（38%）· 前二合计 96%；连续段 **`M03` 03–10（8 个）** 与 **`M06` 16–19（4 个）**——**前 10 个节点只有契约作证、后 4 个只有手册作证**。这正是"两半各有一份材料"的机器读数（对照 §八：真表上是 M04 撑 53% / M02 撑 44%，而 M02 是转述件）。
+3. **`依据` 在自举场景只能指账本 id，而账本不进仓**：这次 H10 真的核到了（29 处全过），但 `output/…/evidence.json` 是 gitignore 的产物 ⇒ **一旦上架进 `examples/`，那些 id 会静默烂掉**（H10 找不到账本就跳过，不报错）。上架时必须二选一：改回"文档小节"式依据（`examples/workflow` 现在就长这样），或把账本一起进仓（与 `examples/` 只放事实源冲突）。**这条是 H3 的第一道坎，先记在这里。**
+
+> **顺带两条读数（都不是缺陷，但下次别惊讶）**：① `recon` 的难度梯子按**字节**分档，八份文档全 < 1 MB ⇒ **全判"易"，这一列在多份小文本上没有分辨力**（它是为 office / 二进制材料设计的）；② `intake` 的「版本关系」八行全填 `独立` ⇒ **这一列在"同一标的的不同视角文档"上没有可用取值**（`互补` 的判据要求"有补充/附件/变更类词或时间前后相接"，四份转述件都不满足）。
