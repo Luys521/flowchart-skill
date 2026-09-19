@@ -504,6 +504,8 @@ def plan_paths(root):
     split = {'流程': [{'材料集': ['M02', 'M04', 'M05', 'M06', 'M07'], '名': '夹具流程', '角色': '主',
                      '挂在': '—', '与其它流程': '—', '并行组': '`G1`', '状态': '待澄清'}],
              '范围外': [],
+             # `注记` = **AI 判断的落点**（§0.1 / §4.1 ②：这类判断不许写成澄清申请的问句）
+             '注记': ['白板那条子流程本次不拆：材料只够画主干'],
              '澄清': [{'问题': '白板与合订本哪份算数？', '推荐答案': '取合订本', '指向': '`M07`'}]}
     (root / 'scope.json').write_text(json.dumps(scope, ensure_ascii=False, indent=2) + '\n',
                                      encoding='utf-8', newline='\n')
@@ -516,7 +518,8 @@ def plan_paths(root):
     rc2, out2 = run([sys.executable, str(PLAN_CMD), 'check', str(root / 'plan-split.md'),
                      '--intake', str(root / 'intake.md')])
     ok_split = (rc1 == 0 and '| `F01` 夹具流程 | 主 | — | `M02`、`M04`、`M05`、`M06`、`M07` | — | `G1` '
-                '| 待澄清 |' in d_sp and '主体 = 夹具的两个甲方' in d_sp and rc2 == 0)
+                '| 待澄清 |' in d_sp and '主体 = 夹具的两个甲方' in d_sp
+                and '⚠ **AI 判断**：白板那条子流程本次不拆' in d_sp and rc2 == 0)
     bad_split = dict(split)
     bad_split['流程'] = [dict(split['流程'][0], 材料集=['M02', 'M04'])]     # M05 / M06 / M07 没了下落
     (root / 'split-bad.json').write_text(json.dumps(bad_split, ensure_ascii=False, indent=2) + '\n',

@@ -259,6 +259,12 @@ def build_plan(cards, split=None, scope=None):
              '③ 排除清单与清点双向一致 · `待澄清` 与「含流程 = 不确定」都必须有账 · '
              '`共享(M##)` 得真被别的流程共享 · 同组内不许有 `接力`。',
              '> `plan.md` 是"做几张"的事实源，流程表是"一张怎么做"的事实源（§0），两者不许互相代替。', '']
+    # **AI 判断的落点**（`--split` 的「注记」）：§0.1 —— "要不要拆子流程 / 该并还是拆"这类判断
+    # **不许**写成澄清申请的问句（那是 AI 的活），要写在这里、标 `⚠`，用户看草稿后纠正。
+    for note in (split or {}).get('注记') or []:
+        lines.append(f'> ⚠ **AI 判断**：{note}')
+    if (split or {}).get('注记'):
+        lines.append('')
     if unsure:
         lines += [f'> **有问题要问**：{len(unsure)} 份材料的结论是"不确定"（'
                   + '、'.join(f'`{m}`' for m in unsure)
