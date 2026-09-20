@@ -19,7 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 # `EXAMPLES` **本文件不用，但要对各面再导出**（`from _lib import EXAMPLES` 是那几个面的用法：
 # 路径解析只许走 `dev/_paths.py` 一处，面文件不再各自 `sys.path` 折腾）——所以它不是未用 import。
-from _paths import BASELINE, EXAMPLES, REPO, SCRIPTS  # noqa: E402,F401
+from _paths import BASELINE, EXAMPLES, REPO, SCRIPTS, TOOLS  # noqa: E402,F401
 
 #: 兼容既有引用：各面里的 `SKILL`（文档里的路径都相对仓库根）语义 = 仓库根。
 SKILL = REPO

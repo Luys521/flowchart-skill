@@ -61,6 +61,7 @@ import sys
 from pathlib import Path
 
 import cells
+import capability
 
 FLOW_COLUMNS = ('流程', '角色', '挂在', '材料集', '与其它流程', '并行组', '状态')
 ASK_COLUMNS = ('编号', '问题', '推荐答案', '指向')
@@ -267,7 +268,10 @@ def build_plan(cards, split=None, scope=None):
              '② 流程数 = 成果根下的 `<流程名>/` 目录数（**要 `--root`**；不给就跳过并打印）；'
              '③ 排除清单与清点双向一致 · `待澄清` 与「含流程 = 不确定」都必须有账 · '
              '`共享(M##)` 得真被别的流程共享 · 同组内不许有 `接力`。',
-             '> `plan.md` 是"做几张"的事实源，流程表是"一张怎么做"的事实源（§0），两者不许互相代替。', '']
+             '> `plan.md` 是"做几张"的事实源，流程表是"一张怎么做"的事实源（§0），两者不许互相代替。',
+             # **能力指纹**（2026-09-19，§1.2）：计划里有大量 AI 判断，判据一改它们就该回看一遍。
+             # 章由 `capability.py` 一处定义（写与读同一句），`plan.py check` 会核它。
+             capability.md_line(), '']
     # **AI 判断的落点**（`--split` 的「注记」）：§0.1 —— "要不要拆子流程 / 该并还是拆"这类判断
     # **不许**写成澄清申请的问句（那是 AI 的活），要写在这里、标 `⚠`，用户看草稿后纠正。
     for note in (split or {}).get('注记') or []:
@@ -652,6 +656,8 @@ def cmd_check(a):
         return 2
     print(f'> 输入：`{a.plan}`（sha256 {hashlib.sha256(text.encode("utf-8")).hexdigest()[:12]}）'
           f' · 清点 `{a.intake}` · 流程 {len(rows)} / 澄清 {len(asks)} / 排除 {len(excl)}')
+    for line in capability.warn(capability.read_md(text), '这份计划'):
+        print(line)                       # 计划是 AI 判断的落点：判据一变，它就该回看（只喊不拦）
     if not a.root:
         print('> **跳过了 §4.4 ②**（流程数 = `<流程名>/` 目录数）：没给 `--root`。')
     # 表头那一段 → `(主体, 目的, 材料根)`；取不到就是三个空串（§4.0：没澄清就不该开工）。

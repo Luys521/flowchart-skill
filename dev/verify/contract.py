@@ -17,7 +17,7 @@ from pathlib import Path
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _lib import EXAMPLES, SCRIPTS, SKILL, Case  # noqa: E402
+from _lib import EXAMPLES, SCRIPTS, SKILL, TOOLS, Case  # noqa: E402
 
 # SKILL.md 里说「scripts/ 只执行命令，不读源码」，所以脚本内部实现层不要求文档出处；
 # 但 references/ 与 templates/ 是给人读的资源，必须能从 SKILL.md 找到。
@@ -307,6 +307,45 @@ def run_face(tmp=None):
         c.check(vals == want,
                 f'{doc} 的{label}与现算一致',
                 f'文档 {" / ".join(got)} ← 现算 {" / ".join(str(w) for w in want)}')
+
+    # 同一类数字还有一处：`REPO-MAP` 第四节那份**模块名册与规模**。它是"现状的唯一出处"，
+    # 却被手写过一遍——**实测漂了 4 个模块**（写 40/26/17，实为 44/30/19：漏了 `cells` `plan`
+    # `import_table` `capability` 四个，而门禁全绿）。这里把两个"现算源"拉进来对账：
+    # ① CLI / 纯库看 `scripts/*.py` 有没有 `__main__`（名册自己声明的判据）；
+    # ② 三层的名册大小看 `layering.py` 的三个集合（分层的唯一出处，**不抄第二份**）。
+    # **依赖边数不在这里核**：它来自 `fn-graph.json` 快照，快照旧了会红在面① 上（红错了面），
+    # 那件事归门⑦（`layering.py` 自己会打印现算值）。
+    rm = (SKILL / 'dev' / 'REPO-MAP.md').read_text(encoding='utf-8')
+    py = sorted(SCRIPTS.glob('*.py'))
+    n_cli = sum(1 for p in py if '__main__' in p.read_text(encoding='utf-8'))
+    roster = {}
+    for node in ast.parse((TOOLS / 'layering.py').read_text(encoding='utf-8')).body:
+        if (isinstance(node, ast.Assign) and isinstance(node.value, ast.Set)
+                and isinstance(node.targets[0], ast.Name)
+                and node.targets[0].id in ('PUBLIC', 'MODULE', 'ORCH')):
+            roster[node.targets[0].id] = {e.value for e in node.value.elts
+                                          if isinstance(e, ast.Constant)}
+    m = re.search(r'\*\*(\d+) 个模块 = (\d+) 个带 CLI 的入口 \+ (\d+) 个纯库[。.]?\*\*', rm)
+    got = tuple(int(x) for x in m.groups()) if m else ()
+    c.check(got == (len(py), n_cli, len(py) - n_cli),
+            'REPO-MAP 的「模块 = 入口 + 纯库」与现算一致',
+            f'文档 {got} ← 现算 ({len(py)}, {n_cli}, {len(py) - n_cli})')
+    want = [len(roster.get(k, ())) for k in ('PUBLIC', 'MODULE', 'ORCH')]
+    got = []
+    for name in ('公共层', '模块层', '编排层'):
+        mm = re.search(r'\*\*' + name + r'\*\*（(\d+)）', rm)
+        got.append(int(mm.group(1)) if mm else None)
+    c.check(got == want and sum(want) == len(py),
+            'REPO-MAP 的三层名册大小与 layering 的集合一致',
+            f'文档 {got} ← 现算 {want}（合计 {len(py)}）')
+    # 名册**点名的模块也逐个核**：只核数量的话，"删一个换一个"照样过（数量守恒）。
+    for name, key in (('公共层', 'PUBLIC'), ('模块层', 'MODULE'), ('编排层', 'ORCH')):
+        mm = re.search(r'\*\*' + name + r'\*\*（\d+）\s*\| (.+?) \|', rm)
+        listed = set(re.findall(r'`([a-z_]+)`', mm.group(1))) if mm else set()
+        c.check(listed == roster.get(key, set()),
+                f'REPO-MAP 的{name}名册与 layering 逐个一致',
+                f'文档多 {"、".join(sorted(listed - roster.get(key, set()))) or "无"}'
+                f' / 少 {"、".join(sorted(roster.get(key, set()) - listed)) or "无"}')
 
     c.section('参数表与 dictionary.yaml 逐值一致')
     cfg = yaml.safe_load((SCRIPTS / 'dictionary.yaml').read_text(encoding='utf-8'))

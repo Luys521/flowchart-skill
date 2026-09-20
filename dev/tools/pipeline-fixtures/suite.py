@@ -645,6 +645,80 @@ def query_paths(root):
           and rc2 == 0 and '命中 1 条' in out2 and 'M03#p001' in out2)
     cases.append(('㊷ 坐标正例：`pages=` 按页码取（闭区间、越界不含）· `sheet=` 按子表名取', ok, rc,
                   (out[-160:] + out2[-160:]) if not ok else ''))
+
+    # ㊸ 「没给」与「给了 0」是两回事。2026-09-19 修掉的一处静默默认：`batch = a.batch or th['batch']`
+    #    会把 `--batch 0` 悄悄换成默认 20，于是紧跟其后的 `if batch <= 0` **永远轮不到**——
+    #    点名取子集自己的规则是"语法错不猜"（§5.3），而它当时正在猜。
+    rc1, out1 = query_run(root, '--batch', '0')
+    rc2, out2 = query_run(root, '--chars', '0')
+    cases.append(('58 `--batch 0` / `--chars 0` 不许被当成"没给"（静默取默认）⇒ 退 2、说人话',
+                  rc1 == 2 and rc2 == 2 and '要比 0 大' in out1 and '要比 0 大' in out2,
+                  (rc1, rc2), (out1 if rc1 != 2 else out2)[-200:]))
+    return cases
+
+
+def capability_paths(root):
+    """能力指纹的三条路径（㊽—㊿，§1.2）：新账本有章 · 章与现算一致 · 篡改 / 缺章 ⇒ `check` 退 2 ·
+    **消费端只喊不拦**且不破坏 `--json`。
+
+    夹具**自己算的那个数不许手写**：期望值来自 `capability.py --json`（产品接口），
+    手抄一个 sha 进夹具就等于抄一份会漂的真值。
+    """
+    cases = []
+    cap = REPO / 'scripts' / 'capability.py'
+    rc_now, out_now = run([sys.executable, str(cap), '--json'])
+    try:
+        want = json.loads(out_now.strip().splitlines()[-1])
+    except (ValueError, IndexError):
+        want = {}
+    led = json.loads((root / 'evidence.json').read_text(encoding='utf-8'))
+    got = led.get('capability') or {}
+    # 两份**副本**（原账本后面几条路径还要用）：一份章对不上，一份干脆没章
+    tam = root / 'evidence.tampered.json'
+    tam.write_text(json.dumps(dict(led, capability={'code': 'deadbeef0000',
+                                                    'rules': got.get('rules') or '000000000000'}),
+                              ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
+    no = root / 'evidence.nostamp.json'
+    no.write_text(json.dumps({k: v for k, v in led.items() if k != 'capability'},
+                             ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
+    rc_ok, out_ok = run([sys.executable, str(cap), 'check', str(root / 'evidence.json')])
+    rc_bad, out_bad = run([sys.executable, str(cap), 'check', str(tam), str(no)])
+    ok = (rc_now == 0 and set(got) == {'code', 'rules'} and got == want
+          and rc_ok == 0 and '与当下同版' in out_ok
+          and rc_bad == 2 and '机制变了' in out_bad and '没盖章' in out_bad)
+    cases.append(('59 账本盖了能力指纹且与现算一致（`code` / `rules` 两个分开）· 篡改 ⇒ 退 2 · '
+                  '**缺章也算对不上**（"不知道是哪版产的"不能用）',
+                  ok, (rc_now, rc_ok, rc_bad), (out_bad or out_ok)[-240:] if not ok else ''))
+
+    # 消费端：**只喊不拦**——退 0（拦着读等于不让人取证），但话要说在最前面；
+    # `--json` 时**不许往 stdout 插行**（吃这份 JSON 的子代理会当场解析失败），状态进字段。
+    rc_q1, out_q1 = run([sys.executable, str(QUERY), str(tam), '--batch', '1'])
+    rc_q2, out_q2 = run([sys.executable, str(QUERY), str(tam), '--batch', '1', '--json'])
+    try:
+        payload = json.loads(out_q2)
+    except ValueError:
+        payload = {}
+    who = payload.get('capability') or {}
+    ok = (rc_q1 == 0 and '能力指纹' in out_q1 and out_q1.index('能力指纹') < out_q1.index('取子集')
+          and rc_q2 == 0 and who.get('state') == 'drift' and payload.get('rows'))
+    cases.append(('60 消费端只喊不拦：旧账本照样读得出来（退 0），提醒打在最前面；`--json` 里进 '
+                  '`capability` 字段（插一行会毁掉那份 JSON）',
+                  ok, (rc_q1, rc_q2), (out_q1[:200] + out_q2[-200:]) if not ok else ''))
+
+    # 计划那一侧同理：`plan.md` 的表头带一行机制指纹，`plan.py check` 核它。
+    # **另起一份文件名**（`plan-cap.md`）：`plan_paths` 已经写过 `plan.md` 并靠它做断言，
+    # 这里覆盖它会把那条路径的现场搅掉（夹具之间的隐式耦合正是最难查的一类红）。
+    cap_plan = root / 'plan-cap.md'
+    rc_plan, out_plan = run([sys.executable, str(PLAN_CMD), 'build', str(root / 'intake.md'),
+                             '-o', str(cap_plan)])
+    plan_text = cap_plan.read_text(encoding='utf-8') if cap_plan.exists() else ''
+    rc_pc, out_pc = run([sys.executable, str(PLAN_CMD), 'check', str(cap_plan),
+                         '--intake', str(root / 'intake.md')])
+    stamped = [ln for ln in plan_text.splitlines() if ln.startswith('> 机制指纹：')]
+    cases.append(('61 计划的表头带机制指纹（写与读同一句）· `plan.py check` 认得它、不因此告警',
+                  rc_plan == 0 and len(stamped) == 1 and want.get('code', 'x') in stamped[0]
+                  and rc_pc in (0, 1) and '能力指纹' not in out_pc,
+                  (rc_plan, rc_pc), (out_plan + out_pc)[-240:] if not stamped else ''))
     return cases
 
 
@@ -1445,7 +1519,7 @@ def materials_paths(root):
 
 
 def main(argv=None):
-    """造夹具 → 比 `drift` 读数 → 跑漂移 13 + 清点 3 + 取子集 9 + pptx 4 + 材料树若干 + 规范 1 条路径
+    """造夹具 → 比 `drift` 读数 → 跑漂移 13 + 清点 3 + 取子集 10 + 能力指纹 3 + pptx 4 + 材料树若干 + 规范 1 条路径
 
     （"若干"是刻意的：材料树那批路径按**审计抓到的问题**一条条长出来，写死一个数就会天天改这一行。）
     """
@@ -1473,8 +1547,8 @@ def main(argv=None):
     print(f'{"PASS" if d1_ok else "FAIL"}  ⓪b D1 不把"浏览摘录截断"当等级拔高（`M01#p002` 不许出现）')
     bad += 0 if d1_ok else 1
     for name, good, rc, out in (paths(root, draft) + intake_paths(root) + plan_paths(root)
-                                + query_paths(root) + pptx_paths(root) + materials_paths(root)
-                                + import_paths(root) + spec_paths()):
+                                + query_paths(root) + capability_paths(root) + pptx_paths(root)
+                                + materials_paths(root) + import_paths(root) + spec_paths()):
         print(f'{"PASS" if good else "FAIL"}  {name}  （rc={rc}）')
         if not good:
             print('      ' + out.strip().replace('\n', '\n      ')[:500])

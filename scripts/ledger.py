@@ -20,6 +20,8 @@ import json
 import sys
 from pathlib import Path
 
+import capability
+
 SCHEMA = 'evidence/1'
 KINDS = ('heading', 'paragraph', 'list_item', 'table', 'figure', 'caption', 'code', 'sheet', 'cell')
 TIERS = ('T1', 'T2', 'T3', 'T4')
@@ -179,6 +181,9 @@ def assemble(task, materials, elements):
     return {
         'schema': SCHEMA,
         'task': task,
+        # **能力指纹**（2026-09-19 补，§2.1）：这本账是哪一版机制产的。机制一改而账本没重跑，
+        # 账本**一个字节都不变**——消费端（`query` / `plan`）靠这个字段才喊得出来。
+        'capability': capability.stamp(),
         'materials': [{k: m[k] for k in MATERIAL_KEYS if k in m} for m in materials],
         'elements': out_elems,
     }

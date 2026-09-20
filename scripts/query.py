@@ -33,6 +33,11 @@ r"""query.py — **点名取子集**（PIPELINE-SPEC §5.3）：在**已抽取**
     python scripts/query.py evidence.json --range pages=40-60 --chars 300
     python scripts/query.py evidence.json --material M06 --json      # 给子代理/管道吃
 
+**账本上的能力指纹要核**（§1.2）：账本记着"这是哪一版机制产的"，对不上就在最前面喊一句
+（`--json` 时进 `capability` 字段）——机制改了而账本没重跑，账本**一个字节都不变**，不喊就没人知道。
+**只喊不拦**：拦着读等于不让人取证（"我明知它旧，偏要看一眼"是合法需求）；要硬拦用
+`python scripts/capability.py check evidence.json`。
+
 退出码：0 = 查完（**0 条命中也是 0**：那是结论，不是错误）；2 = 账本读不了 / 参数不合语法。
 """
 import argparse
@@ -43,6 +48,7 @@ import sys
 from pathlib import Path
 
 from textquality import element_haystack
+import capability
 
 DICT_NAME = 'dictionary.yaml'
 
@@ -197,8 +203,9 @@ def main(argv=None):
     a = ap.parse_args(argv)
 
     th = load_defaults(a.dict)
-    batch = a.batch or th['batch']
-    limit = a.chars or th['chars']
+    # 「没给」与「给了 0」是两回事：用 `or` 会把 `--batch 0` 悄悄换成默认值，下面那句守卫就永远轮不到
+    batch = th['batch'] if a.batch is None else a.batch
+    limit = th['chars'] if a.chars is None else a.chars
     if batch <= 0 or a.skip < 0 or limit <= 0:
         print('✗ --batch / --chars 要比 0 大，--skip 不能是负数')
         return 2
@@ -227,15 +234,21 @@ def main(argv=None):
                 f'材料 {"、".join(sorted(mid))}' if mid else '',
                 f'含「{a.grep}」' if a.grep else '',
                 '范围 ' + '、'.join(a.ranges) if a.ranges else '') if x) or '全部证据'}
+    cap_state, cap_detail = capability.compare(capability.read_json(led))
     if a.json:
         print(json.dumps({'total': total, 'skip': a.skip, 'given': len(rows),
                           'next_skip': a.skip + len(rows) if a.skip + len(rows) < total else None,
                           'what': meta['what'], 'ledger_sha256': meta['sha'],
+                          # **机器可读的那份提醒**（2026-09-19）：JSON 里多一个键，
+                          # 而不是往 stdout 插一行——插一行会让吃这份 JSON 的子代理当场解析失败。
+                          'capability': {'state': cap_state, 'detail': cap_detail},
                           'rows': [{'id': el.get('id'), 'material': m, 'ordinal': n,
                                     'kind': el.get('kind'), 'location': loc_text(el),
                                     'excerpt': excerpt(el, limit, rwin)} for m, n, el in rows]},
                          ensure_ascii=False, indent=2))
         return 0
+    for line in capability.warn(capability.read_json(led), f'账本 `{a.ledger}`'):
+        print(line)                       # 人读那份：**打在最前面**，别让人读到一半才发现它按的是旧判据
     print(render(rows, total, meta, limit, rwin), end='')
     return 0
 

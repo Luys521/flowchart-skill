@@ -5,9 +5,10 @@
 
 ## 层级树
 
-- **L0 主流程** `flowtable.md`——《self-boot — 模块索引》（id: selfboot-map）（45 节点）
+- **L0 主流程** `flowtable.md`——《self-boot — 模块索引》（id: selfboot-map）（46 节点）
   - **L1 子流程** `artifact/flowtable.md`——《artifact.py 函数流程表》（id: selfboot-artifact）（4 节点）
   - **L1 子流程** `build/flowtable.md`——《build.py 函数流程表》（id: selfboot-build）（27 节点）
+  - **L1 子流程** `capability/flowtable.md`——《capability.py 函数流程表》（id: selfboot-capability）（14 节点）
   - **L1 子流程** `cells/flowtable.md`——《cells.py 函数流程表》（id: selfboot-cells）（13 节点）
   - **L1 子流程** `clarify/flowtable.md`——《clarify.py 函数流程表》（id: selfboot-clarify）（16 节点）
   - **L1 子流程** `drift/flowtable.md`——《drift.py 函数流程表》（id: selfboot-drift）（29 节点）
@@ -54,45 +55,46 @@
 
 1. `artifact/flowtable.md`（L1）
 2. `build/flowtable.md`（L1）
-3. `cells/flowtable.md`（L1）
-4. `clarify/flowtable.md`（L1）
-5. `drift/flowtable.md`（L1）
-6. `engine/flowtable.md`（L1）
-7. `flowtable/flowtable.md`（L1）
-8. `flowtable_check/flowtable.md`（L1）
-9. `flowtable_colors/flowtable.md`（L1）
-10. `flowtable_layout/flowtable.md`（L1）
-11. `geometry/flowtable.md`（L1）
-12. `import_table/flowtable.md`（L1）
-13. `init/flowtable.md`（L1）
-14. `intake/flowtable.md`（L1）
-15. `label/flowtable.md`（L1）
-16. `lane_router/flowtable.md`（L1）
-17. `layer_index/flowtable.md`（L1）
-18. `ledger/flowtable.md`（L1）
-19. `manifest/flowtable.md`（L1）
-20. `parse/flowtable.md`（L1）
-21. `parse_legacy/flowtable.md`（L1）
-22. `parse_ooxml/flowtable.md`（L1）
-23. `parse_pdf/flowtable.md`（L1）
-24. `parse_text/flowtable.md`（L1）
-25. `plan/flowtable.md`（L1）
-26. `pptx_text/flowtable.md`（L1）
-27. `probe/flowtable.md`（L1）
-28. `query/flowtable.md`（L1）
-29. `recon/flowtable.md`（L1）
-30. `render_drawio/flowtable.md`（L1）
-31. `render_html/flowtable.md`（L1）
-32. `render_pages/flowtable.md`（L1）
-33. `render_svg/flowtable.md`（L1）
-34. `router/flowtable.md`（L1）
-35. `semantics/flowtable.md`（L1）
-36. `shot/flowtable.md`（L1）
-37. `swimlane/flowtable.md`（L1）
-38. `sync/flowtable.md`（L1）
-39. `table_to_dsl/flowtable.md`（L1）
-40. `textquality/flowtable.md`（L1）
-41. `validate/flowtable.md`（L1）
-42. `writeback/flowtable.md`（L1）
-43. `xml_reader/flowtable.md`（L1）
-44. `flowtable.md`（L0）
+3. `capability/flowtable.md`（L1）
+4. `cells/flowtable.md`（L1）
+5. `clarify/flowtable.md`（L1）
+6. `drift/flowtable.md`（L1）
+7. `engine/flowtable.md`（L1）
+8. `flowtable/flowtable.md`（L1）
+9. `flowtable_check/flowtable.md`（L1）
+10. `flowtable_colors/flowtable.md`（L1）
+11. `flowtable_layout/flowtable.md`（L1）
+12. `geometry/flowtable.md`（L1）
+13. `import_table/flowtable.md`（L1）
+14. `init/flowtable.md`（L1）
+15. `intake/flowtable.md`（L1）
+16. `label/flowtable.md`（L1）
+17. `lane_router/flowtable.md`（L1）
+18. `layer_index/flowtable.md`（L1）
+19. `ledger/flowtable.md`（L1）
+20. `manifest/flowtable.md`（L1）
+21. `parse/flowtable.md`（L1）
+22. `parse_legacy/flowtable.md`（L1）
+23. `parse_ooxml/flowtable.md`（L1）
+24. `parse_pdf/flowtable.md`（L1）
+25. `parse_text/flowtable.md`（L1）
+26. `plan/flowtable.md`（L1）
+27. `pptx_text/flowtable.md`（L1）
+28. `probe/flowtable.md`（L1）
+29. `query/flowtable.md`（L1）
+30. `recon/flowtable.md`（L1）
+31. `render_drawio/flowtable.md`（L1）
+32. `render_html/flowtable.md`（L1）
+33. `render_pages/flowtable.md`（L1）
+34. `render_svg/flowtable.md`（L1）
+35. `router/flowtable.md`（L1）
+36. `semantics/flowtable.md`（L1）
+37. `shot/flowtable.md`（L1）
+38. `swimlane/flowtable.md`（L1）
+39. `sync/flowtable.md`（L1）
+40. `table_to_dsl/flowtable.md`（L1）
+41. `textquality/flowtable.md`（L1）
+42. `validate/flowtable.md`（L1）
+43. `writeback/flowtable.md`（L1）
+44. `xml_reader/flowtable.md`（L1）
+45. `flowtable.md`（L0）
