@@ -87,7 +87,8 @@ MODULE = {
 
 # 编排层：驱动整条流水线，允许依赖上面两层。
 # `parse` = 解析分派器：按固定顺序跑各适配器（子进程 + 产物，判据不在它那里，见 PIPELINE-SPEC §1.4）。
-ORCH = {'build', 'sync', 'parse'}
+# `build_all` = 并行出图：一个成果根下所有流程并发 build（§7 的 L4 最小形态，D-126）。
+ORCH = {'build', 'sync', 'parse', 'build_all'}
 
 
 def short(p):

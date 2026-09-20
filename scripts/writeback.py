@@ -174,7 +174,13 @@ def branch_conflicts(data, orig_rows) -> list:
 
 
 def format_conflicts(conflicts) -> str:
-    """冲突清单 → 人读文本（`sync.py` / `xml_reader.py` 共用一份文案，别两处各写一遍）。"""
+    """冲突清单 → 人读文本（文案只有一份：`sync.py` 与同模块的 `write()` 共用，别两处各写一遍）。
+
+    **2026-09-19 改这句话**（D-125 的 46 条逐个裁决时现形）：原文写的是
+    "`sync.py` / `xml_reader.py` 共用"——`xml_reader` 从 D-123 起不再做文件级复核、
+    也就不再碰这份文案了。**注释宣称的消费者必须真的存在**，否则下一个读它的人会以为
+    改这里要同时看两处。
+    """
     return '\n'.join(
         f"⚠ 节点 {c['id']} 分支「{c['label'] or '(无标签)'}」走向冲突："
         f"流程表 → {c['table']} ｜ 图 → {c['drawio']}"

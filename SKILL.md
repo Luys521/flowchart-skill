@@ -239,9 +239,15 @@ python scripts/build.py "<成果根>/<名称>/flowtable.md"                     
 python scripts/build.py "<成果根>/<名称>/flowtable.md" --quality showcase  # 软提示也阻断
 python scripts/build.py "<成果根>/<名称>/flowtable.md" --no-layout         # 丢弃旧几何、重排
 python scripts/build.py "<成果根>/<名称>/flowtable.md" --no-pages          # drawio 不铺子表附加页
+
+# 一个成果根下有好几条流程时：一次全出（**只是把 K 次 build 并发起来**，不改任何判据）
+python scripts/build_all.py "<成果根>"              # 默认串行，等于逐条点 build
+python scripts/build_all.py "<成果根>" --jobs 4     # 并行 4 条流程
 ```
 
 一条命令跑六环（① 结构校验 → ② 生成 DSL → ③ 碰撞检测八项 → ④ 渲染三份产物 → ⑤ 产物审核（契约反查）→ ⑥ 产物几何自检），任一环不过即 `exit 1` **并把产物还原**。环绕序即 `build.py` 的调用序；**② 环内**是引擎的分段（节点类型分析 → 关系分析 → 空间规划 → 节点连接），行距列宽、通道族、泳道走廊那些实现细节见 `references/visual-spec.md` 第 0–2 节。
+
+**每张表仍然各自过一次上面这六环**——`build_all.py` 只是把"一个根下 K 张表"按 K 个进程跑起来。它**默认串行**（不加 `--jobs` 时与手动逐条点 `build` **逐字节相同**）、**按表名排序打印**（读数里不许混进"谁先跑完"）、有任一张没过就退 1 并点名。**不递归**：`parts/` 下的子表是父表的视图，跟着父表那次 build 一起出。
 
 **第 ③ 环** `validate.py` 八项：引用完整 / 节点不重叠 / 边不穿节点 / 边不横穿自身端点 / 边不重叠（正交交叉允许）/ 标签压线不压节点 / 画布内 / 网格对齐。
 

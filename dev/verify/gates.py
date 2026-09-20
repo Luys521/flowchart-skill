@@ -1902,6 +1902,31 @@ def _check_init_conflict(c, tmp):
             'init 同名文件：中文报错而不是 NotADirectoryError')
 
 
+def _check_escape(c, tmp):
+    c.section('三份产物同口径：特殊字符必须转义（`<` `&` `"`）')
+    # 为什么值得一条（2026-09-19，D-125）：转义在**每个渲染器里各写一份**（`esc` / `_esc`，3 行，
+    # 三份），而`coding-spec` N3 判它们"不抽公共层——共享的只有几行算术"。那个判断站得住，
+    # 但**它当时是一句承诺，没有守门人**：谁都可以在一份里少转义一个字符，另两份照样出图。
+    # 判据落在**产物**上（比落在一段公共代码上更贴）：同一个特殊串在三份产物里都必须转义，
+    # 且**原文串一处都不许原样出现**。
+    d = tmp / 'escape'
+    shutil.rmtree(d, ignore_errors=True)
+    d.mkdir(parents=True)
+    ft = d / 'flowtable.md'
+    ft.write_text(HEAD + ''.join([
+        row('一', '01', '开始', '开始', '甲方', '受理员', '—', '→02'),
+        row('一', '02', 'A<B&C"', '任务', '甲方', '受理员', '—', '标<签&"→03'),
+        row('二', '03', '归档', '结束', '双方', '双方共责', '—', '—')]), encoding='utf-8')
+    rc, out = run('build.py', ft)
+    texts = {k: prod(d, k).read_text(encoding='utf-8') for k in ('html', 'drawio', 'svg')}
+    raw = [k for k, t in texts.items() if 'A<B&C"' in t or '标<签&"' in t]
+    esc = [k for k, t in texts.items() if '&lt;' not in t or '&amp;' not in t]
+    c.check(rc == 0 and not raw and not esc,
+            '三份产物都把 < & " 转义（原文串一处都不许原样出现）',
+            f'rc={rc} · 原文未转义 {raw or "无"} · 缺转义形式 {esc or "无"}'
+            + ('' if rc == 0 else f' · {out.strip()[-120:]}'))
+
+
 def _check_xml_diff(c, tmp):
     c.section('质检补漏：往返差异要带文件级复核（`sync` 那条路，D-123）')
     # 自造夹具（D-42）：先 build 出一对"表 + drawio"，再比它们——
@@ -2821,6 +2846,7 @@ def run_face(tmp):
     _check_edge_merge_gate(c, tmp)
     _check_artifact_gate(c, tmp)
     _check_init_conflict(c, tmp)
+    _check_escape(c, tmp)
     _check_xml_diff(c, tmp)
     return c
 

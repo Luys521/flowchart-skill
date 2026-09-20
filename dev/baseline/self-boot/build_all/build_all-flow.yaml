@@ -1,0 +1,118 @@
+meta:
+  title: build_all.py 函数流程表
+  subjects:
+    脚本:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  width: 700
+  origin_x: -240
+nodes:
+- id: '01'
+  name: 开始
+  lines:
+  - 开始
+  type: start
+  subject: 脚本
+  executor: selfboot
+  row: 0
+  col: 0
+  stage: 入口
+  route: 1→05
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→main
+- id: '02'
+  name: find_flows
+  lines:
+  - find_flows
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: 模块级
+  route: →06
+  desc: ★ 成果根 → `[(流程名, 流程表路径), …]`（**按名字排序**，确定性）。 · L38 · 函数
+- id: '03'
+  name: run_one
+  lines:
+  - run_one
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: 模块级
+  route: →06
+  desc: ★ 跑一条流程 → `(名字, rc, 输出)`。**走公开命令行**（子进程），与手动点 build 一模一样。 · L54 · 函数
+- id: '04'
+  name: _heads
+  lines:
+  - _heads
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 4
+  col: 0
+  stage: 模块级
+  route: →06
+  desc: ★ 一条流程的读数：最后一个 `✓/→` 行 + 第一条 `✗` 行（不必把整份输出倒出来）。 · L63 · 函数
+- id: '05'
+  name: main
+  lines:
+  - main
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 1
+  col: 0
+  stage: 模块级
+  route: 1→02｜2→03｜3→04
+  desc: L71 · 函数 · 分支：1→find_flows 2→run_one 3→_heads
+- id: '06'
+  name: 结束
+  lines:
+  - 结束
+  type: end
+  subject: 脚本
+  executor: selfboot
+  row: 5
+  col: 0
+  stage: 出口
+  route: —
+  desc: 流程终点（结构性节点，不是函数）
+edges:
+- from: '01'
+  to: '05'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '02'
+  to: '06'
+  kind: jumpR
+  polarity: main
+- from: '03'
+  to: '06'
+  kind: jumpR
+  polarity: main
+- from: '04'
+  to: '06'
+  kind: spine
+  polarity: main
+- from: '05'
+  to: '02'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '05'
+  to: '03'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '05'
+  to: '04'
+  kind: jumpR
+  polarity: main
+  label: '3'

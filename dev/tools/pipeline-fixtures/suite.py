@@ -1768,6 +1768,45 @@ def parallel_paths(root):
     return cases
 
 
+def _digest(path):
+    """一份产物的 md5（本文件里别处用的是 `pathlib` + `hashlib`，这里只为一个夹具备一个薄壳）。"""
+    import hashlib
+    return hashlib.md5(path.read_bytes()).hexdigest()
+
+
+def build_all_paths(root):
+    """**并行出图**（D-126）：成果根下两条流程，`build_all.py` 串行与 `--jobs 2` **逐字节同产物**。
+
+    为什么值得一条路径：`PIPELINE-SPEC` §7 的"并行调度"原本是 YAGNI 条目，L4 的最小形态
+    （一个成果根下所有流程一起 build）落地时，**唯一的判据就是"并行不改变产物"**——
+    而这正是串行/并行两次跑完逐字节比能证明的事（也是 §7 敢放行并行的前提）。
+    """
+    cases = []
+    d = root / 'buildall'
+    for name in ('甲', '乙'):
+        work = d / name
+        work.mkdir(parents=True, exist_ok=True)
+        # **自带合成表**（D-42：用例不借 `examples/`，样例一改就一堆用例跟着红）
+        (work / 'flowtable.md').write_text(FLOWTABLE, encoding='utf-8', newline='\n')
+    rc1, out1 = run([sys.executable, str(REPO / 'scripts' / 'build_all.py'), str(d)])
+    # 比**目录里所有文件**（含产物、契约、层级索引与那份事实源）：串行与并行必须逐字节相同
+    serial = {n: {p.name: _digest(p) for p in sorted((d / n).glob('*')) if p.is_file()}
+              for n in ('甲', '乙')}
+    rc2, out2 = run([sys.executable, str(REPO / 'scripts' / 'build_all.py'), str(d),
+                     '--jobs', '2'])
+    parallel = {n: {p.name: _digest(p) for p in sorted((d / n).glob('*')) if p.is_file()}
+                for n in ('甲', '乙')}
+    # 反例：点名一条不存在的流程 ⇒ 退 2（不许静默按全量跑）
+    rc3, out3 = run([sys.executable, str(REPO / 'scripts' / 'build_all.py'), str(d),
+                     '--only', '丙'])
+    ok = (rc1 == 0 and rc2 == 0 and serial == parallel and len(serial['甲']) >= 7
+          and '2 条流程全部出图成功' in out2 and '并发 2' in out2
+          and rc3 == 2 and '--only 点名的流程没找到' in out3)
+    cases.append(('66 并行出图：串行与 `--jobs 2` 产物**逐字节相同** · 点名不存在的流程 ⇒ 退 2',
+                  ok, (rc1, rc2, rc3), (out1[-200:] + out2[-200:] + out3[-160:]) if not ok else ''))
+    return cases
+
+
 def main(argv=None):
     """造夹具 → 比 `drift` 读数 → 跑漂移 13 + 清点 3 + 取子集 10 + 能力指纹 3 + pptx 4 + 材料树若干 + 规范 1 条路径
 
@@ -1798,8 +1837,8 @@ def main(argv=None):
     bad += 0 if d1_ok else 1
     for name, good, rc, out in (paths(root, draft) + intake_paths(root) + plan_paths(root)
                                 + query_paths(root) + capability_paths(root) + vlm_paths(root)
-                                + parallel_paths(root) + pptx_paths(root) + materials_paths(root)
-                                + import_paths(root) + spec_paths()):
+                                + parallel_paths(root) + build_all_paths(root) + pptx_paths(root)
+                                + materials_paths(root) + import_paths(root) + spec_paths()):
         print(f'{"PASS" if good else "FAIL"}  {name}  （rc={rc}）')
         if not good:
             print('      ' + out.strip().replace('\n', '\n      ')[:500])

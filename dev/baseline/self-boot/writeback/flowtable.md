@@ -21,17 +21,17 @@ parent: ../flowtable.md
 | 模块级 | 07 | new_token | 任务 | — | — | — | 脚本 | selfboot | — | →23 | ★ 生成一条分支文本（仅用于原表里没有对应项的新增/改动分支）。 · L87 · 函数 |
 | 模块级 | 08 | build_rows | 任务 | — | — | — | 脚本 | selfboot | — | →07 | L95 · 函数 |
 | 模块级 | 09 | branch_conflicts | 任务 | — | — | — | 脚本 | selfboot | — | →06 | ★ 原流程表「下个节点」列 vs drawio 实际连线的**方向性冲突**清单（D-45）。 · L128 · 函数 |
-| 模块级 | 10 | format_conflicts | 任务 | — | — | — | 脚本 | selfboot | — | →23 | ★ 冲突清单 → 人读文本（`sync.py` / `xml_reader.py` 共用一份文案，别两处各写一遍）。 · L176 · 函数 |
-| 模块级 | 11 | _read_drawio | 任务 | — | — | — | 脚本 | selfboot | — | →23 | ★ 读回 drawio XML（utf-8-sig 兼容带 BOM 的产物）。 · L184 · 函数 · ⇢ 依赖 xml_reader.read |
-| 模块级 | 12 | _read_orig_snapshot | 任务 | — | — | — | 脚本 | selfboot | — | →23 | ★ 原流程表快照：看**字节**判换行符与 BOM，解码出全文与行列表。 · L190 · 函数 |
-| 模块级 | 13 | _semantic_snapshot | 任务 | — | — | — | 脚本 | selfboot | — | →23 | ★ 原流程表按 id 的语义快照（阶段/描述/主体/执行者/时间/输入/依据/输出）——id 在原表出现过，语义就以原表为… · L201 · 函数 · ⇢ 依赖 flowtable.split_row_cells |
-| 模块级 | 14 | _orig_line_index | 任务 | — | — | — | 脚本 | selfboot | — | →03 | ★ 原行文本（按 id）：未改动的行**整行照抄**，免得"多/少一个空格"这种伪差异混进 diff。 · L214 · 函数 · ⇢ 依赖 semantics.split_table_row |
-| 模块级 | 15 | _split_table_block | 任务 | — | — | — | 脚本 | selfboot | — | →23 | ★ 定位标准表头与表格块边界 → (前言, 表后内容, 前言与表头之间的间隔, 尾换行)。 · L226 · 函数 |
-| 模块级 | 16 | _rebuild_rows | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→04｜3→08 | ★ 逐行重建表格行与表格体（未改动整行照抄），并记下自检所需的 _resolved/_stage。 · L256 · 函数 · 分支：1→_cell 2→_row_key 3→build_rows · ⇢ 依赖 semantics.split_table_row |
-| 模块级 | 17 | _keep_after_table | 任务 | — | — | — | 脚本 | selfboot | — | →03 | ★ 表后内容保留：丢掉混进来的表内散行，其余（说明章节等）逐字保留。 · L285 · 函数 · ⇢ 依赖 semantics.split_table_row |
-| 模块级 | 18 | _emit_table | 任务 | — | — | — | 脚本 | selfboot | — | →23 | ★ 前言 / 表格体 / 表后内容拼回，按原换行符与编码落盘，并打印回写统计。 · L301 · 函数 |
-| 模块级 | 19 | _verify_written | 任务 | — | — | — | 脚本 | selfboot | — | 1→09｜2→10 | ★ 回写后自检（H1–H8），并报警分支走向冲突与缺语义的节点；返回**是否通过**。 · L312 · 函数 · 分支：1→branch_conflicts 2→format_conflicts · ⇢ 依赖 flowtable_check.run_checks |
-| 模块级 | 20 | write | 任务 | — | — | — | 脚本 | selfboot | — | 1→06｜2→11｜3→12｜4→13｜5→14｜6→15｜7→16｜8→17｜9→18｜10→19 | ★ drawio 读回结果 + 原流程表 → 更新后的流程表（回写闭环主入口）。 · L348 · 函数 · 分支：1→orig_tokens 2→_read_drawio 3→_read_orig_snapshot 4→_semantic_snapshot 5→_orig_line_index 6→_split_table_block 7→_rebuild_rows 8→_keep_after_table 9→_emit_table 10→_verify_written · ⇢ 依赖 flowtable.parse_table |
-| 模块级 | 21 | compare_bytes | 任务 | — | — | — | 脚本 | selfboot | — | →23 | ★ 回写结果 vs 原文的**文件级**复核 → (是否逐字节一致, unified diff 行列表)。 · L368 · 函数 |
-| 模块级 | 22 | main | 任务 | — | — | — | 脚本 | selfboot | — | →20 | L384 · 函数 |
+| 模块级 | 10 | format_conflicts | 任务 | — | — | — | 脚本 | selfboot | — | →23 | ★ 冲突清单 → 人读文本（文案只有一份：`sync.py` 与同模块的 `write()` 共用，别两处各写一遍）。 · L176 · 函数 |
+| 模块级 | 11 | _read_drawio | 任务 | — | — | — | 脚本 | selfboot | — | →23 | ★ 读回 drawio XML（utf-8-sig 兼容带 BOM 的产物）。 · L190 · 函数 · ⇢ 依赖 xml_reader.read |
+| 模块级 | 12 | _read_orig_snapshot | 任务 | — | — | — | 脚本 | selfboot | — | →23 | ★ 原流程表快照：看**字节**判换行符与 BOM，解码出全文与行列表。 · L196 · 函数 |
+| 模块级 | 13 | _semantic_snapshot | 任务 | — | — | — | 脚本 | selfboot | — | →23 | ★ 原流程表按 id 的语义快照（阶段/描述/主体/执行者/时间/输入/依据/输出）——id 在原表出现过，语义就以原表为… · L207 · 函数 · ⇢ 依赖 flowtable.split_row_cells |
+| 模块级 | 14 | _orig_line_index | 任务 | — | — | — | 脚本 | selfboot | — | →03 | ★ 原行文本（按 id）：未改动的行**整行照抄**，免得"多/少一个空格"这种伪差异混进 diff。 · L220 · 函数 · ⇢ 依赖 semantics.split_table_row |
+| 模块级 | 15 | _split_table_block | 任务 | — | — | — | 脚本 | selfboot | — | →23 | ★ 定位标准表头与表格块边界 → (前言, 表后内容, 前言与表头之间的间隔, 尾换行)。 · L232 · 函数 |
+| 模块级 | 16 | _rebuild_rows | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→04｜3→08 | ★ 逐行重建表格行与表格体（未改动整行照抄），并记下自检所需的 _resolved/_stage。 · L262 · 函数 · 分支：1→_cell 2→_row_key 3→build_rows · ⇢ 依赖 semantics.split_table_row |
+| 模块级 | 17 | _keep_after_table | 任务 | — | — | — | 脚本 | selfboot | — | →03 | ★ 表后内容保留：丢掉混进来的表内散行，其余（说明章节等）逐字保留。 · L291 · 函数 · ⇢ 依赖 semantics.split_table_row |
+| 模块级 | 18 | _emit_table | 任务 | — | — | — | 脚本 | selfboot | — | →23 | ★ 前言 / 表格体 / 表后内容拼回，按原换行符与编码落盘，并打印回写统计。 · L307 · 函数 |
+| 模块级 | 19 | _verify_written | 任务 | — | — | — | 脚本 | selfboot | — | 1→09｜2→10 | ★ 回写后自检（H1–H8），并报警分支走向冲突与缺语义的节点；返回**是否通过**。 · L318 · 函数 · 分支：1→branch_conflicts 2→format_conflicts · ⇢ 依赖 flowtable_check.run_checks |
+| 模块级 | 20 | write | 任务 | — | — | — | 脚本 | selfboot | — | 1→06｜2→11｜3→12｜4→13｜5→14｜6→15｜7→16｜8→17｜9→18｜10→19 | ★ drawio 读回结果 + 原流程表 → 更新后的流程表（回写闭环主入口）。 · L354 · 函数 · 分支：1→orig_tokens 2→_read_drawio 3→_read_orig_snapshot 4→_semantic_snapshot 5→_orig_line_index 6→_split_table_block 7→_rebuild_rows 8→_keep_after_table 9→_emit_table 10→_verify_written · ⇢ 依赖 flowtable.parse_table |
+| 模块级 | 21 | compare_bytes | 任务 | — | — | — | 脚本 | selfboot | — | →23 | ★ 回写结果 vs 原文的**文件级**复核 → (是否逐字节一致, unified diff 行列表)。 · L374 · 函数 |
+| 模块级 | 22 | main | 任务 | — | — | — | 脚本 | selfboot | — | →20 | L390 · 函数 |
 | 出口 | 23 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |

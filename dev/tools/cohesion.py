@@ -24,6 +24,7 @@ r"""cohesion.py — 内聚 / 耦合的**读数**（只报不判红）：三张�
     python dev/tools/cohesion.py --dups         # 跨模块近似重复函数体（--min-sim 调阈值）
     python dev/tools/cohesion.py --width        # 接口面宽度：谁 import 谁、每次带几个名字
     python dev/tools/cohesion.py --single       # 只被一个模块引用的公共层函数（G5 那张清单）
+    python dev/tools/cohesion.py --single --limit 0   # 全打（默认 20；逐个裁决时要看全部，D-125）
 """
 import argparse
 import ast
@@ -170,28 +171,32 @@ def main(argv=None):
     ap.add_argument('--min-stmts', type=int, default=5, help='重复检测的语句数下限（默认 5）')
     ap.add_argument('--min-sim', type=float, default=0.85, help='结构相似度下限（默认 0.85）')
     ap.add_argument('--min-lines', type=float, default=0.6, help='逐字行占比下限（默认 0.6）')
+    # 默认只打 20 行是给人"扫一眼"的；**逐个裁决**（D-125 那 46 条）要看全部，
+    # 原先只能改代码——仪器打印不出它要审的那张清单，等于没有仪器。`--limit 0` = 全打。
+    ap.add_argument('--limit', type=int, default=20, help='每张清单最多打几行（0 = 全打；默认 20）')
     a = ap.parse_args(argv)
     if not SCRIPTS.is_dir():
         print(f'⚠ 找不到 scripts/：{SCRIPTS}（这不是读数，是仪器故障）', file=sys.stderr)
         return 2
     all_ = not (a.dups or a.width or a.single)
+    cap = a.limit if a.limit > 0 else None  # 0 = 不截断
 
     if a.dups or all_:
         pairs = dups(a.min_stmts, a.min_sim, a.min_lines)
         print(f'== 跨模块近似重复（语句 ≥{a.min_stmts} · 结构 ≥{a.min_sim} 或 逐字行 ≥{a.min_lines}）：'
               f'{len(pairs)} 对')
         print('   真重复与"结构像、领域不同"的假阳性混在一起——**机器分不出，你来看**')
-        for score, rs, rl, x, y in pairs[:25]:
+        for score, rs, rl, x, y in pairs[:cap]:
             print(f'   结构 {rs} · 逐字行 {rl}  {x[0]}.{x[1]}({x[2]}行/{x[3]}句)'
                   f'  ≈  {y[0]}.{y[1]}({y[2]}行/{y[3]}句)')
-        if len(pairs) > 25:
+        if cap is not None and len(pairs) > cap:
             print(f'   …共 {len(pairs)} 对（--min-sim / --min-lines 调阈值）')
 
     if a.width or all_:
         w = widths()
         print(f'\n== 接口面宽度（{len(w)} 个被 import 的模块 · 按消费方数降序）')
         print('   名字数 = 一次 import 拖进来几个东西；窄接口（中位 1–2）是"用法有约束"的读数')
-        for mod, lst in list(w.items())[:14]:
+        for mod, lst in list(w.items())[:cap]:
             ns = sorted(n for _c, n in lst)
             top = max(lst, key=lambda x: x[1])
             print(f'   {mod:<20} {len(lst):>2} 个消费方 · 中位 {ns[len(ns) // 2]:>2} · '
@@ -202,10 +207,10 @@ def main(argv=None):
         print(f'\n== 公共层里只被一个模块 import 的函数：{len(rows)} 个（G5 那张清单）')
         print('   **不是错**：同接口两实现 / 装配门面（engine）本来就是一对多；')
         print('   要看的是"它到底是刻意的接口边界，还是该并回调用方"')
-        for mod, fn, who, ln in rows[:20]:
+        for mod, fn, who, ln in rows[:cap]:
             print(f'   {mod}.{fn:<28} ← {who}（{ln} 行）')
-        if len(rows) > 20:
-            print(f'   …共 {len(rows)} 个')
+        if cap is not None and len(rows) > cap:
+            print(f'   …共 {len(rows)} 个（--limit 0 全打）')
     return 0
 
 
