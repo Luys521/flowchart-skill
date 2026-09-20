@@ -2,17 +2,17 @@
  "title": "capability.py 函数流程表",
  "layout": "flow",
  "source": "flowtable.md",
- "dsl_sha256": "202327f867a00c27",
- "source_sha256": "3af7555b32bd5bd7",
+ "dsl_sha256": "0cc28416d7c19277",
+ "source_sha256": "f73299db98eca835",
  "counts": {
   "nodes": 14,
-  "edges": 22,
+  "edges": 23,
   "by_type": {
    "end": 1,
    "start": 1,
    "task": 12
   },
-  "labeled_edges": 14,
+  "labeled_edges": 16,
   "loop_edges": 0,
   "pending_nodes": 0
  },
@@ -67,6 +67,10 @@
   ],
   [
    "06",
+   "05"
+  ],
+  [
+   "07",
    "05"
   ],
   [

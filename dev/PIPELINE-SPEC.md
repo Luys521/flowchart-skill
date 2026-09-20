@@ -186,6 +186,8 @@ python scripts/parse.py --materials <成果根>/materials.json  # 默认查、**
   —— 计划 / 流程表 / 澄清答复 —— 值得回看）。两者合成一个就等于逼人二选一，所以**分开报**。
 - **谁盖章**：`evidence.json`（`ledger.py` 顶层 `capability` 字段）与 `plan.md`（`plan.py` 写的那一行
   `> 机制指纹：code=… rules=…`，写与读同一句）。**不盖时间戳**：§2.4 的幂等要"同输入两次同字节"。
+  **只盖这两处**：流程表是**用户的交付物**、不带章（谁改它由 §5 的回边 `18→11` 管），所以 `rules` 漂了
+  之后"表要不要回看"仍是 **AI 的判断**——仪器只负责把这件事带到人面前，不代做判断（§0.1）。
 - **谁核**：消费端**只喊不拦**（`query.py` 打在最前面，`--json` 时进 `capability` 字段——插一行会
   让吃这份 JSON 的子代理当场解析失败；`plan.py check` 同样打一句）；**硬拦**交给
   `python scripts/capability.py check <产物…>`（退 2，缺章也算——"不知道是哪版产的"与"知道是旧的"

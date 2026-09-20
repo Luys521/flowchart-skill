@@ -110,8 +110,9 @@ def warn(recorded, what='这份产物'):
     if state == 'same':
         return []
     if state == 'absent':
-        return [f'⚠ {what}没盖能力指纹——**不知道它按哪一版判据做的**（{lines[0]}）',
-                '   要有个章：重跑 `probe → parse → ledger`（账本）或 `plan.py build`（计划）']
+        return [f'⚠ {what}没盖能力指纹——**无从判断它按哪一版判据做的**',
+                f'   · 当下 code={stamp()["code"]} rules={stamp()["rules"]}；'
+                f'要么重跑一次补上章（`probe → parse → ledger`），要么按旧产物对待']
     if state == 'bad':
         return [f'⚠ {what}的能力指纹读不动（**当它是旧的**）：{lines[0]}']
     out = [f'⚠ {what}的能力指纹对不上当下（**别当它是刚跑出来的**）：']

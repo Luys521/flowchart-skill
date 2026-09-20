@@ -8,7 +8,7 @@ meta:
 layout:
   col_x:
   - 400
-  width: 980
+  width: 1020
   origin_x: -140
 nodes:
 - id: '01'
@@ -93,8 +93,8 @@ nodes:
   row: 4
   col: 0
   stage: 模块级
-  route: →06
-  desc: ★ 消费端那几句话 → 行清单（`same` 时是**空表**，调用方直接逐行打印即可）。 · L103 · 函数
+  route: 1→05｜2→06
+  desc: ★ 消费端那几句话 → 行清单（`same` 时是**空表**，调用方直接逐行打印即可）。 · L103 · 函数 · 分支：1→stamp 2→compare
 - id: 08
   name: md_line
   lines:
@@ -106,7 +106,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →05
-  desc: ★ `plan.md` 表头那一行（**写与读同一句**：抄两遍必漂）。 · L124 · 函数
+  desc: ★ `plan.md` 表头那一行（**写与读同一句**：抄两遍必漂）。 · L125 · 函数
 - id: 09
   name: read_md
   lines:
@@ -118,7 +118,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →14
-  desc: ★ 从 markdown 里读回那一行 → 章（没有就是 `None` → `absent`）。 · L130 · 函数
+  desc: ★ 从 markdown 里读回那一行 → 章（没有就是 `None` → `absent`）。 · L131 · 函数
 - id: '10'
   name: read_json
   lines:
@@ -130,7 +130,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →14
-  desc: ★ 从产物对象里读章（`evidence.json` 顶层键）。缺失/歪掉都返回 `None` → 由 `compare`… · L136 · 函数
+  desc: ★ 从产物对象里读章（`evidence.json` 顶层键）。缺失/歪掉都返回 `None` → 由 `compare`… · L137 · 函数
 - id: '11'
   name: _describe
   lines:
@@ -142,7 +142,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→03｜2→05
-  desc: ★ 纯打印模式的两行（顺带报每组覆盖多少份文件——"射程"要看得见）。 · L142 · 函数 · 分支：1→files 2→stamp
+  desc: ★ 纯打印模式的两行（顺带报每组覆盖多少份文件——"射程"要看得见）。 · L143 · 函数 · 分支：1→files 2→stamp
 - id: '12'
   name: cmd_check
   lines:
@@ -154,7 +154,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→05｜2→06｜3→09｜4→10
-  desc: ★ 逐份核对产物上的章。**退 2** = 有对不上的（缺章也算）或读不了。 · L150 · 函数 · 分支：1→stamp 2→compare
+  desc: ★ 逐份核对产物上的章。**退 2** = 有对不上的（缺章也算）或读不了。 · L151 · 函数 · 分支：1→stamp 2→compare
     3→read_md 4→read_json
 - id: '13'
   name: main
@@ -167,7 +167,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→05｜2→11｜3→12
-  desc: L185 · 函数 · 分支：1→stamp 2→_describe 3→cmd_check
+  desc: L186 · 函数 · 分支：1→stamp 2→_describe 3→cmd_check
 - id: '14'
   name: 结束
   lines:
@@ -223,9 +223,15 @@ edges:
   kind: jumpR
   polarity: main
 - from: '07'
+  to: '05'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '07'
   to: '06'
   kind: spine
   polarity: main
+  label: '2'
 - from: 08
   to: '05'
   kind: jumpR
