@@ -50,7 +50,7 @@ parent: ../flowtable.md
 | 模块级 | 36 | diff | 任务 | — | — | — | 脚本 | selfboot | — | 1→33｜2→34｜3→35 | ★ 读回结果 vs 现有流程表 → 差异清单 · L597 · 函数 · 分支：1→_diff_table_rows 2→_diff_added_removed 3→_diff_changed |
 | 模块级 | 37 | _print_json | 任务 | — | — | — | 脚本 | selfboot | — | →42 | ★ --json：输出结构化 JSON。 · L610 · 函数 |
 | 模块级 | 38 | _print_grid | 任务 | — | — | — | 脚本 | selfboot | — | →42 | ★ --grid：输出坐标推断的 row/col。 · L615 · 函数 |
-| 模块级 | 39 | _cmd_diff | 任务 | — | — | — | 脚本 | selfboot | — | →36 | ★ --diff：结构差异，再补一次"回写结果 vs 原文"的文件级复核。 · L622 · 函数 · ⇢ 依赖 writeback.compare_bytes、writeback.write |
-| 模块级 | 40 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→24｜2→29｜3→37｜4→38｜5→39 | L665 · 函数 · 分支：1→read 2→brief 3→_print_json 4→_print_grid 5→_cmd_diff |
+| 模块级 | 39 | _cmd_diff | 任务 | — | — | — | 脚本 | selfboot | — | →36 | ★ --diff：只报**结构差异**（拓扑层面的：节点/边/标签）。 · L622 · 函数 |
+| 模块级 | 40 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→24｜2→29｜3→37｜4→38｜5→39 | L650 · 函数 · 分支：1→read 2→brief 3→_print_json 4→_print_grid 5→_cmd_diff |
 | _geom | 41 | _geom.f | 任务 | — | — | — | 脚本 | selfboot | — | →42 | L77 · 嵌套函数 |
 | 出口 | 42 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |

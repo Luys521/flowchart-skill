@@ -32,7 +32,7 @@ flowtable.md ──► <流程名>-flow.yaml ──► <流程名>-flow.html
 | 4'' 视觉自检 | `shot.py <html>` | 脚本截图 → **AI/人看图** | `<名>-flow.html` | `<名>-flow.shot.png`（中间物，可删） |
 | 5 微调 | （人在 drawio 里操作） | **人** | `<名>-flow.drawio` | 改好的 `.drawio` |
 | 5 回写 | `sync.py <drawio> <表> [--apply]` | 脚本 | `.drawio` + `flowtable.md` | 预览 `flowtable.sync.md`；`--apply` 后覆盖原表并重渲染 |
-| 5' 只读差异 | `xml_reader.py <drawio> --diff <表>` | 脚本 | `.drawio` + `flowtable.md` | stdout 差异（含逐字节复核） |
+| 5' 只读差异 | `xml_reader.py <drawio> --diff <表>` | 脚本 | `.drawio` + `flowtable.md` | stdout 结构差异（**不含**逐字节复核——那条在 `sync.py`，D-123） |
 | 入口 B | `xml_reader.py <图>` | 脚本 | 外部 `.drawio` / 图片 | stdout 拓扑摘要 |
 
 **`build.py` 跑起来的六环**（全部脚本自动，AI 不介入）：① 结构校验 → ② 生成 DSL → ③ 碰撞检测（八项）→ ④ 渲染交付物 → ⑤ 产物审核（契约反查）→ ⑥ 产物几何自检。**② 环内**是引擎的分段：节点类型分析 → 关系分析 → 空间规划 → 节点连接。前三环读《流程表》与 DSL、**都不看产物**，所以第 ⑤ 环拿契约反查产物把最后一环焊上。

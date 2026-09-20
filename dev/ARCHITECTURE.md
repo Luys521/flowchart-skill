@@ -16,7 +16,7 @@
 | 4' 单环复核 | `validate.py <yaml>` / `validate.py --artifact <产物>` | validate（模型侧八项 / 产物侧九项） | exit 0/1 + 几何表（`--dump`） |
 | 4'' 视觉自检 | `shot.py <html>` | shot（无头浏览器截图） | `flow.shot.png`（中间物） |
 | 5 同步闭环 | `sync.py <drawio> <flowtable.md> [--apply]` | sync（编排）→ xml_reader（读回）→ writeback（回写）→ table_to_dsl → validate | `flowtable.sync.md` 预览／覆盖后重渲染 |
-| 5' 只读差异 | `xml_reader.py <drawio> --diff <flowtable.md>` | xml_reader + writeback.compare_bytes | stdout 差异 |
+| 5' 只读差异 | `xml_reader.py <drawio> --diff <flowtable.md>` | xml_reader（**只报结构差异**；文件级差异见 `sync.py`，D-123） | stdout 差异 |
 | 入口 B 已有图 | `xml_reader.py <图>` | xml_reader（拓扑摘要） | stdout |
 
 **数据的三种"可交付中间件"**（它们的存在决定了模块边界）：
@@ -42,7 +42,7 @@
 | `table_to_dsl.py` | **1186** | 7 个模块 | **一个文件干了 7 件事**（见第三节）→ 拆 |
 | `engine.py` | 177 | 3（两个 renderer + validate） | 门面：把 model/grid/router/label 装配成 `L.*` → 保持 |
 | `xml_reader.py` | 557 | 2（sync / writeback） | 读回 → 保持 |
-| `writeback.py` | 316 | 2（sync / xml_reader 的 `--diff`） | 回写 → 保持 |
+| `writeback.py` | 316 | 1（sync）+ 自有 CLI | 回写 → 保持（**不再被 `xml_reader --diff` 引用**：那条边是公共层唯一的环，D-123 拆掉） |
 | `validate.py` | 547 | 2（build / sync） | 几何门禁 → 保持 |
 | `render_html.py` | 672 | 1（build）+ 自有 CLI | 视图生成 → 保持 |
 | `render_drawio.py` | 389 | 1（build）+ 自有 CLI | 视图生成 → 保持 |

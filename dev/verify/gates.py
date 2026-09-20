@@ -1903,15 +1903,24 @@ def _check_init_conflict(c, tmp):
 
 
 def _check_xml_diff(c, tmp):
-    c.section('质检补漏：--diff 要带文件级复核')
-    # 自造夹具（D-42）：先 build 出一对"表 + drawio"，再拿 `--diff` 比它们——
+    c.section('质检补漏：往返差异要带文件级复核（`sync` 那条路，D-123）')
+    # 自造夹具（D-42）：先 build 出一对"表 + drawio"，再比它们——
     # 这样样例怎么改都与本用例无关（此前直接借 examples/ 的表与基线 drawio）。
+    #
+    # **2026-09-19 改指向**（D-123）：这条文件级复核原先在 `xml_reader --diff` 里，而它让公共层
+    # 出现 `xml_reader ↔ writeback` 的环。复核本身是"读回 → 回写 → 逐字节比"的**下一步**，
+    # 属于 `sync`（它本来就有这一步，而且写出预览文件供核对——比 `--diff` 里那个用完就丢的
+    # 临时文件更有用）。**判据不变**：那句"逐字节一致"必须真被打出来——这是"文件级真相有人报"
+    # 的唯一证据。同时钉住 `--diff` 不再假装做这件事：它只报结构差异并**指路 sync**。
     _d, ft, rc0, out0 = _wb_project(tmp, 'xmldiff')
     if not c.check(rc0 == 0, '前置：自造夹具 build 通过', out0.strip()[-90:]):
         return
     rc9, out9 = run('xml_reader.py', prod(_d, 'drawio'), '--diff', ft)
-    c.check('文件级复核' in out9 and '逐字节一致' in out9,
-            'xml_reader --diff 补上逐字节复核', '（无复核段落）' if '文件级复核' not in out9 else '')
+    c.check('文件级复核' not in out9 and 'sync.py' in out9,
+            'xml_reader --diff 只报结构差异，并指路 sync', out9.strip()[-120:])
+    rc10, out10 = run('sync.py', prod(_d, 'drawio'), ft)
+    c.check(rc10 == 0 and '逐字节一致' in out10,
+            'sync 那条路仍报逐字节复核（能力没丢，换了 owner）', out10.strip()[-140:])
 
 
 def _dead_page_links(dw_text):

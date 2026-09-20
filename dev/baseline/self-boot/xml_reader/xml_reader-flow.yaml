@@ -485,7 +485,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →36
-  desc: ★ --diff：结构差异，再补一次"回写结果 vs 原文"的文件级复核。 · L622 · 函数 · ⇢ 依赖 writeback.compare_bytes、writeback.write
+  desc: ★ --diff：只报**结构差异**（拓扑层面的：节点/边/标签）。 · L622 · 函数
 - id: '40'
   name: main
   lines:
@@ -497,7 +497,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→24｜2→29｜3→37｜4→38｜5→39
-  desc: L665 · 函数 · 分支：1→read 2→brief 3→_print_json 4→_print_grid 5→_cmd_diff
+  desc: L650 · 函数 · 分支：1→read 2→brief 3→_print_json 4→_print_grid 5→_cmd_diff
 - id: '41'
   name: _geom.f
   lines:

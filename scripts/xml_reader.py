@@ -620,7 +620,20 @@ def _print_grid(data):
 
 
 def _cmd_diff(a, data):
-    """--diff：结构差异，再补一次"回写结果 vs 原文"的文件级复核。"""
+    """--diff：只报**结构差异**（拓扑层面的：节点/边/标签）。
+
+    这里原先还顺手做了一次"回写结果 vs 原文"的**文件级复核**（分支顺序 / 尾注 / 「回」 /
+    换行 / BOM 那些集合比较看不见的东西）。2026-09-19 把它挪回 `sync.py`（D-123），两条理由：
+
+    - **那是同一条链的下一步，不是本命令的读数**：`sync` 的职责就是"读回 → 差异 → 写回 →
+      逐字节比"，它本来就有这一步（`compare_bytes`）；放在这里等于把回写**跑了一遍**却说成
+      "看差异"，而且它跑出来的产物是临时的、谁也不看。
+    - **它让公共层出现一个环**：`xml_reader → writeback` 与 `writeback → xml_reader`（后者是
+      `write()` 本体要读 drawio，去不掉）。少一条边，两边就各自只朝一个方向说话。
+
+    能力**没有丢**，只是回到该在的地方；想看文件级差异就跑 `sync.py`（它默认就是"看差异"，
+    加 `--apply` 才落盘）。
+    """
     ft = Path(a.diff)
     # 与 drawio_path 同一口径：先查存在再读。diff() 内部是裸 read_text，缺文件抛
     # FileNotFoundError，而 main 只捕 ValueError——同一类"文件找不到"，在 drawio 侧给中文
@@ -629,36 +642,8 @@ def _cmd_diff(a, data):
         print(f'✗ 找不到流程表: {ft}')
         return 1
     print(diff(data, ft))
-    print('--- 文件级复核 ---')
-    # 上面那句是集合比较，看不见分支顺序/尾注/「回」/换行——补一次文件级比对（与 sync 同一件事）。
-    try:
-        import contextlib
-        import io
-        import tempfile
-        from writeback import write as _wb, compare_bytes
-        with tempfile.TemporaryDirectory() as td:
-            tmp = Path(td) / 'flowtable.sync.md'
-            buf = io.StringIO()
-            with contextlib.redirect_stdout(buf):
-                _wb(a.drawio_path, str(ft), str(tmp))
-            # **回写那一步的输出要露出来**：它含"回写结果未过结构校验"的 ✗、"分支走向冲突"的
-            # 告警、以及"缺主体/执行者"的 ⚠——全被 redirect 吞掉就等于这次文件级复核只做了
-            # 一半，而读者以为它做全了。只挑 ✗/⚠ 两类（✓ 与统计留在回写命令自己的输出里）。
-            for line in buf.getvalue().splitlines():
-                if line.lstrip().startswith(('✗', '⚠')):
-                    print('   ', line.strip())
-            same, lines = compare_bytes(str(ft), tmp)
-        if same:
-            print('✓ 逐字节一致（回写结果与原文完全相同）')
-        else:
-            print(f'ℹ 流程表有 {len(lines)} 行差异（集合 diff 看不见的：分支顺序/尾注/「回」/换行/BOM）：')
-            for line in lines[:24]:
-                print('   ', line)
-            if len(lines) > 24:
-                print(f'    …（共 {len(lines)} 行）')
-    except (ValueError, OSError) as e:
-        # 文件级复核是 diff 之后的补充视角，失败只跳过它，不拖垮整个命令（上面已给过拓扑差异）
-        print(f'（文件级复核跳过：{type(e).__name__}: {e}）')
+    print('· 上面是**结构差异**（拓扑）；分支顺序 / 尾注 / 换行 / BOM 这类**文件级**差异见 '
+          '`python scripts/sync.py "原图.drawio" "<流程表>"`（默认只报差异，加 `--apply` 才落盘）')
     return 0
 
 
