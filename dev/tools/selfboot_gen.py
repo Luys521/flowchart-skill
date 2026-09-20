@@ -207,7 +207,7 @@ PIPELINE_STAGES = (
     ('产物审核', ('manifest', 'validate')),
     ('层级索引', ('layer_index',)),
     ('同步闭环', ('xml_reader', 'writeback', 'sync')),
-    ('编排入口', ('build', 'build_all', 'init', 'shot', 'clarify')),
+    ('编排入口', ('build', 'init', 'shot', 'clarify')),
     # 跨阶段的**外循环**（不是线性顺序里的最后一步）：读账本 + 表 → 出漂移 / 缺口，
     # 驱动"再审 → 再定向取证 → 再落表"。排在末位只是因为它是上面所有产物的消费者（PIPELINE-SPEC §5）。
     # `query` 是这个循环的**手**：缺口说"要哪一片"，它去把那一小片取出来（§5.3）。

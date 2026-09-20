@@ -28,7 +28,6 @@ flowtable.md ──► <流程名>-flow.yaml ──► <流程名>-flow.html
 | 3 自检留痕 | （无命令） | **AI** | `templates/checklist-template.md` | `checklist.md`；表内 `⚠` / `⚠?` 标记 |
 | 3 问缺口 | `clarify.py <表>` | **AI 问 → 人答** | 表里的 `⚠?` | 人给的裁决 → 改表 → 重跑直到 frontier 空 |
 | 4 渲染 | `build.py <表>` | 脚本（六环全自动） | `flowtable.md`（+ 已有 `.yaml` 几何） | `<名>-flow.html` + `<名>-flow.drawio` + `<名>-flow.svg` + `<名>-index.md` |
-| 4 批量渲染 | `build_all.py <成果根> [--jobs N]` | 脚本（默认串行） | 根下每张 `<名>/flowtable.md` | 同上一行，**每个流程各出一份**（`PIPELINE-SPEC` §7，D-126） |
 | 4' 单环复核 | `validate.py <yaml>` / `--artifact <产物>` | 脚本 | DSL 或产物 | exit 0/1 + 几何表（`--dump`） |
 | 4'' 视觉自检 | `shot.py <html>` | 脚本截图 → **AI/人看图** | `<名>-flow.html` | `<名>-flow.shot.png`（中间物，可删） |
 | 5 微调 | （人在 drawio 里操作） | **人** | `<名>-flow.drawio` | 改好的 `.drawio` |
@@ -73,11 +72,11 @@ parts/<子流程名>/<子流程名>-flow.{yaml,manifest.json}     × 7
 
 ## 四、脚本接口面（机器提取）
 
-**47 个模块 = 31 个带 CLI 的入口 + 16 个纯库。**
+**46 个模块 = 30 个带 CLI 的入口 + 16 个纯库。**
 
 | 类型 | 模块 |
 |---|---|
-| 入口命令（有 `__main__`） | `init` `table_to_dsl` `build` `build_all` `validate` `shot` `sync` `xml_reader` `clarify` `layer_index` `manifest` `render_html` `render_drawio` `render_svg` `writeback` `probe` `parse` `recon` `parse_ooxml` `parse_pdf` `parse_legacy` `parse_text` `render_pages` `intake` `ledger` `drift` `query` `import_table` `plan` `cells` `capability` |
+| 入口命令（有 `__main__`） | `init` `table_to_dsl` `build` `validate` `shot` `sync` `xml_reader` `clarify` `layer_index` `manifest` `render_html` `render_drawio` `render_svg` `writeback` `probe` `parse` `recon` `parse_ooxml` `parse_pdf` `parse_legacy` `parse_text` `render_pages` `intake` `ledger` `drift` `query` `import_table` `plan` `cells` `capability` |
 | 纯库（无 CLI，只被 import） | `artifact` `deps` `engine` `flowtable` `flowtable_check` `flowtable_colors` `flowtable_layout` `geometry` `label` `lane_router` `pptx_text` `router` `semantics` `swimlane` `textquality` `thresholds` |
 
 **分层（2026-09-14 定，由 `dev/tools/layering.py` 守住）**：
@@ -86,12 +85,13 @@ parts/<子流程名>/<子流程名>-flow.{yaml,manifest.json}     × 7
 |---|---|---|
 | **公共层**（21） | `semantics` `geometry` `artifact` `cells` `capability` `thresholds` `deps` `textquality` `pptx_text` `flowtable_layout` `flowtable` `flowtable_check` `flowtable_colors` `router` `lane_router` `swimlane` `label` `engine` `manifest` `xml_reader` `writeback` | 被多方复用的纯能力；**可以互相引用**，但**不许依赖上层** |
 | **模块层**（22） | `init` `clarify` `table_to_dsl` `layer_index` `render_html` `render_drawio` `render_svg` `validate` `shot` `probe` `recon` `parse_ooxml` `parse_pdf` `parse_legacy` `parse_text` `render_pages` `import_table` `intake` `plan` `ledger` `drift` `query` | 各有产物；**只许依赖公共层**；彼此之间**没有代码依赖**——协作走产物 |
-| **编排层**（4） | `build` `build_all` `sync` `parse` | 流水线驱动者，允许依赖上面两层（`parse` 按固定顺序跑各解析适配器，判据不在它那里；`build_all` 只把"一个根下 K 条流程"并发起来，见 `PIPELINE-SPEC` §7） |
+| **编排层**（3） | `build` `sync` `parse` | 流水线驱动者，允许依赖上面两层（`parse` 按固定顺序跑各解析适配器，判据不在它那里）。**没有批量/并行出图**：起草过一版最小形态，2026-09-19 裁决撤销（`PIPELINE-SPEC` §7 / D-126），多条流程就一条一条跑 `build.py` |
 
-实测（47 模块 / 119 条依赖边）：`module→public` 66 条 · `orch→module` 9 条 · `orch→orch` 1 条 ·
+实测（46 模块 / 119 条依赖边）：`module→public` 66 条 · `orch→module` 9 条 · `orch→orch` 1 条 ·
 `orch→public` 14 条 · `public→public` 29 条 · **违规 0 条**（数字随代码增长，现跑现取：`python dev/tools/layering.py`）。
-**`build_all` 一条边都不加**：它靠**子进程 + 产物**驱动 `build.py`，不 import 任何模块——这是编排层
-"协作走产物"那条纪律在这里的直接读数。
+**这一行曾经悄悄漂过**：`public→public` 在 D-123 拆掉公共层那个环时从 30 掉到 29，而这里一直写着 30 / 120
+（2026-09-19 用 `git show <旧提交>:scripts/` 现算对出来的）——**面① 只核模块数与三层名册，不核依赖边数**
+（原因见上：边数来自 `fn-graph.json` 快照），所以这个数字是**没人守的**，改代码时顺手对一眼。
 **这张名册由面① 现算对账**（`dev/verify/contract.py`：模块数 / CLI 数 / 三层名册逐个核）——
 2026-09-19 实测它曾漂过四个模块（写 40 个、实为 44 个，漏了 `cells` `plan` `import_table` `capability`），
 而当时的门禁全绿；依赖边数**不归面①**（它来自 `fn-graph.json` 快照，快照旧了归门⑦）。
