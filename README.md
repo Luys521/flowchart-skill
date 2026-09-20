@@ -37,7 +37,7 @@ examples/workflow/    **格式基准**（SKILL 把自身工作流画成图，30 
 output/               出图产物目录（本地，不进库）
 dev/                  **维护分区**——只有改仓库的人进来，出图时不需要读它
   dev/verify/             四个面自检（契约一致 / 门禁拦截 / 不变式 / 端到端）
-  dev/tools/              七件仪器（清单见 dev/tools/README.md：fn_graph / coverage / api_audit / equiv / layering / hygiene / aesthetic）
+  dev/tools/              七件仪器 + 一件清场工具（清单见 dev/tools/README.md：fn_graph / coverage / api_audit / equiv / layering / hygiene / aesthetic）
   baseline/           examples 的同构镜像：机器生成的产物（进库，安全网的基准）
   DECISIONS.md  ARCHITECTURE.md  REPO-MAP.md   设计文档
   coding-spec.md      代码质量自检对照表（行业原则 → 本仓库规则 → 拦它的仪器）

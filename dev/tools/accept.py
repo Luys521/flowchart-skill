@@ -25,7 +25,14 @@ r"""accept.py — **验收：一条命令跑完十一道门，只给一个结论
 所以先把树整棵复制到临时目录再 build——副本的根目录仍叫 `self-boot`，产物名（`self-boot-flow.html`
 这类，`artifact.artifact_stem` 取的是目录名）与实际交付**逐字一致**。副本目录**每次唯一**
 （`mkdtemp`），**不用"先删再建"**（撞批量删除的安全钩子会把"门全过"变成"命令报错"）；
-跑完**只报临时目录路径、不删**——退出码只由十一道门决定，清理动作不参与判分（见 `main` 收尾注释）。
+清理**只在成功且用的是默认现场时**发生（2026-09-19 改，D-113）：
+
+- **没过 / 仪器故障 ⇒ 现场原样留着**（那正是要看的东西）；
+- **过了 ⇒ 收掉"本次新建的"那几项**（进门之前先记下现场里已有什么，只删增量——不动你放在这儿的东西）；
+- 清理动作**在结论印完之后**发生，`ignore_errors=True`，**永不参与判分**；删不掉只多印一行；
+- `--keep` 留着不看结论也要现场；`--scratch` 是你给的目录 ⇒ 一律不动。
+- 为什么改：原先写"只占约 2 MB、不替你删"，实测**每跑一次留 5.7 MB / 140 个文件**，
+  连跑十几轮攒到 **134 MB / 2579 个文件**（没有人会想起来清）。存量用 `dev/tools/sweep.py` 收。
 
 **门⑥是回执型门**：摘要没有阈值，它"不过"只意味着树为空或读不了。之所以并列成一道门，是因为
 收口时**必须报出**"这份结论对应哪一版树"——否则数字和树对不上账。它印**两个口径**，因为两件事
@@ -710,6 +717,23 @@ def gate_drift(g):
     return g.broken(f'夹具没输出可判的行（只看到 {n_pass} 条 PASS 行）——夹具没跑起来就当仪器故障')
 
 
+def _bytes_of(p):
+    """一个现场项占多少字节（文件直接算，目录递归）——收尾那行读数用它（D-113）。"""
+    if p.is_file():
+        try:
+            return p.stat().st_size
+        except OSError:
+            return 0
+    total = 0
+    for q in p.rglob('*'):
+        if q.is_file():
+            try:
+                total += q.stat().st_size
+            except OSError:
+                pass
+    return total
+
+
 def main(argv=None):
     sys.stdout.reconfigure(encoding='utf-8')
     ap = argparse.ArgumentParser(
@@ -719,6 +743,8 @@ def main(argv=None):
     ap.add_argument('--tables-root', default=str(DEFAULT_TABLES),
                     help=f'流程表树根（默认 {rel(DEFAULT_TABLES, ROOT)}）')
     ap.add_argument('--scratch', help='临时目录（默认落在仓库内 .accept_tmp/；见下方注释）')
+    ap.add_argument('--keep', action='store_true',
+                    help='门全过也留着现场（默认成功即收本次新建的；没过一律留着）')
     ap.add_argument('--allow-soft', action='store_true',
                     help='门②不因软提示报红（默认严格：hard 与 soft 都要求 0）')
     a = ap.parse_args(argv)
@@ -726,6 +752,8 @@ def main(argv=None):
     tables_root = Path(a.tables_root).resolve()
     scratch = Path(a.scratch).resolve() if a.scratch else _default_scratch()
     scratch.mkdir(parents=True, exist_ok=True)      # --scratch 可能是新建的；mkdtemp 那份已存在
+    # **进门之前记下现场里已有什么**：收尾只清"本次新建的"，你放在这儿的现场一律不动（D-113）。
+    before = {p.name for p in scratch.iterdir()}
 
     print(f'验收：{rel(tables_root, ROOT)}')
     print(f'快照时刻：{time.strftime("%Y-%m-%d %H:%M:%S")}'
@@ -780,13 +808,26 @@ def main(argv=None):
         code = 0
         verdict = '十一道门全过'
     print(f'退出码 {code}：{verdict}')
-    # 收尾：**只报路径、不删**。临时目录可再生，删不删都不影响结论；
-    # 而"批量删除"会撞安全钩子（尤其套在自动化里跑时），一旦被拦，退出码就从 0 变成非 0——
-    # 用户看到的是"命令报错了"，而**十一道门其实全过**。所以：结论先印完，退出码只由各道门决定，
-    # 清理动作一律不许参与判分。要腾空间请用户自己删这个目录。
-    # 注：默认目录**在仓库内**（见 `_pinned_scratch` 的说明——系统临时目录的子目录截不出图），
-    # 已由 .gitignore 挡住，所以留着也不会进版本库；但它会占约 2 MB，跑完想清就清。
-    print(f'（本次临时目录：{scratch}  ——可随时删除；本工具不替你删）')
+    # 收尾（2026-09-19 改，D-113）：**结论先印完，清理不参与判分**。三条不变的原则照旧——
+    #   ① 不"先删再建"（撞批量删除的安全钩子）；② 退出码只由十一道门决定；③ 没过就留现场。
+    # 改的只有一条：**过了就收掉"本次新建的"那几项**。原先写着"不替你删"，可它没有配套的收口——
+    # 实测每跑一次留 5.7 MB / 140 个文件（门⑤ 的 build-* 副本），连跑十几轮攒到 134 MB / 2579 个文件，
+    # 而没人会想起来清。`ignore_errors=True`：删不掉（被占用 / 权限）只多印一行，绝不改结论。
+    made = [p for p in sorted(scratch.iterdir()) if p.name not in before]
+    mb = sum(_bytes_of(p) for p in made) / 1048576
+    if code == 0 and not a.keep and not a.scratch:
+        for p in made:
+            shutil.rmtree(p, ignore_errors=True) if p.is_dir() else p.unlink(missing_ok=True)
+        left = [p.name for p in made if p.exists()]
+        print(f'（临时现场：本次新建 {len(made)} 项 / {mb:.1f} MB —— '
+              + (f'已收 {len(made) - len(left)} 项' if not left
+                 else f'⚠ {len(left)} 项没删掉：{"、".join(left)}')
+              + '；门全过想留现场加 `--keep`）')
+    else:
+        why = ('有门未过 / 仪器故障 ⇒ 现场留着看' if code else
+               ('--keep' if a.keep else '`--scratch` 是你给的目录'))
+        print(f'（临时现场：本次新建 {len(made)} 项 / {mb:.1f} MB —— {why}；'
+              f'要腾空间跑 `python dev/tools/sweep.py`）')
     return code
 
 
