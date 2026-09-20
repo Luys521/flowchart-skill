@@ -15,6 +15,7 @@
 | **有什么是白写的？** | `hygiene.py` | 没人引用的 import + 没人调的模块级函数（只看当前工作树，不要底本） |
 | **图读起来顺不顺？** | `aesthetic.py` | 三条审美律的读数：主轴偏心 / 绕行率 / 通道半径（`visual-spec` §0.1，D-91） |
 | **自举树怎么来的？** | `selfboot_gen.py` | 把函数级依赖图落成**流程表树**（`output/self-boot/`）——收口仪式的第 2 步，跑完还要 `build.py` 再与基线比（见下节） |
+| **改了 scripts/ 之后怎么收口？** | `repin.py` | 重钉基线：生成器 → build → 两棵基线（**不 commit / 不 tag / 不跑验收**，那三件要人过目） |
 | **工作区怎么这么大？** | `sweep.py` | 清场：删掉本仓库自己生成的临时物（验收 / 自检现场 + `__pycache__`），**绝不碰 `output/` 与基线** |
 | **十一道门一次跑完？** | `accept.py` | 验收器（见文末"验收：一条命令"）；它自己不是门，是**跑门的那台机器** |
 
@@ -145,6 +146,19 @@ python dev/tools/selfboot_gen.py    # ② 落成流程表树
 python scripts/build.py output/self-boot/flowtable.md   # ③ 出三份产物
 # ④ 与 `dev/baseline/self-boot/` 逐字节比（面③ 会自动做这件事）
 ```
+
+**`repin.py`** —— 上面那串（外加两棵基线的同步）收成一条命令，**顺序写在它里面**：
+
+```text
+python dev/tools/repin.py --dry-run   # 造出来但不动基线：只报"会动哪些文件"
+python dev/tools/repin.py             # 真重钉；--prune 连"基线里多出来的"也删
+```
+
+**它不替你** commit / `git tag -f api-base HEAD` / 跑验收——那三件要人过目（"这一版产物我认了"是判断，
+而 tag 是"等价门"的底本，自动打等于把门变成橡皮图章）。跑完它打印下一步。
+**为什么值得有**（`coding-spec` N1 原先写着"不做"）：N1 兜的是顺序错的**后果**，不是**过程**——
+手工那六步在这一版会话里跑了八次、漏过一次；`repin.py` 还把旧写法里那个 `find dev/baseline -name
+flowtable.md -delete`（**全仓递归**，曾删掉整棵自举树的表）换成**按树作用域**的删除（D-117、G2）。
 
 ### `sweep.py` —— 清场：把"自己生成的临时物"删掉
 

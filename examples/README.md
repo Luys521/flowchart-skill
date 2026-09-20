@@ -49,20 +49,27 @@ workflow-index.md            层级索引（多张表时的构建顺序，派生
 三份都从 `workflow-flow.yaml` 渲染、**互相零依赖**（svg 不是 html 的输入），
 把带流程名的 `.html` 换成 `.drawio` / `.svg` 可直接单跑 `validate.py --artifact` 复核。
 
-**刷新基线**（改了渲染器之后，必须让基线与代码对齐——**基线不进本目录**）：
+**刷新基线**（改了渲染器之后必须让基线与代码对齐）——**一条命令**：
 
 ```bash
-# 1) 把事实源铺进基线目录（build 要求表与产物同目录，产物写在表旁边）
-cp -r examples/workflow/. dev/baseline/workflow/
-# 2) 只 build 主表——子表的 yaml/manifest 由它自动补齐为视图
-#    （**不要逐表 build**：那会给每个子表多产 html/svg/index，旧基线里没有这三样）
-python scripts/build.py <基线目录里那张临时表>
-# 3) 删掉基线目录里的 flowtable.md（事实源的家在 examples/，基线只留产物）
-find dev/baseline -name flowtable.md -delete
+python dev/tools/repin.py --dry-run   # 先看：会动哪些文件（造出来但不动基线）
+python dev/tools/repin.py             # 真重钉（生成器 → build → 两棵基线）
 ```
 
-> 第 3 步是**全仓递归**的——`dev/baseline/self-boot/` 里那整棵自举树的表**要留**（张数**现跑现取**，别写死——`coding-spec` G7；D-67：自举树连表带图进库）。
-> 所以顺序是：**先重钉 workflow（含第 3 步），再把 `output/self-boot/` 整树镜像过去**。反了就会被删掉 38 张表。
+它把原先那套手工五步收成一条命令（顺序写在它里面，见 D-117）：
+
+```bash
+# 手工做法（留作对照，别照着跑——第 3 步那个 find 是全仓递归的，正是它删掉过自举树的表）
+cp -r examples/workflow/. dev/baseline/workflow/     # 1) 事实源铺进基线目录
+python scripts/build.py <基线目录里那张临时表>        # 2) 只 build 主表（子表 yaml/manifest 由它补齐）
+find dev/baseline -name flowtable.md -delete         # 3) 删表：**这一步曾把自举树的表一起删掉**
+```
+
+> 第 3 步是本节的**旧写法**：`dev/baseline/self-boot/` 里那整棵自举树的表**要留**（张数**现跑现取**，
+> 别写死——`coding-spec` G7；D-67：自举树连表带图进库）。所以顺序必须是
+> **先重钉 workflow（含删表）再把 `output/self-boot/` 镜像过去**——顺序一反就删掉整棵自举树的表。
+> `repin.py` 把这条隐患从"顺序约定"变成"**作用域**"：删的动作只在 workflow 那棵树里做，
+> 自举树的表**碰不到**（`coding-spec` G2 记着这条历史）。
 
 > 第 2 步不写那张表的字面路径：它只是构建时的临时表、盘上不长期存在，写了会被面①的
 > "文档引用的路径都必须存在"断言判成悬空引用。
