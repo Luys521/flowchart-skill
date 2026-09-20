@@ -37,6 +37,7 @@ import sys
 from pathlib import Path
 
 import artifact
+import deps
 
 PDF_MAGIC = b'%PDF'
 # 骨架里每个元素都能用的 kind（§2.1 封闭枚举）。默认给 paragraph——AI 按实际内容改。
@@ -104,13 +105,8 @@ def render_pdf(path, mid, out_dir, max_pages, dpi):
 
 
 def _import_pdfplumber():
-    """import 必须依赖 → `(模块, 报错文案)`。缺了给**可执行**的提示（§1.4）。"""
-    try:
-        import pdfplumber
-        return pdfplumber, ''
-    except ImportError:
-        return None, ('缺依赖 pdfplumber：装 `python -m pip install pdfplumber`'
-                      '（或 `python -m pip install -r requirements.txt`）')
+    """import 必须依赖 → `(模块, 报错文案)`（**提示只有一处**：`deps.import_dep`，D-122）。"""
+    return deps.import_dep('pdfplumber')
 
 
 def targets(materials, only):

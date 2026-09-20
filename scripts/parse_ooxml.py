@@ -16,22 +16,19 @@ r"""parse_ooxml.py — OOXML 解析适配器（PIPELINE-SPEC §1.4）：`.docx` 
 退出码：0 = 完成（可能有跳过）；2 = **缺依赖** 或输入读不了（缺依赖报可执行的错，不静默降级）。
 """
 import argparse
-import importlib
 import io
 import json
-import re
 import sys
 import zipfile
 from pathlib import Path
 
 from pptx_text import other_text_parts, slides
+import deps
+import semantics
 
 # **函数顺序按调用方向排**（助手紧跟调用者，CLI 压尾）：自举表是**单列函数流**，一条跨十个节点的
 # 调用边会把门⑨ 的绕行读数顶上去（G12）。实测：加 `parse_pptx` 后本模块绕行 66%（超 60% 阈值），
 # 按调用方向重排后 33%——**顺序是布局的输入**，改函数位置前先跑 `dev/tools/aesthetic.py`。
-
-DEP_PKG = {'docx': 'python-docx', 'openpyxl': 'openpyxl'}
-
 
 def _docx_body(doc):
     """按**文档阅读序**产出 (kind, 对象)：段落与表格交替，顺序不丢（§2.2 第 3 条）。"""
@@ -44,15 +41,6 @@ def _docx_body(doc):
         elif tag == 'tbl':
             yield 'tbl', Table(child, doc)
 
-def _import_dep(name):
-    """import 一个必须依赖 → `(模块, 报错文案)`。缺了给**可执行**的提示（§1.4）。"""
-    try:
-        return importlib.import_module(name), ''
-    except ImportError:
-        pkg = DEP_PKG[name]
-        return None, (f'缺依赖 {pkg}：装 `python -m pip install {pkg}`'
-                      f'（或 `python -m pip install -r requirements.txt`）')
-
 def parse_docx(blob, path, mid):
     """`.docx` **字节** → `(elements, 报错文案)`。样式名判 heading / list_item（判不出就当 paragraph）。
 
@@ -60,7 +48,7 @@ def parse_docx(blob, path, mid):
     `openpyxl` 会（见 `parse_xlsx`）——两者都改成从内存读，材料叫什么名字就不影响能不能读
     （§1.2"按内容，不按扩展名"要贯彻到**读者**这一步，不能只在探测那一步）。
     """
-    docx, err = _import_dep('docx')
+    docx, err = deps.import_dep('docx')
     if err:
         return None, err
     out, seq = [], {'h': 0, 'l': 0, 'p': 0, 't': 0}
@@ -103,7 +91,7 @@ def parse_xlsx(blob, path, mid, max_rows, max_cols, sheet='', rows_span=None):
     "合法 xlsx 改名 `.et`" 会被它 `InvalidFileException` 拒绝，于是没人认领、整条链判漏认退 1。
     内容对就该读得动，名字不该决定这件事。
     """
-    openpyxl, err = _import_dep('openpyxl')
+    openpyxl, err = deps.import_dep('openpyxl')
     if err:
         return None, err
     wb = openpyxl.load_workbook(io.BytesIO(blob), read_only=True, data_only=True)
@@ -139,19 +127,8 @@ def parse_xlsx(blob, path, mid, max_rows, max_cols, sheet='', rows_span=None):
     return out, ''
 
 def _span(spec):
-    """`'40-60'` / `'7'` → `(40, 60)`；空 → `None`；**写歪/反区间要报错，不许静默按全量走**。"""
-    if not str(spec or '').strip():
-        return None
-    m = re.fullmatch(r'\s*(\d+)\s*(?:-\s*(\d+)\s*)?', str(spec))
-    if not m:
-        raise ValueError(f'范围写法不认：{spec!r}（应为 N 或 A-B，1 起）')
-    a = int(m.group(1))
-    b = int(m.group(2)) if m.group(2) else a
-    if a < 1:
-        raise ValueError(f'范围 {spec!r}：起点要 ≥1（行/张是 1 起）')
-    if b < a:
-        raise ValueError(f'范围 {spec!r}：上界小于下界')
-    return (a, b)
+    """范围语法 → `(起, 止)`；**语法与校验只有一处**（`semantics.parse_span`，D-122）。"""
+    return semantics.parse_span(spec, '范围', '行/张')
 
 
 def parse_pptx(blob, path, mid, max_slides, slides_span=None):

@@ -22,6 +22,7 @@ from flowtable_layout import (parse_lane_order, auto_layout,
                               reuse_hint, merge_parallel_branches)
 from semantics import findings_receipt
 from flowtable import BLANK
+import deps
 
 try:
     import yaml
@@ -73,7 +74,7 @@ def _load_flowtable(p):
         print(f'✗ 找不到流程表文件: {p}')
         return None
     if yaml is None:
-        print('✗ 缺少依赖 PyYAML：pip install pyyaml')
+        print(f'✗ 缺少依赖 PyYAML：{deps.hint("yaml")}')
         return None
     # utf-8-sig：带 BOM 的流程表按裸 utf-8 读会让标题行带上 \ufeff、元信息匹配失效
     title, tbl_meta, rows = parse_table(p.read_text(encoding='utf-8-sig'))

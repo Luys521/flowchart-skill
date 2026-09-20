@@ -34,7 +34,8 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ `'pages=40-60'` → `('pages', 40, 60)`；`'sheet=清单'` → `('she… · L65 · 函数
+  desc: ★ `'pages=40-60'` → `('pages', 40, 60)`；`'sheet=清单'` → `('she… · L66 · 函数
+    · ⇢ 依赖 semantics.parse_span
 - id: '03'
   name: in_range
   lines:
@@ -46,7 +47,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 这条落在任一范围里吗（`ranges` 为空 = 不筛）。`ordinal` 是该材料内第几条（1 起）。 · L88 · 函数
+  desc: ★ 这条落在任一范围里吗（`ranges` 为空 = 不筛）。`ordinal` 是该材料内第几条（1 起）。 · L89 · 函数
 - id: '04'
   name: matches
   lines:
@@ -58,7 +59,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 材料号与关键词两关（都为空 = 不筛）。可搜面来自公共层（与 `parse.py --grep` 同一句）。 · L103 · 函数 · ⇢ 依赖
+  desc: ★ 材料号与关键词两关（都为空 = 不筛）。可搜面来自公共层（与 `parse.py --grep` 同一句）。 · L104 · 函数 · ⇢ 依赖
     textquality.element_haystack
 - id: '05'
   name: loc_text
@@ -71,7 +72,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ `location` → 一句人能读的位置（页 / 子表!单元格 / 图内坐标 / 实在没有就报"没有出处"）。 · L110 · 函数
+  desc: ★ `location` → 一句人能读的位置（页 / 子表!单元格 / 图内坐标 / 实在没有就报"没有出处"）。 · L111 · 函数
 - id: '06'
   name: excerpt
   lines:
@@ -83,7 +84,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 一条证据的**短摘录**：有正文用正文；表格给"行×列 + 头一行"；都没有就用 id（不装空）。 · L123 · 函数
+  desc: ★ 一条证据的**短摘录**：有正文用正文；表格给"行×列 + 头一行"；都没有就用 id（不装空）。 · L124 · 函数
 - id: '07'
   name: select
   lines:
@@ -95,7 +96,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→03｜2→04
-  desc: ★ 账本元素 → `(这一批的行, 命中总数)`。顺序 = 账本原序（阅读序），**同输入同输出**。 · L146 · 函数 · 分支：1→in_range
+  desc: ★ 账本元素 → `(这一批的行, 命中总数)`。顺序 = 账本原序（阅读序），**同输入同输出**。 · L147 · 函数 · 分支：1→in_range
     2→matches
 - id: 08
   name: render
@@ -108,7 +109,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→05｜2→06
-  desc: ★ 这一批（markdown）+ **游标行**——AI 靠它决定"要不要再要一口"，而不是一次把全部灌进去。 · L157 · 函数 · 分支：1→loc_text
+  desc: ★ 这一批（markdown）+ **游标行**——AI 靠它决定"要不要再要一口"，而不是一次把全部灌进去。 · L158 · 函数 · 分支：1→loc_text
     2→excerpt
 - id: 09
   name: load_defaults
@@ -121,7 +122,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 默认值 = 内置 + `dictionary.yaml` 的 `query:` 段（**读取口径只有一处**：`thr… · L172 · 函数
+  desc: ★ 默认值 = 内置 + `dictionary.yaml` 的 `query:` 段（**读取口径只有一处**：`thr… · L173 · 函数
     · ⇢ 依赖 thresholds.load
 - id: '10'
   name: main
@@ -134,7 +135,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→05｜3→06｜4→07｜5→08｜6→09
-  desc: ★ 命令行入口：读账本 → 解析范围 → 取一批 → 打印（或 `--json`）。 · L180 · 函数 · 分支：1→parse_range
+  desc: ★ 命令行入口：读账本 → 解析范围 → 取一批 → 打印（或 `--json`）。 · L181 · 函数 · 分支：1→parse_range
     2→loc_text 3→excerpt 4→select 5→render 6→load_defaults · ⇢ 依赖 capability.compare、capability.read_json、capability.warn
 - id: '11'
   name: 结束

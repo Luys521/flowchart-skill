@@ -19,29 +19,18 @@ r"""parse_pdf.py — PDF **文本层**解析适配器（PIPELINE-SPEC §1.4）�
 退出码：0 = 完成（可能有跳过）；2 = **缺依赖** 或输入读不了。
 """
 import argparse
-import importlib
 import json
-import re
 import sys
 from pathlib import Path
+import deps
 import thresholds
+import semantics
 
-
-DEP_PKG = {'pdfplumber': 'pdfplumber'}
 
 # T3（扫描件）在**这条自包含路径上**读不动：自包含侧没有 OCR（可选依赖未装时），宿主多模态是加速器。
 # 提示要可执行（§1.4）：装 OCR，或由会看图的 AI / 人补证据，或让它不参与。
 NO_OCR = ('扫描件（T3）需视觉 / OCR：自包含侧未装 OCR（pytesseract / paddleocr），'
           '宿主多模态不可用时请装 OCR，或人工核对后让它不参与')
-
-
-def _import_dep(name):
-    """import 一个必须依赖 → `(模块, 报错文案)`（缺了给可执行的提示）。"""
-    try:
-        return importlib.import_module(name), ''
-    except ImportError:
-        pkg = DEP_PKG[name]
-        return None, f'缺依赖 {pkg}：装 `python -m pip install {pkg}`（或 `pip install -r requirements.txt`）'
 
 
 def _read_json(path):
@@ -55,19 +44,8 @@ def _write_notes(notes, path):
 
 
 def _page_span(spec):
-    """`'40-60'` / `'7'` → `(40, 60)`；空 → `None`；**写歪/反区间要报错，不许静默按全量走**。"""
-    if not str(spec or '').strip():
-        return None
-    m = re.fullmatch(r'\s*(\d+)\s*(?:-\s*(\d+)\s*)?', str(spec))
-    if not m:
-        raise ValueError(f'--pages 写法不认：{spec!r}（应为 N 或 A-B，1 起）')
-    a = int(m.group(1))
-    b = int(m.group(2)) if m.group(2) else a
-    if a < 1:
-        raise ValueError(f'--pages {spec!r}：页码是 1 起')
-    if b < a:
-        raise ValueError(f'--pages {spec!r}：上界小于下界')
-    return (a, b)
+    """范围语法 → `(起, 止)`；**语法与校验只有一处**（`semantics.parse_span`，D-122）。"""
+    return semantics.parse_span(spec, '--pages', '页码')
 
 
 DEFAULT_TEXT_LAYER = {'min_pages': 4, 'max_elements_per_page': 1.2, 'min_chars_per_page': 300}
@@ -109,7 +87,7 @@ def parse_pdf(path, mid, max_pages, max_chars, pages=None):
         （消费方扫任意一条就知道这份被降级过）；
       - **元素级**（该页正文超字数被截断）：只挂到**那一条**上 — 挂到别的页上就是假记账。
     """
-    pdfplumber, err = _import_dep('pdfplumber')
+    pdfplumber, err = deps.import_dep('pdfplumber')
     if err:
         return None, '', err
     out, shared, cut_pages = [], [], 0

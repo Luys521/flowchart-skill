@@ -50,6 +50,7 @@ from pathlib import Path
 from textquality import element_haystack
 import capability
 import thresholds
+import semantics
 
 # 默认值 = "人给的圆整默认"，`dictionary.yaml` 的 `query:` 段按名覆盖（数值只有一个家，§1.2）。
 DEFAULTS = {
@@ -75,13 +76,13 @@ def parse_range(spec):
         if not val:
             raise ValueError('sheet= 后面要给子表名')
         return kind, val, val
-    m2 = re.fullmatch(r'(\d+)(?:-(\d+))?', val)
-    if not m2:
-        raise ValueError(f'{kind}= 后面应为 N 或 A-B（1 起，闭区间），实际 {val!r}')
-    a = int(m2.group(1))
-    b = int(m2.group(2)) if m2.group(2) else a
-    if b < a:
-        raise ValueError(f'{kind}={a}-{b}：上界小于下界')
+    # 数值范围那一半**语法与校验只有一处**（`semantics.parse_span`，D-122）：
+    # 连"起点 ≥1"与"上界 ≥ 下界"这两条都在那儿。文案仍带上参数名，方便对上自己敲的那个。
+    try:
+        a, b = semantics.parse_span(val, f'{kind}=', {'pages': '页码', 'lines': '条数'}.get(kind, '行号'))
+    except ValueError as e:
+        raise ValueError(f'{kind}= 后面应为 N 或 A-B（1 起，闭区间），实际 {val!r}' if '写法不认' in str(e)
+                         else str(e))
     return kind, a, b
 
 

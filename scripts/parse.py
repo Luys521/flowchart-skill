@@ -29,7 +29,6 @@ r"""parse.py — 解析分派器（**编排层**；PIPELINE-SPEC §1.4）：材�
 """
 import argparse
 import json
-import re
 import subprocess
 import sys
 import tempfile
@@ -38,6 +37,7 @@ from pathlib import Path
 from textquality import element_haystack, load_thresholds, readout, scar, verdict
 import artifact
 import probe
+import semantics
 
 SCRIPTS = Path(__file__).resolve().parent
 
@@ -91,23 +91,8 @@ def _opt(base, pairs):
 
 
 def _span(spec):
-    """`'40-60'` / `'7'` → `(40, 60)` / `(7, 7)`；空 → `None`；**写歪/反区间要报错，不许静默按全量走**。
-
-    "歪了就按全量走"本身就是猜（把"我要第 3 条"执行成"全都要"），而且会让下游以为收窄生效了。
-    与 `query.py` 的同一句声明保持一致：那边是抛错退 2，这边也退 2（审计实测两处曾相反）。
-    """
-    if not str(spec or '').strip():
-        return None
-    m = re.fullmatch(r'\s*(\d+)\s*(?:-\s*(\d+)\s*)?', str(spec))
-    if not m:
-        raise ValueError(f'范围写法不认：{spec!r}（应为 N 或 A-B，1 起，闭区间）')
-    a = int(m.group(1))
-    b = int(m.group(2)) if m.group(2) else a
-    if a < 1:
-        raise ValueError(f'范围 {spec!r}：起点要 ≥1（页码/条数是 1 起）')
-    if b < a:
-        raise ValueError(f'范围 {spec!r}：上界小于下界')
-    return (a, b)
+    """范围语法 → `(起, 止)`；**语法与校验只有一处**（`semantics.parse_span`，D-122）。"""
+    return semantics.parse_span(spec, '范围', '条数')
 
 
 def narrow_materials(materials, only):

@@ -34,7 +34,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →16
-  desc: ★ 流程表节点 → DSL 节点。row/col 优先取布局提示（手调值），语义字段一律来自流程表。 · L32 · 函数
+  desc: ★ 流程表节点 → DSL 节点。row/col 优先取布局提示（手调值），语义字段一律来自流程表。 · L33 · 函数
 - id: '03'
   name: _parse_args
   lines:
@@ -46,7 +46,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →16
-  desc: ★ 解析 table_to_dsl 的命令行参数。 · L52 · 函数
+  desc: ★ 解析 table_to_dsl 的命令行参数。 · L53 · 函数
 - id: '04'
   name: _load_flowtable
   lines:
@@ -58,7 +58,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →16
-  desc: ★ 校验流程表存在与 PyYAML 可用，解析出 (标题, 元信息, 行)；任一缺失返回 None。 · L70 · 函数 · ⇢ 依赖 flowtable.parse_table
+  desc: ★ 校验流程表存在与 PyYAML 可用，解析出 (标题, 元信息, 行)；任一缺失返回 None。 · L71 · 函数 · ⇢ 依赖 deps.hint、flowtable.parse_table
 - id: '05'
   name: _run_checks
   lines:
@@ -70,7 +70,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →16
-  desc: ★ 跑 H1–H9 结构校验与配色解析，返回 (模式, 列序, 配色, 节点, 边, 错误集, 槽位备注)。 · L86 · 函数 · ⇢ 依赖 flowtable_check.check_evidence、flowtable_check.check_header、flowtable_check.run_checks、flowtable_colors.resolve_colors、flowtable_layout.parse_lane_order
+  desc: ★ 跑 H1–H9 结构校验与配色解析，返回 (模式, 列序, 配色, 节点, 边, 错误集, 槽位备注)。 · L87 · 函数 · ⇢ 依赖 flowtable_check.check_evidence、flowtable_check.check_header、flowtable_check.run_checks、flowtable_colors.resolve_colors、flowtable_layout.parse_lane_order
 - id: '06'
   name: _report_checks
   lines:
@@ -82,7 +82,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →16
-  desc: ★ 打印校验结果（--json 走结构化，否则走人类可读文本）。 · L106 · 函数 · ⇢ 依赖 semantics.findings_receipt
+  desc: ★ 打印校验结果（--json 走结构化，否则走人类可读文本）。 · L107 · 函数 · ⇢ 依赖 semantics.findings_receipt
 - id: '07'
   name: _enforce_showcase
   lines:
@@ -94,7 +94,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →16
-  desc: ★ showcase 档要求零软提示；有软提示则阻断并返回 1。 · L142 · 函数
+  desc: ★ showcase 档要求零软提示；有软提示则阻断并返回 1。 · L143 · 函数
 - id: 08
   name: _load_hint
   lines:
@@ -106,7 +106,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →16
-  desc: ★ 读布局提示 yaml（泳道布局不借提示）；文件不存在时告警并返回 None。 · L151 · 函数
+  desc: ★ 读布局提示 yaml（泳道布局不借提示）；文件不存在时告警并返回 None。 · L152 · 函数
 - id: 09
   name: _assemble_dsl
   lines:
@@ -118,7 +118,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →02
-  desc: ★ 按布局提示或泳道/流程分派组装 DSL，返回 dsl 字典。 · L163 · 函数 · ⇢ 依赖 flowtable_colors.subject_map、flowtable_layout.auto_layout、flowtable_layout.merge_parallel_branches、flowtable_layout.reuse_hint、geometry.snap
+  desc: ★ 按布局提示或泳道/流程分派组装 DSL，返回 dsl 字典。 · L164 · 函数 · ⇢ 依赖 flowtable_colors.subject_map、flowtable_layout.auto_layout、flowtable_layout.merge_parallel_branches、flowtable_layout.reuse_hint、geometry.snap
 - id: '10'
   name: _emit_dsl
   lines:
@@ -130,7 +130,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →16
-  desc: ★ 落盘 DSL 并打印下一步提示，返回 DSL 路径。 · L199 · 函数 · ⇢ 依赖 artifact.artifact_stem
+  desc: ★ 落盘 DSL 并打印下一步提示，返回 DSL 路径。 · L200 · 函数 · ⇢ 依赖 artifact.artifact_stem
 - id: '11'
   name: _emit_manifest
   lines:
@@ -142,7 +142,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →16
-  desc: ★ 与 DSL 同刻产出渲染契约（供下游渲染后反查产物，见 DECISIONS.md D-11）。 · L212 · 函数 · ⇢ 依赖 manifest.build、manifest.dsl_fingerprint、manifest.manifest_path_for、manifest.source_fingerprint、manifest.summary
+  desc: ★ 与 DSL 同刻产出渲染契约（供下游渲染后反查产物，见 DECISIONS.md D-11）。 · L213 · 函数 · ⇢ 依赖 manifest.build、manifest.dsl_fingerprint、manifest.manifest_path_for、manifest.source_fingerprint、manifest.summary
 - id: '12'
   name: _run_fresh
   lines:
@@ -154,7 +154,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →16
-  desc: ★ `--fresh`：只答一句"这张表自上次渲染后有没有被直改过"，不校验、不产出。 · L228 · 函数 · ⇢ 依赖 artifact.artifact_stem、manifest.manifest_path_for、manifest.source_fingerprint、manifest.source_stale
+  desc: ★ `--fresh`：只答一句"这张表自上次渲染后有没有被直改过"，不校验、不产出。 · L229 · 函数 · ⇢ 依赖 artifact.artifact_stem、manifest.manifest_path_for、manifest.source_fingerprint、manifest.source_stale
 - id: '13'
   name: _center_canvas
   lines:
@@ -166,7 +166,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →16
-  desc: ★ 流程布局：把画布**贴合内容**、并让内容横向居中（泳道布局不动——它的宽度本来就由列宽算出）。 · L252 · 函数 · ⇢ 依赖 engine.Engine.label_box、engine.Engine.legend_width、engine.Engine.path、engine.Engine.rect、engine.load、geometry.ceil_to、geometry.snap
+  desc: ★ 流程布局：把画布**贴合内容**、并让内容横向居中（泳道布局不动——它的宽度本来就由列宽算出）。 · L253 · 函数 · ⇢ 依赖 engine.Engine.label_box、engine.Engine.legend_width、engine.Engine.path、engine.Engine.rect、engine.load、geometry.ceil_to、geometry.snap
 - id: '14'
   name: _write_dsl
   lines:
@@ -178,7 +178,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→08｜2→09｜3→10｜4→11｜5→13
-  desc: ★ --write 路径：读布局提示 → 组装 DSL → 量一次并居中画布 → 落盘 DSL 与渲染契约；返回退出码。 · L295 · 函数 ·
+  desc: ★ --write 路径：读布局提示 → 组装 DSL → 量一次并居中画布 → 落盘 DSL 与渲染契约；返回退出码。 · L296 · 函数 ·
     分支：1→_load_hint 2→_assemble_dsl 3→_emit_dsl 4→_emit_manifest 5→_center_canvas
 - id: '15'
   name: main
@@ -191,7 +191,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→03｜2→04｜3→05｜4→06｜5→07｜6→12｜7→14
-  desc: L305 · 函数 · 分支：1→_parse_args 2→_load_flowtable 3→_run_checks 4→_report_checks
+  desc: L306 · 函数 · 分支：1→_parse_args 2→_load_flowtable 3→_run_checks 4→_report_checks
     5→_enforce_showcase 6→_run_fresh 7→_write_dsl
 - id: '16'
   name: 结束

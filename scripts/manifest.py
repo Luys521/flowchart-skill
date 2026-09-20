@@ -14,6 +14,7 @@ from collections import Counter
 from pathlib import Path
 
 from semantics import is_pending
+import deps
 
 try:
     import yaml
@@ -444,7 +445,7 @@ def _run_build(a):
     # build 分支是 manifest 唯一要解析 yaml 的入口：裸 ImportError 会把"缺依赖"报成
     # 一段 traceback，看的人只会以为脚本坏了。说清要装什么，他才能自己动手。
     if yaml is None:
-        print('✗ 需要 PyYAML：pip install pyyaml')
+        print(f'✗ 需要 PyYAML：{deps.hint("yaml")}')
         return 1
     dsl = yaml.safe_load(Path(a.yaml_path).read_text(encoding='utf-8'))
     mf = build(dsl, source=Path(a.yaml_path).name, dsl_sha=dsl_fingerprint(a.yaml_path))

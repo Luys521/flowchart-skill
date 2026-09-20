@@ -33,7 +33,6 @@ r"""recon.py — 侦查器（PIPELINE-SPEC §1.5）：难度排序 + **结构缩
 """
 import argparse
 import hashlib
-import importlib
 import io
 import json
 import re
@@ -44,8 +43,10 @@ import cells
 from pptx_text import other_text_parts_in_file, scan_cost, slides_in_file
 import artifact
 import thresholds
+import deps
 
-DEP_PKG = {'docx': 'python-docx', 'openpyxl': 'openpyxl'}
+
+
 
 # 难度序（§1.1）：T1 可直读 < T2 需转换器 < T3 需视觉；"不参与"排最后。
 # 一张表定死**标签 → 序号**，难度标签与排序键都从它派生（原先分三处各写一份，漏登记就静默垫底）。
@@ -76,14 +77,6 @@ DEFAULTS = {                     # 兜底值；`dictionary.yaml` 的 `recon:` �
 }
 
 
-def _import_dep(name):
-    """import 一个必须依赖 → `(模块, 报错文案)`（缺了给可执行的提示）。"""
-    try:
-        return importlib.import_module(name), ''
-    except ImportError:
-        pkg = DEP_PKG[name]
-        return None, f'缺依赖 {pkg}：装 `python -m pip install {pkg}`（或 `pip install -r requirements.txt`）'
-
 def _docx_scale(path, th):
     """`.docx` → `(规模描述, 大纲行, 大纲总条数, 结构说明)`。**只读结构，不物化全部文字**。
 
@@ -92,7 +85,7 @@ def _docx_scale(path, th):
     不许把截断后的条数写成"共 N"（那等于谎报结构数字，§2.3 同一纪律）。
     **收路径而不是字节**：`python-docx` 只解它要的那几个部件，图多不等于贵（与 `_pptx_scale` 同一个理由）。
     """
-    docx, err = _import_dep('docx')
+    docx, err = deps.import_dep('docx')
     if err:
         return '', [], 0, err
     doc = docx.Document(str(path))
@@ -116,7 +109,7 @@ def _xlsx_scale(blob, th):
     **无 `<dimension>` 的工作表要能活**（审计 R2：write-only / 第三方导出常没有这个标签，
     原实现直接抛 `Worksheet is unsized` 把整批带崩）：抛了就记"尺寸不可知"，**不让它决定分档**。
     """
-    openpyxl, err = _import_dep('openpyxl')
+    openpyxl, err = deps.import_dep('openpyxl')
     if err:
         return '', [], 0, err
     wb = openpyxl.load_workbook(io.BytesIO(blob), read_only=True, data_only=True)
@@ -206,7 +199,7 @@ def _image_scale(path, th):
     try:
         from PIL import Image
     except ImportError:
-        return '', [], 0, '缺 Pillow（读不出图片尺寸）：`python -m pip install Pillow`'
+        return '', [], 0, f'缺 Pillow（读不出图片尺寸）：{deps.hint("PIL")}'
     try:
         with Image.open(str(path)) as im:
             return f'{im.width}×{im.height} 像素 · {im.format or "?"}', [], 0, ''

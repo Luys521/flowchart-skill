@@ -35,7 +35,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →31
-  desc: ★ 契约文件与 DSL 同名同目录（flow.yaml → flow.manifest.json）。 · L30 · 函数
+  desc: ★ 契约文件与 DSL 同名同目录（flow.yaml → flow.manifest.json）。 · L31 · 函数
 - id: '03'
   name: dsl_fingerprint
   lines:
@@ -47,7 +47,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →31
-  desc: ★ DSL 文件指纹，用来判断"契约是否已过期"。 · L39 · 函数
+  desc: ★ DSL 文件指纹，用来判断"契约是否已过期"。 · L40 · 函数
 - id: '04'
   name: source_fingerprint
   lines:
@@ -59,7 +59,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →31
-  desc: ★ 《流程表》指纹：答"事实源自上次渲染后动过没有"。 · L47 · 函数
+  desc: ★ 《流程表》指纹：答"事实源自上次渲染后动过没有"。 · L48 · 函数
 - id: '05'
   name: _manifest_counts
   lines:
@@ -71,7 +71,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →31
-  desc: ★ 契约计数：节点 / 边 / 按类型 / 带标签边 / 回路 / 待定节点。 · L57 · 函数 · ⇢ 依赖 semantics.is_pending
+  desc: ★ 契约计数：节点 / 边 / 按类型 / 带标签边 / 回路 / 待定节点。 · L58 · 函数 · ⇢ 依赖 semantics.is_pending
 - id: '06'
   name: build
   lines:
@@ -83,7 +83,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →05
-  desc: ★ DSL → 契约清单。字段都是**可逐项比对**的，不是只给个总数。 · L71 · 函数
+  desc: ★ DSL → 契约清单。字段都是**可逐项比对**的，不是只给个总数。 · L72 · 函数
 - id: '07'
   name: _main_slice
   lines:
@@ -95,7 +95,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →31
-  desc: ★ 多视图单文件（D-52）时只取**主视图**那一段再反解。 · L88 · 函数
+  desc: ★ 多视图单文件（D-52）时只取**主视图**那一段再反解。 · L89 · 函数
 - id: 08
   name: read_html
   lines:
@@ -107,7 +107,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →07
-  desc: ★ 从 flow.html 反解 (节点 id 列表, 边列表)（返回列表而非集合，否则平行边的重数被吞）。 · L103 · 函数
+  desc: ★ 从 flow.html 反解 (节点 id 列表, 边列表)（返回列表而非集合，否则平行边的重数被吞）。 · L104 · 函数
 - id: 09
   name: _default_shapes
   lines:
@@ -119,7 +119,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →31
-  desc: ★ 随包字典里的 `shapes`（type → {shape, …}）——形状反查的唯一依据。 · L119 · 函数
+  desc: ★ 随包字典里的 `shapes`（type → {shape, …}）——形状反查的唯一依据。 · L120 · 函数
 - id: '10'
   name: _compare_shapes
   lines:
@@ -131,7 +131,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→09｜2→13
-  desc: ★ 契约里的**类型数量** ←→ 产物里真正画出来的**形状数量**（形状从产物读，见 D-32）。 · L132 · 函数 · 分支：1→_default_shapes
+  desc: ★ 契约里的**类型数量** ←→ 产物里真正画出来的**形状数量**（形状从产物读，见 D-32）。 · L133 · 函数 · 分支：1→_default_shapes
     2→_html_nodes
 - id: '11'
   name: read_drawio
@@ -144,7 +144,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →31
-  desc: ★ 从 flow.drawio 反解 (节点 id 列表, 边列表)。复用 xml_reader——它已经会跳过标题/图例… · L162 · 函数
+  desc: ★ 从 flow.drawio 反解 (节点 id 列表, 边列表)。复用 xml_reader——它已经会跳过标题/图例… · L163 · 函数
     · ⇢ 依赖 xml_reader.read
 - id: '12'
   name: _html_shape
@@ -157,7 +157,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →31
-  desc: ★ 节点组内的形状元素 → (w, h, shape)。形状**从产物读**，不从字典反查类型再映射。 · L172 · 函数
+  desc: ★ 节点组内的形状元素 → (w, h, shape)。形状**从产物读**，不从字典反查类型再映射。 · L173 · 函数
 - id: '13'
   name: _html_nodes
   lines:
@@ -169,7 +169,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →12
-  desc: '★ 主视图的节点组 → {id: {rect, shape}}（属性顺序与个数都不假定）。 · L194 · 函数'
+  desc: '★ 主视图的节点组 → {id: {rect, shape}}（属性顺序与个数都不假定）。 · L195 · 函数'
 - id: '14'
   name: _html_edges
   lines:
@@ -181,7 +181,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →31
-  desc: ★ 主视图的边 path → [{from, to, pts}]。 · L214 · 函数
+  desc: ★ 主视图的边 path → [{from, to, pts}]。 · L215 · 函数
 - id: '15'
   name: _html_canvas_bands
   lines:
@@ -193,7 +193,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →31
-  desc: ★ 画布尺寸（viewBox，缺失则按节点外包盒）+ 里程碑带宽 + 泳道底色外包盒。 · L223 · 函数
+  desc: ★ 画布尺寸（viewBox，缺失则按节点外包盒）+ 里程碑带宽 + 泳道底色外包盒。 · L224 · 函数
 - id: '16'
   name: geometry_from_html
   lines:
@@ -205,7 +205,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→07｜2→13｜3→14｜4→15
-  desc: ★ 从 flow.html 反解几何：节点组（`translate` 中心 + 形状局部尺寸）+ 边的 `d` 折线。 · L244 · 函数 ·
+  desc: ★ 从 flow.html 反解几何：节点组（`translate` 中心 + 形状局部尺寸）+ 边的 `d` 折线。 · L245 · 函数 ·
     分支：1→_main_slice 2→_html_nodes 3→_html_edges 4→_html_canvas_bands
 - id: '17'
   name: read_svg
@@ -218,7 +218,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →08
-  desc: ★ 从 `<流程名>-flow.svg` 反解 (节点 id 列表, 边列表)。 · L257 · 函数
+  desc: ★ 从 `<流程名>-flow.svg` 反解 (节点 id 列表, 边列表)。 · L258 · 函数
 - id: '18'
   name: geometry_from_svg
   lines:
@@ -230,7 +230,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →16
-  desc: ★ 从 `<流程名>-flow.svg` 反解几何。与 `geometry_from_html` 同源（元素约定相同）。 · L267 · 函数
+  desc: ★ 从 `<流程名>-flow.svg` 反解几何。与 `geometry_from_html` 同源（元素约定相同）。 · L268 · 函数
 - id: '19'
   name: geometry_from_drawio
   lines:
@@ -242,7 +242,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →31
-  desc: ★ 从 `.drawio` 反解几何。与 `geometry_from_html` 并列——两者都是"产物 → 几何表"的… · L272 · 函数
+  desc: ★ 从 `.drawio` 反解几何。与 `geometry_from_html` 并列——两者都是"产物 → 几何表"的… · L273 · 函数
     · ⇢ 依赖 xml_reader.geometry、xml_reader.read
 - id: '20'
   name: artifact_geometry
@@ -255,7 +255,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→16｜2→19
-  desc: ★ 产物路径 → 几何表（按扩展名分流）。几何门禁的唯一入口。 · L282 · 函数 · 分支：1→geometry_from_html 2→geometry_from_drawio
+  desc: ★ 产物路径 → 几何表（按扩展名分流）。几何门禁的唯一入口。 · L283 · 函数 · 分支：1→geometry_from_html 2→geometry_from_drawio
 - id: '21'
   name: _external_refs
   lines:
@@ -267,7 +267,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →31
-  desc: ★ 产物自包含硬检查（D-55，借鉴 byai 的 HAS_EXTERNAL）：单文件交付（D-52）承诺离线可开， · L303 · 函数
+  desc: ★ 产物自包含硬检查（D-55，借鉴 byai 的 HAS_EXTERNAL）：单文件交付（D-52）承诺离线可开， · L304 · 函数
 - id: '22'
   name: _stale_manifest_error
   lines:
@@ -279,7 +279,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →03
-  desc: ★ 契约新鲜度：给了 yaml_path 就先验指纹，过期返回错误列表（否则空列表）。 · L320 · 函数
+  desc: ★ 契约新鲜度：给了 yaml_path 就先验指纹，过期返回错误列表（否则空列表）。 · L321 · 函数
 - id: '23'
   name: source_stale
   lines:
@@ -291,7 +291,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →04
-  desc: ★ 《流程表》自上次渲染后是否被直改过 → `(state, 说明)`。 · L331 · 函数
+  desc: ★ 《流程表》自上次渲染后是否被直改过 → `(state, 说明)`。 · L332 · 函数
 - id: '24'
   name: _compare_ids_edges
   lines:
@@ -303,7 +303,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →31
-  desc: ★ 一份产物的节点/边集合 vs 契约 → 错误列表。 · L353 · 函数
+  desc: ★ 一份产物的节点/边集合 vs 契约 → 错误列表。 · L354 · 函数
 - id: '25'
   name: check
   lines:
@@ -315,7 +315,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→07｜2→08｜3→10｜4→11｜5→21｜6→22｜7→24
-  desc: ★ 契约 vs 产物 → 错误列表（空 = 逐项一致）。 · L373 · 函数 · 分支：1→_main_slice 2→read_html 3→_compare_shapes
+  desc: ★ 契约 vs 产物 → 错误列表（空 = 逐项一致）。 · L374 · 函数 · 分支：1→_main_slice 2→read_html 3→_compare_shapes
     4→read_drawio 5→_external_refs 6→_stale_manifest_error 7→_compare_ids_edges
 - id: '26'
   name: summary
@@ -328,7 +328,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →31
-  desc: ★ 一行人可读的统计，供 build 打印。 · L410 · 函数
+  desc: ★ 一行人可读的统计，供 build 打印。 · L411 · 函数
 - id: '27'
   name: _manifest_parser
   lines:
@@ -340,7 +340,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →31
-  desc: ★ manifest 的 argparse 定义（build / check 两个子命令）。 · L427 · 函数
+  desc: ★ manifest 的 argparse 定义（build / check 两个子命令）。 · L428 · 函数
 - id: '28'
   name: _run_build
   lines:
@@ -352,8 +352,8 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→03｜3→06｜4→26
-  desc: ★ build 子命令：DSL → manifest.json。 · L442 · 函数 · 分支：1→manifest_path_for 2→dsl_fingerprint
-    3→build 4→summary
+  desc: ★ build 子命令：DSL → manifest.json。 · L443 · 函数 · 分支：1→manifest_path_for 2→dsl_fingerprint
+    3→build 4→summary · ⇢ 依赖 deps.hint
 - id: '29'
   name: _run_check
   lines:
@@ -365,7 +365,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→25｜2→26
-  desc: ★ check 子命令：manifest.json vs 产物。 · L457 · 函数 · 分支：1→check 2→summary
+  desc: ★ check 子命令：manifest.json vs 产物。 · L458 · 函数 · 分支：1→check 2→summary
 - id: '30'
   name: main
   lines:
@@ -377,7 +377,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→27｜2→28｜3→29
-  desc: L471 · 函数 · 分支：1→_manifest_parser 2→_run_build 3→_run_check
+  desc: L472 · 函数 · 分支：1→_manifest_parser 2→_run_build 3→_run_check
 - id: '31'
   name: 结束
   lines:

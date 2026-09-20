@@ -123,6 +123,34 @@ def split_branches(s):
     return [p.strip() for p in re.split(pat, s or '') if p.strip()]
 
 
+def parse_span(spec, what='范围', unit='条数'):
+    """`'40-60'` / `'7'` → `(40, 60)` / `(7, 7)`；空 → `None`；**写歪或反区间抛 `ValueError`**。
+
+    **这段语法原先在四处各写一遍**（`parse._span` / `parse_ooxml._span` / `parse_pdf._page_span` /
+    `query.parse_range` 的数值分支，D-122），而 `parse._span` 的文档串里还留着事故记录：
+    "与 `query.py` 的同一句声明保持一致……（**审计实测两处曾相反**）"。口径靠人同步，
+    结局就是那样——所以语法与它的两条校验（起点 ≥1、上界 ≥ 下界）只有这一份。
+
+    **写歪了不许猜**：范围写歪还照跑，等于把"我要第 3 条"执行成"全都要"，而下游以为收窄生效了
+    （与 `query.py` 的同一句声明一致：**两边都抛错、都由调用方退 2**）。
+
+    `what` / `unit` 只影响**报错文案**（`--pages 40-60：上界小于下界` / `页码是 1 起`）——
+    文案要能让人对上自己敲的那个参数，所以调用方把参数名传进来。
+    """
+    if not str(spec or '').strip():
+        return None
+    m = re.fullmatch(r'\s*(\d+)\s*(?:-\s*(\d+)\s*)?', str(spec))
+    if not m:
+        raise ValueError(f'{what}写法不认：{spec!r}（应为 N 或 A-B，1 起，闭区间）')
+    a = int(m.group(1))
+    b = int(m.group(2)) if m.group(2) else a
+    if a < 1:
+        raise ValueError(f'{what} {spec!r}：起点要 ≥1（{unit}是 1 起）')
+    if b < a:
+        raise ValueError(f'{what} {spec!r}：上界小于下界')
+    return (a, b)
+
+
 def has_ambiguous_sep(s):
     """「下个节点」列里，把分号当成了分隔符用（`通过→05；不通过→06`）。
 
