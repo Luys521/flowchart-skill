@@ -322,7 +322,7 @@ python scripts/drift.py build "output/pipeline-self/材料到出图/flowtable.md
 python scripts/drift.py check output/pipeline-self/drift.md --flowtable "output/pipeline-self/材料到出图/flowtable.md" --ledger output/pipeline-self/evidence.json --recon output/pipeline-self/recon.md --intake output/pipeline-self/intake.md
 ```
 
-**结果**：材料 **8** · 证据 **1627**（`evidence.json` 1.19 MB）· 计划 **1 条流程**（`F01 材料到出图`，材料集 `M01`/`M03`/`M05`/`M06`，排除 4 条）· 落表 **24 节点 / 33 边** · `--check` **H1—H10 一次过**（**H10 真核了 29 处引用**，全过）· 三份产物 + 层级索引 + sha256 回执 · 漂移 **0** · 缺口 7 条全部有结论 ⇒ `drift check` **收敛**。全程走正式接口，**没有一次性脚本**（第一轮那三个 `_fill_*.py` 的教训）。
+**结果**：材料 **8** · 证据 **1627**（`evidence.json` 1.19 MB）· 计划 **1 条流程**（`F01 材料到出图`，材料集 `M01`/`M03`/`M05`/`M06`，排除 4 条）· 落表 **24 节点 / 33 边** · `--check` **H1—H10 一次过**（**H10 真核了 43 处引用 / 36 个唯一 id**，全过）· 三份产物 + 层级索引 + sha256 回执 · 漂移 **0** · 缺口 7 条全部有结论 ⇒ `drift check` **收敛**。全程走正式接口，**没有一次性脚本**（第一轮那三个 `_fill_*.py` 的教训）。
 
 **它自己的流程长这样**（24 节点；`F01` 的完整表在 `output/pipeline-self/材料到出图/flowtable.md`）：
 
