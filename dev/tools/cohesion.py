@@ -25,6 +25,7 @@ r"""cohesion.py — 内聚 / 耦合的**读数**（只报不判红）：三张�
     python dev/tools/cohesion.py --width        # 接口面宽度：谁 import 谁、每次带几个名字
     python dev/tools/cohesion.py --single       # 只被一个模块引用的公共层函数（G5 那张清单）
     python dev/tools/cohesion.py --single --limit 0   # 全打（默认 20；逐个裁决时要看全部，D-125）
+    python dev/tools/cohesion.py --cycles       # 允许边上的环（公共层互引；D-127）
 """
 import argparse
 import ast
@@ -45,6 +46,116 @@ def _public_roster():
                 and isinstance(node.targets[0], ast.Name) and node.targets[0].id == 'PUBLIC'):
             return {e.value for e in node.value.elts if isinstance(e, ast.Constant)}
     return set()
+
+
+def _rosters():
+    """`(PUBLIC, MODULE, ORCH)` 三个集合——**仍然只读 `layering.py`**（分层的唯一出处）。"""
+    src = Path(__file__).with_name('layering.py').read_text(encoding='utf-8')
+    got = {}
+    for node in ast.parse(src).body:
+        if (isinstance(node, ast.Assign) and isinstance(node.value, ast.Set)
+                and isinstance(node.targets[0], ast.Name)
+                and node.targets[0].id in ('PUBLIC', 'MODULE', 'ORCH')):
+            got[node.targets[0].id] = {e.value for e in node.value.elts
+                                       if isinstance(e, ast.Constant)}
+    return got.get('PUBLIC', set()), got.get('MODULE', set()), got.get('ORCH', set())
+
+
+def _import_edges():
+    """`{源: {目标: {被引用的名字…}}}`——**只收模块级 `import` / `from … import`**，同 `layering` 的口径。"""
+    edges = defaultdict(lambda: defaultdict(set))
+    for p in sorted(SCRIPTS.glob('*.py')):
+        for node in ast.walk(ast.parse(p.read_text(encoding='utf-8'))):
+            if isinstance(node, ast.ImportFrom) and node.module and node.module != p.stem:
+                edges[p.stem][node.module].update(a.name for a in node.names)
+            elif isinstance(node, ast.Import):
+                for a in node.names:
+                    if a.name != p.stem:
+                        edges[p.stem][a.name].add('')
+    return edges
+
+
+def cycles(edges=None, rosters=None):
+    """**允许边上的环**（Tarjan 强连通分量，只报 size ≥ 2）→ `[(层, [模块…]), …]`。
+
+    为什么它是**读数**而不是违规：`layering.py` 的规则明说"公共层可以互相引用（它是最底层，
+    彼此之间不设方向约束）"——所以 `A ↔ B` 不违反任何一条**方向**规则，`layering` 永远判它绿。
+    **但 D-123 花力气拆掉了公共层里唯一的那个环**（`xml_reader ↔ writeback`，理由是"互引的两件
+    要么本来就是一件、要么其中一件站错了层"）——**规则允许、实践当缺陷**，这种落差正是最该被
+    量出来的东西。
+
+    而它此前**根本没被量过**：D-123 那条写的"（环消失；`layering` 现算"环：无"）"里，后半句是
+    **假的**——`layering.py` 只打印边数与违规，**不查环**（`selfboot_gen._find_cycle` 查的是
+    **流程图**的环，不是模块依赖图）。那句结论是当年人工读两条边得出的。这个函数就是把
+    那句话变成**随时可现算**的读数（面③ 另有一条不变式钉住"公共层内部无环"）。
+
+    `edges` / `rosters` 可注入（默认读盘）——**"读到 0"与"读不出非 0"是两件事**：面③ 拿一张
+    造出来的环去喂它，就是为了证明这台仪器**报得出非零**（不然"环：无"只是装饰）。
+    """
+    pub, mod, orch = rosters if rosters is not None else _rosters()
+    edges = _import_edges() if edges is None else edges
+    layer = {}
+    for name in pub:
+        layer[name] = '公共层'
+    for name in mod:
+        layer[name] = '模块层'
+    for name in orch:
+        layer[name] = '编排层'
+    # 只走**合法**边（非法边是 `layering` 的活，混进来会把两件事说成一件）
+    allowed = defaultdict(set)
+    for src, tgts in edges.items():
+        ls = layer.get(src)
+        if ls is None:
+            continue
+        for dst in tgts:
+            ld = layer.get(dst)
+            if ld is None:
+                continue
+            ok = (ls == '编排层' or (ls == '公共层' and ld == '公共层')
+                  or (ls == '模块层' and ld == '公共层'))
+            if ok:
+                allowed[src].add(dst)
+
+    # Tarjan（迭代版：模块数少，但别为递归深度写一条假设）
+    index, low, on, stack, out = {}, {}, set(), [], []
+    counter = [0]
+    for root in sorted(allowed):
+        if root in index:
+            continue
+        work = [(root, iter(sorted(allowed[root])))]
+        index[root] = low[root] = counter[0]
+        counter[0] += 1
+        stack.append(root)
+        on.add(root)
+        while work:
+            v, it = work[-1]
+            for w in it:
+                if w not in index:
+                    index[w] = low[w] = counter[0]
+                    counter[0] += 1
+                    stack.append(w)
+                    on.add(w)
+                    work.append((w, iter(sorted(allowed[w]))))
+                    break
+                if w in on:
+                    low[v] = min(low[v], index[w])
+            else:
+                work.pop()
+                if work:
+                    u = work[-1][0]
+                    low[u] = min(low[u], low[v])
+                if low[v] == index[v]:
+                    comp = []
+                    while True:
+                        w = stack.pop()
+                        on.discard(w)
+                        comp.append(w)
+                        if w == v:
+                            break
+                    if len(comp) > 1:
+                        # 层标签：一个分量里通常是同一层（跨层环本身就是方向违规，归 `layering`）
+                        out.append((layer.get(sorted(comp)[0], '?'), sorted(comp)))
+    return sorted(out)
 
 
 def _functions():
@@ -168,6 +279,7 @@ def main(argv=None):
     ap.add_argument('--dups', action='store_true', help='只打跨模块近似重复')
     ap.add_argument('--width', action='store_true', help='只打接口面宽度')
     ap.add_argument('--single', action='store_true', help='只打单消费方公共函数（G5 那张）')
+    ap.add_argument('--cycles', action='store_true', help='只打允许边上的环（公共层互引等）')
     ap.add_argument('--min-stmts', type=int, default=5, help='重复检测的语句数下限（默认 5）')
     ap.add_argument('--min-sim', type=float, default=0.85, help='结构相似度下限（默认 0.85）')
     ap.add_argument('--min-lines', type=float, default=0.6, help='逐字行占比下限（默认 0.6）')
@@ -178,7 +290,7 @@ def main(argv=None):
     if not SCRIPTS.is_dir():
         print(f'⚠ 找不到 scripts/：{SCRIPTS}（这不是读数，是仪器故障）', file=sys.stderr)
         return 2
-    all_ = not (a.dups or a.width or a.single)
+    all_ = not (a.dups or a.width or a.single or a.cycles)
     cap = a.limit if a.limit > 0 else None  # 0 = 不截断
 
     if a.dups or all_:
@@ -211,6 +323,15 @@ def main(argv=None):
             print(f'   {mod}.{fn:<28} ← {who}（{ln} 行）')
         if cap is not None and len(rows) > cap:
             print(f'   …共 {len(rows)} 个（--limit 0 全打）')
+
+    if a.cycles or all_:
+        cy = cycles()
+        print(f'\n== 允许边上的环：{len(cy)} 组')
+        print('   **不是违规**（公共层本来就允许互相引用），但互引的两件要么是一件、要么站错了层')
+        if not cy:
+            print('   环：无')
+        for lyr, comp in cy[:cap]:
+            print(f'   {lyr}：' + ' ↔ '.join(comp))
     return 0
 
 

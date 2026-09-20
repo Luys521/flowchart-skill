@@ -10,18 +10,22 @@
   7 自愈：手塞离格几何 → 吸附 + 提示，且仍通过
   8 图例带：带内不得出现节点/折点（origin_y 已按带高下推，这是结构保证）
   9 门面一致：`Engine.sizes` 必须直接指向 `grid.sizes`（否则两层各拿一份尺寸，改了不同步）
+ 10 公共层内部无环：读数（`cohesion.py --cycles`）为 0 组，**且**仪器喂一张造出来的环能报出非零（D-127）
+ 11 stderr 编码：带 CLI 的模块若往 stderr 打非 ASCII，必须自己把它配成 utf-8（纯库豁免，名单打出来；D-127）
 
 （清单与 `run_face` 的 `c.section` 一一对应；增删小节时这里要跟着改。）
 """
+import ast
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _lib import BASE, EXAMPLES, HEAD, PY, SKILL, Case, md5, prod, row, run  # noqa: E402
+from _lib import BASE, EXAMPLES, HEAD, PY, SCRIPTS, SKILL, Case, md5, prod, row, run  # noqa: E402
 
 import validate                                      # noqa: E402  （_lib 已把 scripts/ 挂上 sys.path）
 from engine import load                              # noqa: E402
@@ -242,6 +246,79 @@ def run_face(tmp):
                     '自举树重造结果与基线逐字节相同（表 / yaml / manifest / 三份产物）',
                     f'不同 {len(diff)} · 少 {len(gone)} · 多 {len(extra)}：'
                     + '、'.join((diff + gone + extra)[:3]))
+
+    c.section('公共层内部无环（D-123 建立的属性；D-127 接成仪器）')
+    # 为什么要有这一节（2026-09-19，D-127）：`REPO-MAP` / `DECISIONS` D-123 都写着"公共层无环"，
+    # 而那**是一句人工结论**——`layering.py` 只打印边数与方向违规，**不查环**
+    # （`selfboot_gen._find_cycle` 查的是**流程图**的环，不是模块依赖图）；D-123 那条甚至把它
+    # 记成"`layering` 现算'环：无'"，**归因是错的**。也就是说：这句话当时谁也复算不了，
+    # 而 D-123 正是花力气拆掉那个环的提交。**一条只被人工确认过一次的性质，等于没有性质。**
+    #
+    # 两条一起判，缺一条都不算数：① 现状确实无环；② **仪器报得出非零**——只判第①条的话，
+    # 一个恒返回"无"的装饰器也能全绿（本套件已经栽过同类跟头：夹具自己搜到自己的账本、门只看 rc 不看内容）。
+    rc, out = run(os.path.join('..', 'dev', 'tools', 'cohesion.py'), '--cycles')
+    c.check(rc == 0 and '允许边上的环：0 组' in out and '环：无' in out,
+            '现状：允许边上的环 0 组（公共层互引 / 编排层互引都没有闭环）',
+            out.strip().splitlines()[-1].strip() if rc == 0 else out.strip()[-100:])
+    # ② 把一张**造出来的**环喂给同一个函数：它必须报得出来，且认出是哪一层
+    prog = ('import sys; sys.path.insert(0, "dev/tools"); import cohesion; '
+            'ro = ({"a", "b"}, set(), set()); e = {"a": {"b": {"x"}}, "b": {"a": {"y"}}}; '
+            'print(cohesion.cycles(edges=e, rosters=ro))')
+    r = subprocess.run([PY, '-c', prog], capture_output=True, text=True, encoding='utf-8',
+                       cwd=str(SKILL), timeout=60)
+    got = (r.stdout or '').strip()
+    c.check(r.returncode == 0 and got == "[('公共层', ['a', 'b'])]",
+            '仪器有效：造一个 a↔b 的环，它报得出非零（"环：无"不是装饰）',
+            got or (r.stderr or '').strip()[-100:])
+
+    c.section('stderr 的中文读得出来（D-127）')
+    # 为什么要有这一节：Windows 上**管道 / 重定向**时 stderr 默认是 GBK，而各 CLI 都只把 **stdout**
+    # 配成 utf-8（30/30 配了 stdout，只有 14 个配了 stderr）。于是"只配 stdout"的模块往 stderr 打中文
+    # **不会报错、只会悄悄退化**——`⚠` 不在 GBK 里 ⇒ 变成字面量 `\u26a0`，中文全成 `?`。
+    # 实测（`drift.py` 的错误分支，读原始字节）：`\u26a0 ��������ˣ…`。而那句正是
+    # "**仪器故障，不是内容问题**"的诊断，外加 `thresholds.load` 的"段名是不是改了"告警——
+    # 两句都只在真出问题时才出现，也就是说**它们恰好在最需要被读到的时候读不出来**。
+    #
+    # 判据取"**CLI 模块（进程入口）必须自己定两个流的编码**"：进程的流编码是入口的职责，
+    # 而且这条把"将来往 stderr 加一句中文"也一并管住。**纯库豁免**——库不该改全局流状态
+    # （`thresholds` 就是纯库，它的告警靠调用方），但豁免名单要打出来，别让这份依赖隐形。
+    nonascii = re.compile(r'[^\x00-\x7f]')
+
+    def _stderr_nonascii(src_text):
+        """AST：这个模块有没有往 stderr 打**非 ASCII**。行内正则认不出 `f-string` 与多行调用。"""
+        hits = 0
+        for node in ast.walk(ast.parse(src_text)):
+            if not isinstance(node, ast.Call):
+                continue
+            f = node.func
+            to_err = any(k.arg == 'file' and isinstance(k.value, ast.Attribute)
+                         and k.value.attr == 'stderr' for k in node.keywords)
+            if isinstance(f, ast.Attribute) and f.attr == 'write' \
+                    and isinstance(f.value, ast.Attribute) and f.value.attr == 'stderr':
+                to_err = True
+            if not to_err:
+                continue
+            for sub in ast.walk(node):
+                if isinstance(sub, ast.Constant) and isinstance(sub.value, str) \
+                        and nonascii.search(sub.value):
+                    hits += 1
+                    break
+        return hits
+
+    bad_err, exempt = [], []
+    for p in sorted(SCRIPTS.glob('*.py')):
+        t = p.read_text(encoding='utf-8')
+        if not _stderr_nonascii(t):
+            continue
+        if '__main__' in t:
+            if 'sys.stderr.reconfigure' not in t:
+                bad_err.append(p.stem)
+        else:
+            exempt.append(p.stem)
+    c.check(not bad_err,
+            '带 CLI 的模块：往 stderr 打中文的自己配了编码（不再有"只配 stdout"的）',
+            '没配：' + '、'.join(bad_err) if bad_err else '')
+    print(f'     · 纯库豁免（它们的告警靠调用方定编码）：{"、".join(exempt) or "无"}')
     return c
 
 

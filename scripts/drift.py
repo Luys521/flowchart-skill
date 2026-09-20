@@ -656,6 +656,13 @@ def main(argv=None):
     `hygiene.py` 会把两个子命令函数判成"没人调"（门⑧当场红）。
     """
     sys.stdout.reconfigure(encoding='utf-8')
+    # **stderr 也要配**（2026-09-19 修，D-127）：本模块往 stderr 打中文（`⚠ 输入读不了…`），
+    # 而 Windows 上管道/重定向时 stderr 默认是 **GBK**（实测：stdout 配了 utf-8，stderr 仍是 gbk）。
+    # 后果不是"难看的乱码"，是**这句话报不出来**：`⚠` 不在 GBK 里 ⇒ 退化成字面量 `\u26a0`，
+    # 中文全成 `?`（实测的原始字节解出来就是 `\u26a0 ��������ˣ…`）。而它正是"仪器故障，
+    # 不是内容问题"那句诊断，读的人恰好在最需要它的时候读不到；`thresholds.load` 那句
+    # "段名是不是改了"的告警也从这条流出去。
+    sys.stderr.reconfigure(encoding='utf-8')
     ap = argparse.ArgumentParser(description='循环的发动机：漂移 → 缺口（PIPELINE-SPEC §5）')
     sub = ap.add_subparsers(dest='cmd', required=True)
     b = sub.add_parser('build', help='出草稿（机器列已填，AI 列留空）')
