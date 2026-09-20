@@ -7,9 +7,9 @@
 
 | 步 | 命令（对外接口） | 参加的模块 | 产物 |
 |---|---|---|---|
-| 0 承接上下文 | `clarify.py <flowtable.md>` | clarify → semantics（标记分拣）+ table_to_dsl（parse_table / build_edges） | stdout：frontier / 简报（`--json` 结构化） |
+| 0 承接上下文 | `clarify.py <flowtable.md>` | clarify → semantics（标记分拣）+ flowtable（`parse_table` / `build_edges`） | stdout：frontier / 简报（`--json` 结构化） |
 | 1 建目录落表 | `init.py <名称>` | init（拷两份模板） | `output/<名称>/flowtable.md` + `checklist.md` |
-| 2 结构校验 | `table_to_dsl.py --check <flowtable.md>` | table_to_dsl（parse / 三层校验 / H9 表头） + semantics（分隔符与标记） | exit 0/1 + `{message,subject,fix}` |
+| 2 结构校验 | `table_to_dsl.py --check <flowtable.md>` | table_to_dsl（`flowtable_check`：三层校验 / H9） + semantics（分隔符与标记） | exit 0/1 + `{message,subject,fix}` |
 | 2' 转内部 DSL | `table_to_dsl.py --write …` | table_to_dsl（布局 / 配色 / 命名） | `<名称>-flow.yaml` + `<名称>-flow.manifest.json` |
 | 3 自检留痕 | （无命令，AI 按 checklist 自查） | clarify（复核是否收敛） | `checklist.md` |
 | 4 渲染 | `build.py <flowtable.md>` | build（编排六环）→ table_to_dsl → validate → render_html / render_drawio / render_svg → manifest → layer_index | `<名称>-flow.html` + `<名称>-flow.drawio` + `<名称>-flow.svg` + `<名称>-index.md` |
@@ -129,7 +129,7 @@
 **注意**：`examples/workflow/`（产物在 `dev/baseline/workflow/`）是会被手工微调的目录——**比对一律整目录复制到仓库外再跑**（D-20），只读命令才可直接在工作树上用。
 
 ### 画图口径（定稿，2026-09-14）
-- **节点名 = `qualname`**：普通函数写 `parse_table`；**方法写 `Grid.anchor`**；**嵌套函数写 `outer.inner`**（当前图里带点的名字有 119 个）。写成裸名会同时被判"缺失 + 多余"——`dev/tools/coverage.py` 按 qualname 精确比对。
+- **节点名 = `qualname`**：普通函数写 `parse_table`；**方法写 `Grid.anchor`**；**嵌套函数写 `outer.inner`**（带点的名字有一批，**现跑现取**看 `fn-graph.json`）。写成裸名会同时被判"缺失 + 多余"——`dev/tools/coverage.py` 按 qualname 精确比对。
 - **类 = 分组边界，不是节点**：类若被画成节点会被判"多余"（coverage 的 `kind=class` 不进分母）。
 - **表 ↔ 文件 = 目录名**：`output/self-boot/<模块>/flowtable.md` ↔ `scripts/<模块>.py`（与 D-51「身份在目录上」一致，**不新增表头键**——H9 是键封闭的）。L0 主表不是模块，映射不上不算失败但会被单列。
 - **每个函数恰好出现在一张表里**：全局按 `(文件, 函数名)` 配对；跨文件同名（真实图里有 5 个，如三个文件都有 `_parse_args`）靠文件归属区分，不算重复。
@@ -156,7 +156,7 @@
 
 | 层 | 文件 | 节点 | 边 | 说明 |
 |---|---|---|---|---|
-| **L0 根表** | `output/self-boot/flowtable.md` | 38 个**模块**，名字写 ``模块 · flowtable`` | 模块间依赖（`fn-deps.json`） | 每行 `⊞ <模块>/flowtable.md`；**每行的「项目运作阶段」列填流水线阶段**（分组信息在这里，不另建一层） |
+| **L0 根表** | `output/self-boot/flowtable.md` | 43 个**模块**，名字写 ``模块 · flowtable`` | 模块间依赖（`fn-deps.json`） | 每行 `⊞ <模块>/flowtable.md`；**每行的「项目运作阶段」列填流水线阶段**（分组信息在这里，不另建一层） |
 | **L1 模块表** | `output/self-boot/<模块>/flowtable.md` | 该模块的**函数**，名字 = `qualname`（`parse_table` / `Grid.anchor`） | 模块内调用边（`fn-graph.json`），按 `fn-groups.json` 分组 | **只有这一层的节点进覆盖率分母**；目录名即模块名（覆盖率的映射靠它，任意深度都成立） |
 
 **为什么撤销三层**：三层（根=阶段链 → 阶段表 → 模块表，共 1+9+26）唯一目的是给"流水线分组"一个视觉层，而
