@@ -104,6 +104,9 @@ python dev/verify/run.py --only gates # 只跑一个面
 | `dev/ARCHITECTURE.md` | 动模块边界/渲染器注册表时 |
 | `dev/REPO-MAP.md` | 想知道"每个脚本消费什么、生产什么"时 |
 | `dev/PIPELINE-SPEC.md` | 碰"材料→流程表"这一段（L0–L4）时——**契约的唯一出处**；实现与它不一致先改它 |
+| `dev/coding-spec.md` | 想知道"某条行业原则在本仓落到哪、谁拦它"时——**规则 ↔ 仪器的对照表**（含"已知不做"清单，**提新方案前先翻它**） |
+| `dev/NODE-AUDIT.md` | 想核"节点原则在真材料上到底成不成立"时——盲读复现与逐条对账的原始读数 |
+| `dev/AUDIT-FIX-PLAN.md` | 想追溯这一轮加固的**计划与验收判据**时（批 0—批 3 的账，已执行完） |
 | `dev/_paths.py` | 动目录布局时——**布局假设只在这一处表述** |
 
 > `dev/tools/fn-graph.json` 是**快照**：代码改了要重跑 `python dev/tools/fn_graph.py`，否则拿旧图裁决新代码。

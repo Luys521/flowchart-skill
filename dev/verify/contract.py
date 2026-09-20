@@ -583,6 +583,20 @@ def run_face(tmp=None):
         missing = sorted(k for k in refs if k not in set(ids))
         c.check(not missing, '被引用的 D 编号都存在（指针不许指空）',
                 '；'.join(f'{k} ← {"、".join(sorted(refs[k])[:3])}' for k in missing))
+        # 索引要**覆盖全部编号、且不重不漏**（2026-09-19 补，D-118）：决策日志 116 条、每条 1.5 KB，
+        # 找"这事定过没有"原先只能 grep 标题。加一段按主题的索引之后，最容易出的错是
+        # "新加的条目忘了写进索引"——那种错机器一眼能判：**索引里的编号并集 == 实际标题的编号集**。
+        # 只核**编号覆盖**，不核"分段分得对不对"（那是判断，归人）。只看**表体**（`|` 开头的行）：
+        # 表下面的说明文字会提到"缺号"那一条，把它算进来等于让散文冒充索引
+        # （顺带：那个编号本身在别处**没人引用**，写进注释反而会让下面那条"指针不许指空"报红）。
+        # 写法两种都认：区间（`D-04`–`D-08`）与单点（`D-12`）——索引里两种混着用，只认一种会当场假红。
+        idx_sec = dt.split('## 索引', 1)[1].split('\n## ', 1)[0] if '## 索引' in dt else ''
+        rows = '\n'.join(ln for ln in idx_sec.splitlines() if ln.startswith('|'))
+        covered = set(re.findall(r'D-\d{2,}', rows))
+        for a, b in re.findall(r'(D-\d{2,})`?\s*[–~-]\s*`?(D-\d{2,})', rows):
+            covered |= {f'D-{n:02d}' for n in range(int(a[2:]), int(b[2:]) + 1)}
+        c.check(covered == set(ids), '决策日志的索引覆盖了全部条目（不重不漏）',
+                f'索引多 {sorted(covered - set(ids))[:4]} / 少 {sorted(set(ids) - covered)[:4]}')
 
     c.section('调度层不掺维护内容')
     # 指南《SKILL 最佳设计指南》第四部分：SKILL.md 是**调度员**，只写出图要走的流程。
