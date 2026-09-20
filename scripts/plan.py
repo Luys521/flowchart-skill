@@ -64,6 +64,9 @@ import cells
 import capability
 
 FLOW_COLUMNS = ('流程', '角色', '挂在', '材料集', '与其它流程', '并行组', '合并/拆分理由', '状态')
+# v1 的流程清单（2026-09-19 前的 7 列）。**留着只为把话说准**：拿旧 `plan.md` 来 `check` 时，
+# 报"没解析到这张表"是对的、但**诊断错在仪器**——计划没写错，是列规范换了一版。
+OLD_FLOW_COLUMNS = ('流程', '角色', '挂在', '材料集', '与其它流程', '并行组', '状态')
 ASK_COLUMNS = ('编号', '问题', '推荐答案', '指向')
 EXCL_COLUMNS = ('材料', '理由')
 
@@ -404,6 +407,10 @@ def parse_doc(text):
             header = tuple(cells)
             seen.add(header)
             continue
+        if tuple(cells) == OLD_FLOW_COLUMNS:      # 旧列规范：**说清是版本问题，不是计划写错了**
+            return [], [], [], ('这份 `plan.md` 用的是**旧列规范**（流程清单还是 7 列，缺'
+                                '「合并/拆分理由」）——§4.1 现在是 8 列。重跑 `plan.py build` 出草稿'
+                                '（或手工补那一列）再 `check`；**不是计划内容有问题**')
         if header is None:
             continue
         if len(cells) != len(header):

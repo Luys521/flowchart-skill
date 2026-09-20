@@ -588,6 +588,21 @@ def plan_paths(root):
     cases.append(('63 「合并/拆分理由」：AI 并/拆出来的流程（材料集不是机器那一组）必须写一句——'
                   '`--split` 时退 2 不写盘 · 手改 plan.md 抹掉它 `check` 退 1；机器那一组不要求',
                   ok63, (rc_nr, rc_er), (out_nr[-200:] + out_er[-240:]) if not ok63 else ''))
+    # 63b **旧列规范**的 plan.md（用户手上已有的那一批是 7 列）：退 2 且**说清是版本问题**——
+    #     不然它会报"没解析到这张表"，读的人以为计划写错了（诊断错在仪器，比不报更坏）。
+    def _v1(ln):                       # 把 8 格的流程行还原成 v1 的 7 格（只动流程清单那张表）
+        if not ln.startswith('|'):
+            return ln
+        cells = [c.strip() for c in ln.strip().strip('|').split('|')]
+        return ln if len(cells) != 8 else '| ' + ' | '.join(cells[:6] + cells[7:]) + ' |'
+    (root / 'plan-old7.md').write_text('\n'.join(_v1(ln) for ln in txt.splitlines()) + '\n',
+                                       encoding='utf-8', newline='\n')
+    rc_old, out_old = run([sys.executable, str(PLAN_CMD), 'check', str(root / 'plan-old7.md'),
+                           '--intake', str(root / 'intake.md')])
+    cases.append(('63b 旧列规范（7 列）的 `plan.md` ⇒ 退 2 且说清**是版本问题**，'
+                  '不是"没解析到这张表"（诊断错在仪器比不报更坏）',
+                  rc_old == 2 and '旧列规范' in out_old and 'build' in out_old,
+                  rc_old, out_old[-240:]))
     # 57 外部表的**五种真实形态**（2026-09-18 用它们撞过 `import_table`，四处修 + 两处判定"不该硬转"）：
     #    ① 英文表头 + 英文类型值 ② 一行一分支（同编号多行）③ 中文点号编号 + 裸编号引用
     #    ④ 字母编号 ⇒ **不改节点身份、报清楚**（H3：有些形态不该由它硬转）
