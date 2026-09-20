@@ -42,6 +42,7 @@ from pathlib import Path
 
 import cells
 from pptx_text import other_text_parts_in_file, scan_cost, slides_in_file
+from semantics import DICT_NAME
 
 DEP_PKG = {'docx': 'python-docx', 'openpyxl': 'openpyxl'}
 
@@ -72,7 +73,6 @@ DEFAULTS = {                     # 兜底值；`dictionary.yaml` 的 `recon:` �
     'outline_max': 50,           # 大纲最多数多少条（先数后切，表里写"共 K（列前 N）"）
     'outline_show': 3,           # 表里露几条
 }
-DICT_NAME = 'dictionary.yaml'
 
 
 def _import_dep(name):

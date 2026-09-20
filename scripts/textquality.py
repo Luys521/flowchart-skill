@@ -22,6 +22,8 @@ r"""textquality.py — 抽取质量判据（PIPELINE-SPEC §1.5「手段 0」）
 """
 from pathlib import Path
 
+from semantics import DICT_NAME
+
 
 def element_haystack(el):
     """一条证据的**可搜面**：正文 + 表格全部单元格 + 出处摘录（**小写**，供朴素子串匹配）。
@@ -49,7 +51,6 @@ DEFAULTS = {
     'element_min_lines': 3,         # 元素级：行数 ≥ 它就按下面的比例丢纯碎片
     'element_single_ratio': 0.75,   # 元素级：单字行占比 ≥ 它 → 这条是纯碎片，丢
 }
-DICT_NAME = 'dictionary.yaml'
 
 
 def load_thresholds(path=None):

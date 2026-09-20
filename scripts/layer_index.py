@@ -11,6 +11,7 @@
 
 `<流程名>-index.md` 是**派生产物**：每次 build 自动刷新，手改会被覆盖——
 层级关系手写必漂移（grove-generator 的悬空引用即前车之鉴），这就是索引不手写的理由。
+退出码：0 = 写出索引；1 = 主流程表找不到（`<名称>/flowtable.md`）。
 """
 import argparse
 import os
@@ -170,7 +171,7 @@ def main(argv=None):
         print('⚠', n)
     if a.write:
         out = ft.parent / f'{artifact_stem(ft)}-index.md'
-        out.write_text(text, encoding='utf-8')
+        out.write_text(text, encoding='utf-8', newline='\n')
         print(f'✓ 已派生索引: {out}')
     return 0
 

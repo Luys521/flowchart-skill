@@ -2,7 +2,7 @@
  "title": "同步闭环：读回 → 回写 → 重渲染",
  "layout": "flow",
  "source": "flowtable.md",
- "dsl_sha256": "6dc0d7f2b2f77d07",
+ "dsl_sha256": "b77e85f40e238e70",
  "source_sha256": "5297b8ce0a9711e4",
  "counts": {
   "nodes": 5,

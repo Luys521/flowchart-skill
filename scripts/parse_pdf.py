@@ -25,6 +25,8 @@ import re
 import sys
 from pathlib import Path
 
+from semantics import DICT_NAME
+
 DEP_PKG = {'pdfplumber': 'pdfplumber'}
 
 # T3（扫描件）在**这条自包含路径上**读不动：自包含侧没有 OCR（可选依赖未装时），宿主多模态是加速器。
@@ -71,7 +73,6 @@ def _page_span(spec):
 DEFAULT_TEXT_LAYER = {'min_pages': 4, 'max_elements_per_page': 1.2, 'min_chars_per_page': 300}
 THIN_ACTION = ('文字层可能只是页眉 / 标签，正文多半在图里：建议走 §1.5 手段 2'
                '（`render_pages` 转图片 → 视觉）核对后再引用')
-DICT_NAME = 'dictionary.yaml'
 
 
 def load_thresholds(path=None):

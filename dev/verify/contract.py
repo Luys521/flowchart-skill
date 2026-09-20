@@ -629,6 +629,18 @@ def run_face(tmp=None):
     c.check(not noenc, '每个入口命令都重设了 stdout 编码',
             '缺 ' + '、'.join(noenc) if noenc else '')
 
+    # 入口命令的文件头都要写清**自己的退出码**（2026-09-19 补，D-115）。口径与上一条同源：
+    # 一条人人都该遵守的规矩，只要没有仪器盯着，就会在新增脚本时漏掉——实测 30 个入口里
+    # **8 个没写**（`layer_index` / `manifest` / `render_*` / `shot` / `writeback` / `xml_reader`），
+    # 而它们的 0/1 含义各不相同（"输入找不到"与"校验不过"是两回事，调用方要分得开）。
+    # 判据只认**文件头（模块 docstring）里出现「退出码」**：写在函数里的注释不算——
+    # 读代码的人是从文件头开始读的，`--help` 也在这条路的起点。
+    noexit = [p.name for p in sorted(SCRIPTS.glob('*.py'))
+              if 'if __name__' in p.read_text(encoding='utf-8')
+              and '退出码' not in (ast.get_docstring(ast.parse(p.read_text(encoding='utf-8'))) or '')]
+    c.check(not noexit, '每个入口命令的文件头都写了退出码',
+            '缺 ' + '、'.join(noexit) if noexit else '')
+
     c.section('泛化性：产品文档里不许出现具体领域')
     # 本 SKILL 不预设任何业务领域。产品文档（SKILL.md / references / templates）一旦举了某个领域的例子，
     # 读者会反推"这是给那个领域用的"，还会把该领域的结构预设（主体形态、环节构成）带进别的场景。

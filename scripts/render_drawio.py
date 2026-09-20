@@ -3,6 +3,7 @@
 
 显式布局所见即所得；节点输出为 `<object>`；边标签居中 + 白底压线；子流程下钻见 visual-spec §1。
 用法：python render_drawio.py flow.yaml [-o out.drawio] [--pages]
+退出码：0 = 写出 .drawio；1 = 输入读不了 / 渲染失败（本族只有 0 与 1）。
 """
 import argparse
 import re
@@ -10,14 +11,14 @@ import sys
 from pathlib import Path
 
 from engine import load
-from semantics import (ARROW_END_SIZE, pending_style, subflow_target,
+from semantics import (ARROW_END_SIZE, pending_style, subflow_target, SUB_INSET,
                        SUBFLOW_MARK, NATIVE_MARK, BG_MARK, SUB_MARK)
 from artifact import artifact_rel
 
 FONT = 'Microsoft YaHei'
 
-# 可下钻节点的记号：**框内一道内衬线**（同形状向内缩 SUB_INSET，见 D-78）。与另两个渲染器同值。
-SUB_INSET = 2.0
+# 可下钻节点的记号：**框内一道内衬线**（同形状向内缩 `SUB_INSET`，见 D-78）。
+# 那个数**不在这里**：三份渲染器共用同一个（`semantics.SUB_INSET`，D-115）。
 
 
 def esc(s):
@@ -243,7 +244,7 @@ def render(dsl_path, out_path, ctx=None):
     page_id = c.get('page_id', 'flow-1')
     page_name = c.get('page_name', '流程图')
     xml, n_nodes, n_edges, w, h = _page_xml(dsl_path, page_id, page_name, pages)
-    Path(out_path).write_text(xml, encoding='utf-8')
+    Path(out_path).write_text(xml, encoding='utf-8', newline='\n')
     print(f'生成: {out_path}  节点: {n_nodes}  边: {n_edges}  画布: {w}x{h}'
           + (f'  页数: {len(pages) + 1}' if pages else ''))
     # 成功**显式**返回 0：统一契约里"成功的信号是 0"（见 ARCHITECTURE.md 第九节 W5）。

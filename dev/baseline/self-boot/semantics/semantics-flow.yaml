@@ -60,7 +60,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →19
-  desc: ★ markdown 表格行 → 单元格列表。 · L76 · 函数
+  desc: ★ markdown 表格行 → 单元格列表。 · L86 · 函数
 - id: '05'
   name: arrow_markers
   lines:
@@ -72,7 +72,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →19
-  desc: ★ 箭头 marker 串（SVG 的 `<defs>` 内容）——html 与 svg 两份产物共用一份（见 D-89）。 · L87 · 函数
+  desc: ★ 箭头 marker 串（SVG 的 `<defs>` 内容）——html 与 svg 两份产物共用一份（见 D-89）。 · L97 · 函数
 - id: '06'
   name: split_branches
   lines:
@@ -84,7 +84,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →19
-  desc: ★ 「下个节点」列 → 出口文本列表（只认 `｜`，兼容 `<br>` 与真换行——见 flowtable-spec §2… · L110 · 函数
+  desc: ★ 「下个节点」列 → 出口文本列表（只认 `｜`，兼容 `<br>` 与真换行——见 flowtable-spec §2… · L120 · 函数
 - id: '07'
   name: has_ambiguous_sep
   lines:
@@ -96,7 +96,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →19
-  desc: ★ 「下个节点」列里，把分号当成了分隔符用（`通过→05；不通过→06`）。 · L116 · 函数
+  desc: ★ 「下个节点」列里，把分号当成了分隔符用（`通过→05；不通过→06`）。 · L126 · 函数
 - id: 08
   name: pending_kind
   lines:
@@ -108,7 +108,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →19
-  desc: ★ 节点描述的标记 → None / 'inferred' / 'verdict'（判据与收敛条件见 D-46、flowt… · L124 · 函数
+  desc: ★ 节点描述的标记 → None / 'inferred' / 'verdict'（判据与收敛条件见 D-46、flowt… · L134 · 函数
 - id: 09
   name: pending_style
   lines:
@@ -120,7 +120,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →08
-  desc: ★ 节点描述 → 留痕外观 `{'stroke', 'dash', 'note'}`；不是 `⚠` 开头则返回 `{}`。 · L143 · 函数
+  desc: ★ 节点描述 → 留痕外观 `{'stroke', 'dash', 'note'}`；不是 `⚠` 开头则返回 `{}`。 · L153 · 函数
 - id: '10'
   name: _normalize_subflow_path
   lines:
@@ -132,7 +132,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →19
-  desc: ★ 子表相对路径规范化：越界（绝对路径 / 逃出目录）一律返回 None。 · L162 · 函数
+  desc: ★ 子表相对路径规范化：越界（绝对路径 / 逃出目录）一律返回 None。 · L172 · 函数
 - id: '11'
   name: subflow_ref
   lines:
@@ -144,7 +144,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →10
-  desc: ★ 节点描述 → 子表相对路径（无则 None）。见 D-47。 · L182 · 函数
+  desc: ★ 节点描述 → 子表相对路径（无则 None）。见 D-47。 · L192 · 函数
 - id: '12'
   name: subflow_target
   lines:
@@ -156,7 +156,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 节点描述 → **子表流程表**的相对路径（无则 None）。见 D-47 / D-51。 · L213 · 函数
+  desc: ★ 节点描述 → **子表流程表**的相对路径（无则 None）。见 D-47 / D-51。 · L223 · 函数
 - id: '13'
   name: is_pending
   lines:
@@ -168,7 +168,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →08
-  desc: ★ 节点描述**以 ⚠ 开头**（含 `⚠?`）= 留痕节点，渲染时必须画虚线（约定见 flowtable-spec §2… · L230 · 函数
+  desc: ★ 节点描述**以 ⚠ 开头**（含 `⚠?`）= 留痕节点，渲染时必须画虚线（约定见 flowtable-spec §2… · L240 · 函数
 - id: '14'
   name: text_width
   lines:
@@ -180,7 +180,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →19
-  desc: ★ 文本宽度估算：CJK/带圈数字按全角宽，其余按半角宽（SVG 无自动排版，必须自己推进 x）。 · L240 · 函数
+  desc: ★ 文本宽度估算：CJK/带圈数字按全角宽，其余按半角宽（SVG 无自动排版，必须自己推进 x）。 · L250 · 函数
 - id: '15'
   name: Syntax.__init__
   lines:
@@ -192,7 +192,7 @@ nodes:
   col: 0
   stage: Syntax
   route: →19
-  desc: L247 · 方法
+  desc: L257 · 方法
 - id: '16'
   name: Syntax.route_names
   lines:
@@ -204,7 +204,7 @@ nodes:
   col: 0
   stage: Syntax
   route: →19
-  desc: ★ 路由文本：节点编号→节点名（仅替换 →/回 引导的编号，避开 30日、10MW 等） · L250 · 方法
+  desc: ★ 路由文本：节点编号→节点名（仅替换 →/回 引导的编号，避开 30日、10MW 等） · L260 · 方法
 - id: '17'
   name: Syntax.route_text
   lines:
@@ -216,7 +216,7 @@ nodes:
   col: 0
   stage: Syntax
   route: 1→06｜2→16
-  desc: ★ 路由文本：编号→名称，多个出口换成真正的换行。 · L257 · 方法 · 分支：1→split_branches 2→Syntax.route_names
+  desc: ★ 路由文本：编号→名称，多个出口换成真正的换行。 · L267 · 方法 · 分支：1→split_branches 2→Syntax.route_names
 - id: '18'
   name: Syntax.node_lines
   lines:
@@ -228,7 +228,7 @@ nodes:
   col: 0
   stage: Syntax
   route: →19
-  desc: ★ 节点显示行：判断节点只放名称；其余 名称行+执行者+行动所需时间(可选) · L266 · 方法
+  desc: ★ 节点显示行：判断节点只放名称；其余 名称行+执行者+行动所需时间(可选) · L276 · 方法
 - id: '19'
   name: 结束
   lines:

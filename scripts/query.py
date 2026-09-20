@@ -49,8 +49,7 @@ from pathlib import Path
 
 from textquality import element_haystack
 import capability
-
-DICT_NAME = 'dictionary.yaml'
+from semantics import DICT_NAME
 
 # 默认值 = "人给的圆整默认"，`dictionary.yaml` 的 `query:` 段按名覆盖（数值只有一个家，§1.2）。
 DEFAULTS = {

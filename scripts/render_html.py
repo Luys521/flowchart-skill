@@ -6,6 +6,7 @@
 
 **单文件多视图（D-52）**：主图有后代子图时，把它们**内嵌进同一个 html** 作为"视图"，
 点节点下钻 = 切视图，不跳页。没有后代子图时输出与单视图时代**逐字节相同**。
+退出码：0 = 写出 .html（含内嵌子视图）；1 = 输入读不了 / 结构校验不过 / 渲染失败。
 """
 import argparse
 import json
@@ -16,14 +17,14 @@ from pathlib import Path
 
 from engine import load
 from geometry import arc_px
-from semantics import arrow_markers, pending_style, subflow_target
+from semantics import arrow_markers, pending_style, subflow_target, SUB_INSET
 from artifact import artifact_stem
 from manifest import MAIN_VIEW
 
-# 可下钻节点的记号：**框内一道内衬线**，同形状向内缩这么多像素（见 D-78）。
+# 可下钻节点的记号：**框内一道内衬线**，同形状向内缩 `SUB_INSET` 这么多像素（见 D-78）。
 # 规格另有两条同样要紧：描边 1px、同色 55% 透明——节点高 60 而文字两到三行时，
 # 内圈离文字只剩几像素，只有退成"里衬"才不跟文字抢。
-SUB_INSET = 2.0
+# 那个数**不在这里**：三份渲染器共用同一个（`semantics.SUB_INSET`，D-115）。
 
 # 主干边上的**流光**：沿连线跑动的一小段高亮（纯装饰，不承载语义）。
 #   - 只叠在**主干（实线）**边上：分支/回路是虚线，再叠流动会满屏乱闪，也会挤掉"虚线=负向"这条语义。
@@ -943,7 +944,7 @@ def _write_html_output(out_path, html, L, H, n_views, multi):
     `n_views` 是**真的拼进产物**的子视图张数（主视图不算），不是 `collect_views` 那份 intent 清单
     的长度——两者只在这两种情况下不等：读不动的表（视图块拼不出来）与被截断的表（压根没收）。
     """
-    Path(out_path).write_text(html, encoding='utf-8')
+    Path(out_path).write_text(html, encoding='utf-8', newline='\n')
     extra = f'  内嵌子图: {n_views}' if multi else ''
     print(f'生成: {out_path}  节点: {len(L.dsl["nodes"])}  边: {len(L.edges)}  画布: {L.width}x{H}{extra}')
     return 0

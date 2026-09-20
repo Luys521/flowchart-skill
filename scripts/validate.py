@@ -543,7 +543,7 @@ def _write_geometry_dump(geom, dump, name):
     # 目标目录不存在/不可写是**外部输入**的问题，不能让它以 traceback 收场（与顶层 CLI 的约定一致）
     try:
         Path(dump).write_text(json.dumps(geometry_table(geom, name), ensure_ascii=False, indent=1) + '\n',
-                              encoding='utf-8')
+                              encoding='utf-8', newline='\n')
     except OSError as e:
         print(f'✗ 几何表写不出去 {dump}：{e}')
         return 1

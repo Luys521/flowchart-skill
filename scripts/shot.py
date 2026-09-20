@@ -3,6 +3,7 @@
 
 质量门禁管不了"是否好看"——必须看图（见 visual-spec §5）。
 用法：python shot.py "output/<名称>/flow.html" [--crop 0:1200] [--scale 2]（依赖本机 Edge/Chrome）。
+退出码：0 = 落了图；1 = 页面 / 浏览器 / 裁剪参数有问题（本族只有 0 与 1）。
 """
 import argparse
 import os
@@ -52,7 +53,7 @@ def build_crop_page(html_path, y0, y1, scale):
             f'.win svg{{position:absolute;top:{-y0 * scale}px;left:0}}</style></head>'
             f'<body><div class="win">{svg_big}</div></body></html>')
     tmp = Path(tempfile.gettempdir()) / '_flowshot_crop.html'
-    tmp.write_text(page, encoding='utf-8')
+    tmp.write_text(page, encoding='utf-8', newline='\n')
     return tmp, int(w * scale), int((y1 - y0) * scale)
 
 

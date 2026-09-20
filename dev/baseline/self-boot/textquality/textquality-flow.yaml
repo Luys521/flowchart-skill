@@ -35,7 +35,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 一条证据的**可搜面**：正文 + 表格全部单元格 + 出处摘录（**小写**，供朴素子串匹配）。 · L26 · 函数
+  desc: ★ 一条证据的**可搜面**：正文 + 表格全部单元格 + 出处摘录（**小写**，供朴素子串匹配）。 · L28 · 函数
 - id: '03'
   name: load_thresholds
   lines:
@@ -47,7 +47,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 阈值 = 默认 + `dictionary.yaml` 的 `material_quality:` 段（读不到就用默认… · L55 · 函数
+  desc: ★ 阈值 = 默认 + `dictionary.yaml` 的 `material_quality:` 段（读不到就用默认… · L56 · 函数
 - id: '04'
   name: _bad_char
   lines:
@@ -59,7 +59,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 替换字符 / 控制字符 / 私用区：乱码常落在这三类里。 · L75 · 函数
+  desc: ★ 替换字符 / 控制字符 / 私用区：乱码常落在这三类里。 · L76 · 函数
 - id: '05'
   name: stats
   lines:
@@ -71,7 +71,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →04
-  desc: ★ 文字类元素 → 读数（人可核）：行 / 字 / 单字行 / 平均行长 / 坏字符 / 单一字符占比。 · L82 · 函数
+  desc: ★ 文字类元素 → 读数（人可核）：行 / 字 / 单字行 / 平均行长 / 坏字符 / 单一字符占比。 · L83 · 函数
 - id: '06'
   name: _why
   lines:
@@ -83,7 +83,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 读数 → 人话（**判据要能被人复核**：比例后面永远跟上原始计数）。 · L111 · 函数
+  desc: ★ 读数 → 人话（**判据要能被人复核**：比例后面永远跟上原始计数）。 · L112 · 函数
 - id: '07'
   name: readout
   lines:
@@ -95,7 +95,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→05｜2→06
-  desc: ★ 一组元素 → **同一句人话形式**的读数（供"丢之前 / 丢之后"两次都打印）。 · L118 · 函数 · 分支：1→stats 2→_why
+  desc: ★ 一组元素 → **同一句人话形式**的读数（供"丢之前 / 丢之后"两次都打印）。 · L119 · 函数 · 分支：1→stats 2→_why
 - id: 08
   name: element_is_garbage
   lines:
@@ -107,7 +107,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →05
-  desc: ★ 单条元素是不是**纯碎片**（元素级判据；行数门槛比材料级低，因为一条元素可能就几行）。 · L128 · 函数
+  desc: ★ 单条元素是不是**纯碎片**（元素级判据；行数门槛比材料级低，因为一条元素可能就几行）。 · L129 · 函数
 - id: 09
   name: verdict
   lines:
@@ -119,7 +119,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→05｜2→06｜3→08
-  desc: ★ 一组元素 → `(级别, 判据说明, 该丢的元素 id)`。级别 ∈ `ok` / `noisy` / `garble… · L136 · 函数
+  desc: ★ 一组元素 → `(级别, 判据说明, 该丢的元素 id)`。级别 ∈ `ok` / `noisy` / `garble… · L137 · 函数
     · 分支：1→stats 2→_why 3→element_is_garbage
 - id: '10'
   name: scar
@@ -132,7 +132,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 把"质量有保留"挂到**该材料的每条**上（§2.4 降级必须留痕；与 `parse_pdf` 的采样说明同一口径）。 · L156 · 函数
+  desc: ★ 把"质量有保留"挂到**该材料的每条**上（§2.4 降级必须留痕；与 `parse_pdf` 的采样说明同一口径）。 · L157 · 函数
 - id: '11'
   name: 结束
   lines:

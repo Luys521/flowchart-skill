@@ -643,6 +643,10 @@ heading  paragraph  list_item  table  figure  caption  code  sheet  cell
 ### 2.4 写盘契约
 
 - UTF-8、LF、缩进 2、`ensure_ascii=false`（中文不转义）。
+- **LF 是契约的一半，不只是样式**（2026-09-19 补，D-116）：本仓的安全网是"产物逐字节不变"，
+  而 `Path.write_text()` **不传 `newline=` 时 Windows 会把 `\n` 翻成 `\r\n`** ⇒ 同一输入在两平台上
+  字节不同，而所有比对都是"自己跟自己比"、看不见。所以**每一处写产物都钉 `newline='\n'`**
+  （或走 `write_bytes`），**面③ 的新小节"产物一律 LF"** 在刚造出来的那几份产物上查 CR。
 - **幂等**：同输入两次 ⇒ 同字节（对齐现有"build 两次产物不变"的纪律）。
   **具名例外**：`extractor=vlm` 的元素**由 AI 识图产出**，同材料两次不会自动同字节（§1.3）——
   账本对**给定输入**仍然是确定的（同两份 JSON 两次同字节），不可复现的是"看图这一跳"这**上游**。

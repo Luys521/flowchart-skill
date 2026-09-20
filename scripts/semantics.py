@@ -65,6 +65,16 @@ ARROW_END_SIZE = ARROW_LEN - 2
 #: 箭头颜色**不在这里**：它就是该极性边的 `stroke`（`dictionary.yaml` 的 `edges.<极性>.color`），
 #: marker 按极性逐个生成（`arrow_markers`）——写死两个色值等于把边色陈述第二遍。
 
+# 数值字典的**文件名**：六个模块原先各写一遍（`Path(__file__).with_name(DICT_NAME)`）。
+# 为什么这名字必须只有一个家（D-115）：改名时漏掉一处**不会报错**——那几处 `load_thresholds`
+# 都"读不到就用内置默认、不报错"，于是漏掉的那个模块**静默退回兜底值**，而账本字节照旧。
+# 家放在这里，与 `ARROW_*` 同一类：跨模块约定常量。
+DICT_NAME = 'dictionary.yaml'
+
+# 内嵌子视图（点 `⊞` 下钻那张）在节点框里的内缩量（px）。三份渲染器原先各写一遍 ⇒ 改一处会让
+# 同一张表在 html / drawio / svg 里长得不一样，而**没有任何门禁比这个数**（D-115）。
+SUB_INSET = 2.0
+
 # 中英类型对照（唯一事实源）：流程表中文类型 ↔ DSL 英文类型。
 # 此前 TYPE_MAP / TYPE_ZH / DICT_ZH 在 table_to_dsl / writeback / xml_reader 各抄一份，新增类型要改三处。
 # **只有四种**（见 flowtable-spec §2《类型登记表》）：形状是类型的可见形式，一个不多一个不少。

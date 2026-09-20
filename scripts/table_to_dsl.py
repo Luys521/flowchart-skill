@@ -204,7 +204,7 @@ def _emit_dsl(dsl, p, out_path):
     "跑 build.py" 产出两个不同名字的 yaml——手工跑一次就把 build 的几何提示换了个文件。
     """
     out = Path(out_path) if out_path else p.with_name(f'{artifact_stem(p)}-flow.yaml')
-    out.write_text(yaml.safe_dump(dsl, allow_unicode=True, sort_keys=False), encoding='utf-8')
+    out.write_text(yaml.safe_dump(dsl, allow_unicode=True, sort_keys=False), encoding='utf-8', newline='\n')
     print(f'✓ 已生成内部 DSL: {out}  → 下一步：python validate.py "{out}"')
     return out
 
@@ -221,7 +221,7 @@ def _emit_manifest(dsl, out, p):
     mf = _mf_build(dsl, source=p.name, dsl_sha=_mf_sha(out), ft_sha=_mf_src_sha(p))
     mf_path = _mf_path(out)
     mf_path.write_text(json.dumps(mf, ensure_ascii=False, indent=1) + '\n',
-                       encoding='utf-8')
+                       encoding='utf-8', newline='\n')
     print(f'✓ 渲染契约: {mf_path}  {_mf_summary(mf)}')
 
 
@@ -270,7 +270,7 @@ def _center_canvas(dsl, mode):
     from engine import load as _load
     with tempfile.TemporaryDirectory() as td:
         tmp = Path(td) / 'flow.yaml'
-        tmp.write_text(yaml.safe_dump(dsl, allow_unicode=True, sort_keys=False), encoding='utf-8')
+        tmp.write_text(yaml.safe_dump(dsl, allow_unicode=True, sort_keys=False), encoding='utf-8', newline='\n')
         L = _load(str(tmp))
         xs = []
         for n in dsl['nodes']:

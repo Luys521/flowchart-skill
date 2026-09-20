@@ -63,9 +63,7 @@ from pathlib import Path
 from flowtable import Errors, parse_table
 from flowtable_check import run_checks
 import cells
-from semantics import pending_kind
-
-DICT_NAME = 'dictionary.yaml'
+from semantics import DICT_NAME, pending_kind
 
 # 阈值 = "人给的默认"（数值只有一个家，§1.2）；`dictionary.yaml` 的 `drift:` 段按名覆盖。
 DEFAULTS = {

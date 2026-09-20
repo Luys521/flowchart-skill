@@ -375,7 +375,7 @@ def _write_layer_index(ft, out_dir, stem):
     from layer_index import build_layer_index, format_index_md
     idx = build_layer_index(ft)
     idx_path = out_dir / f'{stem}-index.md'
-    idx_path.write_text(format_index_md(idx), encoding='utf-8')
+    idx_path.write_text(format_index_md(idx), encoding='utf-8', newline='\n')
     for n in idx['notes']:
         print(f'  ⚠ 层级索引: {n}')
     depth_max = max((max(t['depths']) for t in idx['tables'].values()), default=0)

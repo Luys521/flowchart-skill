@@ -34,7 +34,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ import 一个必须依赖 → `(模块, 报错文案)`（缺了给可执行的提示）。 · L36 · 函数
+  desc: ★ import 一个必须依赖 → `(模块, 报错文案)`（缺了给可执行的提示）。 · L38 · 函数
 - id: '03'
   name: _read_json
   lines:
@@ -46,7 +46,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 读 JSON（容忍 BOM）。 · L45 · 函数
+  desc: ★ 读 JSON（容忍 BOM）。 · L47 · 函数
 - id: '04'
   name: _write_notes
   lines:
@@ -58,7 +58,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 写材料层补注：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 `ledger.dump`… · L50 · 函数
+  desc: ★ 写材料层补注：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 `ledger.dump`… · L52 · 函数
 - id: '05'
   name: _page_span
   lines:
@@ -70,7 +70,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ `'40-60'` / `'7'` → `(40, 60)`；空 → `None`；**写歪/反区间要报错，不许静默按… · L55 · 函数
+  desc: ★ `'40-60'` / `'7'` → `(40, 60)`；空 → `None`；**写歪/反区间要报错，不许静默按… · L57 · 函数
 - id: '06'
   name: load_thresholds
   lines:
@@ -82,7 +82,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 阈值 = 内置默认 + `dictionary.yaml` 的 `pdf_text_layer:` 段（读不到就用默认… · L77 · 函数
+  desc: ★ 阈值 = 内置默认 + `dictionary.yaml` 的 `pdf_text_layer:` 段（读不到就用默认… · L78 · 函数
 - id: '07'
   name: thin_note
   lines:
@@ -94,7 +94,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ **尺子二**（§1.6）：`"抽出来太少"` → 一句降级说明；不判薄返回空串。 · L93 · 函数
+  desc: ★ **尺子二**（§1.6）：`"抽出来太少"` → 一句降级说明；不判薄返回空串。 · L94 · 函数
 - id: 08
   name: parse_pdf
   lines:
@@ -106,7 +106,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→06｜3→07
-  desc: ★ `.pdf` → `(elements, 采样说明, 报错文案)`。只抽文本层；空页跳过（不伪造 element）。 · L114 · 函数 ·
+  desc: ★ `.pdf` → `(elements, 采样说明, 报错文案)`。只抽文本层；空页跳过（不伪造 element）。 · L115 · 函数 ·
     分支：1→_import_dep 2→load_thresholds 3→thin_note
 - id: 09
   name: parse_materials
@@ -119,7 +119,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →08
-  desc: ★ 材料层 → `(elements, 补注, 摘要, 跳过清单, 报错文案)`。非 PDF / 非 T2 一律跳过并记账。 · L167 · 函数
+  desc: ★ 材料层 → `(elements, 补注, 摘要, 跳过清单, 报错文案)`。非 PDF / 非 T2 一律跳过并记账。 · L168 · 函数
 - id: '10'
   name: main
   lines:
@@ -131,7 +131,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→03｜2→04｜3→05｜4→09
-  desc: L217 · 函数 · 分支：1→_read_json 2→_write_notes 3→_page_span 4→parse_materials
+  desc: L218 · 函数 · 分支：1→_read_json 2→_write_notes 3→_page_span 4→parse_materials
 - id: '11'
   name: 结束
   lines:

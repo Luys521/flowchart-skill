@@ -34,7 +34,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →23
-  desc: ★ 单元格文本 → 可安全落进 markdown 表格的形态：`｜` 必须转义成 `\｜`（GFM 规范）， · L27 · 函数
+  desc: ★ 单元格文本 → 可安全落进 markdown 表格的形态：`｜` 必须转义成 `\｜`（GFM 规范）， · L28 · 函数
 - id: '03'
   name: _is_sep_cell
   lines:
@@ -46,7 +46,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →23
-  desc: ★ GFM 分隔行单元格：`---` / `:---` / `:---:`（与 table_to_dsl.parse_ta… · L33 · 函数
+  desc: ★ GFM 分隔行单元格：`---` / `:---` / `:---:`（与 table_to_dsl.parse_ta… · L34 · 函数
 - id: '04'
   name: _row_key
   lines:
@@ -58,7 +58,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →23
-  desc: ★ 行 → 可比对的键：占位符归一（主体/执行者 → `-`，行动所需时间/下个节点 → `—`）。 · L42 · 函数
+  desc: ★ 行 → 可比对的键：占位符归一（主体/执行者 → `-`，行动所需时间/下个节点 → `—`）。 · L43 · 函数
 - id: '05'
   name: _tail
   lines:
@@ -70,7 +70,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →23
-  desc: ★ token 里编号之后的自由注解：`不齐全→回 01 补件` → ` 补件`。 · L59 · 函数
+  desc: ★ token 里编号之后的自由注解：`不齐全→回 01 补件` → ` 补件`。 · L60 · 函数
 - id: '06'
   name: orig_tokens
   lines:
@@ -82,7 +82,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →05
-  desc: '★ 原流程表「下个节点」列 → {节点id: [(raw, label, tid, tail)]}（保留作者顺序与原文）。 · L73 · 函数
+  desc: '★ 原流程表「下个节点」列 → {节点id: [(raw, label, tid, tail)]}（保留作者顺序与原文）。 · L74 · 函数
     · ⇢ 依赖 flowtable.parse_next_raw、flowtable.split_row_cells'
 - id: '07'
   name: new_token
@@ -95,7 +95,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →23
-  desc: ★ 生成一条分支文本（仅用于原表里没有对应项的新增/改动分支）。 · L86 · 函数
+  desc: ★ 生成一条分支文本（仅用于原表里没有对应项的新增/改动分支）。 · L87 · 函数
 - id: 08
   name: build_rows
   lines:
@@ -107,7 +107,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →07
-  desc: L94 · 函数
+  desc: L95 · 函数
 - id: 09
   name: branch_conflicts
   lines:
@@ -119,7 +119,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →06
-  desc: ★ 原流程表「下个节点」列 vs drawio 实际连线的**方向性冲突**清单（D-45）。 · L127 · 函数
+  desc: ★ 原流程表「下个节点」列 vs drawio 实际连线的**方向性冲突**清单（D-45）。 · L128 · 函数
 - id: '10'
   name: format_conflicts
   lines:
@@ -131,7 +131,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →23
-  desc: ★ 冲突清单 → 人读文本（`sync.py` / `xml_reader.py` 共用一份文案，别两处各写一遍）。 · L175 · 函数
+  desc: ★ 冲突清单 → 人读文本（`sync.py` / `xml_reader.py` 共用一份文案，别两处各写一遍）。 · L176 · 函数
 - id: '11'
   name: _read_drawio
   lines:
@@ -143,7 +143,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →23
-  desc: ★ 读回 drawio XML（utf-8-sig 兼容带 BOM 的产物）。 · L183 · 函数 · ⇢ 依赖 xml_reader.read
+  desc: ★ 读回 drawio XML（utf-8-sig 兼容带 BOM 的产物）。 · L184 · 函数 · ⇢ 依赖 xml_reader.read
 - id: '12'
   name: _read_orig_snapshot
   lines:
@@ -155,7 +155,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →23
-  desc: ★ 原流程表快照：看**字节**判换行符与 BOM，解码出全文与行列表。 · L189 · 函数
+  desc: ★ 原流程表快照：看**字节**判换行符与 BOM，解码出全文与行列表。 · L190 · 函数
 - id: '13'
   name: _semantic_snapshot
   lines:
@@ -167,7 +167,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →23
-  desc: ★ 原流程表按 id 的语义快照（阶段/描述/主体/执行者/时间/输入/依据/输出）——id 在原表出现过，语义就以原表为… · L200 · 函数
+  desc: ★ 原流程表按 id 的语义快照（阶段/描述/主体/执行者/时间/输入/依据/输出）——id 在原表出现过，语义就以原表为… · L201 · 函数
     · ⇢ 依赖 flowtable.split_row_cells
 - id: '14'
   name: _orig_line_index
@@ -180,7 +180,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →03
-  desc: ★ 原行文本（按 id）：未改动的行**整行照抄**，免得"多/少一个空格"这种伪差异混进 diff。 · L213 · 函数 · ⇢ 依赖 semantics.split_table_row
+  desc: ★ 原行文本（按 id）：未改动的行**整行照抄**，免得"多/少一个空格"这种伪差异混进 diff。 · L214 · 函数 · ⇢ 依赖 semantics.split_table_row
 - id: '15'
   name: _split_table_block
   lines:
@@ -192,7 +192,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →23
-  desc: ★ 定位标准表头与表格块边界 → (前言, 表后内容, 前言与表头之间的间隔, 尾换行)。 · L225 · 函数
+  desc: ★ 定位标准表头与表格块边界 → (前言, 表后内容, 前言与表头之间的间隔, 尾换行)。 · L226 · 函数
 - id: '16'
   name: _rebuild_rows
   lines:
@@ -204,7 +204,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→04｜3→08
-  desc: ★ 逐行重建表格行与表格体（未改动整行照抄），并记下自检所需的 _resolved/_stage。 · L255 · 函数 · 分支：1→_cell
+  desc: ★ 逐行重建表格行与表格体（未改动整行照抄），并记下自检所需的 _resolved/_stage。 · L256 · 函数 · 分支：1→_cell
     2→_row_key 3→build_rows · ⇢ 依赖 semantics.split_table_row
 - id: '17'
   name: _keep_after_table
@@ -217,7 +217,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →03
-  desc: ★ 表后内容保留：丢掉混进来的表内散行，其余（说明章节等）逐字保留。 · L284 · 函数 · ⇢ 依赖 semantics.split_table_row
+  desc: ★ 表后内容保留：丢掉混进来的表内散行，其余（说明章节等）逐字保留。 · L285 · 函数 · ⇢ 依赖 semantics.split_table_row
 - id: '18'
   name: _emit_table
   lines:
@@ -229,7 +229,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →23
-  desc: ★ 前言 / 表格体 / 表后内容拼回，按原换行符与编码落盘，并打印回写统计。 · L300 · 函数
+  desc: ★ 前言 / 表格体 / 表后内容拼回，按原换行符与编码落盘，并打印回写统计。 · L301 · 函数
 - id: '19'
   name: _verify_written
   lines:
@@ -241,7 +241,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→09｜2→10
-  desc: ★ 回写后自检（H1–H8），并报警分支走向冲突与缺语义的节点；返回**是否通过**。 · L311 · 函数 · 分支：1→branch_conflicts
+  desc: ★ 回写后自检（H1–H8），并报警分支走向冲突与缺语义的节点；返回**是否通过**。 · L312 · 函数 · 分支：1→branch_conflicts
     2→format_conflicts · ⇢ 依赖 flowtable_check.run_checks
 - id: '20'
   name: write
@@ -254,7 +254,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→06｜2→11｜3→12｜4→13｜5→14｜6→15｜7→16｜8→17｜9→18｜10→19
-  desc: ★ drawio 读回结果 + 原流程表 → 更新后的流程表（回写闭环主入口）。 · L347 · 函数 · 分支：1→orig_tokens 2→_read_drawio
+  desc: ★ drawio 读回结果 + 原流程表 → 更新后的流程表（回写闭环主入口）。 · L348 · 函数 · 分支：1→orig_tokens 2→_read_drawio
     3→_read_orig_snapshot 4→_semantic_snapshot 5→_orig_line_index 6→_split_table_block
     7→_rebuild_rows 8→_keep_after_table 9→_emit_table 10→_verify_written · ⇢ 依赖 flowtable.parse_table
 - id: '21'
@@ -268,7 +268,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →23
-  desc: ★ 回写结果 vs 原文的**文件级**复核 → (是否逐字节一致, unified diff 行列表)。 · L367 · 函数
+  desc: ★ 回写结果 vs 原文的**文件级**复核 → (是否逐字节一致, unified diff 行列表)。 · L368 · 函数
 - id: '22'
   name: main
   lines:
@@ -280,7 +280,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →20
-  desc: L383 · 函数
+  desc: L384 · 函数
 - id: '23'
   name: 结束
   lines:

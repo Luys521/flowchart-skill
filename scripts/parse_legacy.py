@@ -41,11 +41,12 @@ import tempfile
 import time
 from pathlib import Path
 
+from semantics import DICT_NAME
+
 # OLE 复合文档头（§1.2 的魔数判据）
 OLE_MAGIC = b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1'
 
 # ---- 自包含降级读法（`legacy_text`）的默认阈值：**代码里这份只是兜底**，家在 `dictionary.yaml` ----
-DICT_NAME = 'dictionary.yaml'
 DEFAULT_TH = {
     'min_run': 24, 'min_word_ratio': 0.5, 'max_low0_ratio': 0.4, 'min_common_ratio': 0.85,
     'max_markup_ratio': 0.25,
@@ -242,7 +243,7 @@ def extract_via_ooxml(converted, mid, original, timeout):
         mp, ep = Path(td) / 'materials.json', Path(td) / 'elements.json'
         mp.write_text(json.dumps([{'id': mid, 'path': Path(converted).as_posix(),
                                    'tier': 'T1', 'status': 'ok'}], ensure_ascii=False),
-                      encoding='utf-8')
+                      encoding='utf-8', newline='\n')
         try:
             r = subprocess.run([sys.executable, str(script), '--materials', str(mp), '-o', str(ep)],
                                capture_output=True, text=True, encoding='utf-8', errors='replace',

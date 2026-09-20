@@ -3,6 +3,7 @@
 
 **为什么需要**：结构校验查《流程表》、质量门禁查 `flow.yaml`——两者都不看渲染产物（见 DECISIONS.md D-11）。
 调用方：`table_to_dsl --write` 产出、`build.py` 渲染后自动跑。
+退出码：0 = 契约对上；1 = **契约校验不过** / 缺 PyYAML（渲染前的那道自检）。
 """
 import argparse
 import hashlib
@@ -448,7 +449,7 @@ def _run_build(a):
     dsl = yaml.safe_load(Path(a.yaml_path).read_text(encoding='utf-8'))
     mf = build(dsl, source=Path(a.yaml_path).name, dsl_sha=dsl_fingerprint(a.yaml_path))
     out = Path(a.out) if a.out else manifest_path_for(a.yaml_path)
-    out.write_text(json.dumps(mf, ensure_ascii=False, indent=1) + '\n', encoding='utf-8')
+    out.write_text(json.dumps(mf, ensure_ascii=False, indent=1) + '\n', encoding='utf-8', newline='\n')
     print(f'✓ 渲染契约: {out}  {summary(mf)}')
     return 0
 

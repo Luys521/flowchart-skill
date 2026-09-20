@@ -33,17 +33,18 @@ html 的逐字节基线得重新证；而**现在只有一个消费者**，抽�
 裁掉（实测差 30px）；② svg 与 html 的节点坐标于是**完全重合**，两边的几何表可以直接对照。
 `head_band(False)` 必须在 `L.lanes()` **之前**调——`legend_h` 会改写 `origin_y`/`rowy`，
 顺序反了量到的是带标题带的那一套坐标（html 侧同样在 `_load_render_context` 里先切带）。
+退出码：0 = 写出 .svg；1 = 输入读不了 / 渲染失败。
 """
 from pathlib import Path
 
 from artifact import artifact_rel
 from engine import load
 from geometry import arc_px
-from semantics import arrow_markers, pending_style, subflow_target
+from semantics import arrow_markers, pending_style, subflow_target, SUB_INSET
 
-# 可下钻节点的记号：**框内一道内衬线**（同形状内缩 SUB_INSET，见 D-78）。与另两个渲染器同值。
+# 可下钻节点的记号：**框内一道内衬线**（同形状内缩 `SUB_INSET`，见 D-78）。
 # 框内是关键：出了框就要和端口、相邻墨迹、包围盒/网格打交道；框内谁都不碰。
-SUB_INSET = 2.0
+# 那个数**不在这里**：三份渲染器共用同一个（`semantics.SUB_INSET`，D-115）。
 
 
 # 与 render_html 同口径的数值格式化（整数不带小数点，避免产物里出现 `400.0`）。
@@ -244,7 +245,7 @@ def render(dsl_path, out_path, ctx=None):
            f' width="{_fmt(W)}" height="{_fmt(H)}">\n'
            f'<title>{_esc(L.dsl.get("meta", {}).get("title", ""))}</title>\n'
            + '\n'.join(body) + '\n</svg>\n')
-    Path(out_path).write_text(xml, encoding='utf-8')
+    Path(out_path).write_text(xml, encoding='utf-8', newline='\n')
     print(f'生成: {out_path}  节点: {len(L.dsl["nodes"])}  边: {len(L.edges)}  画布: {_fmt(W)}x{_fmt(H)}')
     return 0
 

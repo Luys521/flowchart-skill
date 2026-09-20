@@ -4,10 +4,11 @@
   1 网格贴合：直接复用 validate.check()，不另写一套审计（验证要验的就是那份实现）
   2 确定性：换 PYTHONHASHSEED 多次渲染，产物必须逐字节相同（否则说明有集合迭代顺序依赖）
   3 幂等：同一流程表 build 两次，产物不变
-  4 只读事实源：跑完整面测试不许往 `examples/` 写一个字节，且那里**不许有产物**（D-66）
-  5 自愈：手塞离格几何 → 吸附 + 提示，且仍通过
-  6 图例带：带内不得出现节点/折点（origin_y 已按带高下推，这是结构保证）
-  7 门面一致：`Engine.sizes` 必须直接指向 `grid.sizes`（否则两层各拿一份尺寸，改了不同步）
+  4 产物一律 LF：build 写出的产物不带 CR（换平台也得同字节；D-115）
+  5 只读事实源：跑完整面测试不许往 `examples/` 写一个字节，且那里**不许有产物**（D-66）
+  6 自愈：手塞离格几何 → 吸附 + 提示，且仍通过
+  7 图例带：带内不得出现节点/折点（origin_y 已按带高下推，这是结构保证）
+  8 门面一致：`Engine.sizes` 必须直接指向 `grid.sizes`（否则两层各拿一份尺寸，改了不同步）
 
 （清单与 `run_face` 的 `c.section` 一一对应；增删小节时这里要跟着改。）
 """
@@ -77,6 +78,7 @@ def run_face(tmp):
     # 进循环前记下事实源指纹，循环后逐字节复核（见本节末尾的"examples/ 是只读的事实源"）。
     src_digests = {p.relative_to(EXAMPLES).as_posix(): md5(p)
                    for p in sorted(EXAMPLES.rglob('*')) if p.is_file()}
+    crlf = []                      # 刚 build 出来的产物里带 CR 的（见本节末的「产物一律 LF」）
     for n in SAMPLES:
         # **目录名必须与样例同名**：产物名由目录名决定（D-51），换个目录名 build 就会产出
         # 另一个名字的文件——`idem-<名>/` 这种前缀会让"产物不变"根本无从比对（旧名字的文件
@@ -103,6 +105,19 @@ def run_face(tmp):
         # 画出来的还是当初审过的那份产物（跨版本漂移就是这么溜过去的）。
         c.check([md5(p) for p in arts] == [md5(_art(n, p.suffix.lstrip('.'))) for p in arts],
                 f'{n} 重建产物与基线逐字节相同')
+        crlf += [p.relative_to(work).as_posix() for p in arts
+                 if b'\r' in p.read_bytes()]
+
+    c.section('产物一律 LF：换个平台也得同字节（D-115）')
+    # 为什么单独一节：本仓的安全网是"逐字节不变"（`.gitattributes` 用 `* -text` 让 Git 不碰字节），
+    # 但**写产物那一侧有没有钉 LF** 一直没人管——`Path.write_text()` 不传 `newline=` 时，
+    # Windows 会把 `\n` 翻成 `\r\n`。实测（2026-09-19）：`*-flow.yaml` / `*.manifest.json` /
+    # 三份产物在 Windows 上是 CRLF，而 `flowtable.md`（走 `write_bytes`）是 LF；
+    # 所有比对都是"自己跟自己比"，所以**没有任何仪器看得见**——一旦有人在 Linux 上跑，
+    # 基线整棵树都会"逐字节不同"。判据落在**刚造出来的那几份产物**上（不是基线）：
+    # 这样写产物那一侧的回归当场现形，而不是等到换平台。
+    c.check(not crlf, 'build 写出的产物没有 CR（跨平台同字节）',
+            '；'.join(crlf[:4]))
 
     c.section('examples/ 是只读的事实源')
     # D-66 之后 examples/ **只有** flowtable.md（产物在 dev/baseline/），所以这条能直接
