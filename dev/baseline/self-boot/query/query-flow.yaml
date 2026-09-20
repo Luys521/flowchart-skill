@@ -121,7 +121,8 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 默认值 = 内置 + `dictionary.yaml` 的 `query:` 段（读不到就用内置，**不报错**）。 · L172 · 函数
+  desc: ★ 默认值 = 内置 + `dictionary.yaml` 的 `query:` 段（**读取口径只有一处**：`thr… · L172 · 函数
+    · ⇢ 依赖 thresholds.load
 - id: '10'
   name: main
   lines:
@@ -133,7 +134,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→05｜3→06｜4→07｜5→08｜6→09
-  desc: ★ 命令行入口：读账本 → 解析范围 → 取一批 → 打印（或 `--json`）。 · L188 · 函数 · 分支：1→parse_range
+  desc: ★ 命令行入口：读账本 → 解析范围 → 取一批 → 打印（或 `--json`）。 · L180 · 函数 · 分支：1→parse_range
     2→loc_text 3→excerpt 4→select 5→render 6→load_defaults · ⇢ 依赖 capability.compare、capability.read_json、capability.warn
 - id: '11'
   name: 结束

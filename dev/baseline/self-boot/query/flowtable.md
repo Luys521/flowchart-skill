@@ -20,6 +20,6 @@ parent: ../flowtable.md
 | 模块级 | 06 | excerpt | 任务 | — | — | — | 脚本 | selfboot | — | →11 | ★ 一条证据的**短摘录**：有正文用正文；表格给"行×列 + 头一行"；都没有就用 id（不装空）。 · L123 · 函数 |
 | 模块级 | 07 | select | 任务 | — | — | — | 脚本 | selfboot | — | 1→03｜2→04 | ★ 账本元素 → `(这一批的行, 命中总数)`。顺序 = 账本原序（阅读序），**同输入同输出**。 · L146 · 函数 · 分支：1→in_range 2→matches |
 | 模块级 | 08 | render | 任务 | — | — | — | 脚本 | selfboot | — | 1→05｜2→06 | ★ 这一批（markdown）+ **游标行**——AI 靠它决定"要不要再要一口"，而不是一次把全部灌进去。 · L157 · 函数 · 分支：1→loc_text 2→excerpt |
-| 模块级 | 09 | load_defaults | 任务 | — | — | — | 脚本 | selfboot | — | →11 | ★ 默认值 = 内置 + `dictionary.yaml` 的 `query:` 段（读不到就用内置，**不报错**）。 · L172 · 函数 |
-| 模块级 | 10 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→05｜3→06｜4→07｜5→08｜6→09 | ★ 命令行入口：读账本 → 解析范围 → 取一批 → 打印（或 `--json`）。 · L188 · 函数 · 分支：1→parse_range 2→loc_text 3→excerpt 4→select 5→render 6→load_defaults · ⇢ 依赖 capability.compare、capability.read_json、capability.warn |
+| 模块级 | 09 | load_defaults | 任务 | — | — | — | 脚本 | selfboot | — | →11 | ★ 默认值 = 内置 + `dictionary.yaml` 的 `query:` 段（**读取口径只有一处**：`thr… · L172 · 函数 · ⇢ 依赖 thresholds.load |
+| 模块级 | 10 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→05｜3→06｜4→07｜5→08｜6→09 | ★ 命令行入口：读账本 → 解析范围 → 取一批 → 打印（或 `--json`）。 · L180 · 函数 · 分支：1→parse_range 2→loc_text 3→excerpt 4→select 5→render 6→load_defaults · ⇢ 依赖 capability.compare、capability.read_json、capability.warn |
 | 出口 | 11 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |

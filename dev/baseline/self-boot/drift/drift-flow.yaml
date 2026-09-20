@@ -34,7 +34,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →29
-  desc: ★ 按**列名前缀**取值（`状态（AI 填）` / `走哪条路` 这类名字前缀足够稳，后缀由对方决定）。 · L111 · 函数
+  desc: ★ 按**列名前缀**取值（`状态（AI 填）` / `走哪条路` 这类名字前缀足够稳，后缀由对方决定）。 · L112 · 函数
 - id: '03'
   name: _ids
   lines:
@@ -46,7 +46,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →29
-  desc: ★ 单元格 → 引用到的 id 集合（element id 与裸 `M##` 都在内）。 · L119 · 函数
+  desc: ★ 单元格 → 引用到的 id 集合（element id 与裸 `M##` 都在内）。 · L120 · 函数
 - id: '04'
   name: _mats
   lines:
@@ -58,7 +58,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →03
-  desc: ★ 单元格 → 引用到的**材料号**集合（`M03#p012` → `M03`）。 · L124 · 函数
+  desc: ★ 单元格 → 引用到的**材料号**集合（`M03#p012` → `M03`）。 · L125 · 函数
 - id: '05'
   name: _cited
   lines:
@@ -70,7 +70,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →03
-  desc: ★ 全表引用到的 id 集合：依据列 + 节点描述（描述里也会写"见 M05"这类引用）。 · L129 · 函数
+  desc: ★ 全表引用到的 id 集合：依据列 + 节点描述（描述里也会写"见 M05"这类引用）。 · L130 · 函数
 - id: '06'
   name: rule_d1
   lines:
@@ -82,7 +82,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →03
-  desc: ★ D1 等级拔高：依据指向 `certainty=inferred`（`extractor=vlm`）或带 `degra… · L138 · 函数
+  desc: ★ D1 等级拔高：依据指向 `certainty=inferred`（`extractor=vlm`）或带 `degra… · L139 · 函数
     · ⇢ 依赖 semantics.pending_kind
 - id: '07'
   name: rule_d2
@@ -95,7 +95,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→04
-  desc: ★ D2 假设被推翻仍在用：假设账里 `状态 = 已推翻` 的材料，表里还有节点依据它。 · L172 · 函数 · 分支：1→_col 2→_mats
+  desc: ★ D2 假设被推翻仍在用：假设账里 `状态 = 已推翻` 的材料，表里还有节点依据它。 · L173 · 函数 · 分支：1→_col 2→_mats
 - id: 08
   name: rule_d3
   lines:
@@ -107,7 +107,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →04
-  desc: ★ D3 建立在读不动的材料上：依据里的材料在账本里 `status=unreadable`——断言的来源不存在。 · L183 · 函数
+  desc: ★ D3 建立在读不动的材料上：依据里的材料在账本里 `status=unreadable`——断言的来源不存在。 · L184 · 函数
 - id: 09
   name: rule_d4
   lines:
@@ -119,7 +119,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→05
-  desc: ★ D4 含流程的材料零引用 → **缺口**：这份材料的信息没进表（漏读，或读了没落表）。 · L196 · 函数 · 分支：1→_col 2→_cited
+  desc: ★ D4 含流程的材料零引用 → **缺口**：这份材料的信息没进表（漏读，或读了没落表）。 · L197 · 函数 · 分支：1→_col 2→_cited
 - id: '10'
   name: rule_d5
   lines:
@@ -131,7 +131,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →02
-  desc: ★ D5 读了没用上 → **缺口**：元素够多、被引用比例却过低（"只读了开头"）。 · L214 · 函数
+  desc: ★ D5 读了没用上 → **缺口**：元素够多、被引用比例却过低（"只读了开头"）。 · L215 · 函数
 - id: '11'
   name: rule_readout
   lines:
@@ -143,7 +143,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →29
-  desc: ★ **依据分布**（§5.6，读数不是判据）→ `(每份材料一行, 汇总一句)`。 · L236 · 函数
+  desc: ★ **依据分布**（§5.6，读数不是判据）→ `(每份材料一行, 汇总一句)`。 · L237 · 函数
 - id: '12'
   name: collect
   lines:
@@ -155,7 +155,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→05｜2→06｜3→07｜4→08｜5→09｜6→10
-  desc: ★ 跑全部**启用**的判据 → `(漂移行, 缺口行)`。缺哪个输入就整条跳过（§5.2 启用条件）。 · L278 · 函数 · 分支：1→_cited
+  desc: ★ 跑全部**启用**的判据 → `(漂移行, 缺口行)`。缺哪个输入就整条跳过（§5.2 启用条件）。 · L279 · 函数 · 分支：1→_cited
     2→rule_d1 3→rule_d2 4→rule_d3 5→rule_d4 6→rule_d5
 - id: '13'
   name: load_thresholds
@@ -168,7 +168,8 @@ nodes:
   col: 0
   stage: 模块级
   route: →29
-  desc: ★ 阈值 = 默认 + `dictionary.yaml` 的 `drift:` 段（读不到就用默认，**不报错**）。 · L302 · 函数
+  desc: ★ 阈值 = 内置默认 + `dictionary.yaml` 的 `drift:` 段（**读取口径只有一处**：`th… · L303 · 函数
+    · ⇢ 依赖 thresholds.load
 - id: '14'
   name: load_flowtable
   lines:
@@ -180,7 +181,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →29
-  desc: ★ 流程表 → `(nodes, edges, errs)`。用的是**结构校验的唯一入口**（`run_checks`）… · L318 · 函数
+  desc: ★ 流程表 → `(nodes, edges, errs)`。用的是**结构校验的唯一入口**（`run_checks`）… · L308 · 函数
     · ⇢ 依赖 flowtable.parse_table、flowtable_check.run_checks
 - id: '15'
   name: index_ledger
@@ -193,7 +194,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →29
-  desc: ★ 账本 → `(元素 id → 元素, 材料 id → 材料)`。取不到的键不硬造（下游按"没有"处理）。 · L324 · 函数
+  desc: ★ 账本 → `(元素 id → 元素, 材料 id → 材料)`。取不到的键不硬造（下游按"没有"处理）。 · L314 · 函数
 - id: '16'
   name: read_side_table
   lines:
@@ -205,7 +206,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →29
-  desc: '★ `recon.md` / `intake.md` → `({M##: {列: 值}}, 报错)`。**列按名字取**，… · L331 · 函数'
+  desc: '★ `recon.md` / `intake.md` → `({M##: {列: 值}}, 报错)`。**列按名字取**，… · L321 · 函数'
 - id: '17'
   name: inputs_of
   lines:
@@ -217,7 +218,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→15｜2→16
-  desc: ★ 一次运行的三份输入 → `(元素表, 材料表, 假设账, 清点, 报错)`。 · L367 · 函数 · 分支：1→index_ledger 2→read_side_table
+  desc: ★ 一次运行的三份输入 → `(元素表, 材料表, 假设账, 清点, 报错)`。 · L357 · 函数 · 分支：1→index_ledger 2→read_side_table
 - id: '18'
   name: prepare
   lines:
@@ -229,7 +230,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→11｜2→12｜3→13｜4→14｜5→17
-  desc: ★ `build` / `check` 共用的准备 → `{判据读数, 阈值, 硬错, 读坏, 跳过了哪几条}`。 · L380 · 函数 · 分支：1→rule_readout
+  desc: ★ `build` / `check` 共用的准备 → `{判据读数, 阈值, 硬错, 读坏, 跳过了哪几条}`。 · L370 · 函数 · 分支：1→rule_readout
     2→collect 3→load_thresholds 4→load_flowtable 5→inputs_of
 - id: '19'
   name: parse_doc
@@ -242,7 +243,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →29
-  desc: ★ `drift.md` → `(漂移行, 缺口行, 报错)`。三张表的表头**必须逐字对得上**（列规范在代码里只有一份… · L399 · 函数
+  desc: ★ `drift.md` → `(漂移行, 缺口行, 报错)`。三张表的表头**必须逐字对得上**（列规范在代码里只有一份… · L389 · 函数
 - id: '20'
   name: _blank
   lines:
@@ -254,7 +255,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →29
-  desc: ★ 空值判据（`—` / 空 / `无` 都算没填）——只给下面两个对账函数用，所以排在这里。 · L432 · 函数
+  desc: ★ 空值判据（`—` / 空 / `无` 都算没填）——只给下面两个对账函数用，所以排在这里。 · L422 · 函数
 - id: '21'
   name: check_drift_rows
   lines:
@@ -266,7 +267,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →20
-  desc: ★ 漂移账 → 错误清单。**该表与"现在的读数"双向对账**： · L437 · 函数
+  desc: ★ 漂移账 → 错误清单。**该表与"现在的读数"双向对账**： · L427 · 函数
 - id: '22'
   name: check_gap_rows
   lines:
@@ -278,7 +279,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →20
-  desc: ★ 缺口清单 → 错误清单（状态封闭 · `已取证` 要写清要哪一片 · `已放弃` 要写理由 · 同样双向对账）。 · L474 · 函数
+  desc: ★ 缺口清单 → 错误清单（状态封闭 · `已取证` 要写清要哪一片 · `已放弃` 要写理由 · 同样双向对账）。 · L464 · 函数
 - id: '23'
   name: _esc
   lines:
@@ -290,7 +291,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →29
-  desc: ★ 单元格里的 `｜` 会撕表 → 换全角（与 `intake.py` 同一口径）。 · L496 · 函数
+  desc: ★ 单元格里的 `｜` 会撕表 → 换全角（与 `intake.py` 同一口径）。 · L486 · 函数
 - id: '24'
   name: render
   lines:
@@ -302,7 +303,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →23
-  desc: ★ 漂移清单 + 缺口清单（markdown）。**表头先写输入指纹、跳过的判据与本次阈值**—— · L501 · 函数
+  desc: ★ 漂移清单 + 缺口清单（markdown）。**表头先写输入指纹、跳过的判据与本次阈值**—— · L491 · 函数
 - id: '25'
   name: cmd_build
   lines:
@@ -314,7 +315,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→18｜2→24
-  desc: ★ 出草稿：机器列已填，AI 那几列留空（`待验` / `待取证`）。 · L539 · 函数 · 分支：1→prepare 2→render ·
+  desc: ★ 出草稿：机器列已填，AI 那几列留空（`待验` / `待取证`）。 · L529 · 函数 · 分支：1→prepare 2→render ·
     ⇢ 依赖 artifact.beside、cells.dump、cells.todo_from_doc
 - id: '26'
   name: check_header
@@ -327,7 +328,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →29
-  desc: ★ `drift.md` 头部（`>` 行）↔ 本次调用的**输入 / 阈值 / 表** → `(错误, 提示)`。 · L587 · 函数
+  desc: ★ `drift.md` 头部（`>` 行）↔ 本次调用的**输入 / 阈值 / 表** → `(错误, 提示)`。 · L577 · 函数
 - id: '27'
   name: cmd_check
   lines:
@@ -339,7 +340,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→18｜2→19｜3→21｜4→22｜5→26
-  desc: ★ 查收敛：**拿当前表重跑判据**，与文件里的处置对账（§5.4）。 · L626 · 函数 · 分支：1→prepare 2→parse_doc
+  desc: ★ 查收敛：**拿当前表重跑判据**，与文件里的处置对账（§5.4）。 · L616 · 函数 · 分支：1→prepare 2→parse_doc
     3→check_drift_rows 4→check_gap_rows 5→check_header
 - id: '28'
   name: main
@@ -352,7 +353,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→25｜2→27
-  desc: ★ 子命令分发。**用显式 if 而不是 `set_defaults(func=…)`**：后者在静态调用图里看不见， · L663 · 函数 ·
+  desc: ★ 子命令分发。**用显式 if 而不是 `set_defaults(func=…)`**：后者在静态调用图里看不见， · L653 · 函数 ·
     分支：1→cmd_build 2→cmd_check
 - id: '29'
   name: 结束

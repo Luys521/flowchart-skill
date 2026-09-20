@@ -198,7 +198,7 @@ SUBJECTS = ('AI', '用户', SUBJECT)
 PIPELINE_STAGES = (
     ('接管与解析', ('probe', 'recon', 'parse', 'textquality', 'pptx_text', 'parse_ooxml', 'parse_pdf',
                     'parse_legacy', 'parse_text', 'render_pages', 'ledger', 'intake', 'plan', 'cells', 'import_table',
-                    'flowtable', 'semantics', 'artifact', 'capability')),
+                    'flowtable', 'semantics', 'artifact', 'capability', 'thresholds')),
     ('结构校验', ('flowtable_check',)),
     ('布局与配色', ('flowtable_layout', 'flowtable_colors')),
     ('DSL 装配', ('table_to_dsl',)),

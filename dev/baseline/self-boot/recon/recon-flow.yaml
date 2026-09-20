@@ -280,7 +280,8 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: ★ 阈值 = 内置默认 + `dictionary.yaml` 的 `recon:` 段。**读不动 / 形状不对一律退回… · L480 · 函数
+  desc: ★ 阈值 = 内置默认 + `dictionary.yaml` 的 `recon:` 段（**读取口径只有一处**：`th… · L480 · 函数
+    · ⇢ 依赖 thresholds.load
 - id: '23'
   name: check_materials_shape
   lines:
@@ -292,7 +293,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: ★ 材料层**形状体检** → 报错文案（空 = 过）。 · L507 · 函数
+  desc: ★ 材料层**形状体检** → 报错文案（空 = 过）。 · L490 · 函数
 - id: '24'
   name: build
   lines:
@@ -304,7 +305,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→16｜2→17｜3→20｜4→21｜5→22｜6→23
-  desc: ★ 出侦查结论表草稿 → 退出码。 · L525 · 函数 · 分支：1→make_rows 2→render 3→_write 4→_read_json
+  desc: ★ 出侦查结论表草稿 → 退出码。 · L508 · 函数 · 分支：1→make_rows 2→render 3→_write 4→_read_json
     5→load_thresholds 6→check_materials_shape · ⇢ 依赖 cells.dump、cells.todo_from_doc
 - id: '25'
   name: check
@@ -317,7 +318,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→18｜2→19｜3→21｜4→22
-  desc: ★ 校验 AI 填好的表 → 退出码 0/1/2。 · L567 · 函数 · 分支：1→parse_table 2→check_rows 3→_read_json
+  desc: ★ 校验 AI 填好的表 → 退出码 0/1/2。 · L550 · 函数 · 分支：1→parse_table 2→check_rows 3→_read_json
     4→load_thresholds
 - id: '26'
   name: main
@@ -330,7 +331,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→24｜2→25
-  desc: L593 · 函数 · 分支：1→build 2→check · ⇢ 依赖 artifact.beside
+  desc: L576 · 函数 · 分支：1→build 2→check · ⇢ 依赖 artifact.beside
 - id: '27'
   name: 结束
   lines:

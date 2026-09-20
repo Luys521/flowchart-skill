@@ -1,0 +1,59 @@
+meta:
+  title: thresholds.py 函数流程表
+  subjects:
+    脚本:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  width: 680
+  origin_x: -60
+nodes:
+- id: '01'
+  name: 开始
+  lines:
+  - 开始
+  type: start
+  subject: 脚本
+  executor: selfboot
+  row: 0
+  col: 0
+  stage: 入口
+  route: 1→02
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→load
+- id: '02'
+  name: load
+  lines:
+  - load
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 1
+  col: 0
+  stage: 模块级
+  route: →03
+  desc: ★ `dictionary.yaml` 的 `section:` 段 → 一份"**默认 + 覆盖**"的字典。 · L29 · 函数
+- id: '03'
+  name: 结束
+  lines:
+  - 结束
+  type: end
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: 出口
+  route: —
+  desc: 流程终点（结构性节点，不是函数）
+edges:
+- from: '01'
+  to: '02'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '02'
+  to: '03'
+  kind: spine
+  polarity: main

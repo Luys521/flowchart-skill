@@ -53,7 +53,8 @@ level: L0
 | 同步闭环 | 40 | 模块 · sync | 任务 | — | — | — | 脚本 | selfboot | — | →41 | 10 个函数 · ⊞ sync/flowtable.md |
 | DSL 装配 | 41 | 模块 · table_to_dsl | 任务 | — | — | — | 脚本 | selfboot | — | →42 | 14 个函数 · ⊞ table_to_dsl/flowtable.md |
 | 接管与解析 | 42 | 模块 · textquality | 任务 | — | — | — | 脚本 | selfboot | — | →43 | 9 个函数 · ⊞ textquality/flowtable.md |
-| 产物审核 | 43 | 模块 · validate | 任务 | — | — | — | 脚本 | selfboot | — | →44 | 39 个函数 · ⊞ validate/flowtable.md |
-| 同步闭环 | 44 | 模块 · writeback | 任务 | — | — | — | 脚本 | selfboot | — | →45 | 21 个函数 · ⊞ writeback/flowtable.md |
-| 同步闭环 | 45 | 模块 · xml_reader | 任务 | — | — | — | 脚本 | selfboot | — | →46 | 40 个函数 · ⊞ xml_reader/flowtable.md |
-| 出口 | 46 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |
+| 接管与解析 | 43 | 模块 · thresholds | 任务 | — | — | — | 脚本 | selfboot | — | →44 | 1 个函数 · ⊞ thresholds/flowtable.md |
+| 产物审核 | 44 | 模块 · validate | 任务 | — | — | — | 脚本 | selfboot | — | →45 | 39 个函数 · ⊞ validate/flowtable.md |
+| 同步闭环 | 45 | 模块 · writeback | 任务 | — | — | — | 脚本 | selfboot | — | →46 | 21 个函数 · ⊞ writeback/flowtable.md |
+| 同步闭环 | 46 | 模块 · xml_reader | 任务 | — | — | — | 脚本 | selfboot | — | →47 | 40 个函数 · ⊞ xml_reader/flowtable.md |
+| 出口 | 47 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |

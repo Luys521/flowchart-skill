@@ -42,6 +42,7 @@ import time
 from pathlib import Path
 
 from semantics import DICT_NAME
+import thresholds
 
 # OLE 复合文档头（§1.2 的魔数判据）
 OLE_MAGIC = b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1'
@@ -262,23 +263,11 @@ def extract_via_ooxml(converted, mid, original, timeout):
 
 # ----------------------------------------------------------------自包含降级读法（§1.6）
 def load_thresholds(path=None):
-    """阈值 = 内置默认 + `dictionary.yaml` 的 `legacy_text:` 段（读不到就用默认，**不报错**）。
+    """阈值 = 内置默认 + `dictionary.yaml` 的 `legacy_text:` 段（**读取口径只有一处**：`thresholds.load`）。
 
-    与 `textquality.load_thresholds` 同一取舍：这是"多一条降级路"，不是主链依赖——
-    缺 PyYAML / 缺字典时退回默认，比让整条解析链停下来合算。
+    读不到不报错是有意的（见 `thresholds.py` 文件头）：这是"多一条降级路"，不是主链依赖。
     """
-    th = dict(DEFAULT_TH)
-    p = Path(path) if path else Path(__file__).with_name(DICT_NAME)
-    try:
-        import yaml
-        with open(p, encoding='utf-8') as fh:
-            got = (yaml.safe_load(fh) or {}).get('legacy_text') or {}
-    except Exception:
-        return th
-    for k, v in got.items():
-        if k in th and isinstance(v, (int, float)) and not isinstance(v, bool):
-            th[k] = v
-    return th
+    return thresholds.load('legacy_text', DEFAULT_TH, path)
 
 
 def _is_text_unit(ch):

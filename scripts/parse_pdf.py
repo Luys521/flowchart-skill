@@ -24,8 +24,8 @@ import json
 import re
 import sys
 from pathlib import Path
+import thresholds
 
-from semantics import DICT_NAME
 
 DEP_PKG = {'pdfplumber': 'pdfplumber'}
 
@@ -76,19 +76,8 @@ THIN_ACTION = ('文字层可能只是页眉 / 标签，正文多半在图里：�
 
 
 def load_thresholds(path=None):
-    """阈值 = 内置默认 + `dictionary.yaml` 的 `pdf_text_layer:` 段（读不到就用默认，**不报错**）。"""
-    th = dict(DEFAULT_TEXT_LAYER)
-    p = Path(path) if path else Path(__file__).with_name(DICT_NAME)
-    try:
-        import yaml
-        with open(p, encoding='utf-8') as fh:
-            got = (yaml.safe_load(fh) or {}).get('pdf_text_layer') or {}
-    except Exception:
-        return th
-    for k, v in got.items():
-        if k in th and isinstance(v, (int, float)) and not isinstance(v, bool):
-            th[k] = v
-    return th
+    """阈值 = 内置默认 + `dictionary.yaml` 的 `pdf_text_layer:` 段（**读取口径只有一处**：`thresholds.load`）。"""
+    return thresholds.load('pdf_text_layer', DEFAULT_TEXT_LAYER, path)
 
 
 def thin_note(total, elements, th=None):

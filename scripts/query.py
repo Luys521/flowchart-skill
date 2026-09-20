@@ -49,7 +49,7 @@ from pathlib import Path
 
 from textquality import element_haystack
 import capability
-from semantics import DICT_NAME
+import thresholds
 
 # 默认值 = "人给的圆整默认"，`dictionary.yaml` 的 `query:` 段按名覆盖（数值只有一个家，§1.2）。
 DEFAULTS = {
@@ -170,19 +170,11 @@ def render(rows, total, meta, limit, rwin=None):
 
 
 def load_defaults(path=None):
-    """默认值 = 内置 + `dictionary.yaml` 的 `query:` 段（读不到就用内置，**不报错**）。"""
-    th = dict(DEFAULTS)
-    p = Path(path) if path else Path(__file__).with_name(DICT_NAME)
-    try:
-        import yaml
-        with open(p, encoding='utf-8') as fh:
-            got = (yaml.safe_load(fh) or {}).get('query') or {}
-    except Exception:                                # 缺依赖 / 缺文件 / 坏 YAML：一律退回内置
-        return th
-    for k, v in got.items():
-        if k in th and isinstance(v, int) and not isinstance(v, bool) and v > 0:
-            th[k] = v
-    return th
+    """默认值 = 内置 + `dictionary.yaml` 的 `query:` 段（**读取口径只有一处**：`thresholds.load`）。
+
+    这一处要求**正整数**（`--batch 0` 那种"给了 0"要被下面那句守卫抓住，所以 0 不许被当成有效覆盖）。
+    """
+    return thresholds.load('query', DEFAULTS, path, positive_int=True)
 
 
 def main(argv=None):

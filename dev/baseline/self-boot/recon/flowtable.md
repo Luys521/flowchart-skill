@@ -33,9 +33,9 @@ parent: ../flowtable.md
 | 模块级 | 19 | check_rows | 任务 | — | — | — | 脚本 | selfboot | — | →16 | ★ AI 填的列 + 脚本列 → 错误清单（空 = 过）。**只报不改**；§1.5"假设必须落盘、被推翻也要留痕"。 · L419 · 函数 |
 | 模块级 | 20 | _write | 任务 | — | — | — | 脚本 | selfboot | — | →27 | ★ 写盘：UTF-8 / LF（与账本同一套口径；本文件通篇用 `\n` 拼）。 · L472 · 函数 |
 | 模块级 | 21 | _read_json | 任务 | — | — | — | 脚本 | selfboot | — | →27 | ★ 读 JSON（容忍 BOM）。 · L476 · 函数 |
-| 模块级 | 22 | load_thresholds | 任务 | — | — | — | 脚本 | selfboot | — | →27 | ★ 阈值 = 内置默认 + `dictionary.yaml` 的 `recon:` 段。**读不动 / 形状不对一律退回… · L480 · 函数 |
-| 模块级 | 23 | check_materials_shape | 任务 | — | — | — | 脚本 | selfboot | — | →27 | ★ 材料层**形状体检** → 报错文案（空 = 过）。 · L507 · 函数 |
-| 模块级 | 24 | build | 任务 | — | — | — | 脚本 | selfboot | — | 1→16｜2→17｜3→20｜4→21｜5→22｜6→23 | ★ 出侦查结论表草稿 → 退出码。 · L525 · 函数 · 分支：1→make_rows 2→render 3→_write 4→_read_json 5→load_thresholds 6→check_materials_shape · ⇢ 依赖 cells.dump、cells.todo_from_doc |
-| 模块级 | 25 | check | 任务 | — | — | — | 脚本 | selfboot | — | 1→18｜2→19｜3→21｜4→22 | ★ 校验 AI 填好的表 → 退出码 0/1/2。 · L567 · 函数 · 分支：1→parse_table 2→check_rows 3→_read_json 4→load_thresholds |
-| 模块级 | 26 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→24｜2→25 | L593 · 函数 · 分支：1→build 2→check · ⇢ 依赖 artifact.beside |
+| 模块级 | 22 | load_thresholds | 任务 | — | — | — | 脚本 | selfboot | — | →27 | ★ 阈值 = 内置默认 + `dictionary.yaml` 的 `recon:` 段（**读取口径只有一处**：`th… · L480 · 函数 · ⇢ 依赖 thresholds.load |
+| 模块级 | 23 | check_materials_shape | 任务 | — | — | — | 脚本 | selfboot | — | →27 | ★ 材料层**形状体检** → 报错文案（空 = 过）。 · L490 · 函数 |
+| 模块级 | 24 | build | 任务 | — | — | — | 脚本 | selfboot | — | 1→16｜2→17｜3→20｜4→21｜5→22｜6→23 | ★ 出侦查结论表草稿 → 退出码。 · L508 · 函数 · 分支：1→make_rows 2→render 3→_write 4→_read_json 5→load_thresholds 6→check_materials_shape · ⇢ 依赖 cells.dump、cells.todo_from_doc |
+| 模块级 | 25 | check | 任务 | — | — | — | 脚本 | selfboot | — | 1→18｜2→19｜3→21｜4→22 | ★ 校验 AI 填好的表 → 退出码 0/1/2。 · L550 · 函数 · 分支：1→parse_table 2→check_rows 3→_read_json 4→load_thresholds |
+| 模块级 | 26 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→24｜2→25 | L576 · 函数 · 分支：1→build 2→check · ⇢ 依赖 artifact.beside |
 | 出口 | 27 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |

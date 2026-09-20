@@ -5,7 +5,7 @@
 
 ## 层级树
 
-- **L0 主流程** `flowtable.md`——《self-boot — 模块索引》（id: selfboot-map）（46 节点）
+- **L0 主流程** `flowtable.md`——《self-boot — 模块索引》（id: selfboot-map）（47 节点）
   - **L1 子流程** `artifact/flowtable.md`——《artifact.py 函数流程表》（id: selfboot-artifact）（5 节点）
   - **L1 子流程** `build/flowtable.md`——《build.py 函数流程表》（id: selfboot-build）（27 节点）
   - **L1 子流程** `capability/flowtable.md`——《capability.py 函数流程表》（id: selfboot-capability）（14 节点）
@@ -47,6 +47,7 @@
   - **L1 子流程** `sync/flowtable.md`——《sync.py 函数流程表》（id: selfboot-sync）（12 节点）
   - **L1 子流程** `table_to_dsl/flowtable.md`——《table_to_dsl.py 函数流程表》（id: selfboot-table_to_dsl）（16 节点）
   - **L1 子流程** `textquality/flowtable.md`——《textquality.py 函数流程表》（id: selfboot-textquality）（11 节点）
+  - **L1 子流程** `thresholds/flowtable.md`——《thresholds.py 函数流程表》（id: selfboot-thresholds）（3 节点）
   - **L1 子流程** `validate/flowtable.md`——《validate.py 函数流程表》（id: selfboot-validate）（41 节点）
   - **L1 子流程** `writeback/flowtable.md`——《writeback.py 函数流程表》（id: selfboot-writeback）（23 节点）
   - **L1 子流程** `xml_reader/flowtable.md`——《xml_reader.py 函数流程表》（id: selfboot-xml_reader）（42 节点）
@@ -94,7 +95,8 @@
 39. `sync/flowtable.md`（L1）
 40. `table_to_dsl/flowtable.md`（L1）
 41. `textquality/flowtable.md`（L1）
-42. `validate/flowtable.md`（L1）
-43. `writeback/flowtable.md`（L1）
-44. `xml_reader/flowtable.md`（L1）
-45. `flowtable.md`（L0）
+42. `thresholds/flowtable.md`（L1）
+43. `validate/flowtable.md`（L1）
+44. `writeback/flowtable.md`（L1）
+45. `xml_reader/flowtable.md`（L1）
+46. `flowtable.md`（L0）

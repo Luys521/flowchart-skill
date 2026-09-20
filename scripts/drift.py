@@ -63,8 +63,9 @@ from pathlib import Path
 from flowtable import Errors, parse_table
 from flowtable_check import run_checks
 import cells
-from semantics import DICT_NAME, pending_kind
+from semantics import pending_kind
 import artifact
+import thresholds
 
 # 阈值 = "人给的默认"（数值只有一个家，§1.2）；`dictionary.yaml` 的 `drift:` 段按名覆盖。
 DEFAULTS = {
@@ -300,19 +301,8 @@ def collect(nodes, _edges, els, mats, recon, intake, th):
 
 # ----------------------------------------------------------------读入（表 / 账本 / 两张伴生表）
 def load_thresholds(path=None):
-    """阈值 = 默认 + `dictionary.yaml` 的 `drift:` 段（读不到就用默认，**不报错**）。"""
-    th = dict(DEFAULTS)
-    p = Path(path) if path else Path(__file__).with_name(DICT_NAME)
-    try:
-        import yaml
-        with open(p, encoding='utf-8') as fh:
-            got = (yaml.safe_load(fh) or {}).get('drift') or {}
-    except Exception:                                # 缺依赖 / 缺文件 / 坏 YAML：一律退回默认
-        return th
-    for k, v in got.items():
-        if k in th and isinstance(v, (int, float)) and not isinstance(v, bool):
-            th[k] = v
-    return th
+    """阈值 = 内置默认 + `dictionary.yaml` 的 `drift:` 段（**读取口径只有一处**：`thresholds.load`）。"""
+    return thresholds.load('drift', DEFAULTS, path)
 
 
 def load_flowtable(path):

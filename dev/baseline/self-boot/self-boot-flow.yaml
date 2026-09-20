@@ -516,33 +516,33 @@ nodes:
   route: →43
   desc: 9 个函数 · ⊞ textquality/flowtable.md
 - id: '43'
+  name: 模块 · thresholds
+  lines:
+  - 模块 · thresholds
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 42
+  col: 0
+  stage: 接管与解析
+  route: →44
+  desc: 1 个函数 · ⊞ thresholds/flowtable.md
+- id: '44'
   name: 模块 · validate
   lines:
   - 模块 · validate
   type: task
   subject: 脚本
   executor: selfboot
-  row: 42
+  row: 43
   col: 0
   stage: 产物审核
-  route: →44
+  route: →45
   desc: 39 个函数 · ⊞ validate/flowtable.md
-- id: '44'
+- id: '45'
   name: 模块 · writeback
   lines:
   - 模块 · writeback
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 43
-  col: 0
-  stage: 同步闭环
-  route: →45
-  desc: 21 个函数 · ⊞ writeback/flowtable.md
-- id: '45'
-  name: 模块 · xml_reader
-  lines:
-  - 模块 · xml_reader
   type: task
   subject: 脚本
   executor: selfboot
@@ -550,15 +550,27 @@ nodes:
   col: 0
   stage: 同步闭环
   route: →46
-  desc: 40 个函数 · ⊞ xml_reader/flowtable.md
+  desc: 21 个函数 · ⊞ writeback/flowtable.md
 - id: '46'
+  name: 模块 · xml_reader
+  lines:
+  - 模块 · xml_reader
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 45
+  col: 0
+  stage: 同步闭环
+  route: →47
+  desc: 40 个函数 · ⊞ xml_reader/flowtable.md
+- id: '47'
   name: 结束
   lines:
   - 结束
   type: end
   subject: 脚本
   executor: selfboot
-  row: 45
+  row: 46
   col: 0
   stage: 出口
   route: —
@@ -742,5 +754,9 @@ edges:
   polarity: main
 - from: '45'
   to: '46'
+  kind: spine
+  polarity: main
+- from: '46'
+  to: '47'
   kind: spine
   polarity: main

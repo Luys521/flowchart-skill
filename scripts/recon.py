@@ -42,8 +42,8 @@ from pathlib import Path
 
 import cells
 from pptx_text import other_text_parts_in_file, scan_cost, slides_in_file
-from semantics import DICT_NAME
 import artifact
+import thresholds
 
 DEP_PKG = {'docx': 'python-docx', 'openpyxl': 'openpyxl'}
 
@@ -478,28 +478,11 @@ def _read_json(path):
     return json.loads(Path(path).read_text(encoding='utf-8-sig'))
 
 def load_thresholds(path=None):
-    """阈值 = 内置默认 + `dictionary.yaml` 的 `recon:` 段。**读不动 / 形状不对一律退回默认，不报错**。
+    """阈值 = 内置默认 + `dictionary.yaml` 的 `recon:` 段（**读取口径只有一处**：`thresholds.load`）。
 
-    审计实测的坑：原先 `try` 只包住 import/open/`safe_load`，而 `for k, v in got.items()` 在 `try` **外**——
-    于是 `recon: [1,2]`（YAML 里给列表，常见笔误）抛 `AttributeError: 'list' object has no attribute 'items'`，
-    **整批零产出退 1**（正是 §1.5 明令不许的那种失败）。现在形状不是字典就退回默认。
-    阈值还要求**正整数**：`outline_max: -1` 会让摘要谎称"没抽出文字"、`0` 被下游当成"不限"
-    （依据数字与行为不符）——收下这种值等于让摘要说假话。
+    这一处要求**正整数**（`outline_max: -1` 会让摘要谎称"没抽出文字"、`0` 被下游当成"不限"）。
     """
-    th = dict(DEFAULTS)
-    p = Path(path) if path else Path(__file__).with_name(DICT_NAME)
-    try:
-        import yaml
-        with open(p, encoding='utf-8') as fh:
-            got = (yaml.safe_load(fh) or {}).get('recon') or {}
-        if not isinstance(got, dict):
-            return th
-        for k, v in got.items():
-            if k in th and isinstance(v, int) and not isinstance(v, bool) and v > 0:
-                th[k] = v
-    except Exception:                                # 缺依赖 / 缺文件 / 坏 YAML / 形状不对：一律退回默认
-        return th
-    return th
+    return thresholds.load('recon', DEFAULTS, path, positive_int=True)
 
 
 # ----------------------------------------------------------------结构缩样（尽力而为，绝不外溢）

@@ -20,9 +20,7 @@ r"""textquality.py — 抽取质量判据（PIPELINE-SPEC §1.5「手段 0」）
 判据只吃**文字类** kind（`paragraph` / `heading` / `list_item` / `caption` / `code`）：
 `table` / `sheet` 的内容在 `rows` 里，`figure` 是图——都不该按"行"统计。
 """
-from pathlib import Path
-
-from semantics import DICT_NAME
+import thresholds
 
 
 def element_haystack(el):
@@ -54,23 +52,11 @@ DEFAULTS = {
 
 
 def load_thresholds(path=None):
-    """阈值 = 默认 + `dictionary.yaml` 的 `material_quality:` 段（读不到就用默认，**不报错**）。
+    """阈值 = 默认 + `dictionary.yaml` 的 `material_quality:` 段（**读取口径只有一处**：`thresholds.load`）。
 
-    读不到不报错是有意的：判据是"锦上添花的一道门"，不是主链依赖；缺 PyYAML / 缺字典时
-    退化成内置默认，比让整条解析链停下来更合算。
+    读不到不报错是有意的（见 `thresholds.py` 文件头）：判据是"锦上添花的一道门"，不是主链依赖。
     """
-    th = dict(DEFAULTS)
-    p = Path(path) if path else Path(__file__).with_name(DICT_NAME)
-    try:
-        import yaml
-        with open(p, encoding='utf-8') as fh:
-            got = (yaml.safe_load(fh) or {}).get('material_quality') or {}
-    except Exception:                                  # 缺依赖 / 缺文件 / 坏 YAML：一律退回默认
-        return th
-    for k, v in got.items():
-        if k in th and isinstance(v, (int, float)) and not isinstance(v, bool):
-            th[k] = v
-    return th
+    return thresholds.load('material_quality', DEFAULTS, path)
 
 
 def _bad_char(ch):
