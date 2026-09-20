@@ -30,6 +30,7 @@
 用法：`python dev/tools/pipeline-fixtures/suite.py`（退 0 = 全部符合预期）
 """
 import json
+import os
 import pathlib
 import re
 import shutil
@@ -1717,6 +1718,56 @@ def vlm_paths(root):
     return cases
 
 
+def parallel_paths(root):
+    """**并行批跑**（D-119）：两个任务、两个成果根、**同一个 cwd** 同时跑材料链。
+
+    为什么值得一条路径：`PIPELINE-SPEC` §7 把"并行的单位是流程 / 任务（各一棵产物树、各一个
+    工作目录）"写成了规矩，但**没有任何仪器证明过它**。而这条规矩的成立前提正是 D-119 那条改动：
+    默认落盘**跟着输入走**——在那之前，`elements.json` / `evidence.json` 默认落 **cwd**，
+    两个任务在同一目录里并发就是互相覆盖（在仓库根跑一次还会把产物撒进仓库根）。
+
+    判据四件：① 两个进程都 rc=0；② 各自的三件产物落在**自己的成果根**里（不传 `-o`，让默认说话）；
+    ③ **仓库根一个字节都没多**；④ 各自的账本里每份材料的 `path` 都在自己那棵树下（互不串味）。
+    """
+    cases = []
+    par = root / 'par'
+    roots = []
+    for tag, name in (('甲', '任务甲'), ('乙', '任务乙')):
+        d = par / name
+        (d / '材料').mkdir(parents=True, exist_ok=True)
+        (d / '材料' / '办法.md').write_text(
+            f'# {tag}办法\n\n{tag}方向{tag}方提交材料，审批后付款。\n', encoding='utf-8')
+        rc_p, out_p = run([sys.executable, str(PROBE_CMD), str(d / '材料'), '--json'])
+        (d / 'materials.json').write_text(out_p[out_p.index('['):], encoding='utf-8')
+        roots.append(d)
+    env = dict(os.environ, PYTHONDONTWRITEBYTECODE='1', PYTHONUNBUFFERED='1')
+    procs = [subprocess.Popen([sys.executable, str(PARSE_CMD), '--materials',
+                               str(d / 'materials.json'), '--ledger', str(d / 'evidence.json'),
+                               '--task', d.name],
+                              cwd=str(REPO), env=env, stdout=subprocess.PIPE,
+                              stderr=subprocess.STDOUT, text=True, encoding='utf-8')
+             for d in roots]
+    outs = [p.communicate(timeout=300)[0] for p in procs]
+    rcs = [p.returncode for p in procs]
+    own = all((d / n).is_file() for d in roots
+              for n in ('elements.json', 'notes.json', 'evidence.json'))
+    dirty = repo_root_clean()                    # ③ 不往仓库根写字节（与 ㉗ 同一句判据，这里并行跑）
+    stray = []
+    for d in roots:                              # ④ 账本里每份材料的 path 都在自己那棵树下
+        got = json.loads((d / 'evidence.json').read_text(encoding='utf-8'))
+        mine = (d / '材料').resolve()
+        for m in got.get('materials', []):
+            p = pathlib.Path(str(m.get('path', ''))).resolve()
+            if mine not in p.parents:
+                stray.append(f'{d.name}:{m.get("path")}')
+    ok = rcs == [0, 0] and own and not dirty and not stray
+    cases.append(('65 并行批跑：两任务同 cwd 同时跑材料链 ⇒ 各写各的成果根（默认落盘跟着输入走）· '
+                  '仓库根不多一个字节 · 账本不串味',
+                  ok, rcs, (f'产物各就各位={own} · 仓库根多出 {dirty or "无"} · 串味 {stray[:3]} · '
+                            f'{outs[0].strip()[-120:]}') if not ok else ''))
+    return cases
+
+
 def main(argv=None):
     """造夹具 → 比 `drift` 读数 → 跑漂移 13 + 清点 3 + 取子集 10 + 能力指纹 3 + pptx 4 + 材料树若干 + 规范 1 条路径
 
@@ -1747,8 +1798,8 @@ def main(argv=None):
     bad += 0 if d1_ok else 1
     for name, good, rc, out in (paths(root, draft) + intake_paths(root) + plan_paths(root)
                                 + query_paths(root) + capability_paths(root) + vlm_paths(root)
-                                + pptx_paths(root) + materials_paths(root) + import_paths(root)
-                                + spec_paths()):
+                                + parallel_paths(root) + pptx_paths(root) + materials_paths(root)
+                                + import_paths(root) + spec_paths()):
         print(f'{"PASS" if good else "FAIL"}  {name}  （rc={rc}）')
         if not good:
             print('      ' + out.strip().replace('\n', '\n      ')[:500])

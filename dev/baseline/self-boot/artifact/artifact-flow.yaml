@@ -9,7 +9,7 @@ layout:
   col_x:
   - 400
   width: 680
-  origin_x: -60
+  origin_x: -40
 nodes:
 - id: '01'
   name: 开始
@@ -21,8 +21,8 @@ nodes:
   row: 0
   col: 0
   stage: 入口
-  route: 1→03
-  desc: 流程起点（结构性节点，不是函数） · 入口：1→artifact_rel
+  route: 1→03｜2→04
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→artifact_rel 2→beside
 - id: '02'
   name: artifact_stem
   lines:
@@ -33,7 +33,7 @@ nodes:
   row: 2
   col: 0
   stage: 模块级
-  route: →04
+  route: →05
   desc: ★ 流程表 → 产物名前缀（见 D-51）。规则：**表名是约定名就用目录名，否则用表名**。 · L32 · 函数
 - id: '03'
   name: artifact_rel
@@ -48,13 +48,25 @@ nodes:
   route: →02
   desc: ★ 子表流程表的相对路径 → 子图产物的相对路径（见 D-51）。 · L44 · 函数
 - id: '04'
+  name: beside
+  lines:
+  - beside
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: 模块级
+  route: →05
+  desc: ★ **默认落盘位置 = 跟着输入走**：`<输入所在目录>/<name>`（见 D-119）。 · L61 · 函数
+- id: '05'
   name: 结束
   lines:
   - 结束
   type: end
   subject: 脚本
   executor: selfboot
-  row: 3
+  row: 4
   col: 0
   stage: 出口
   route: —
@@ -65,11 +77,20 @@ edges:
   kind: spine
   polarity: main
   label: '1'
-- from: '02'
+- from: '01'
   to: '04'
-  kind: spine
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '02'
+  to: '05'
+  kind: jumpR
   polarity: main
 - from: '03'
   to: '02'
+  kind: spine
+  polarity: main
+- from: '04'
+  to: '05'
   kind: spine
   polarity: main

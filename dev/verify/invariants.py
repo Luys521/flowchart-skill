@@ -4,22 +4,24 @@
   1 网格贴合：直接复用 validate.check()，不另写一套审计（验证要验的就是那份实现）
   2 确定性：换 PYTHONHASHSEED 多次渲染，产物必须逐字节相同（否则说明有集合迭代顺序依赖）
   3 幂等：同一流程表 build 两次，产物不变
-  4 产物一律 LF：build 写出的产物不带 CR（换平台也得同字节；D-115）
-  5 只读事实源：跑完整面测试不许往 `examples/` 写一个字节，且那里**不许有产物**（D-66）
-  6 自愈：手塞离格几何 → 吸附 + 提示，且仍通过
-  7 图例带：带内不得出现节点/折点（origin_y 已按带高下推，这是结构保证）
-  8 门面一致：`Engine.sizes` 必须直接指向 `grid.sizes`（否则两层各拿一份尺寸，改了不同步）
+  4 并行：两棵树同时 build（**同一个 cwd**）⇒ 产物仍等于基线、且不往 cwd 漏文件（D-119）
+  5 产物一律 LF：build 写出的产物不带 CR（换平台也得同字节；D-116）
+  6 只读事实源：跑完整面测试不许往 `examples/` 写一个字节，且那里**不许有产物**（D-66）
+  7 自愈：手塞离格几何 → 吸附 + 提示，且仍通过
+  8 图例带：带内不得出现节点/折点（origin_y 已按带高下推，这是结构保证）
+  9 门面一致：`Engine.sizes` 必须直接指向 `grid.sizes`（否则两层各拿一份尺寸，改了不同步）
 
 （清单与 `run_face` 的 `c.section` 一一对应；增删小节时这里要跟着改。）
 """
 import json
 import os
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _lib import BASE, EXAMPLES, HEAD, SKILL, Case, md5, prod, row, run  # noqa: E402
+from _lib import BASE, EXAMPLES, HEAD, PY, SKILL, Case, md5, prod, row, run  # noqa: E402
 
 import validate                                      # noqa: E402  （_lib 已把 scripts/ 挂上 sys.path）
 from engine import load                              # noqa: E402
@@ -107,6 +109,37 @@ def run_face(tmp):
                 f'{n} 重建产物与基线逐字节相同')
         crlf += [p.relative_to(work).as_posix() for p in arts
                  if b'\r' in p.read_bytes()]
+
+    c.section('并行：两棵树同时 build，产物仍等于基线、且不往 cwd 漏文件（D-119）')
+    # 为什么值得单独一节：`PIPELINE-SPEC` §7 把"并行的单位是流程 / 任务"写成了规矩
+    # （各一棵产物树、各一个工作目录），可**没有任何仪器证明过它**——上面那条幂等只证明
+    # "同一棵树两次相同"。而"能不能并行"恰恰是用户会问的那个问题（批量跑、多流程一起出图）。
+    # 判据三件，都在**同一个 cwd** 下跑（cwd 是两个进程唯一共享的东西，也是最容易漏的地方）：
+    #   ① 两个进程同时 build，各自 rc=0；② 各自产物与基线**逐字节**相同；
+    #   ③ **cwd 里除了这两棵树什么都没有**——默认落盘若还钉在 cwd（D-119 之前就是），这里当场红。
+    par = tmp / 'par'
+    shutil.rmtree(par, ignore_errors=True)
+    trees = []
+    for tag in ('a', 'b'):
+        work = par / tag / 'workflow'
+        shutil.copytree(EXAMPLES / 'workflow', work)
+        shutil.copytree(BASE / 'workflow', work, dirs_exist_ok=True)   # 同幂等那节：事实源 + 基线产物
+        trees.append(work)
+    env = dict(os.environ, PYTHONDONTWRITEBYTECODE='1', PYTHONUNBUFFERED='1')
+    procs = [subprocess.Popen([PY, str(SKILL / 'scripts' / 'build.py'), str(w / 'flowtable.md')],
+                              cwd=str(par), env=env, stdout=subprocess.PIPE,
+                              stderr=subprocess.STDOUT, text=True, encoding='utf-8')
+             for w in trees]
+    outs = [p.communicate(timeout=300)[0] for p in procs]
+    rcs = [p.returncode for p in procs]
+    same = all([md5(prod(w, f)) for f in ('yaml', 'html', 'drawio', 'svg')]
+               == [md5(_art('workflow', f)) for f in ('yaml', 'html', 'drawio', 'svg')]
+               for w in trees)
+    leaked = sorted(p.name for p in par.iterdir() if p.name not in ('a', 'b'))
+    c.check(rcs == [0, 0] and same and not leaked,
+            '两个进程同时 build：rc 都是 0 · 产物逐字节等于基线 · cwd 里没漏出别的文件',
+            f'rc={rcs} · 产物等于基线={same} · cwd 多出 {leaked or "无"}'
+            + (f' · {outs[0].strip()[-120:]}' if rcs != [0, 0] else ''))
 
     c.section('产物一律 LF：换个平台也得同字节（D-115）')
     # 为什么单独一节：本仓的安全网是"逐字节不变"（`.gitattributes` 用 `* -text` 让 Git 不碰字节），

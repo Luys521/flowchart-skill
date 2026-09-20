@@ -21,6 +21,7 @@ import sys
 from pathlib import Path
 
 import capability
+import artifact
 
 SCHEMA = 'evidence/1'
 KINDS = ('heading', 'paragraph', 'list_item', 'table', 'figure', 'caption', 'code', 'sheet', 'cell')
@@ -207,9 +208,11 @@ def main(argv=None):
     ap.add_argument('--notes', action='append', default=[],
                     help='材料层补注 JSON（解析适配器的 --notes 输出；多份可重复给，逐份按序落）')
     ap.add_argument('--task', default='', help='任务名（一般取成果根名）')
-    ap.add_argument('-o', '--out', default='evidence.json', help='写到哪里（默认 evidence.json）')
+    ap.add_argument('-o', '--out', help='写到哪里（默认：与 --materials 同目录的 evidence.json）')
     ap.add_argument('--quote-limit', type=int, default=200, help='quote 截断上限（默认 200 字）')
     a = ap.parse_args(argv)
+    # **默认落盘跟着输入走**（D-119）：账本住成果根，而 `--materials` 也在那儿（见 `artifact.beside`）。
+    a.out = a.out or str(artifact.beside(a.materials, 'evidence.json'))
 
     try:
         materials = _read_json(a.materials)

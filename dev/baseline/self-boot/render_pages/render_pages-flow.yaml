@@ -34,7 +34,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →14
-  desc: ★ 读 JSON（容忍 BOM）。 · L45 · 函数
+  desc: ★ 读 JSON（容忍 BOM）。 · L47 · 函数
 - id: '03'
   name: _write_json
   lines:
@@ -46,7 +46,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →14
-  desc: ★ 写 JSON：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 `ledger.dump`… · L50 · 函数
+  desc: ★ 写 JSON：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 `ledger.dump`… · L52 · 函数
 - id: '04'
   name: _is_pdf
   lines:
@@ -58,7 +58,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →14
-  desc: ★ 只看 4 字节魔数：**不重判档位**（档位从账本抄）。 · L55 · 函数
+  desc: ★ 只看 4 字节魔数：**不重判档位**（档位从账本抄）。 · L57 · 函数
 - id: '05'
   name: _skeleton
   lines:
@@ -70,7 +70,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →14
-  desc: ★ 一页 → 一条**待填**的 vlm 证据骨架（`text` 空着等 AI 填）。 · L64 · 函数
+  desc: ★ 一页 → 一条**待填**的 vlm 证据骨架（`text` 空着等 AI 填）。 · L66 · 函数
 - id: '06'
   name: render_pdf
   lines:
@@ -82,7 +82,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→05｜2→07
-  desc: ★ PDF → `(骨架元素, 渲染出的 (页号, PNG 路径) 清单, 说明)`。**单页渲不出不让整份失败**。 · L78 · 函数 · 分支：1→_skeleton
+  desc: ★ PDF → `(骨架元素, 渲染出的 (页号, PNG 路径) 清单, 说明)`。**单页渲不出不让整份失败**。 · L80 · 函数 · 分支：1→_skeleton
     2→_import_pdfplumber
 - id: '07'
   name: _import_pdfplumber
@@ -95,7 +95,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →14
-  desc: ★ import 必须依赖 → `(模块, 报错文案)`。缺了给**可执行**的提示（§1.4）。 · L104 · 函数
+  desc: ★ import 必须依赖 → `(模块, 报错文案)`。缺了给**可执行**的提示（§1.4）。 · L106 · 函数
 - id: 08
   name: targets
   lines:
@@ -107,7 +107,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →04
-  desc: ★ 材料层 → 该渲哪些 → `(要渲染的, 已是图片的, 不归本工具管的)`。**按 `probe` 记的档位分派，不重… · L114 · 函数
+  desc: ★ 材料层 → 该渲哪些 → `(要渲染的, 已是图片的, 不归本工具管的)`。**按 `probe` 记的档位分派，不重… · L116 · 函数
 - id: 09
   name: build
   lines:
@@ -119,8 +119,8 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→03｜3→05｜4→06｜5→08
-  desc: ★ 渲图 + 出骨架（`--elements` 给了才写）。返回退出码。 · L135 · 函数 · 分支：1→_read_json 2→_write_json
-    3→_skeleton 4→render_pdf 5→targets
+  desc: ★ 渲图 + 出骨架（`--elements` 给了才写）。返回退出码。 · L137 · 函数 · 分支：1→_read_json 2→_write_json
+    3→_skeleton 4→render_pdf 5→targets · ⇢ 依赖 artifact.beside
 - id: '10'
   name: _check_id
   lines:
@@ -132,7 +132,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →14
-  desc: ★ id 形态：`<M##>#v<页号3位><可选字母>`（同一页要拆多条时用字母后缀，如 `M15#v004b`）。 · L178 · 函数
+  desc: ★ id 形态：`<M##>#v<页号3位><可选字母>`（同一页要拆多条时用字母后缀，如 `M15#v004b`）。 · L183 · 函数
 - id: '11'
   name: check_elements
   lines:
@@ -144,7 +144,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →10
-  desc: ★ AI 填好的骨架 → 错误清单（空 = 过）。**"没填"必须当错**（否则空骨架也能过）。 · L189 · 函数
+  desc: ★ AI 填好的骨架 → 错误清单（空 = 过）。**"没填"必须当错**（否则空骨架也能过）。 · L194 · 函数
 - id: '12'
   name: check
   lines:
@@ -156,7 +156,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→03｜3→11
-  desc: ★ 校验填好的骨架 + 写材料层补注（`status=ok` + `extractor=vlm`）。 · L225 · 函数 · 分支：1→_read_json
+  desc: ★ 校验填好的骨架 + 写材料层补注（`status=ok` + `extractor=vlm`）。 · L230 · 函数 · 分支：1→_read_json
     2→_write_json 3→check_elements
 - id: '13'
   name: main
@@ -169,7 +169,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→09｜2→12
-  desc: L259 · 函数 · 分支：1→build 2→check
+  desc: L264 · 函数 · 分支：1→build 2→check
 - id: '14'
   name: 结束
   lines:

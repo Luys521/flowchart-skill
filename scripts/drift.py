@@ -64,6 +64,7 @@ from flowtable import Errors, parse_table
 from flowtable_check import run_checks
 import cells
 from semantics import DICT_NAME, pending_kind
+import artifact
 
 # 阈值 = "人给的默认"（数值只有一个家，§1.2）；`dictionary.yaml` 的 `drift:` 段按名覆盖。
 DEFAULTS = {
@@ -537,6 +538,10 @@ def render(drift, gaps, meta, readout=(), readout_sum=''):
 # ----------------------------------------------------------------子命令
 def cmd_build(a):
     """出草稿：机器列已填，AI 那几列留空（`待验` / `待取证`）。"""
+    # 默认跟着输入走（D-119）：任务级漂移账住**成果根**，而 `--ledger` 就住成果根。
+    # **不取流程表所在目录**——那张表在 `<成果根>/<流程名>/` 里，落那儿会把任务级产物塞进流程目录
+    # （§0 / §4.4 ②：流程目录里只许有那八件）。没给 `--ledger` 时退回 cwd，与改动前一致。
+    a.out = a.out or str(artifact.beside(a.ledger, 'drift.md'))
     out = Path(a.out)
     if out.exists() and not a.force:
         print(f'✗ {out} 已存在——它同时是**漂移账**（AI 填过的处置写在里面）。')
@@ -669,7 +674,7 @@ def main(argv=None):
     b.add_argument('--recon', help='假设账 recon.md（不给就跳过 D2，缺口也填不了「走哪条路」）')
     b.add_argument('--intake', help='清点 intake.md（不给就跳过 D4）')
     b.add_argument('--dict', help='dictionary.yaml（默认取 scripts/ 下那份）')
-    b.add_argument('-o', '--out', default='drift.md', help='写到哪里（默认 drift.md，落成果根）')
+    b.add_argument('-o', '--out', help='写到哪里（默认：与 --ledger 同目录的 drift.md；没给 --ledger 就是 cwd）')
     b.add_argument('--force', action='store_true', help='覆盖已存在的产物（默认拒绝：那是漂移账）')
     b.add_argument('--todo', help='把「待填清单」写到这里（建议写成 <产物名>.todo.json，cells.py fill 默认就找它）')
     c = sub.add_parser('check', help='查收敛（拿当前表重跑判据，与文件里的处置对账）')

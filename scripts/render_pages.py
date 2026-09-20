@@ -36,6 +36,8 @@ import json
 import sys
 from pathlib import Path
 
+import artifact
+
 PDF_MAGIC = b'%PDF'
 # 骨架里每个元素都能用的 kind（§2.1 封闭枚举）。默认给 paragraph——AI 按实际内容改。
 KINDS = ('heading', 'paragraph', 'list_item', 'table', 'figure', 'caption', 'code', 'sheet', 'cell')
@@ -134,6 +136,9 @@ def targets(materials, only):
 
 def build(a):
     """渲图 + 出骨架（`--elements` 给了才写）。返回退出码。"""
+    # 默认落盘跟着输入走（D-119）：`shots/` 是任务级产物、住成果根（§1.5 手段 2），
+    # 而 `--materials` 也在那儿。原先默认 `shots/` 落 cwd：在仓库根跑一次就把图撒进仓库根。
+    a.out_dir = a.out_dir or str(artifact.beside(a.materials, 'shots'))
     try:
         materials = _read_json(a.materials)
     except (OSError, ValueError) as e:
@@ -263,7 +268,7 @@ def main(argv=None):
     sub = ap.add_subparsers(dest='cmd', required=True)
     b = sub.add_parser('build', help='渲图 + 出待填骨架')
     b.add_argument('--materials', required=True, help='材料层 JSON（probe.py --json 的输出）')
-    b.add_argument('--out-dir', default='shots', help='PNG 落在哪里（默认 shots/）')
+    b.add_argument('--out-dir', help='PNG 落在哪里（默认：与 --materials 同目录的 shots/）')
     b.add_argument('--elements', help='待填骨架写到哪里（不给就只渲图）')
     b.add_argument('--only', help='只渲这几份（逗号分隔的 M##，如 M13,M15）')
     b.add_argument('--max-pages', type=int, default=BUDGET_PAGES, help=f'每份最多渲多少页（默认 {BUDGET_PAGES}）')

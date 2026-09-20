@@ -34,7 +34,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 读 JSON（容忍 BOM — PowerShell 的 `Out-File -Encoding utf8` 会写 B… · L43 · 函数
+  desc: ★ 读 JSON（容忍 BOM — PowerShell 的 `Out-File -Encoding utf8` 会写 B… · L44 · 函数
 - id: '03'
   name: check_materials
   lines:
@@ -46,7 +46,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 材料层校验 → 错误清单（空 = 过）。逐条说清**哪里错了**，不返回布尔。 · L48 · 函数
+  desc: ★ 材料层校验 → 错误清单（空 = 过）。逐条说清**哪里错了**，不返回布尔。 · L49 · 函数
 - id: '04'
   name: check_elements
   lines:
@@ -58,7 +58,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 证据层校验 → 错误清单。`kind` 是**封闭枚举**（§2.1），扩枚举要先改规范。 · L74 · 函数
+  desc: ★ 证据层校验 → 错误清单。`kind` 是**封闭枚举**（§2.1），扩枚举要先改规范。 · L75 · 函数
 - id: '05'
   name: degrade
   lines:
@@ -70,7 +70,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ §2.4 的降级：`quote` 超限就截断 + 标 `degraded`（**不许静默截断**）。返回降级条数。 · L103 · 函数
+  desc: ★ §2.4 的降级：`quote` 超限就截断 + 标 `degraded`（**不许静默截断**）。返回降级条数。 · L104 · 函数
 - id: '06'
   name: check_notes
   lines:
@@ -82,7 +82,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 材料层补注校验 → 错误清单。**键封闭**：补注只许改 `status` / `reason` / `extract… · L117 · 函数
+  desc: ★ 材料层补注校验 → 错误清单。**键封闭**：补注只许改 `status` / `reason` / `extract… · L118 · 函数
 - id: '07'
   name: apply_notes
   lines:
@@ -94,7 +94,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 把补注落到材料层（**就地改**）→ `(改了几条, 读不动几份, 覆盖清单)`。 · L139 · 函数
+  desc: ★ 把补注落到材料层（**就地改**）→ `(改了几条, 读不动几份, 覆盖清单)`。 · L140 · 函数
 - id: 08
   name: assemble
   lines:
@@ -106,7 +106,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 按 §2.1 的键序组装账本：**多余的键一律丢弃**（模型封闭，不许夹带）。 · L173 · 函数 · ⇢ 依赖 capability.stamp
+  desc: ★ 按 §2.1 的键序组装账本：**多余的键一律丢弃**（模型封闭，不许夹带）。 · L174 · 函数 · ⇢ 依赖 capability.stamp
 - id: 09
   name: dump
   lines:
@@ -118,7 +118,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 写盘契约（§2.4）：UTF-8 / **LF** / 缩进 2 / 中文不转义 / 末尾一个换行。返回字节数。 · L192 · 函数
+  desc: ★ 写盘契约（§2.4）：UTF-8 / **LF** / 缩进 2 / 中文不转义 / 末尾一个换行。返回字节数。 · L193 · 函数
 - id: '10'
   name: main
   lines:
@@ -130,8 +130,8 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→03｜3→04｜4→05｜5→06｜6→07｜7→08｜8→09
-  desc: L200 · 函数 · 分支：1→_read_json 2→check_materials 3→check_elements 4→degrade 5→check_notes
-    6→apply_notes 7→assemble 8→dump
+  desc: L201 · 函数 · 分支：1→_read_json 2→check_materials 3→check_elements 4→degrade 5→check_notes
+    6→apply_notes 7→assemble 8→dump · ⇢ 依赖 artifact.beside
 - id: '11'
   name: 结束
   lines:

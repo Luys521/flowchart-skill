@@ -56,3 +56,26 @@ def artifact_rel(table_rel, ext='html'):
     head = p.parent.as_posix()
     name = f'{artifact_stem(p)}-flow.{ext}'
     return f'{head}/{name}' if head not in ('', '.') else name
+
+
+def beside(input_path, name):
+    """**默认落盘位置 = 跟着输入走**：`<输入所在目录>/<name>`（见 D-119）。
+
+    原先材料链那几个工位的默认名（`elements.json` / `notes.json` / `evidence.json` /
+    `recon.md` / `intake.md` / `plan.md` / `drift.md` / `shots/`）**一律落 cwd**，
+    后果有两条、都在 2026-09-19 实测过：
+
+    - **在仓库根跑一次就把产物撒进仓库根**（`.gitignore` 第 ⑧ 条那批根级锚定就是为此打的补丁：
+      实测有一次默认名把 `<仓库根>/elements.json` 连同用户材料正文写了出来，下一次 `git add -A`
+      顺手提交了 1.3 MB）；
+    - **两个任务在同一个目录里并发会互相覆盖**——"支持批量并行"这句话要落地，这里得先有个说法。
+
+    而任务级产物本来就住**成果根**（PIPELINE-SPEC §0），那几个输入（`materials.json` /
+    `evidence.json` …）也住成果根 ⇒ "跟着输入走"与"住成果根"是同一件事的两种说法。
+    **名字仍由调用方给**（这里是"落在哪"，不是"叫什么"）。
+
+    `input_path` 取不到（空）时退回 `name` 本身（＝相对 cwd，与改动前一致，不制造空路径）。
+    """
+    if not input_path:
+        return Path(name)
+    return Path(input_path).parent / name

@@ -30,6 +30,7 @@ from pathlib import Path
 
 import cells
 import flowtable_check
+import artifact
 
 COLUMNS = ('材料', '档位', '主题', '含流程', '版本关系', '读不动', '依据')
 # 「AI 要填的格子」的登记：`cells.py fill` 按**列名**回写（AI 不再手改表格，见 `cells.py` 的文件头）
@@ -270,12 +271,14 @@ def main(argv=None):
     sub = ap.add_subparsers(dest='cmd', required=True)
     b = sub.add_parser('build', help='出骨架（机器可算的格子已填）')
     b.add_argument('ledger', help='evidence.json')
-    b.add_argument('-o', '--out', default='intake.md', help='写到哪里（默认 intake.md，落成果根）')
+    b.add_argument('-o', '--out', help='写到哪里（默认：与账本同目录的 intake.md）')
     b.add_argument('--todo', help='把「待填清单」写到这里（建议写成 <产物名>.todo.json，cells.py fill 默认就找它）')
     c = sub.add_parser('check', help='校验收口后的卡片（退 1 = 有问题）')
     c.add_argument('card', help='intake.md')
     c.add_argument('--ledger', required=True, help='evidence.json（对照用）')
     a = ap.parse_args(argv)
+    if a.cmd == 'build':                      # 默认落盘跟着输入走（D-119，见 `artifact.beside`）
+        a.out = a.out or str(artifact.beside(a.ledger, 'intake.md'))
 
     try:
         # 读账本（容忍 BOM）：只此一处用，**不单独立一个助手**——自举绕行读数对小表敏感（见表尾）

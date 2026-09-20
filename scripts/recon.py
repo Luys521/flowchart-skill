@@ -43,6 +43,7 @@ from pathlib import Path
 import cells
 from pptx_text import other_text_parts_in_file, scan_cost, slides_in_file
 from semantics import DICT_NAME
+import artifact
 
 DEP_PKG = {'docx': 'python-docx', 'openpyxl': 'openpyxl'}
 
@@ -597,12 +598,14 @@ def main(argv=None):
     b = sub.add_parser('build', help='出草稿（机器列已填，AI 填四列）')
     b.add_argument('--materials', required=True, help='材料层 JSON（probe.py --json 的输出）')
     b.add_argument('--dict', help='dictionary.yaml（默认取 scripts/ 下那份；夹具用它把护栏调小）')
-    b.add_argument('-o', '--out', default='recon.md', help='写到哪里（默认 recon.md，落成果根）')
+    b.add_argument('-o', '--out', help='写到哪里（默认：与 --materials 同目录的 recon.md）')
     b.add_argument('--todo', help='把「待填清单」写到这里（建议写成 <产物名>.todo.json，cells.py fill 默认就找它）')
     c = sub.add_parser('check', help='校验 AI 填好的表（退 1 = 有问题）')
     c.add_argument('card', help='侦查结论表（recon.md）')
     c.add_argument('--materials', required=True, help='材料层 JSON（对照用）')
     a = ap.parse_args(argv)
+    if a.cmd == 'build':                      # 默认落盘跟着输入走（D-119，见 `artifact.beside`）
+        a.out = a.out or str(artifact.beside(a.materials, 'recon.md'))
     return build(a) if a.cmd == 'build' else check(a)
 
 

@@ -62,6 +62,7 @@ from pathlib import Path
 
 import cells
 import capability
+import artifact
 
 FLOW_COLUMNS = ('流程', '角色', '挂在', '材料集', '与其它流程', '并行组', '合并/拆分理由', '状态')
 # v1 的流程清单（2026-09-19 前的 7 列）。**留着只为把话说准**：拿旧 `plan.md` 来 `check` 时，
@@ -631,6 +632,7 @@ def check_plan(cards, rows, asks, excl, root=None, scope=('', '', '')):
 
 def cmd_build(a):
     """出草稿：机器列已填，AI 那几列留空（`—`）。拒绝覆盖已有计划（它是 AI 判断的落点）。"""
+    a.out = a.out or str(artifact.beside(a.intake, 'plan.md'))   # 默认跟着输入走（D-119）
     out = Path(a.out)
     if out.exists() and not a.force:
         print(f'✗ {out} 已存在——它同时是**AI 判断的落点**（流程名 · 关系 · 澄清问题都写在里面）。')
@@ -725,7 +727,7 @@ def main(argv=None):
     sub = ap.add_subparsers(dest='cmd', required=True)
     b = sub.add_parser('build', help='出草稿（机器可算的格子已填）')
     b.add_argument('intake', help='intake.md')
-    b.add_argument('-o', '--out', default='plan.md', help='写到哪里（默认 plan.md，落成果根）')
+    b.add_argument('-o', '--out', help='写到哪里（默认：与 intake.md 同目录的 plan.md）')
     b.add_argument('--force', action='store_true', help='覆盖已有的 plan.md（它会抹掉 AI 填过的判断）')
     b.add_argument('--split', help='AI 的拆解决定 JSON（流程 / 范围外 / 澄清三段）——行集合由它定')
     b.add_argument('--scope', help='前置澄清答复 JSON（主体 / 目的 / 材料根，§4.0）')

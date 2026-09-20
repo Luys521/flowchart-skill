@@ -6,7 +6,7 @@
 ## 层级树
 
 - **L0 主流程** `flowtable.md`——《self-boot — 模块索引》（id: selfboot-map）（46 节点）
-  - **L1 子流程** `artifact/flowtable.md`——《artifact.py 函数流程表》（id: selfboot-artifact）（4 节点）
+  - **L1 子流程** `artifact/flowtable.md`——《artifact.py 函数流程表》（id: selfboot-artifact）（5 节点）
   - **L1 子流程** `build/flowtable.md`——《build.py 函数流程表》（id: selfboot-build）（27 节点）
   - **L1 子流程** `capability/flowtable.md`——《capability.py 函数流程表》（id: selfboot-capability）（14 节点）
   - **L1 子流程** `cells/flowtable.md`——《cells.py 函数流程表》（id: selfboot-cells）（13 节点）

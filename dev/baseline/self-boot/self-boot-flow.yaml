@@ -34,7 +34,7 @@ nodes:
   col: 0
   stage: 接管与解析
   route: →03
-  desc: 2 个函数 · ⊞ artifact/flowtable.md
+  desc: 3 个函数 · ⊞ artifact/flowtable.md
 - id: '03'
   name: 模块 · build
   lines:

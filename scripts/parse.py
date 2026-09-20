@@ -36,6 +36,7 @@ import tempfile
 from pathlib import Path
 
 from textquality import element_haystack, load_thresholds, readout, scar, verdict
+import artifact
 import probe
 
 SCRIPTS = Path(__file__).resolve().parent
@@ -327,8 +328,8 @@ def main(argv=None):
     sys.stderr.reconfigure(encoding='utf-8')
     ap = argparse.ArgumentParser(description='解析分派器：材料层 → elements[] + 材料层补注（固定顺序跑各适配器）')
     ap.add_argument('--materials', required=True, help='材料层 JSON（probe.py --json 的输出）')
-    ap.add_argument('-o', '--elements', default='elements.json', help='元素层写到哪里（默认 elements.json）')
-    ap.add_argument('--notes', default='notes.json', help='材料层补注写到哪里（默认 notes.json）')
+    ap.add_argument('-o', '--elements', help='元素层写到哪里（默认：与 --materials 同目录的 elements.json）')
+    ap.add_argument('--notes', help='材料层补注写到哪里（默认：与 --materials 同目录的 notes.json）')
     ap.add_argument('--ledger', help='给了就接着跑 ledger.py 写账本（把这条链一次跑完）')
     ap.add_argument('--task', default='', help='账本的任务名（--ledger 时用）')
     ap.add_argument('--quote-limit', type=int, default=200, help='账本的 quote 截断上限')
@@ -353,6 +354,10 @@ def main(argv=None):
     ap.add_argument('--strict-stale', action='store_true',
                     help='材料层陈化 ⇒ 退 2（默认只告警继续；硬拦见 `probe.py --verify`）')
     a = ap.parse_args(argv)
+    # **默认落盘跟着输入走**（D-119）：输入（`materials.json`）住成果根，产物也落那儿——
+    # 于是"两个任务各一个成果根"天然不撞车，也不会在仓库根撒产物（见 `artifact.beside`）。
+    a.elements = a.elements or str(artifact.beside(a.materials, 'elements.json'))
+    a.notes = a.notes or str(artifact.beside(a.materials, 'notes.json'))
 
     try:
         materials = _read_json(a.materials)
