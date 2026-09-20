@@ -79,20 +79,102 @@ def _code_prose(path):
     return out
 
 
-def _flags(script):
+def _claim_docs():
+    """**会宣称事实的文档**：产品文档 + `dev/` 的设计文档。
+
+    与 `_mds()` 的差别只有一处取舍：`_mds()` 把整个 `dev/` 排除在外（那是维护区，对领域词与术语
+    两条断言豁免），但"**文档里的命令真不真、规模数字对不对、H 编号连不连续**"这三条与
+    "是不是产品文档"无关——维护文档指错路，读者一样扑空。所以这里把 `dev/` 收回来，
+    只剔三类不含"现状宣称"的东西：**生成物**（`dev/baseline/**`、`fn-graph.md`）·
+    **历史日志**（`DECISIONS.md`，按设计要保留当年的旧路径与旧读数）· 与产品无关的目录。
+    """
+    skip = {'.verify_tmp', '.accept_tmp', '__pycache__', '.git', '.workbuddy',
+            'output', 'baseline', 'archive', 'old', 'fixtures'}
+    return {p: p.read_text(encoding='utf-8') for p in sorted(SKILL.rglob('*.md'))
+            if not (set(p.relative_to(SKILL).parts) & skip)
+            and p.name not in HISTORY_DOCS and p.name != 'fn-graph.md'}
+
+
+_CN_DIGIT = dict(zip('一二三四五六七八九', range(1, 10)))
+
+
+def _cn2int(s):
+    """中文数字 → 整数。只服务「下面十一节」这类小数字（正文风格是中文数字，不是阿拉伯数字）。"""
+    if not s:
+        return 0
+    if s == '十':
+        return 10
+    if '十' in s:
+        a, b = s.split('十', 1)
+        return (_CN_DIGIT.get(a, 1 if not a else 0)) * 10 + (_CN_DIGIT.get(b, 0) if b else 0)
+    return _CN_DIGIT.get(s, 0)
+
+
+def _cli(script):
+    """一个脚本的 CLI 面：`(选项, 子命令, 位置参数个数, 有没有子命令)`。
+
+    `_flags` 只看 `--x`，于是**子命令写错**（`intake.py frobnicate`）与**位置参数漏写**都溜过去了。
+    判据从 AST 取，**不执行脚本**（执行会带副作用）。`add_subparsers` 与 `add_parser` 认子命令，
+    不带 `-` 的 `add_argument` 第一参数算位置参数。
+    """
     tree = ast.parse((SCRIPTS / script).read_text(encoding='utf-8'))
-    out = set()
+    flags, subs, pos, has_sub = set(), set(), 0, False
     for node in ast.walk(tree):
-        if isinstance(node, ast.Call) and getattr(node.func, 'attr', '') == 'add_argument':
+        if not isinstance(node, ast.Call):
+            continue
+        attr = getattr(node.func, 'attr', '')
+        if attr == 'add_argument':
             for a in node.args:
-                if isinstance(a, ast.Constant) and str(a.value).startswith('-'):
-                    out.add(a.value)
-    return out
+                if isinstance(a, ast.Constant):
+                    v = str(a.value)
+                    if v.startswith('-'):
+                        flags.add(v)
+                    else:
+                        pos += 1
+        elif attr == 'add_parser':
+            has_sub = True
+            for a in node.args:
+                if isinstance(a, ast.Constant):
+                    subs.add(str(a.value))
+        elif attr == 'add_subparsers':
+            has_sub = True
+    return flags, subs, pos, has_sub
+
+
+def _sample_shape():
+    """`examples/workflow/` 的**现算**规模——文档里那些数字必须等于它（`coding-spec` G7）。
+
+    历史日志里的数字是**当时的读数**，不归这条管：`DECISIONS` / `NODE-AUDIT` 已排除在
+    `_claim_docs()` 之外。
+    """
+    main = (SKILL / 'examples/workflow/flowtable.md').read_text(encoding='utf-8').splitlines()
+    rows = [l for l in main if l.startswith('| ')
+            and not l.startswith('| 项目运作阶段') and not l.startswith('| ---')
+            and len(l.strip('|').split('|')) >= 12]      # 12 列；「主体配色」那两张表只有 2 列
+    edges = 0
+    for l in rows:
+        c_ = [x.strip() for x in l.strip('|').split('|')]
+        if len(c_) > 10:
+            edges += len(re.findall(r'→\s*(?:回\s*)?\d+[a-z]?', c_[10]))
+    parts = sorted((SKILL / 'examples/workflow/parts').glob('*/flowtable.md'))
+    prow = []
+    for p in parts:
+        prow += [l for l in p.read_text(encoding='utf-8').splitlines()
+                 if l.startswith('| ') and not l.startswith('| 项目运作阶段')
+                 and not l.startswith('| ---') and len(l.strip('|').split('|')) >= 12]
+    base = [p for p in (SKILL / 'dev/baseline/workflow').rglob('*') if p.is_file()]
+    return {'nodes': len(rows), 'edges': edges, 'parts': len(parts), 'prows': len(prow),
+            'star_main': sum(1 for l in rows if '★' in l),
+            'star_parts': sum(1 for l in prow if '★' in l),
+            'stars': sum(1 for l in rows + prow if '★' in l),
+            'allrows': len(rows) + len(prow), 'base': len(base),
+            'sections': len(re.findall(r'^### ', (SKILL / 'SKILL.md').read_text(encoding='utf-8'), re.M))}
 
 
 def run_face(tmp=None):
     c = Case('面① 契约一致性')
     mds = _mds()
+    docs = _claim_docs()
     skill_md = (SKILL / 'SKILL.md').read_text(encoding='utf-8')
 
     c.section('frontmatter')
@@ -171,17 +253,60 @@ def run_face(tmp=None):
     c.check(not orphan, 'references/ 与 templates/ 均在 SKILL.md 里出现', '；'.join(orphan))
 
     c.section('命令行参数与 argparse 一致')
-    badflag = []
-    for p, t in mds.items():
+    # **为什么扫 `_claim_docs()` 而不是 `_mds()`**：维护文档里的命令同样会指错路（实测审计就是从
+    # `dev/` 的文档里抓到"文档写了子命令、代码里没有"这一类的）。**只认带 `python` 的整行**——
+    # 否则正文里"`probe.py` 是唯一读者"这种句子会被当成命令行，第一个词就成了假子命令。
+    badflag, badsub, badpos = [], [], []
+    for p, t in docs.items():
         for line in t.splitlines():
+            if 'python' not in line:
+                continue
             m = re.search(r'([\w\-]+\.py)\s+([^\n`|]*)', line)
             if not m or not (SCRIPTS / m.group(1)).exists():
                 continue
-            allowed = _flags(m.group(1))
+            flags, subs, npos, has_sub = _cli(m.group(1))
             for tok in re.findall(r'(?<!\S)(--?[A-Za-z][\w-]*)', m.group(2)):
-                if tok not in allowed:
+                if tok not in flags:
                     badflag.append(f'{m.group(1)} 不支持 {tok}')
+            # 子命令 = 脚本名**后面紧跟的第一个 token**（且不是选项、不是占位符）。**不能取"第一个
+            # 非选项词"**：`parse.py --materials output/x.json` 里的 `output/x.json` 也是非选项词，
+            # 那样会把选项的**值**当成子命令（第一版就是这么误报的）。
+            toks = m.group(2).split()
+            first = toks[0] if toks and re.fullmatch(r'[A-Za-z][\w-]*', toks[0]) else ''
+            if first:
+                if has_sub and first not in subs:
+                    badsub.append(f'{m.group(1)} 没有子命令 {first}')
+                elif not has_sub and npos == 0:
+                    badpos.append(f'{m.group(1)} 没有位置参数，文档却写了 {first}')
     c.check(not badflag, '文档里的参数都真实存在', '；'.join(badflag[:3]))
+    c.check(not badsub, '文档里的子命令都真实存在', '；'.join(badsub[:3]))
+    c.check(not badpos, '文档里的位置参数都有对应', '；'.join(badpos[:3]))
+
+    c.section('文档里的规模数字与现算一致')
+    # **为什么要有这条**：这类数字实测漂过两次——`examples/README.md` 的「12 个生成文件」（实为 24）
+    # 与「38 张表」（实为 44），两次都是"改了一边、忘了另一边"，而门禁全绿。
+    # `coding-spec` G7 早就定了"绝对规模数字彻底不写、现跑现取"，但**写出来又对不上**比不写更坏。
+    # 判据只钉"会宣称现状"的那几处；历史读数（NODE-AUDIT 的"13 → 25 节点"那类）不归它管。
+    sh = _sample_shape()
+    for doc, pat, keys, label in [
+            ('examples/README.md', r'（(\d+) 节点 / (\d+) 边）', ('nodes', 'edges'), '样例规模'),
+            ('examples/README.md', r'(\d+) 张子表 / (\d+) 行', ('parts', 'prows'), '子表规模'),
+            ('examples/README.md', r'混进 (\d+) 个生成文件', ('base',), '基线文件数'),
+            ('examples/README.md',
+             r'主表 (\d+) 处 \+ 九张子表 (\d+) 处，全样例 (\d+) / (\d+) 行',
+             ('star_main', 'star_parts', 'stars', 'allrows'), '★ 数'),
+            ('SKILL.md', r'下面(\S+)节只写', ('sections',), 'SKILL.md 节数')]:
+        t = docs.get(SKILL / doc) or (SKILL / doc).read_text(encoding='utf-8')
+        m = re.search(pat, t)
+        if not m:
+            c.check(False, f'{doc} 的{label}这句话找不到了', f'正则 {pat}')
+            continue
+        got = m.groups()
+        want = [sh[k] for k in keys]
+        vals = [int(g) if g.isdigit() else _cn2int(g) for g in got]
+        c.check(vals == want,
+                f'{doc} 的{label}与现算一致',
+                f'文档 {" / ".join(got)} ← 现算 {" / ".join(str(w) for w in want)}')
 
     c.section('参数表与 dictionary.yaml 逐值一致')
     cfg = yaml.safe_load((SCRIPTS / 'dictionary.yaml').read_text(encoding='utf-8'))
@@ -293,10 +418,25 @@ def run_face(tmp=None):
     c.check(not miss, '三层函数 + 统一入口仍在 flowtable_check.py', '缺 ' + '、'.join(miss))
     import validate
     c.check(len(validate.CHECK_NAMES) == 8, '质量门禁是八项', f'{len(validate.CHECK_NAMES)} 项')
+    # 两件事，分开报：
+    # ① **区间写法**统一成 `H1–H8`（三层结构校验就是 H1–H8；表头 H9 与证据层 H10 与它正交，
+    #    所以写成 `H1–H10` 反而错——那条曾经"看着最该改"的写法其实是房子的风格）；
+    # ② **列举**时不许漏中间那个（`templates/checklist-template.md` 的自检样例写过
+    #    「H1…H6 ✓ H8 ✓」，漏了 H7，而门禁全绿）。判据：≥5 个不同编号就必须从 H1 连续到最大。
     for p, t in mds.items():
-        m = re.search(r'H1[–\-~]H(\d)', t)
+        m = re.search(r'H1[–\-~]H(\d{1,2})', t)
         if m and m.group(1) != '8':
             c.check(False, f'{p.name} 把结构校验写成 H1–H{m.group(1)}')
+        # **列举**（同一行里排开 ≥4 个编号）时不许漏中间那个：`templates/checklist-template.md`
+        # 的自检样例写过「H1…H6 ✓ H8 ✓」，漏了 H7，而门禁全绿。**按行判**——散落在正文里的
+        # 多个 H 编号是"讨论这套编号"，不是"列举这套编号"（第一版按全文判，误报了一片）。
+        for ln in t.splitlines():
+            # 边界用 `(?!\d)` 而不是 `\b`：中文里 `H1起止` 的后面是汉字，**汉字也算 word char**，
+            # `\b` 会判成"没有边界"⇒ 这条断言看着在跑、其实一条都没抓到（第一版就栽在这）。
+            ns = sorted({int(n) for n in re.findall(r'H(\d{1,2})(?!\d)', ln)})
+            if len(ns) >= 6 and ns != list(range(1, ns[-1] + 1)):
+                c.check(False, f'{p.name} 有一行列了 {len(ns)} 个 H 编号却不连续',
+                         '实际 ' + '、'.join('H' + str(n) for n in ns))
 
     c.section('产物侧判据与文档一致')
     # 产物侧复核是**契约**（visual-spec §4.1 写清查什么 / 不查什么 / 不过就阻断）。清单钉在
