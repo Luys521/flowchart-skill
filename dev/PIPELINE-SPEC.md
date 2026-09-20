@@ -651,7 +651,7 @@ heading  paragraph  list_item  table  figure  caption  code  sheet  cell
 骨架里 AI 那几格写 `—`，`intake.py check` 会把"没填"当错——**"没填"与"填了"必须能分辨**，
 否则一张空卡片也能过校验。校验器只查 §8 登记的那两条（**卡片与账本一致**：材料一一对应、档位逐字相等、
 读不动逐字等于 `reason`；**版本关系双向一致**）+ 取值封闭 + "推断必须留痕"；
-**不查 element id 存不存在**——那是 **H10.1** 的活（§6），在这里再写一份 id 提取就是两份真值。
+**查 element id 存不存在**——那是 **H10.1** 的活（§6），这里**复用** `flowtable_check` 的同一份判据（**不另写 id 提取**——两份真值必漂）；同一条判据的另一个调用点是 `table_to_dsl --check`。
 
 
 ## 4 L2 计划

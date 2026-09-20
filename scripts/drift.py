@@ -682,7 +682,15 @@ def main(argv=None):
     c.add_argument('--intake', help='清点 intake.md')
     c.add_argument('--dict', help='dictionary.yaml（默认取 scripts/ 下那份）')
     a = ap.parse_args(argv)
-    return cmd_build(a) if a.cmd == 'build' else cmd_check(a)
+    # **仪器故障退 2 / 内容不合退 1**——`SKILL.md` 循环段与 `parts/对账` 都这么承诺：
+    # 路径打错、文件读不了、JSON 坏掉，都属"连输入都没拿到"，不是"账写得不对"。
+    # 四个读点各写一行是本模块的既有纪律（见文件头），所以守卫放在**入口这一处**，不改那四个读点；
+    # 异常只收 OSError / 解码错 / JSON 坏——**不收裸 `ValueError`**，免得把内容错也判成仪器故障。
+    try:
+        return cmd_build(a) if a.cmd == 'build' else cmd_check(a)
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as e:
+        print(f'⚠ 输入读不了（仪器故障，不是内容问题）：{type(e).__name__}: {e}', file=sys.stderr)
+        return 2
 
 
 if __name__ == '__main__':
