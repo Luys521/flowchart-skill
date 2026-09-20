@@ -29,7 +29,7 @@ AI 拿不准的地方不写在中间产物里（用户不会打开），而是�
 
 ```text
 SKILL.md              主入口：触发方式、标准处理流程、防呆、目录表
-scripts/              渲染与校验脚本（37 模块 = 24 个带 CLI 的入口 + 13 个纯库）
+scripts/              渲染与校验脚本（43 模块 = 29 个带 CLI 的入口 + 14 个纯库）
   dictionary.yaml     布局/配色/文字的数值字典
 references/           出图时按需读的规范（6 份）
 templates/            2 份模板（init.py 拷进 output/<名称>/）
@@ -53,7 +53,7 @@ dev/                  **维护分区**——只有改仓库的人进来，出图
 
 | 成果 | 位置 | 规模 |
 |---|---|---|
-| **工作流自举** | `dev/baseline/workflow/workflow-flow.html` | 13 节点 / 18 边，内嵌 7 张子图 |
+| **工作流自举** | `dev/baseline/workflow/workflow-flow.html` | 13 节点 / 18 边，内嵌 9 张子图 |
 | **代码地图自举** | `dev/baseline/self-boot/self-boot-flow.html` | 39 节点 / 38 边，**内嵌 37 张模块子图**（节点 = 该模块的函数，规模现跑现取）、drawio 38 页 |
 
 两份都是**单文件**：点可下钻节点即切视图（`Ctrl/⌘+点击` 另开窗口停在该层），发给别人只发那一个 html。

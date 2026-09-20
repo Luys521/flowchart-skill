@@ -28,7 +28,7 @@
 
 ## 二、模块职责与耦合现状
 
-**现状的唯一出处是 `dev/REPO-MAP.md` 第四节**（37 模块的接口面与三层层归属，由 `dev/tools/layering.py`
+**现状的唯一出处是 `dev/REPO-MAP.md` 第四节**（43 模块的接口面与三层层归属，由 `dev/tools/layering.py`
 逐次实测）。本文不再复写那张表——复写过一次，结果是它在拆分完成后**整表停在拆分前**（列着已删除的
 `model.py`、缺 6 个现存模块、行数与消费者数差一个量级），而没有任何仪器看得见（2026-09-17 审查发现）。
 
@@ -542,7 +542,7 @@ svg     canvas=(960, 350)  band=120.0  lanes=(0, 0, 960, 350)   ← 本次补上
 
 - `dev/verify/run.py` 四面全绿 **29/308/11/17**；`dev/tools/accept.py` 七门全过；`coverage 498/498 (100%)`。
 - 自举链按序重跑：`fn_graph.py`（495 → **498** 函数）→ `selfboot_gen.py` → `coverage.py`。
-- **产物变化只有一处**：`examples/self-demo/self-demo-flow.svg`（7591 → 7586 字节）。
+- **产物变化只有一处**：`examples/workflow/workflow-flow.svg`（7591 → 7586 字节）。
   按 D-20 在仓库外重建（**目录名必须与样例同名**，否则产物名随目录名走、比对全落空；
   **先删掉六件产物**再 build，否则 rollback 会把原件还原回来、量到的是遗留物），
   逐文件 md5 比对后**只拷回这一个**。`invariants` 由 9/11 回到 11/11。
