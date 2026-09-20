@@ -244,13 +244,19 @@ class SwimGrid:
                 spans[-1][2] = rr
             else:
                 spans.append([st, rr, rr])
-        return {'stages': self.stages, 'departments': self.departments,
-                'stage_spans': [tuple(s) for s in spans], 'slot_mode': self.slot_mode,
-                'stage_w': self.stage_w, 'head_h': self.head_h, 'route_left': self.route_left,
-                'col_x': self.col_x, 'col_w': self.col_w,
-                'rowy': self.rowy, 'row_h': self.row_h,
-                'legend_h': self.legend_h, 'width': self.width,
-                'subjects': self.M.subjects}
+        out = {'stages': self.stages, 'departments': self.departments,
+               'stage_spans': [tuple(s) for s in spans], 'slot_mode': self.slot_mode,
+               'stage_w': self.stage_w, 'head_h': self.head_h, 'route_left': self.route_left,
+               'col_x': self.col_x, 'col_w': self.col_w,
+               'rowy': self.rowy, 'row_h': self.row_h,
+               'legend_h': self.legend_h, 'width': self.width,
+               'subjects': self.M.subjects}
+        # 底图的几何/颜色/文字位置**在这里一次算好**（D-124）：两个渲染器直接读 `bands`。
+        # **为什么挂在这儿而不是让渲染器各调一次**：`lane_bands` 若没人从**本模块内**调用，
+        # 它在自举表里就成"挂起点的入口节点"（`开始 → lane_bands → 结束`），那条横穿全图的长边
+        # 把门⑨ 的绕行读数顶到 65%（阈值 60%，实测）。挂在 `lanes()` 下即成一条正常调用边。
+        out['bands'] = lane_bands(out, self.height())
+        return out
 
 
 def lane_bands(ln, height):

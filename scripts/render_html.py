@@ -20,7 +20,6 @@ from geometry import arc_px
 from semantics import arrow_markers, pending_style, subflow_target, SUB_INSET
 from artifact import artifact_stem
 from manifest import MAIN_VIEW
-import swimlane
 
 # 可下钻节点的记号：**框内一道内衬线**，同形状向内缩 `SUB_INSET` 这么多像素（见 D-78）。
 # 规格另有两条同样要紧：描边 1px、同色 55% 透明——节点高 60 而文字两到三行时，
@@ -336,14 +335,14 @@ def svg_label(L, e, ed):
             f'<text class="lab" x="{fmt(x + w / 2)}" y="{fmt(y + h / 2 + 4)}" fill="{c}">{esc(e["label"])}</text></g>')
 
 
-def svg_lanes(L, ln):
+def svg_lanes(ln):
     """泳道背景：顶部部门带 + 左侧阶段带 + 部门列底色（画在边与节点之前，规则见 swimlane-spec §6）。
 
     **算的部分只有一处**：`swimlane.lane_bands`（D-124）——末列铺到右沿、阶段带合并、文字基线
     偏移这些会漂的算术都在那儿；**拼串留在这里**（元素约定归各自渲染器，见 N3）。
     原先本函数与 `render_svg._emit_lanes` 各存一份逐字相同的实现（38 行里 21 行一字不差）。
     """
-    b = swimlane.lane_bands(ln, L.height())
+    b = ln['bands']
     out = ['<g class="lanes">']
     if b['corridor']:            # 左走廊补底色，否则里程碑带与首列之间是一条白缝（D-39）
         x, y, w, h = b['corridor']
@@ -538,7 +537,7 @@ def _view_svg(L, base, key, keys):
     svg = [f'<svg viewBox="0 0 {L.width} {H}" xmlns="http://www.w3.org/2000/svg">']
     _lanes = L.lanes()
     if _lanes:
-        svg.append(svg_lanes(L, _lanes))
+        svg.append(svg_lanes(_lanes))
     # 先画边，后画节点（节点在上层）
     for e in L.edges:
         svg.append(svg_edge(L, e))

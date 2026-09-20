@@ -12,9 +12,9 @@ parent: ../flowtable.md
 
 | 项目运作阶段 | 节点编号 | 节点名称 | 节点类型 | 输入 | 依据 | 输出 | 执行主体 | 执行者 | 行动所需时间 | 下个节点 | 节点描述 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 入口 | 01 | 开始 | 开始 | — | — | — | 脚本 | selfboot | — | 1→03｜2→04｜3→15｜4→16｜5→17｜6→18｜7→19｜8→20｜9→21 | 流程起点（结构性节点，不是函数） · 入口：1→lane_bands 2→SwimGrid.__init__ 3→SwimGrid.set_head_band 4→SwimGrid.Y 5→SwimGrid.MID 6→SwimGrid.height 7→SwimGrid.legend_rect 8→SwimGrid.rect 9→SwimGrid.lanes |
+| 入口 | 01 | 开始 | 开始 | — | — | — | 脚本 | selfboot | — | 1→04｜2→15｜3→16｜4→17｜5→19｜6→20｜7→21 | 流程起点（结构性节点，不是函数） · 入口：1→SwimGrid.__init__ 2→SwimGrid.set_head_band 3→SwimGrid.Y 4→SwimGrid.MID 5→SwimGrid.legend_rect 6→SwimGrid.rect 7→SwimGrid.lanes |
 | 模块级 | 02 | _align_half | 任务 | — | — | — | 脚本 | selfboot | — | →22 | ★ 向上取到「≡ unit/2 (mod unit·2)」的最小值（unit=20 → 20/60/100…）。 · L11 · 函数 · ⇢ 依赖 geometry.ceil_to |
-| 模块级 | 03 | lane_bands | 任务 | — | — | — | 脚本 | selfboot | — | →22 | ★ 泳道底图 → **纯数据**（几何 / 颜色 / 文字位置）：左走廊 + 部门列 + 阶段带。 · L256 · 函数 |
+| 模块级 | 03 | lane_bands | 任务 | — | — | — | 脚本 | selfboot | — | →22 | ★ 泳道底图 → **纯数据**（几何 / 颜色 / 文字位置）：左走廊 + 部门列 + 阶段带。 · L262 · 函数 |
 | SwimGrid | 04 | SwimGrid.__init__ | 任务 | — | — | — | 脚本 | selfboot | — | 1→05｜2→06｜3→07｜4→08｜5→09｜6→10｜7→11｜8→14 | ★ 建泳道栅格：读配置 → 吸附尺寸 → 定行列预算 → 算列宽与坐标 → 铺行名/泳道名。 · L24 · 方法 · 分支：1→SwimGrid._read_configs 2→SwimGrid._fit_sizes 3→SwimGrid._collect_cells 4→SwimGrid._solve_col_widths 5→SwimGrid._solve_row_heights 6→SwimGrid._solve_col_positions 7→SwimGrid._assign_lane_names 8→SwimGrid._build_rows |
 | SwimGrid | 05 | SwimGrid._read_configs | 任务 | — | — | — | 脚本 | selfboot | — | →02 | ★ 读网格刻度与泳道参数（`grid` 段 + 顶层 `lane:` 段），定下与尺寸无关的配置字段。 · L37 · 方法 · ⇢ 依赖 geometry.snap |
 | SwimGrid | 06 | SwimGrid._fit_sizes | 任务 | — | — | — | 脚本 | selfboot | — | →22 | ★ 把每个形状的宽高向上吸附到细格，并记录改动提示。 · L73 · 方法 · ⇢ 依赖 geometry.ceil_to |
@@ -32,5 +32,5 @@ parent: ../flowtable.md
 | SwimGrid | 18 | SwimGrid.height | 任务 | — | — | — | 脚本 | selfboot | — | →22 | L210 · 方法 · ⇢ 依赖 geometry.ceil_to |
 | SwimGrid | 19 | SwimGrid.legend_rect | 任务 | — | — | — | 脚本 | selfboot | — | →22 | L213 · 方法 |
 | SwimGrid | 20 | SwimGrid.rect | 任务 | — | — | — | 脚本 | selfboot | — | →22 | L216 · 方法 |
-| SwimGrid | 21 | SwimGrid.lanes | 任务 | — | — | — | 脚本 | selfboot | — | →22 | ★ 泳道背景信息。流程模式的 `Grid` **没有**这个方法——渲染器据此判断该画哪种背景。 · L234 · 方法 |
+| SwimGrid | 21 | SwimGrid.lanes | 任务 | — | — | — | 脚本 | selfboot | — | 1→03｜2→18 | ★ 泳道背景信息。流程模式的 `Grid` **没有**这个方法——渲染器据此判断该画哪种背景。 · L234 · 方法 · 分支：1→lane_bands 2→SwimGrid.height |
 | 出口 | 22 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |

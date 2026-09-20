@@ -2,11 +2,11 @@
  "title": "swimlane.py 函数流程表",
  "layout": "flow",
  "source": "flowtable.md",
- "dsl_sha256": "b71bd27581c53af6",
- "source_sha256": "83d83bcb25c0dd0f",
+ "dsl_sha256": "c44464bb385e516e",
+ "source_sha256": "3f1f49ced5d38703",
  "counts": {
   "nodes": 22,
-  "edges": 38,
+  "edges": 37,
   "by_type": {
    "end": 1,
    "start": 1,
@@ -43,10 +43,6 @@
  "edges": [
   [
    "01",
-   "03"
-  ],
-  [
-   "01",
    "04"
   ],
   [
@@ -60,10 +56,6 @@
   [
    "01",
    "17"
-  ],
-  [
-   "01",
-   "18"
   ],
   [
    "01",
@@ -191,7 +183,11 @@
   ],
   [
    "21",
-   "22"
+   "03"
+  ],
+  [
+   "21",
+   "18"
   ]
  ]
 }

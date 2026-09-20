@@ -41,7 +41,6 @@ from artifact import artifact_rel
 from engine import load
 from geometry import arc_px
 from semantics import arrow_markers, pending_style, subflow_target, SUB_INSET
-import swimlane
 
 # 可下钻节点的记号：**框内一道内衬线**（同形状内缩 `SUB_INSET`，见 D-78）。
 # 框内是关键：出了框就要和端口、相邻墨迹、包围盒/网格打交道；框内谁都不碰。
@@ -183,7 +182,7 @@ def _emit_label(L, e, ed):
             f'{_esc(e["label"])}</text></g>')
 
 
-def _emit_lanes(L, ln):
+def _emit_lanes(ln):
     """泳道底色：左走廊 + 部门列底色/表头 + 左侧里程碑带。
 
     **2026-09-19 抽到公共层**（D-124）：这份原先与 `render_html.svg_lanes` 各存一份**逐字相同**的
@@ -193,7 +192,7 @@ def _emit_lanes(L, ln):
     丢掉 21 条调用边（`fn_graph` 的 guardrail 报 62 > 45），而那张图是覆盖率的分母——**图的
     忠实度比少写几行更值钱**。两条硬约束（`manifest` 按产物读）写在 `lane_bands` 的文档串里。
     """
-    b = swimlane.lane_bands(ln, L.height())
+    b = ln['bands']
     out = ['<g class="lanes">']
     if b['corridor']:            # 左走廊补底色，否则里程碑带与首列之间是一条白缝（D-39）
         x, y, w, h = b['corridor']
@@ -225,7 +224,7 @@ def render(dsl_path, out_path, ctx=None):
     body = [_defs(L.cfg)]
     _lanes = L.lanes()          # 流程布局返回 None —— 据此决定画不画泳道底图
     if _lanes:
-        body.append(_emit_lanes(L, _lanes))
+        body.append(_emit_lanes(_lanes))
     body += [_emit_edge(L, e) for e in L.edges]
     drill = _drillable(L, dsl_path)          # 只算一次：它是"产物在不在"的查询，不是逐节点的
     body += [_emit_node(L, n, drill) for n in L.dsl['nodes']]
