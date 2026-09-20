@@ -10,15 +10,18 @@ meta:
     脚本:
       fill: '#ffe6cc'
       stroke: '#d79b00'
-    AI ↔ 用户:
+    脚本 + AI:
       fill: '#fff2cc'
       stroke: '#bf9000'
+    AI ↔ 用户:
+      fill: '#e1d5e7'
+      stroke: '#9673a6'
   layout: flow
 layout:
   col_x:
   - 400
-  width: 880
-  origin_x: -40
+  width: 1000
+  origin_x: -20
 nodes:
 - id: '01'
   name: 收到材料
@@ -45,13 +48,46 @@ nodes:
   row: 1
   col: 0
   stage: 读材料
-  route: →02
+  route: →01b
   desc: ⚠ 材料没给流程名时按材料主题起一个（原文未写、按惯例补）。`init.py <流程名> -d <成果根>` 建目录并把 `templates/`
     两份模板拷进去——**目录名就是流程身份**，产物名跟着它走
   time: 1-2 秒
   input: 流程名称
   basis: 两份模板与目录约定（`SKILL.md` 读材料段）
   output: '`<成果根>/<流程名>/` + 两份模板'
+- id: 01b
+  name: 手上是已有图吗？
+  lines:
+  - 手上是已有图吗？
+  type: decision
+  subject: AI
+  executor: AI
+  row: 2
+  col: 0
+  stage: 读材料
+  route: 是→01c ｜ 否→02
+  desc: '**两个入口在这一格分开**：不是已有图就走路 A（探测 → 解析 → 入账）；是已有图就走路 B——那张图**本身就是材料**，读它不需要探测分档。判据只看一件：手上这份东西**已经有拓扑**了没有'
+  input: 原始材料
+  basis: 入口 B：图里的拓扑与流程表同构（`references/import-existing.md` §1）
+  output: 已有图 / 不是
+- id: 01c
+  name: 读一张已有的图
+  lines:
+  - 读一张已有的图
+  type: task
+  subject: 脚本 + AI
+  executor: xml_reader.py · import_table.py
+  row: 3
+  col: 0
+  stage: 读材料
+  route: →06
+  desc: 三条路按**文件形态**分派：`.drawio` / `.xml` 走 `xml_reader.py` 出拓扑；**外部节点表**走 `import_table.py`
+    转成契约十二列；**照片 / 截图**走视觉（`certainty=inferred`，与 23 同一条纪律）。⚠ 读回来的只有名称 / 形状 / 连线 /
+    坐标，**语义属性图里一个都不写**——所以"读不回"是设计，不是缺陷
+  time: 1-5 秒
+  input: 一张已有流程图（本 SKILL 产的 / 别的工具画的 / 照片）
+  basis: 路径与命名归一（`references/import-existing.md` §1）
+  output: 节点与边（流程表的骨架）
 - id: '02'
   name: 读回现状对齐口径
   lines:
@@ -59,7 +95,7 @@ nodes:
   type: task
   subject: AI
   executor: AI
-  row: 2
+  row: 4
   col: 0
   stage: 读材料
   route: →03
@@ -75,7 +111,7 @@ nodes:
   type: task
   subject: 脚本
   executor: probe.py
-  row: 3
+  row: 5
   col: 0
   stage: 读材料
   route: →04
@@ -91,12 +127,12 @@ nodes:
   type: task
   subject: 脚本
   executor: recon.py
-  row: 4
+  row: 6
   col: 0
   stage: 读材料
   route: →05
   desc: ⊞ parts/侦查/flowtable.md；先廉价后昂贵：元数据 → 难度排序 → 先读易的。脚本只给机器可算的列（档位 / 规模 / 处置建议）；**「假设角色
-    / 依据 / 验证方式 / 状态」由 AI 填**，被推翻也要留痕
+    / 依据 / 验证方式 / 状态」由 AI 填**，被推翻也要留痕（怎么落笔见 `SKILL.md` 读材料段的「AI 格」）
   time: 2-10 秒
   input: '`materials[]`'
   basis: '`SKILL.md` 读材料段（侦查）'
@@ -108,7 +144,7 @@ nodes:
   type: task
   subject: 脚本
   executor: parse.py → ledger.py
-  row: 5
+  row: 7
   col: 0
   stage: 读材料
   route: →06
@@ -126,7 +162,7 @@ nodes:
   type: task
   subject: AI ↔ 用户
   executor: AI 问、用户答
-  row: 6
+  row: 8
   col: 0
   stage: 读材料
   route: →07
@@ -142,7 +178,7 @@ nodes:
   type: decision
   subject: AI
   executor: AI
-  row: 7
+  row: 9
   col: 0
   stage: 清点
   route: 是→08 ｜ 否→11
@@ -157,7 +193,7 @@ nodes:
   type: task
   subject: AI
   executor: AI（脚本 build/check）
-  row: 8
+  row: 10
   col: 0
   stage: 清点
   route: →09
@@ -173,7 +209,7 @@ nodes:
   type: task
   subject: AI
   executor: AI（脚本 build/check）
-  row: 9
+  row: 11
   col: 0
   stage: 计划
   route: →10
@@ -189,15 +225,31 @@ nodes:
   type: decision
   subject: 用户
   executor: 用户
-  row: 10
+  row: 12
   col: 0
   stage: 计划
-  route: 改→回 09 ｜ 不改→11
+  route: 改→回 09 ｜ 不改→10b
   desc: '**人审这一层最便宜**：在计划阶段说一句"这两条其实是一条"，比画完两张图才发现便宜一个数量级。⚠ `plan.md` 不进机器门禁——两条 `check`
     只核可机器核的那几条，不核"拆得对不对"'
   input: '`plan.md`'
   basis: '`SKILL.md` 计划段'
   output: 用户的纠正
+- id: 10b
+  name: 这次有流程吗？
+  lines:
+  - 这次有流程吗？
+  type: decision
+  subject: AI
+  executor: AI
+  row: 13
+  col: 0
+  stage: 计划
+  route: 有→11 ｜ 没有→26
+  desc: ★ **"没有"必须是一条出口**：材料可能是纯技术条款 / 资质证明 / 数据手册，一条流程都拆不出来——这时**硬凑一张图**比交白卷坏得多（实测跑过：三份材料
+    0 条流程 + 3 条排除，那是正确结论）
+  input: '`plan.md` 的流程清单'
+  basis: 0 条流程也是一种结论（`SKILL.md` 计划段）
+  output: 有 / 没有
 - id: '11'
   name: 落流程表
   lines:
@@ -205,7 +257,7 @@ nodes:
   type: task
   subject: AI
   executor: AI
-  row: 11
+  row: 14
   col: 0
   stage: 落表
   route: →12
@@ -220,10 +272,10 @@ nodes:
   type: decision
   subject: 脚本
   executor: table_to_dsl.py
-  row: 12
+  row: 15
   col: 0
   stage: 校验
-  route: 通过→13 ｜ 不通过→回 11 修正
+  route: 通过→13 ｜ 不通过→回 11 修正 ｜ 仪器故障→25
   desc: ⊞ parts/结构校验/flowtable.md；三层校验（① 节点：编号 / 语义 · ② 类型：起止、出边、分支 · ③ 关系：引用、连通、回路），硬错误**阻断渲染**。它拦得住**写错**的表，拦不住**理解错**的表
   input: 流程表
   basis: H1–H8 + 表头 H9 + 证据层 H10（`references/flowtable-spec.md` §3）
@@ -235,15 +287,15 @@ nodes:
   type: task
   subject: AI
   executor: AI
-  row: 13
+  row: 16
   col: 0
   stage: 标注
   route: →14
   desc: ⊞ parts/回看出处/flowtable.md；材料说的照写并指到 element id；AI 按常理补的打 `⚠` 并写明依据；推不出的打 `⚠?`。**打标不阻断**——标完照常往下，仍未决的由
-    14 报出
+    14 报出；**标完把推断项汇总成 `checklist.md`**（照 `templates/checklist-template.md` 自查）
   input: 流程表
   basis: 依据不来自材料就标 `⚠`（`references/material-to-nodes.md` §6）
-  output: '`⚠` / `⚠?` 留痕'
+  output: '`⚠` / `⚠?` 留痕 + `checklist.md`'
 - id: '14'
   name: 有待裁决项？
   lines:
@@ -251,7 +303,7 @@ nodes:
   type: decision
   subject: 脚本
   executor: clarify.py
-  row: 14
+  row: 17
   col: 0
   stage: 标注
   route: 有→15 ｜ 没有→16
@@ -267,7 +319,7 @@ nodes:
   type: task
   subject: 用户
   executor: 用户
-  row: 15
+  row: 18
   col: 0
   stage: 标注
   route: →回 01 当新材料
@@ -282,7 +334,7 @@ nodes:
   type: task
   subject: 脚本
   executor: build.py
-  row: 16
+  row: 19
   col: 0
   stage: 出图
   route: →17
@@ -298,7 +350,7 @@ nodes:
   type: decision
   subject: AI
   executor: AI
-  row: 17
+  row: 20
   col: 0
   stage: 看
   route: 通过→18 ｜ 有问题→回 16 调几何
@@ -313,7 +365,7 @@ nodes:
   type: decision
   subject: 脚本
   executor: table_to_dsl.py
-  row: 18
+  row: 21
   col: 0
   stage: 回流
   route: 有→回 11 重走 ｜ 没有→19
@@ -330,7 +382,7 @@ nodes:
   type: task
   subject: 脚本
   executor: sync.py
-  row: 19
+  row: 22
   col: 0
   stage: 回流
   route: 都没变→20 ｜ 改了语义→回 11 重落表 ｜ 只动几何→回 16 重布局
@@ -348,7 +400,7 @@ nodes:
   type: task
   subject: 脚本
   executor: drift.py
-  row: 20
+  row: 23
   col: 0
   stage: 循环
   route: →21
@@ -365,10 +417,10 @@ nodes:
   type: decision
   subject: 脚本
   executor: drift.py check
-  row: 21
+  row: 24
   col: 0
   stage: 循环
-  route: 收敛→24 ｜ 没收敛→22
+  route: 收敛→24 ｜ 没收敛→22 ｜ 仪器故障→25
   desc: ★ 收敛才许交付：每条漂移都要有处置（`已修` 会被重跑判据验真，`已解释` 必须写依据），每条缺口都要有结论（`已取证` 写清要哪一片、`已放弃`
     写理由）。⚠ 超预算（每份材料攻坚上限 2 轮）的落 `⚠?` 交用户——**不许无限重试**
   input: '`drift.md`'
@@ -381,7 +433,7 @@ nodes:
   type: decision
   subject: AI
   executor: AI
-  row: 22
+  row: 25
   col: 0
   stage: 循环
   route: 材料侧→23 ｜ 表侧→回 11
@@ -396,7 +448,7 @@ nodes:
   type: task
   subject: 脚本
   executor: query.py · render_pages.py
-  row: 23
+  row: 26
   col: 0
   stage: 循环
   route: →回 05 重新入账
@@ -413,7 +465,7 @@ nodes:
   type: end
   subject: 用户
   executor: 用户
-  row: 24
+  row: 27
   col: 0
   stage: 交付
   route: —
@@ -422,14 +474,60 @@ nodes:
     `⚠?` 照常交付**，但交付说明里如实报「仍未决 N 处」
   input: 19 的回写结果 + 全部产物
   output: 三视图 + `flowtable.md` + `checklist.md` + 层级索引
+- id: '25'
+  name: 停下报出（仪器故障）
+  lines:
+  - 停下报出（仪器故障）
+  type: end
+  subject: 脚本
+  executor: 出错的那个脚本
+  row: 28
+  col: 0
+  stage: 交付
+  route: —
+  desc: '**这一支专门收"跑不动"**：路径打错、文件读不了、JSON 坏掉——那不是"表写错了"，**改表没用、重试也没用**。说清三件事：哪个命令、读的哪份东西、下一步干什么（补依赖
+    / 换路径 / 重新生成）。**它不产出交付物**'
+  input: 逐条硬错误 / 读不了的输入
+  basis: 仪器故障退 2、内容不合退 1（`SKILL.md` 校验段）
+  output: 停下的理由 + 可执行的下一步
+- id: '26'
+  name: 本次不出图
+  lines:
+  - 本次不出图
+  type: end
+  subject: AI
+  executor: AI
+  row: 29
+  col: 0
+  stage: 交付
+  route: —
+  desc: 交付的是**结论**：材料里没有可画的过程，附上排除清单与理由（每份材料为什么不参与）。⚠ 不许为了让交付"有东西"而把条款硬塞成节点——那正是 `material-to-nodes`
+    §3 警告的那件事
+  input: '`plan.md`（0 条流程）'
+  basis: 没有流程也是一种交付（`SKILL.md` 计划段）
+  output: 一句结论 + 排除清单
 edges:
 - from: '01'
   to: 01a
   kind: spine
   polarity: main
 - from: 01a
-  to: '02'
+  to: 01b
   kind: spine
+  polarity: main
+- from: 01b
+  to: 01c
+  kind: spine
+  polarity: main
+  label: 是
+- from: 01b
+  to: '02'
+  kind: jumpR
+  polarity: main
+  label: 否
+- from: 01c
+  to: '06'
+  kind: jumpR
   polarity: main
 - from: '02'
   to: '03'
@@ -475,10 +573,20 @@ edges:
   polarity: negative
   label: 改
 - from: '10'
-  to: '11'
+  to: 10b
   kind: spine
   polarity: main
   label: 不改
+- from: 10b
+  to: '11'
+  kind: spine
+  polarity: main
+  label: 有
+- from: 10b
+  to: '26'
+  kind: jumpR
+  polarity: main
+  label: 没有
 - from: '11'
   to: '12'
   kind: spine
@@ -493,6 +601,11 @@ edges:
   kind: loop
   polarity: negative
   label: 不通过
+- from: '12'
+  to: '25'
+  kind: jumpR
+  polarity: main
+  label: 仪器故障
 - from: '13'
   to: '14'
   kind: spine
@@ -564,6 +677,11 @@ edges:
   kind: spine
   polarity: main
   label: 没收敛
+- from: '21'
+  to: '25'
+  kind: jumpR
+  polarity: main
+  label: 仪器故障
 - from: '22'
   to: '23'
   kind: spine
