@@ -247,11 +247,76 @@ def probe_tree(root):
                                                  'unreadable', str(e), 'unknown')
             sha, size = '', 0
         item = {'id': f'M{i:02d}', 'path': p.as_posix(), 'sha256': sha, 'bytes': size,
-                'mtime': _mtime(p), 'tier': tier, 'kind': kind, 'probe': probe, 'status': status}
+                'mtime': _mtime(p), 'tier': tier, 'kind': kind, 'probe': probe, 'status': status,
+                # `root` = 这一趟扫的根（2026-09-19 补，§2.1）。**没有它，"材料根变了"就无从判起**——
+                # 只比单份文件看得见"改了/删了"，看不见"用户又往目录里补了一份"。
+                'root': root.as_posix()}
         if reason:
             item['reason'] = reason
         out.append(item)
     return out
+
+
+def verify_list(items):
+    """**陈化检查**：`materials[]` 记的与材料根**当下**还对不对得上（PIPELINE-SPEC §1.2）。
+
+    → `(问题行, 提示行)`；两条都空 = 没变。查两件事：
+      · **记过的材料**：还在吗、`sha256` 还是那个吗（改了 / 删了都算）；
+      · **根下有没有新文件**：用户补了一份合同而没重跑 03，就是这一种——**原来没有任何仪器看得见**。
+
+    为什么消费端也要查（`parse.py` 默认调它）：各层 `check` 核的是"产物 ↔ 产物"，两边同源，
+    **一起错时全绿**。表被直改有回边 `18→11` 兜着，材料这一侧一直没有等价物。
+    """
+    bad, notes = [], []
+    by_root = {}
+    for m in items or []:
+        if not isinstance(m, dict):
+            continue
+        p = str(m.get('path') or '')
+        by_root.setdefault(str(m.get('root') or ''), []).append(m)
+        fp = Path(p)
+        if not fp.exists():
+            bad.append(f'`{m.get("id")}` 记的材料不在了：{p}')
+            continue
+        try:
+            sha, size = _sha_and_size(fp)
+        except OSError as e:
+            bad.append(f'`{m.get("id")}` 记的材料读不了：{p}（{type(e).__name__}）')
+            continue
+        if m.get('sha256') and sha != m['sha256']:
+            bad.append(f'`{m.get("id")}` 内容变了：{p}（{size} 字节，记的是 {m.get("bytes")} 字节）')
+    for root, ms in by_root.items():
+        r = Path(root) if root else None
+        if not r or not r.is_dir():
+            continue                        # 根是单份文件、或没记 root：只做上面那半
+        known = {str(m.get('path')) for m in ms}
+        now = {q.as_posix() for q in r.rglob('*') if q.is_file()}
+        # **产物名不算新材料**：任务级产物（`materials/recon/intake/plan/drift` 那一套）本来就该住
+        # **成果根**而不是材料根（§0），但真把两者放同一个目录时，那是**布局问题**，不是**陈化问题**——
+        # 把它报成"材料根变了"会天天误报（夹具就是这么撞出来的）。判据按**名字**认，不看内容。
+        new = sorted(q for q in (now - known) if not _is_artifact_name(q))
+        if new:
+            bad.append(f'材料根 `{root}` 下多了 {len(new)} 个没入账的文件：'
+                       f'{"、".join(new[:3])}{"…" if len(new) > 3 else ""}')
+    if not bad:
+        notes.append(f'陈化检查：{len(items or [])} 份材料与材料根当下一致')
+    return bad, notes
+
+
+ARTIFACT_NAMES = ('materials.json', 'elements.json', 'notes.json', 'evidence.json',
+                  'recon.md', 'intake.md', 'plan.md', 'drift.md',
+                  'checklist.md', 'flowtable.md')
+
+
+def _is_artifact_name(path_str):
+    """这份"新文件"是不是**本工具链自己的产物**？（产物名 / `.todo.json` / `.bak` ⇒ 是）
+
+    与 `artifact.NON_TABLE_MD` 同一类登记，但这里只按**名字**判、且**不 import**（probe 在流水线最上游，
+    不该为了一个名字表把下游模块拖进来）。
+    """
+    n = Path(path_str).name
+    return n in ARTIFACT_NAMES or n.endswith('.todo.json') or n.endswith('.bak')
+
 
 def _print_table(items):
     """人读摘要：一行一份材料。"""
@@ -266,9 +331,32 @@ def main(argv=None):
     sys.stdout.reconfigure(encoding='utf-8')
     sys.stderr.reconfigure(encoding='utf-8')  # 摘要/报错走 stderr，同样要定编码（GBK 控制台会乱码）
     ap = argparse.ArgumentParser(description='材料探测分档（按内容，不按扩展名）')
-    ap.add_argument('path', help='材料路径（文件或目录）')
+    ap.add_argument('path', nargs='?', help='材料路径（文件或目录）')
     ap.add_argument('--json', action='store_true', help='输出 materials[] JSON')
+    ap.add_argument('--verify', metavar='materials.json',
+                    help='**陈化检查**：只比"记过的材料 + 材料根当下"，不重新分档；不一致退 2')
     a = ap.parse_args(argv)
+
+    if a.verify:                                   # 陈化检查：材料根变了没有（§1.2）
+        import json
+        try:
+            items = json.loads(Path(a.verify).read_text(encoding='utf-8'))
+        except (OSError, ValueError) as e:
+            print(f'⚠ 材料层读不了（仪器故障）: {type(e).__name__}: {e}', file=sys.stderr)
+            return 2
+        bad, notes = verify_list(items)
+        for n in notes:
+            print(f'  · {n}')
+        if bad:
+            print(f'✗ 材料层陈化（{len(bad)} 条）——**回 03 重跑探测与解析**，别在旧账上继续：')
+            for b in bad[:10]:
+                print(f'   · {b}')
+            return 2
+        return 0
+
+    if not a.path:
+        print('⚠ 要么给材料路径，要么用 `--verify <materials.json>`', file=sys.stderr)
+        return 2
 
     items = probe_tree(a.path)
     if items is None:

@@ -36,6 +36,7 @@ import tempfile
 from pathlib import Path
 
 from textquality import element_haystack, load_thresholds, readout, scar, verdict
+import probe
 
 SCRIPTS = Path(__file__).resolve().parent
 
@@ -347,6 +348,10 @@ def main(argv=None):
     ap.add_argument('--sheet', default='', help='[parse_ooxml] 只要这个子表（逐字相等）')
     ap.add_argument('--rows', help='[parse_ooxml] 每张 sheet 只要这几行（A-B，1 起）')
     ap.add_argument('--verbose', action='store_true', help='把各适配器的完整输出也打出来')
+    ap.add_argument('--allow-stale', action='store_true',
+                    help='跳过材料层陈化检查（默认查，查出只告警；`--strict-stale` 才退 2）')
+    ap.add_argument('--strict-stale', action='store_true',
+                    help='材料层陈化 ⇒ 退 2（默认只告警继续；硬拦见 `probe.py --verify`）')
     a = ap.parse_args(argv)
 
     try:
@@ -357,6 +362,23 @@ def main(argv=None):
     if not isinstance(materials, list):
         print('⚠ 材料层必须是 JSON 数组（materials[]）', file=sys.stderr)
         return 2
+
+    # **陈化检查**（PIPELINE-SPEC §1.2，2026-09-19 补）：进厂前先问一句"材料根还是当初那个吗"。
+    # 各层 `check` 核的是"产物 ↔ 产物"，两边同源、一起错时全绿；表被直改有回边 `18→11` 兜着，
+    # 材料这一侧一直没有等价物——用户往目录里补一份合同而没重跑 03，新证据**永远不入账**。
+    # **默认只告警不拦**（`--strict-stale` 才退 2）：真把材料与产物放同一个目录时，那是**布局问题**
+    # 不是**陈化问题**，硬拦会把这种布局一律判死（实测：门的夹具就是这么摆的，硬拦当场红 6 条）。
+    # 要提升为默认硬拦，先重构夹具布局（登记在 `dev/coding-spec.md` G22）。
+    if not a.allow_stale:
+        stale, notes = probe.verify_list(materials)
+        for n in notes:
+            print(f'  · {n}')
+        if stale:
+            print(f'⚠ 材料层可能陈化（{len(stale)} 条）——**回 03 重跑 `probe → parse`**，别在旧账上继续：')
+            for b in stale[:10]:
+                print(f'   · {b}')
+            if a.strict_stale:
+                return 2
 
     per_elements, per_notes, briefs = [], [], []
     try:

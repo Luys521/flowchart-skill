@@ -610,6 +610,32 @@ def run_face(tmp=None):
     for q in sorted(EXAMPLES.glob('*/flowtable.md')):
         c.check(q.parent.name in rd, f'examples/{q.parent.name} 在 examples/README 里有说明')
 
+    c.section('格式基准：子表编号跟着父节点走')
+    # **只守格式基准**（`examples/workflow/`）。这条约定是那份 README 自己示范的（`01a` 插在 `01` 与 `02`
+    # 之间），也是它九条示范之一；而 `dev/baseline/self-boot/` 那棵**代码地图**合法地不跟——模块表由
+    # `selfboot_gen.py` 自己按 `01…NN` 编号（它没有"人漏改一张"的风险）。
+    # 2026-09-19 实测：把这条做成 H9 的普适硬规则，**当场把 43 张自举表判红**（整棵树 rc=1）——
+    # 教训：**约定只在它被示范的地方才是约定**，别顺手升格成普适判据。
+    main_t = (SKILL / 'examples/workflow/flowtable.md').read_text(encoding='utf-8')
+    back = {}
+    for ln in main_t.splitlines():
+        cs = [x.strip() for x in ln.strip('|').split('|')]
+        if len(cs) >= 12:
+            m = re.search(r'⊞\s*(parts/[\w\-./\u4e00-\u9fff]+\.md)', cs[11])
+            if m:
+                back[m.group(1)] = cs[1]
+    off = []
+    for part, pid in sorted(back.items()):
+        f = SKILL / 'examples/workflow' / part
+        if not f.exists():
+            continue
+        for ln in f.read_text(encoding='utf-8').splitlines():
+            cs = [x.strip() for x in ln.strip('|').split('|')]
+            if (len(cs) >= 12 and cs[1] and cs[1] != '节点编号'
+                    and not cs[1].startswith('---') and not cs[1].startswith(pid)):
+                off.append(f'{part}: {cs[1]} 不以 {pid} 开头')
+    c.check(not off, f'样例 {len(back)} 张子表的编号前缀 = 父节点编号', '；'.join(off[:3]))
+
     c.section('格式基准：模板示例必须逐字等于 workflow')
     # 模板自称"范本，逐字等于 examples/workflow/flowtable.md"。改了一边而没改另一边，
     # 这句话就变成不实陈述——而"不实的说明"比没有说明更会误导。所以钉死。

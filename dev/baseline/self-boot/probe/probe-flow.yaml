@@ -8,8 +8,8 @@ meta:
 layout:
   col_x:
   - 400
-  width: 940
-  origin_x: -140
+  width: 1020
+  origin_x: -160
 nodes:
 - id: '01'
   name: 开始
@@ -21,7 +21,7 @@ nodes:
   row: 0
   col: 0
   stage: 入口
-  route: 1→13
+  route: 1→15
   desc: 流程起点（结构性节点，不是函数） · 入口：1→main
 - id: '02'
   name: _read_head
@@ -33,7 +33,7 @@ nodes:
   row: 4
   col: 0
   stage: 模块级
-  route: →14
+  route: →16
   desc: ★ 前 n 字节；读不动就返回空（调用方按 T4 记账，不许崩）。 · L63 · 函数
 - id: '03'
   name: _ooxml_kind
@@ -45,7 +45,7 @@ nodes:
   row: 5
   col: 0
   stage: 模块级
-  route: →14
+  route: →16
   desc: ★ PK 容器 → `docx` / `xlsx` / `pptx`；不是 OOXML 就返回 None。 · L71 · 函数
 - id: '04'
   name: _pdf_tier
@@ -57,7 +57,7 @@ nodes:
   row: 6
   col: 0
   stage: 模块级
-  route: →14
+  route: →16
   desc: ★ PDF：有字体标记 → 有文本层（T2），否则判扫描件（T3）。依据写成 `/Font` 计数，人可核。 · L88 · 函数
 - id: '05'
   name: _decodes
@@ -69,7 +69,7 @@ nodes:
   row: 8
   col: 0
   stage: 模块级
-  route: →14
+  route: →16
   desc: ★ 这段字节能不能解成 UTF-8。 · L103 · 函数
 - id: '06'
   name: _text_tier
@@ -106,7 +106,7 @@ nodes:
   row: 9
   col: 0
   stage: 模块级
-  route: →14
+  route: →16
   desc: ★ 修改时间（ISO 8601 本地时区）；取不到返回空串（不崩）—§3「替代」的末位兜底。 · L193 · 函数
 - id: 09
   name: _read_tail
@@ -118,7 +118,7 @@ nodes:
   row: 10
   col: 0
   stage: 模块级
-  route: →14
+  route: →16
   desc: ★ 末 n 字节（不足就全给）；读不动返回空（调用方按"没有尾部"处理，不崩）。 · L200 · 函数
 - id: '10'
   name: _sha_and_size
@@ -127,10 +127,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 11
+  row: 12
   col: 0
   stage: 模块级
-  route: →14
+  route: →16
   desc: ★ → `(sha256, 字节数)`，**分块读**（默认 1 MiB 一块）。 · L212 · 函数
 - id: '11'
   name: probe_tree
@@ -146,18 +146,43 @@ nodes:
   desc: ★ 路径（文件或目录）→ `materials[]`；目录按**材料路径字典序**编号 `M01`…（PIPELINE-S… · L230 · 函数
     · 分支：1→sniff 2→_mtime 3→_sha_and_size
 - id: '12'
+  name: verify_list
+  lines:
+  - verify_list
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 11
+  col: 0
+  stage: 模块级
+  route: 1→10｜2→13
+  desc: ★ **陈化检查**：`materials[]` 记的与材料根**当下**还对不对得上（PIPELINE-SPEC §1.… · L260 · 函数
+    · 分支：1→_sha_and_size 2→_is_artifact_name
+- id: '13'
+  name: _is_artifact_name
+  lines:
+  - _is_artifact_name
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 13
+  col: 0
+  stage: 模块级
+  route: →16
+  desc: ★ 这份"新文件"是不是**本工具链自己的产物**？（产物名 / `.todo.json` / `.bak` ⇒ 是） · L311 · 函数
+- id: '14'
   name: _print_table
   lines:
   - _print_table
   type: task
   subject: 脚本
   executor: selfboot
-  row: 12
+  row: 14
   col: 0
   stage: 模块级
-  route: →14
-  desc: ★ 人读摘要：一行一份材料。 · L256 · 函数
-- id: '13'
+  route: →16
+  desc: ★ 人读摘要：一行一份材料。 · L321 · 函数
+- id: '15'
   name: main
   lines:
   - main
@@ -167,40 +192,40 @@ nodes:
   row: 1
   col: 0
   stage: 模块级
-  route: 1→11｜2→12
-  desc: L265 · 函数 · 分支：1→probe_tree 2→_print_table
-- id: '14'
+  route: 1→11｜2→12｜3→14
+  desc: L330 · 函数 · 分支：1→probe_tree 2→verify_list 3→_print_table
+- id: '16'
   name: 结束
   lines:
   - 结束
   type: end
   subject: 脚本
   executor: selfboot
-  row: 13
+  row: 15
   col: 0
   stage: 出口
   route: —
   desc: 流程终点（结构性节点，不是函数）
 edges:
 - from: '01'
-  to: '13'
+  to: '15'
   kind: spine
   polarity: main
   label: '1'
 - from: '02'
-  to: '14'
+  to: '16'
   kind: jumpR
   polarity: main
 - from: '03'
-  to: '14'
+  to: '16'
   kind: jumpR
   polarity: main
 - from: '04'
-  to: '14'
+  to: '16'
   kind: jumpR
   polarity: main
 - from: '05'
-  to: '14'
+  to: '16'
   kind: jumpR
   polarity: main
 - from: '06'
@@ -233,15 +258,15 @@ edges:
   polarity: main
   label: '5'
 - from: 08
-  to: '14'
+  to: '16'
   kind: jumpR
   polarity: main
 - from: 09
-  to: '14'
+  to: '16'
   kind: jumpR
   polarity: main
 - from: '10'
-  to: '14'
+  to: '16'
   kind: jumpR
   polarity: main
 - from: '11'
@@ -260,16 +285,35 @@ edges:
   polarity: main
   label: '3'
 - from: '12'
-  to: '14'
+  to: '10'
   kind: spine
   polarity: main
+  label: '1'
+- from: '12'
+  to: '13'
+  kind: jumpR
+  polarity: main
+  label: '2'
 - from: '13'
+  to: '16'
+  kind: jumpR
+  polarity: main
+- from: '14'
+  to: '16'
+  kind: spine
+  polarity: main
+- from: '15'
   to: '11'
   kind: spine
   polarity: main
   label: '1'
-- from: '13'
+- from: '15'
   to: '12'
   kind: jumpR
   polarity: main
   label: '2'
+- from: '15'
+  to: '14'
+  kind: jumpR
+  polarity: main
+  label: '3'

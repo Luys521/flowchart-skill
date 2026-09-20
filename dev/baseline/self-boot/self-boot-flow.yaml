@@ -346,7 +346,7 @@ nodes:
   col: 0
   stage: 接管与解析
   route: →29
-  desc: 12 个函数 · ⊞ probe/flowtable.md
+  desc: 14 个函数 · ⊞ probe/flowtable.md
 - id: '29'
   name: 模块 · query
   lines:
