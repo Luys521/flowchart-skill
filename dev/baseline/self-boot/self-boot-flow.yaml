@@ -490,7 +490,7 @@ nodes:
   col: 0
   stage: 渲染
   route: →41
-  desc: 19 个函数 · ⊞ swimlane/flowtable.md
+  desc: 20 个函数 · ⊞ swimlane/flowtable.md
 - id: '41'
   name: 模块 · sync
   lines:

@@ -41,6 +41,7 @@ from artifact import artifact_rel
 from engine import load
 from geometry import arc_px
 from semantics import arrow_markers, pending_style, subflow_target, SUB_INSET
+import swimlane
 
 # 可下钻节点的记号：**框内一道内衬线**（同形状内缩 `SUB_INSET`，见 D-78）。
 # 框内是关键：出了框就要和端口、相邻墨迹、包围盒/网格打交道；框内谁都不碰。
@@ -183,45 +184,33 @@ def _emit_label(L, e, ed):
 
 
 def _emit_lanes(L, ln):
-    """泳道底色：左走廊 + 部门列底色/表头 + 左侧里程碑带（与 `render_html.svg_lanes` 同元素约定）。
+    """泳道底色：左走廊 + 部门列底色/表头 + 左侧里程碑带。
 
-    **为什么这段与 html 各存一份**：分层门禁规定模块层之间零代码依赖（见文件头），抽公共层
-    要动 render_html、html 的逐字节基线得重新证，而现在只有一个消费者。等真有第二个再抽。
-
-    两条硬约束（`manifest._html_canvas_bands` 就是按它读的，见 render_svg 文件头）：
-      ① `band` 取自 `<rect x="0" y="…" width="…"` 的**最大值** ⇒ 里程碑带必须是 `x="0"`；
-      ② `lanes` 取自 `<g class="lanes">(.*?)</g>` 的**非贪婪**匹配 ⇒ 组内**不许再嵌 `<g>`**，
-         嵌一层就会把外层截在第一个 `</g>`、底色外包盒少一块（静默少数据，不报错）。
+    **2026-09-19 抽到公共层**（D-124）：这份原先与 `render_html.svg_lanes` 各存一份**逐字相同**的
+    实现，而这里当时的文档串写着"**现在只有一个消费者**，等真有第二个再抽"——那个前提不成立
+    （两个消费者都在）。现在**算的部分**共用 `swimlane.lane_bands`（末列铺右沿 / 阶段带合并 /
+    文字基线偏移），**拼串仍留在这里**：把 `_fmt` / `_esc` 当参数注入进去试过，代价是静态图
+    丢掉 21 条调用边（`fn_graph` 的 guardrail 报 62 > 45），而那张图是覆盖率的分母——**图的
+    忠实度比少写几行更值钱**。两条硬约束（`manifest` 按产物读）写在 `lane_bands` 的文档串里。
     """
-    sw, rl = ln['stage_w'], ln.get('route_left', 0)
-    x0, top, head = sw + rl, ln['legend_h'], ln['head_h']
-    y0, bot = top + head, L.height()
-    subs = ln['subjects'] or {}
+    b = swimlane.lane_bands(ln, L.height())
     out = ['<g class="lanes">']
-    if rl:      # 左走廊补底色，否则里程碑带与首列之间是一条白缝（D-39）
-        out.append(f'<rect x="{_fmt(sw)}" y="{_fmt(y0)}" width="{_fmt(rl)}" '
-                   f'height="{_fmt(bot - y0)}" fill="#f5f4f1"/>')
-    last = len(ln['departments']) - 1
-    for cc, dep in enumerate(ln['departments']):
-        x = x0 + sum(ln['col_w'][:cc])
-        w = (ln['width'] - x) if cc == last else ln['col_w'][cc]
-        st_ = subs.get(dep) or {}
-        fill, stroke = st_.get('fill', '#ffffff'), st_.get('stroke', '#cccccc')
-        out.append(f'<rect x="{_fmt(x)}" y="{_fmt(y0)}" width="{_fmt(w)}" '
-                   f'height="{_fmt(bot - y0)}" fill="{fill}" opacity="0.4"/>')
-        out.append(f'<rect x="{_fmt(x)}" y="{_fmt(top)}" width="{_fmt(w)}" height="{_fmt(head)}" '
-                   f'fill="{fill}" stroke="{stroke}"/>')
-        out.append(f'<text x="{_fmt(x + w / 2)}" y="{_fmt(top + head / 2 + 5)}" text-anchor="middle" '
-                   f'font-size="13" fill="{stroke}">{_esc(dep or "")}</text>')
-    # 阶段带按**连续同阶段的行区间**合并绘制（槽位模式下同一阶段横跨多行，见 swimlane.lanes）
-    spans = ln.get('stage_spans') or [(st, rr, rr) for rr, st in enumerate(ln['stages'])]
-    for st_name, r0, r1 in spans:
-        y = y0 if r0 == 0 else ln['rowy'][r0]
-        y2 = bot if r1 == len(ln['row_h']) - 1 else ln['rowy'][r1] + ln['row_h'][r1]
-        out.append(f'<rect x="0" y="{_fmt(y)}" width="{_fmt(sw)}" height="{_fmt(y2 - y)}" '
+    if b['corridor']:            # 左走廊补底色，否则里程碑带与首列之间是一条白缝（D-39）
+        x, y, w, h = b['corridor']
+        out.append(f'<rect x="{_fmt(x)}" y="{_fmt(y)}" width="{_fmt(w)}" '
+                   f'height="{_fmt(h)}" fill="#f5f4f1"/>')
+    for c in b['cols']:
+        out.append(f'<rect x="{_fmt(c["x"])}" y="{_fmt(b["y0"])}" width="{_fmt(c["w"])}" '
+                   f'height="{_fmt(b["bot"] - b["y0"])}" fill="{c["fill"]}" opacity="0.4"/>')
+        out.append(f'<rect x="{_fmt(c["x"])}" y="{_fmt(b["top"])}" width="{_fmt(c["w"])}" '
+                   f'height="{_fmt(b["head"])}" fill="{c["fill"]}" stroke="{c["stroke"]}"/>')
+        out.append(f'<text x="{_fmt(c["x"] + c["w"] / 2)}" y="{_fmt(b["top"] + b["head"] / 2 + 5)}" '
+                   f'text-anchor="middle" font-size="13" fill="{c["stroke"]}">{_esc(c["name"])}</text>')
+    for s in b['stages']:
+        out.append(f'<rect x="0" y="{_fmt(s["y"])}" width="{_fmt(b["sw"])}" height="{_fmt(s["h"])}" '
                    f'fill="#f5f4f1" stroke="#cccccc"/>')
-        out.append(f'<text x="{_fmt(sw / 2)}" y="{_fmt(y + (y2 - y) / 2 + 5)}" text-anchor="middle" '
-                   f'font-size="13" fill="#444441">{_esc(st_name or "")}</text>')
+        out.append(f'<text x="{_fmt(b["sw"] / 2)}" y="{_fmt(s["y"] + s["h"] / 2 + 5)}" '
+                   f'text-anchor="middle" font-size="13" fill="#444441">{_esc(s["name"])}</text>')
     out.append('</g>')
     return ''.join(out)
 

@@ -251,3 +251,51 @@ class SwimGrid:
                 'rowy': self.rowy, 'row_h': self.row_h,
                 'legend_h': self.legend_h, 'width': self.width,
                 'subjects': self.M.subjects}
+
+
+def lane_bands(ln, height):
+    """泳道底图 → **纯数据**（几何 / 颜色 / 文字位置）：左走廊 + 部门列 + 阶段带。
+
+    **为什么抽到这里**（2026-09-19，D-124）：`render_html.svg_lanes` 与 `render_svg._emit_lanes`
+    原先各存一份**逐字相同**的实现（38 行里 21 行一字不差，其余只差 `fmt` / `esc` 前缀），
+    而 `render_svg` 那份的文档串写着"**现在只有一个消费者**，等真有第二个再抽"——前提已不成立。
+    **只抽"算"，不抽"拼"**：元素字符串仍归各自的渲染器（`N3`：markup 天生不同），
+    但**所有会漂的算术**（末列铺到右沿、阶段带按连续行区间合并、`+5` 的文字基线偏移）
+    只有这一份。
+
+    **为什么不把 `fmt` / `esc` 当参数注入进来一起抽**（那能再省 14 行 ×2）：试过，代价是
+    **静态图丢掉 21 条调用边**——参数调用解析不出目标，`fn_graph` 的 guardrail 当场报
+    "unresolved 62 > 阈值 45"。而那张图是 `coverage` 的分母与自举表的输入：**图的忠实度
+    比少写几行更值钱**（这条取舍本身也写进了 D-124）。
+
+    两条硬约束（`manifest._html_canvas_bands` 就是按产物读的，改这里之前先看那边）：
+      ① 阶段带的矩形必须是 `x="0"`（`band` 取 `<rect x="0" …>` 的**最大值**）；
+      ② `<g class="lanes">` 组内**不许再嵌 `<g>`**（那边是非贪婪匹配，嵌一层就静默少一块底色）。
+
+    铺满画布的三处贴边（D-41）：部门列从 `stage_w + route_left` 起 · 末列铺到画布右沿 ·
+    阶段带纵向从表头底到画布底；左走廊那条也要补底色，否则留白缝（D-39）。
+    """
+    sw, rl = ln['stage_w'], ln.get('route_left', 0)
+    x0, top, head = sw + rl, ln['legend_h'], ln['head_h']
+    y0, bot = top + head, height
+    subs = ln['subjects'] or {}
+    last = len(ln['departments']) - 1
+    cols = []
+    for cc, dep in enumerate(ln['departments']):
+        x = x0 + sum(ln['col_w'][:cc])
+        st_ = subs.get(dep) or {}
+        cols.append({'x': x,
+                     'w': (ln['width'] - x) if cc == last else ln['col_w'][cc],
+                     'fill': st_.get('fill', '#ffffff'),
+                     'stroke': st_.get('stroke', '#cccccc'),
+                     'name': dep or ''})
+    # 阶段带按**连续同阶段的行区间**合并绘制（槽位模式下同一阶段横跨多行，见 `lanes()`）
+    spans = ln.get('stage_spans') or [(st, rr, rr) for rr, st in enumerate(ln['stages'])]
+    stages = []
+    for st_name, r0, r1 in spans:
+        y = y0 if r0 == 0 else ln['rowy'][r0]
+        y2 = bot if r1 == len(ln['row_h']) - 1 else ln['rowy'][r1] + ln['row_h'][r1]
+        stages.append({'y': y, 'h': y2 - y, 'name': st_name or ''})
+    return {'corridor': (sw, y0, rl, bot - y0) if rl else None,
+            'sw': sw, 'y0': y0, 'bot': bot, 'top': top, 'head': head,
+            'cols': cols, 'stages': stages}

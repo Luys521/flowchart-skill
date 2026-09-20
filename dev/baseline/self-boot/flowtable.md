@@ -50,7 +50,7 @@ level: L0
 | 渲染 | 37 | 模块 · router | 任务 | — | — | — | 脚本 | selfboot | — | →38 | 30 个函数 · ⊞ router/flowtable.md |
 | 接管与解析 | 38 | 模块 · semantics | 任务 | — | — | — | 脚本 | selfboot | — | →39 | 18 个函数 · ⊞ semantics/flowtable.md |
 | 编排入口 | 39 | 模块 · shot | 任务 | — | — | — | 脚本 | selfboot | — | →40 | 8 个函数 · ⊞ shot/flowtable.md |
-| 渲染 | 40 | 模块 · swimlane | 任务 | — | — | — | 脚本 | selfboot | — | →41 | 19 个函数 · ⊞ swimlane/flowtable.md |
+| 渲染 | 40 | 模块 · swimlane | 任务 | — | — | — | 脚本 | selfboot | — | →41 | 20 个函数 · ⊞ swimlane/flowtable.md |
 | 同步闭环 | 41 | 模块 · sync | 任务 | — | — | — | 脚本 | selfboot | — | →42 | 10 个函数 · ⊞ sync/flowtable.md |
 | DSL 装配 | 42 | 模块 · table_to_dsl | 任务 | — | — | — | 脚本 | selfboot | — | →43 | 14 个函数 · ⊞ table_to_dsl/flowtable.md |
 | 接管与解析 | 43 | 模块 · textquality | 任务 | — | — | — | 脚本 | selfboot | — | →44 | 9 个函数 · ⊞ textquality/flowtable.md |

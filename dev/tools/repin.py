@@ -56,7 +56,12 @@ def _snapshot(d):
 
 
 def _run(script, *args):
-    """跑一步 → `(rc, 尾巴)`。**带 `PYTHONDONTWRITEBYTECODE`**：不在仓库里留 `__pycache__`。"""
+    """跑一步 → `(rc, 尾巴)`。**带 `PYTHONDONTWRITEBYTECODE`**：不在仓库里留 `__pycache__`。
+
+    **每一步算不算"跑成"由调用方给**（见 `main` 的 `steps`）：`fn_graph.py` 的合约是
+    "**1 = 跑完了但有需人工复核的缺口/歧义**（超过 `REVIEW_*` 阈值）"——那不是失败（图已经写出来了）。
+    实测踩过：把 1 一律当失败 ⇒ 只要图上待复核项超标，整个重钉就拒绝干活。
+    """
     env = dict(os.environ, PYTHONDONTWRITEBYTECODE='1', PYTHONUNBUFFERED='1')
     r = subprocess.run([PY, str(ROOT / script), *[str(a) for a in args]],
                        capture_output=True, text=True, encoding='utf-8', env=env, cwd=str(ROOT))
@@ -125,14 +130,14 @@ def main(argv=None):
     ap.add_argument('--prune', action='store_true', help='连"基线里多出来"的文件也删掉')
     a = ap.parse_args(argv)
 
-    steps = [('① 依赖图快照', 'dev/tools/fn_graph.py'),
-             ('② 流程表树', 'dev/tools/selfboot_gen.py'),
-             ('③ 出图', 'scripts/build.py', 'output/self-boot/flowtable.md')]
-    for step in steps:
-        label, script, *args = step
+    # 每一步「算跑成」的退出码：**只有 `fn_graph` 多一个 1**（＝跑完了但有需人工复核的缺口）。
+    steps = [('① 依赖图快照', 'dev/tools/fn_graph.py', (), (0, 1)),
+             ('② 流程表树', 'dev/tools/selfboot_gen.py', (), (0,)),
+             ('③ 出图', 'scripts/build.py', ('output/self-boot/flowtable.md',), (0,))]
+    for label, script, args, ok in steps:
         rc, tail = _run(script, *args)
-        print(f'{label}: rc={rc}  {tail[:100]}')
-        if rc != 0:
+        print(f'{label}: rc={rc}  {tail[:110]}')
+        if rc not in ok:
             print(f'✗ {label} 没跑成——**基线一个字都没动**，先修这一步', file=sys.stderr)
             return 2
 

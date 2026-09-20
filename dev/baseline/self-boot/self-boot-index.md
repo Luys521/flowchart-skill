@@ -44,7 +44,7 @@
   - **L1 子流程** `router/flowtable.md`——《router.py 函数流程表》（id: selfboot-router）（32 节点）
   - **L1 子流程** `semantics/flowtable.md`——《semantics.py 函数流程表》（id: selfboot-semantics）（20 节点）
   - **L1 子流程** `shot/flowtable.md`——《shot.py 函数流程表》（id: selfboot-shot）（10 节点）
-  - **L1 子流程** `swimlane/flowtable.md`——《swimlane.py 函数流程表》（id: selfboot-swimlane）（21 节点）
+  - **L1 子流程** `swimlane/flowtable.md`——《swimlane.py 函数流程表》（id: selfboot-swimlane）（22 节点）
   - **L1 子流程** `sync/flowtable.md`——《sync.py 函数流程表》（id: selfboot-sync）（12 节点）
   - **L1 子流程** `table_to_dsl/flowtable.md`——《table_to_dsl.py 函数流程表》（id: selfboot-table_to_dsl）（16 节点）
   - **L1 子流程** `textquality/flowtable.md`——《textquality.py 函数流程表》（id: selfboot-textquality）（11 节点）

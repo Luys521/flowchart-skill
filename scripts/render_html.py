@@ -20,6 +20,7 @@ from geometry import arc_px
 from semantics import arrow_markers, pending_style, subflow_target, SUB_INSET
 from artifact import artifact_stem
 from manifest import MAIN_VIEW
+import swimlane
 
 # 可下钻节点的记号：**框内一道内衬线**，同形状向内缩 `SUB_INSET` 这么多像素（见 D-78）。
 # 规格另有两条同样要紧：描边 1px、同色 55% 透明——节点高 60 而文字两到三行时，
@@ -338,40 +339,28 @@ def svg_label(L, e, ed):
 def svg_lanes(L, ln):
     """泳道背景：顶部部门带 + 左侧阶段带 + 部门列底色（画在边与节点之前，规则见 swimlane-spec §6）。
 
-    底色必须**铺满画布**，三处都要贴边：① 部门列从 `stage_w + route_left` 起（不是从 `stage_w`
-    起——那样整片底色会比节点列平移一个走廊宽，右侧露白、末列节点还会探出底色）；② 末列铺到
-    画布右沿；③ 阶段带纵向从表头底一直到画布底（只管到最后一行的下沿，底部会露 40px 白边）。
-    走廊那一条也要补底色，否则里程碑带与首列之间是一条白缝（D-39 的左走廊）。
+    **算的部分只有一处**：`swimlane.lane_bands`（D-124）——末列铺到右沿、阶段带合并、文字基线
+    偏移这些会漂的算术都在那儿；**拼串留在这里**（元素约定归各自渲染器，见 N3）。
+    原先本函数与 `render_svg._emit_lanes` 各存一份逐字相同的实现（38 行里 21 行一字不差）。
     """
-    sw, rl = ln['stage_w'], ln.get('route_left', 0)
-    x0, top, head = sw + rl, ln['legend_h'], ln['head_h']
-    y0, bot = top + head, L.height()
-    subs = ln['subjects'] or {}
+    b = swimlane.lane_bands(ln, L.height())
     out = ['<g class="lanes">']
-    if rl:
-        out.append(f'<rect x="{fmt(sw)}" y="{fmt(y0)}" width="{fmt(rl)}" '
-                   f'height="{fmt(bot - y0)}" fill="#f5f4f1"/>')
-    last = len(ln['departments']) - 1
-    for cc, dep in enumerate(ln['departments']):
-        x = x0 + sum(ln['col_w'][:cc])
-        w = (ln['width'] - x) if cc == last else ln['col_w'][cc]
-        st_ = subs.get(dep) or {}
-        fill, stroke = st_.get('fill', '#ffffff'), st_.get('stroke', '#cccccc')
-        out.append(f'<rect x="{fmt(x)}" y="{fmt(y0)}" width="{fmt(w)}" '
-                   f'height="{fmt(bot - y0)}" fill="{fill}" opacity="0.4"/>')
-        out.append(f'<rect x="{fmt(x)}" y="{fmt(top)}" width="{fmt(w)}" height="{fmt(head)}" '
-                   f'fill="{fill}" stroke="{stroke}"/>')
-        out.append(f'<text x="{fmt(x + w / 2)}" y="{fmt(top + head / 2 + 5)}" text-anchor="middle" '
-                   f'font-size="13" fill="{stroke}">{esc(dep or "")}</text>')
-    # 阶段带按**连续同阶段的行区间**合并绘制（槽位模式下同一阶段横跨多行，见 swimlane.lanes）
-    spans = ln.get('stage_spans') or [(st, rr, rr) for rr, st in enumerate(ln['stages'])]
-    for st_name, r0, r1 in spans:
-        y = y0 if r0 == 0 else ln['rowy'][r0]
-        y2 = bot if r1 == len(ln['row_h']) - 1 else ln['rowy'][r1] + ln['row_h'][r1]
-        out.append(f'<rect x="0" y="{fmt(y)}" width="{fmt(sw)}" height="{fmt(y2 - y)}" '
+    if b['corridor']:            # 左走廊补底色，否则里程碑带与首列之间是一条白缝（D-39）
+        x, y, w, h = b['corridor']
+        out.append(f'<rect x="{fmt(x)}" y="{fmt(y)}" width="{fmt(w)}" '
+                   f'height="{fmt(h)}" fill="#f5f4f1"/>')
+    for c in b['cols']:
+        out.append(f'<rect x="{fmt(c["x"])}" y="{fmt(b["y0"])}" width="{fmt(c["w"])}" '
+                   f'height="{fmt(b["bot"] - b["y0"])}" fill="{c["fill"]}" opacity="0.4"/>')
+        out.append(f'<rect x="{fmt(c["x"])}" y="{fmt(b["top"])}" width="{fmt(c["w"])}" '
+                   f'height="{fmt(b["head"])}" fill="{c["fill"]}" stroke="{c["stroke"]}"/>')
+        out.append(f'<text x="{fmt(c["x"] + c["w"] / 2)}" y="{fmt(b["top"] + b["head"] / 2 + 5)}" '
+                   f'text-anchor="middle" font-size="13" fill="{c["stroke"]}">{esc(c["name"])}</text>')
+    for s in b['stages']:
+        out.append(f'<rect x="0" y="{fmt(s["y"])}" width="{fmt(b["sw"])}" height="{fmt(s["h"])}" '
                    f'fill="#f5f4f1" stroke="#cccccc"/>')
-        out.append(f'<text x="{fmt(sw / 2)}" y="{fmt(y + (y2 - y) / 2 + 5)}" text-anchor="middle" '
-                   f'font-size="13" fill="#444441">{esc(st_name or "")}</text>')
+        out.append(f'<text x="{fmt(b["sw"] / 2)}" y="{fmt(s["y"] + s["h"] / 2 + 5)}" '
+                   f'text-anchor="middle" font-size="13" fill="#444441">{esc(s["name"])}</text>')
     out.append('</g>')
     return ''.join(out)
 
