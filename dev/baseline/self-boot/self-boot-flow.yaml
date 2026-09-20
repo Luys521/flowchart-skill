@@ -130,7 +130,7 @@ nodes:
   col: 0
   stage: 结构校验
   route: →11
-  desc: 33 个函数 · ⊞ flowtable_check/flowtable.md
+  desc: 34 个函数 · ⊞ flowtable_check/flowtable.md
 - id: '11'
   name: 模块 · flowtable_colors
   lines:
@@ -178,7 +178,7 @@ nodes:
   col: 0
   stage: 接管与解析
   route: →15
-  desc: 11 个函数 · ⊞ import_table/flowtable.md
+  desc: 12 个函数 · ⊞ import_table/flowtable.md
 - id: '15'
   name: 模块 · init
   lines:
@@ -286,7 +286,7 @@ nodes:
   col: 0
   stage: 接管与解析
   route: →24
-  desc: 25 个函数 · ⊞ parse_legacy/flowtable.md
+  desc: 26 个函数 · ⊞ parse_legacy/flowtable.md
 - id: '24'
   name: 模块 · parse_ooxml
   lines:
@@ -334,7 +334,7 @@ nodes:
   col: 0
   stage: 接管与解析
   route: →28
-  desc: 19 个函数 · ⊞ plan/flowtable.md
+  desc: 20 个函数 · ⊞ plan/flowtable.md
 - id: '28'
   name: 模块 · pptx_text
   lines:

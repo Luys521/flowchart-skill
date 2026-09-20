@@ -14,11 +14,11 @@
   - **L1 子流程** `drift/flowtable.md`——《drift.py 函数流程表》（id: selfboot-drift）（29 节点）
   - **L1 子流程** `engine/flowtable.md`——《engine.py 函数流程表》（id: selfboot-engine）（28 节点）
   - **L1 子流程** `flowtable/flowtable.md`——《flowtable.py 函数流程表》（id: selfboot-flowtable）（29 节点）
-  - **L1 子流程** `flowtable_check/flowtable.md`——《flowtable_check.py 函数流程表》（id: selfboot-flowtable_check）（36 节点）
+  - **L1 子流程** `flowtable_check/flowtable.md`——《flowtable_check.py 函数流程表》（id: selfboot-flowtable_check）（37 节点）
   - **L1 子流程** `flowtable_colors/flowtable.md`——《flowtable_colors.py 函数流程表》（id: selfboot-flowtable_colors）（10 节点）
   - **L1 子流程** `flowtable_layout/flowtable.md`——《flowtable_layout.py 函数流程表》（id: selfboot-flowtable_layout）（23 节点）
   - **L1 子流程** `geometry/flowtable.md`——《geometry.py 函数流程表》（id: selfboot-geometry）（35 节点）
-  - **L1 子流程** `import_table/flowtable.md`——《import_table.py 函数流程表》（id: selfboot-import_table）（13 节点）
+  - **L1 子流程** `import_table/flowtable.md`——《import_table.py 函数流程表》（id: selfboot-import_table）（14 节点）
   - **L1 子流程** `init/flowtable.md`——《init.py 函数流程表》（id: selfboot-init）（6 节点）
   - **L1 子流程** `intake/flowtable.md`——《intake.py 函数流程表》（id: selfboot-intake）（11 节点）
   - **L1 子流程** `label/flowtable.md`——《label.py 函数流程表》（id: selfboot-label）（11 节点）
@@ -27,11 +27,11 @@
   - **L1 子流程** `ledger/flowtable.md`——《ledger.py 函数流程表》（id: selfboot-ledger）（11 节点）
   - **L1 子流程** `manifest/flowtable.md`——《manifest.py 函数流程表》（id: selfboot-manifest）（31 节点）
   - **L1 子流程** `parse/flowtable.md`——《parse.py 函数流程表》（id: selfboot-parse）（17 节点）
-  - **L1 子流程** `parse_legacy/flowtable.md`——《parse_legacy.py 函数流程表》（id: selfboot-parse_legacy）（27 节点）
+  - **L1 子流程** `parse_legacy/flowtable.md`——《parse_legacy.py 函数流程表》（id: selfboot-parse_legacy）（28 节点）
   - **L1 子流程** `parse_ooxml/flowtable.md`——《parse_ooxml.py 函数流程表》（id: selfboot-parse_ooxml）（13 节点）
   - **L1 子流程** `parse_pdf/flowtable.md`——《parse_pdf.py 函数流程表》（id: selfboot-parse_pdf）（11 节点）
   - **L1 子流程** `parse_text/flowtable.md`——《parse_text.py 函数流程表》（id: selfboot-parse_text）（15 节点）
-  - **L1 子流程** `plan/flowtable.md`——《plan.py 函数流程表》（id: selfboot-plan）（21 节点）
+  - **L1 子流程** `plan/flowtable.md`——《plan.py 函数流程表》（id: selfboot-plan）（22 节点）
   - **L1 子流程** `pptx_text/flowtable.md`——《pptx_text.py 函数流程表》（id: selfboot-pptx_text）（10 节点）
   - **L1 子流程** `probe/flowtable.md`——《probe.py 函数流程表》（id: selfboot-probe）（16 节点）
   - **L1 子流程** `query/flowtable.md`——《query.py 函数流程表》（id: selfboot-query）（11 节点）

@@ -136,6 +136,7 @@ legacy_text:
   min_word_ratio: 0.5          # run 里"字"（中日韩 / 字母数字）占比下限——纯符号的 run 是二进制碰巧可打印
   max_low0_ratio: 0.4          # 码位低字节恒为 0 的比例上限——"单字节流被当 UTF-16LE 读"的指纹（实测抓到过）
   min_common_ratio: 0.85       # 常用字面（ASCII / 中文 / 常用标点）占比下限——防"多文种混杂"的高熵噪声
+  max_markup_ratio: 0.25       # `<标签 …>` 盖住的字数占比上限——内嵌 XML 是"另一种语言"，不是正文（D-109）
   min_chars: 200               # 整份捞不到这么多字就不算读出来（照旧记 unreadable + 可执行提示）
   max_chars: 2000              # 单个元素的字数上限（与 parse_text 的块大小同一量级）
   max_elements: 200            # 单份材料的元素上限（防超大二进制灌满账本）

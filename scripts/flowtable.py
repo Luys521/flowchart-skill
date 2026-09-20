@@ -38,6 +38,13 @@ class Errors:
     def __init__(self):
         self.hard = []
         self.soft = []
+        # H10 的**启用记账**（§6；由 `flowtable_check.check_evidence` 落，D-108）：
+        # 这一层这次跑没跑、用的是哪本账（**相对本表目录**的写法，给人看）、没跑是因为什么。
+        # 写在**类里**而不是调用方用 `getattr` 兜：漏掉一个字段时 `getattr` 会**静默**给出 False，
+        # 而那个 False 会被打印成"没有账本"——本仓最不能忍的就是"仪器没跑，结论却像跑过了"。
+        self.evidence_checked = False
+        self.evidence_ledger = ''
+        self.evidence_skip = ''
 
     def err(self, m, subject=None, fix=None):
         self.hard.append(Finding(m, subject, fix) if (subject or fix) else m)

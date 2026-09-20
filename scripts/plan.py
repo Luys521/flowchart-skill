@@ -63,7 +63,7 @@ from pathlib import Path
 import cells
 import capability
 
-FLOW_COLUMNS = ('流程', '角色', '挂在', '材料集', '与其它流程', '并行组', '状态')
+FLOW_COLUMNS = ('流程', '角色', '挂在', '材料集', '与其它流程', '并行组', '合并/拆分理由', '状态')
 ASK_COLUMNS = ('编号', '问题', '推荐答案', '指向')
 EXCL_COLUMNS = ('材料', '理由')
 
@@ -79,6 +79,7 @@ TODO_TABLES = (cells.table('流程清单', '流程', {
     '挂在': {'列': '挂在'},
     '与其它流程': {'列': '与其它流程'},
     '并行组': {'列': '并行组'},
+    '合并/拆分理由': {'列': '合并/拆分理由'},
     '状态': {'列': '状态'}}, {'角色': list(ROLES), '状态': list(STATES)}),
     cells.table('澄清申请', '编号', {
         '问题': {'列': '问题'},
@@ -210,8 +211,13 @@ def check_split(cards, split):
     每一份「含流程 = 是」的材料必须**有下落**——进某条流程的材料集，或写进「范围外」。
     漏掉的会**静默消失**（与「含流程 = 不确定」必须有人问同一条纪律；真材料集上现形过：
     5 份读不动的材料既不是流程、也不在排除清单里，计划里一份都没出现而没人注意到）。
+
+    **另核"并 / 拆有没有交代"**（2026-09-19 补，§4.1 ①的「合并/拆分理由」）：材料集**不是**
+    机器种子里的任何一组 ⇒ 那是 AI 的并/拆决定 ⇒ 必须写理由。机器那一组（单份，或 §4.2 步骤 2
+    的强合并）不必写——**那是事实，事实不需要理由**，硬要一句只会逼出"因为内容重复"这种废话。
     """
     errs, placed = [], set()
+    machine = {tuple(g) for g in groups_of(cards)}
     for _k, mats, f in _split_flows(split):
         if not mats:
             errs.append(f'流程 {f.get("名")!r} 的材料集是空的（§4.4 ①：流程没有材料就没有依据）')
@@ -219,6 +225,9 @@ def check_split(cards, split):
             if m not in cards:
                 errs.append(f'流程 {f.get("名")!r} 材料集里的 `{m}` 在 `intake.md` 里没有')
             placed.add(m)
+        if mats and tuple(mats) not in machine and not str(f.get('合并/拆分理由') or '').strip():
+            errs.append(f'流程 {f.get("名")!r}（{"、".join(mats)}）的材料集不是机器种子里的任何一组'
+                        f'——并/拆是 AI 的判断，要在「合并/拆分理由」里写一句（§4.1 ① / §4.2 步骤 3）')
     for r in split.get('范围外') or []:
         m = str(r.get('材料') or '').strip('`')
         if m not in cards:
@@ -291,13 +300,13 @@ def build_plan(cards, split=None, scope=None):
         for i, g in enumerate(flow_ids, 1):
             state = '待澄清' if any(m in unsure for m in g) else NO   # 蕴含是机器事实，见 check 规则 5
             lines.append(f'| `F{i:02d}` {NO} | {NO} | {NO} | '
-                         f'{"、".join(f"`{m}`" for m in g)} | {NO} | {NO} | {state} |')
+                         f'{"、".join(f"`{m}`" for m in g)} | {NO} | {NO} | {NO} | {state} |')
     else:                                              # AI 的拆解（编号按最小 M## 由脚本排）
         for i, (_k, mats, f) in enumerate(_split_flows(split), 1):
             lines.append(f'| `F{i:02d}` {f.get("名") or NO} | {f.get("角色") or NO} | '
                          f'{f.get("挂在") or NO} | {"、".join(f"`{m}`" for m in mats)} | '
                          f'{f.get("与其它流程") or NO} | {f.get("并行组") or NO} | '
-                         f'{f.get("状态") or NO} |')
+                         f'{f.get("合并/拆分理由") or NO} | {f.get("状态") or NO} |')
     lines += ['', '## ② 澄清申请', '',
               '| ' + ' | '.join(ASK_COLUMNS) + ' |',
               '|' + '---|' * len(ASK_COLUMNS)]
@@ -378,7 +387,7 @@ def scope_of(text):
 def parse_doc(text):
     """`plan.md` → `(流程行, 申请行, 排除行, 报错)`。三张表各按**自己的表头**认（列规范在代码里只有一份）。
 
-    认表头而不是认位置：三张表的列数都不同（7 / 4 / 2），按顺序硬认会在"漏了中间一张"时静默错位——
+    认表头而不是认位置：三张表的列数都不同（8 / 4 / 2），按顺序硬认会在"漏了中间一张"时静默错位——
     那正是本仓反复吃过的那类错（伴生表少一列被当成"没给"）。
     """
     want = {FLOW_COLUMNS: '流程清单', ASK_COLUMNS: '澄清申请', EXCL_COLUMNS: '排除清单'}
@@ -483,6 +492,28 @@ def _check_asks(rows, asks, cards, names):
         if m not in asked:
             errs.append(f'`{m}` 在清点里是「含流程 = 不确定」（读不动 / 判不出有没有步骤），'
                         f'澄清申请里却没有它——它既不是流程、也不在排除清单里，会静默消失')
+    return errs
+
+
+def check_reasons(cards, rows):
+    """「合并/拆分理由」那条机器判据（§4.1 ①，2026-09-19 补）→ 错误清单。
+
+    **判据只有一条**：这条流程的材料集**不是**机器种子里的任何一组 ⇒ 那是 AI 的并/拆决定 ⇒ 理由列必须写。
+    是机器那一组（单份，或 §4.2 步骤 2 的强合并）⇒ 不要求——**事实不需要理由**，硬要一句只会逼出
+    "因为内容重复"这种废话（§4.1 ② 那条纪律的另一面：仪器的要求要值得人去满足）。
+
+    **为什么 `check` 也要核**（`check_split` 已经核过一次）：`--split` 是 `build` 的路，
+    手改 `plan.md` 是另一条路——判据只装在入口上，改过之后再 `check` 就看不见了
+    （本仓踩过同一形状：`check` 只核产物形状、不核"当初那个决定"）。
+    """
+    errs, machine = [], {tuple(g) for g in groups_of(cards)}
+    for r in rows:
+        fid = _id_of(r.get('流程', ''), 'F') or '?'
+        mats = tuple(sorted(MID_ANY.findall(r.get('材料集', ''))))
+        if mats and mats not in machine and str(r.get('合并/拆分理由', '')).strip() in BLANK:
+            errs.append(f'{fid}: 材料集（{"、".join(mats)}）不是机器种子里的任何一组，'
+                        f'「合并/拆分理由」却是空的——并/拆是 AI 的判断，要写一句'
+                        f'（§4.1 ① / §4.2 步骤 3；机器那一组不必写）')
     return errs
 
 
@@ -663,6 +694,7 @@ def cmd_check(a):
     # 表头那一段 → `(主体, 目的, 材料根)`；取不到就是三个空串（§4.0：没澄清就不该开工）。
     scope = scope_of(text)
     errs = check_plan(cards, rows, asks, excl, a.root, scope)
+    errs += check_reasons(cards, rows)
     waiting = sum(1 for r in rows if str(r.get('状态', '')).strip() == '待澄清')
     if errs:
         print(f'✗ 计划校验未过（{len(errs)} 条；**只报不改**。改计划 → 再落流程表，§4.4）：')

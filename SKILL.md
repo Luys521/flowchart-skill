@@ -117,6 +117,20 @@ python scripts/parse.py --materials <成果根>/materials.json -o <成果根>/el
 python scripts/cells.py fill <成果根>/recon.md <答案>.json      # AI 填那四列
 ```
 
+**图片 / 扫描件（T3）走视觉路**——文本链**不认领**它（`evidence.json` 里会记成 `skipped` + "T3 需视觉取证"，并指回这一节）：
+
+```bash
+python scripts/render_pages.py build --materials <成果根>/materials.json --out-dir <成果根>/shots --elements <成果根>/vision.todo.json --only M13,M15
+# ↑ 图片材料本来就是图（直接读原文件，不渲）；PDF 走自包含渲染。
+# 然后你用 read_image 读那些 PNG，把读到的一句话填进骨架的 text、bbox 收紧到实际读到的那块
+python scripts/render_pages.py check <成果根>/vision.json --notes <成果根>/vision.notes.json
+python scripts/ledger.py --materials <成果根>/materials.json \
+    --elements <成果根>/elements.json --elements <成果根>/vision.json \
+    --notes <成果根>/notes.json --notes <成果根>/vision.notes.json -o <成果根>/evidence.json
+```
+
+**两路证据要合并重出账本**（`--elements` / `--notes` 都可重复给；后一条补注把材料从 `unreadable`/`skipped` 改回 `ok` 是**预期**的，脚本会把这次覆盖打出来）。两条硬规矩：**空骨架不许过**（没读出来的页就删掉那条，别把空 `text` 交上来）；**`vlm` 一律 `certainty=inferred`**——视觉读数是推断，不许伪装成直取（账本校验当场拦）。
+
 **每轮开工第一件事：手上有什么就读什么**。`clarify.py` 报出哪些是 AI 推断、哪些还没定；**已问过并已定的不重复问**——"还剩哪些要问"由 `14` 独家算。"首轮无表就直接往下"不算空转：先看清现状，再动笔。
 
 **材料根会变，机制也会变**：往目录里补一份合同，就得回 `03` 重跑——`parse.py` 默认就查（`materials[]` 里记的 `root` 与根下当下对不上、或哪份 `sha256` 变了 ⇒ **醒目告警**）；要它**硬拦**就加 `--strict-stale`，单独查用 `probe.py --verify <成果根>/materials.json`（退 2）。**账本上还盖着"这是哪一版机制产的"**（`capability`）：`query.py` 读账本时会对不上就喊一句（只喊不拦），要硬拦用 `python scripts/capability.py check <成果根>/evidence.json`（退 2）。**两种漂的处置不同**：`code` 漂 = 机制变了 ⇒ 旧账本**本身**可能是旧机制做的，**回 `03` 重跑**；`rules` 漂 = 判据变了 ⇒ 机器产物不用重跑，但**按旧判据写下的结论**（计划 / 表 / 澄清答复）值得回看一遍。

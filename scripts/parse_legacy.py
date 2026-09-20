@@ -32,6 +32,7 @@ OLE 里的正文本身常常就是一段连续的 **UTF-16LE**，**按字节捞 
 import argparse
 import json
 import locale
+import re
 import shlex
 import shutil
 import subprocess
@@ -47,12 +48,22 @@ OLE_MAGIC = b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1'
 DICT_NAME = 'dictionary.yaml'
 DEFAULT_TH = {
     'min_run': 24, 'min_word_ratio': 0.5, 'max_low0_ratio': 0.4, 'min_common_ratio': 0.85,
+    'max_markup_ratio': 0.25,
     'min_chars': 200, 'max_chars': 2000, 'max_elements': 200, 'max_scan_bytes': 33554432,
     'join_gap': 64,
 }
 OLETEXT_EXTRACTOR = 'py:oletext'
 OLETEXT_CAVEAT = ('py:oletext 降级抽取（只捞 UTF-16LE 文本 run：不解析结构、不保证顺序；'
-                  '流名 / 域代码 / 内嵌 XML 这类**短 run 也会被捞进来，别当正文**）')
+                  '**别的语言的 run**（内嵌 XML / 域代码）已按判据丢掉，'
+                  '流名 / 属性串这类短 run 靠长度下限挡着——仍可能漏进几条，别当正文）')
+
+# ---- 「不是正文」的两种**可判**形态（D-109）--------------------------------------------------
+# 判据只认"**自己有语法的两种东西**"，不做"读起来不像人话"的猜测——后者是理解，归 AI（§0.1）。
+# 两条都要求**结构证据**，所以它能进 `dictionary.yaml` 当阈值，而不必靠人逐个盯。
+MARKUP_TAG_RE = re.compile(r'</?[A-Za-z][\w:.-]*(?:\s[^<>]*)?/?>')
+FIELD_CODE_RE = re.compile(r'^\s*(?:PAGE|NUMPAGES|DATE|TIME|TOC|HYPERLINK|MERGEFIELD|REF|SEQ'
+                           r'|INCLUDEPICTURE|INCLUDETEXT|AUTHOR|FILENAME|STYLEREF|IF|BEGIN|END)'
+                           r'\b[\s\\*"]')
 
 # OLE 目录里的流名 → 该用哪个 OOXML 读取器（UTF-16LE 存，按字节找；**按内容判，不看扩展名**）
 OLE_STREAMS = (
@@ -323,17 +334,52 @@ def _common_ratio(text):
     return sum(1 for ch in text if _is_common(ch)) / len(text) if text else 0.0
 
 
-def _emit(out, buf, start, th):
-    """一条 run 收尾：**够长 · 够"像正文" · 不是错位读的怪字 · 不是多种文字混在一起的高熵噪声**才留。"""
+def _noise_reason(text, th):
+    """这段 run 是不是**可判的非正文** → 理由（不是就返回空串）。
+
+    为什么值得加这一道（D-109）：`py:oletext` 是"按字节捞文本"，它**分不清**正文与
+    文档里另外两种**有自己语法**的东西——内嵌的 XML（`<w:WordDocument>…`）与 Word 的域代码
+    （`PAGE \\* MERGEFORMAT`）。它们长度够、字符也"像字"，前四道判据全过，于是混进账本，
+    下游「依据」一引就是一段标签。两种形态**机器一眼能认**，所以它们该被挡在这里，
+    而不是留给 AI 在几百条 run 里自己挑。
+
+    **窄**是刻意的：只认这两种有结构证据的；"读起来不像正文"不判（那是理解，归 AI）。
+    """
+    if MARKUP_TAG_RE.search(text):
+        covered = sum(len(m.group(0)) for m in MARKUP_TAG_RE.finditer(text))
+        if covered / len(text) >= th['max_markup_ratio']:
+            return '内嵌 XML'
+    if FIELD_CODE_RE.match(text):
+        return '域代码'
+    return ''
+
+
+def _emit(out, buf, start, th, drops=None):
+    """一条 run 收尾：**够长 · 够"像正文" · 不是错位读的怪字 · 不是多种文字混在一起的高熵噪声 ·
+    不是别的语言（内嵌 XML / 域代码）**才留。**丢掉的按理由计数**（`drops`），理由要能说出来。
+
+    **"别的语言"排在长度前面判**：一段 18 字的 `PAGE \\* MERGEFORMAT` 被记成"太短"虽然也对，
+    可它真正的问题是"它是域代码"，不是"它短"——计数要按**最能说明问题的那条理由**归。
+    """
     s = ''.join(buf).strip()
-    if (len(s) >= th['min_run'] and _word_ratio(s) >= th['min_word_ratio']
-            and _low0_ratio(s) <= th['max_low0_ratio']
-            and _common_ratio(s) >= th['min_common_ratio']):
-        out.append((start, s))
+    if not s:
+        return out
+    why = _noise_reason(s, th)
+    if not why and len(s) < th['min_run']:
+        why = '太短'
+    if not why and not (_word_ratio(s) >= th['min_word_ratio']
+                        and _low0_ratio(s) <= th['max_low0_ratio']
+                        and _common_ratio(s) >= th['min_common_ratio']):
+        why = '不像正文（符号 / 错位读 / 多文种混杂）'
+    if why:
+        if drops is not None:
+            drops[why] = drops.get(why, 0) + 1
+        return out
+    out.append((start, s))
     return out
 
 
-def _runs_at(blob, shift, th):
+def _runs_at(blob, shift, th, drops=None):
     """按 `shift` 字节对齐扫一遍 → `[(字节偏移, 文本)]`。"""
     text = blob[shift:].decode('utf-16-le', errors='replace')
     out, buf, start = [], [], shift
@@ -343,13 +389,18 @@ def _runs_at(blob, shift, th):
                 start = shift + 2 * i
             buf.append(ch)
             continue
-        _emit(out, buf, start, th)
+        _emit(out, buf, start, th, drops)
         buf = []
-    return _emit(out, buf, start, th)
+    return _emit(out, buf, start, th, drops)
 
 
 def runs_of(path, th=None):
-    """OLE 原始字节 → `(run 列表, 说明)`。**两种对齐都扫**：正文 run 未必从偶数字节开始。"""
+    """OLE 原始字节 → `(run 列表, 说明)`。**两种对齐都扫**：正文 run 未必从偶数字节开始。
+
+    `说明` 里除了"扫了多少字节"，还要报**按理由丢了多少条**（D-109）：这两种 run（内嵌 XML /
+    域代码）是"文档里另外两种语言"，用户看到账本里没有它们时该知道**是判据丢的**，
+    而不是以为原件里没有——降级留痕（§2.4）在这一层同样算数。
+    """
     th = dict(th or DEFAULT_TH)
     try:
         data = Path(path).read_bytes()
@@ -358,7 +409,8 @@ def runs_of(path, th=None):
     cap = max(2, int(th['max_scan_bytes']))
     cut = len(data) > cap
     blob = data[:cap]
-    cand = _runs_at(blob, 0, th) + _runs_at(blob, 1, th)
+    drops = {}
+    cand = _runs_at(blob, 0, th, drops) + _runs_at(blob, 1, th, drops)
     # 同一段正文会被两种对齐各命中一次（一次真解、一次错位半格）：按字节区间去重，**留更长的那条**。
     cand.sort(key=lambda r: (r[0], -len(r[1])))
     kept = []
@@ -367,8 +419,14 @@ def runs_of(path, th=None):
         if any(not (end <= a or off >= b) for a, b, _t in kept):
             continue
         kept.append((off, end, text))
-    note = f'只扫了前 {cap // 1048576} MiB（材料共 {len(data) / 1048576:.1f} MiB）' if cut else ''
-    return [(o, t) for o, _e, t in kept], note
+    bits = []
+    if cut:
+        bits.append(f'只扫了前 {cap // 1048576} MiB（材料共 {len(data) / 1048576:.1f} MiB）')
+    # 只报"**别的语言**"那两类：其余理由（太短 / 不像正文）是判据的常态，条数以千计，报出来是噪声。
+    for why in ('内嵌 XML', '域代码'):
+        if drops.get(why):
+            bits.append(f'丢掉{why} {drops[why]} 条')
+    return [(o, t) for o, _e, t in kept], '；'.join(bits)
 
 
 def fallback_elements(mid, path, runs, th, note=''):

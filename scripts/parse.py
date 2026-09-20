@@ -467,6 +467,25 @@ def main(argv=None):
               + (f' · 其中 {len(left_out) - len(rest)} 份保持原本的「读不动」（读不动不随本轮读不读它而变）'
                  if len(rest) != len(left_out) else ''))
 
+    # **T3 的"待视觉取证"要自己说出来**（2026-09-19 补，D-112）：视觉路是 `render_pages.py` 的活，
+    # 文本链**不认领**它——这条是对的，可它带来的后果是：**图片类** T3 四路适配器全都不碰，
+    # 于是账本上它长得像"能读、只是什么都没抽到"（`status=ok` / 零证据 / 没有 reason），
+    # 而 `survey` 的漏认判据又把 T3 排除在外 ⇒ **没有任何仪器会喊**。实测（真走一遍 T3 通道）：
+    # `M01/image/ok/` 与 `M03/image/ok/` 就这么躺在账本里，读账本的人只会以为"这份材料没内容"。
+    # 所以补一条**指路的**补注：谁接管它、下一步跑什么、最后怎么把两路证据并回账本。
+    # **已有的补注不覆盖**（`parse_pdf` 对 pdf-scan 已经写过那条 NO_OCR，写两遍就是双份真值）。
+    noted = {n.get('material_id') for n in notes}
+    t3 = [m['id'] for m in materials
+          if m.get('tier') == 'T3' and m.get('status') == 'ok'
+          and m['id'] not in noted and not any(e.get('material_id') == m['id'] for e in elements)]
+    if t3:
+        notes += [{'material_id': mid, 'status': 'skipped',
+                   'reason': 'T3 需**视觉取证**（文本链不认领）：`render_pages.py build` 渲图 / 取原图 → '
+                             'AI 读图填骨架 → `render_pages.py check` → 用 `ledger.py --elements '
+                             'elements.json --elements <vlm>.json --notes …` 把两路证据并回账本（§1.5 手段 2）'}
+                  for mid in t3]
+        print(f'  · {len(t3)} 份 T3 记「待视觉取证」（文本链不认领；账本里带路了）：{"、".join(t3)}')
+
     rows, gaps = survey(materials, elements, notes, q_of)
     if a.verbose:
         for line in briefs:

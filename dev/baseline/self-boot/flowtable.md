@@ -20,11 +20,11 @@ level: L0
 | 循环与漂移 | 07 | 模块 · drift | 任务 | — | — | — | 脚本 | selfboot | — | →08 | 27 个函数 · ⊞ drift/flowtable.md |
 | 渲染 | 08 | 模块 · engine | 任务 | — | — | — | 脚本 | selfboot | — | →09 | 26 个函数 · ⊞ engine/flowtable.md |
 | 接管与解析 | 09 | 模块 · flowtable | 任务 | — | — | — | 脚本 | selfboot | — | →10 | 27 个函数 · ⊞ flowtable/flowtable.md |
-| 结构校验 | 10 | 模块 · flowtable_check | 任务 | — | — | — | 脚本 | selfboot | — | →11 | 33 个函数 · ⊞ flowtable_check/flowtable.md |
+| 结构校验 | 10 | 模块 · flowtable_check | 任务 | — | — | — | 脚本 | selfboot | — | →11 | 34 个函数 · ⊞ flowtable_check/flowtable.md |
 | 布局与配色 | 11 | 模块 · flowtable_colors | 任务 | — | — | — | 脚本 | selfboot | — | →12 | 8 个函数 · ⊞ flowtable_colors/flowtable.md |
 | 布局与配色 | 12 | 模块 · flowtable_layout | 任务 | — | — | — | 脚本 | selfboot | — | →13 | 21 个函数 · ⊞ flowtable_layout/flowtable.md |
 | 渲染 | 13 | 模块 · geometry | 任务 | — | — | — | 脚本 | selfboot | — | →14 | 33 个函数 · ⊞ geometry/flowtable.md |
-| 接管与解析 | 14 | 模块 · import_table | 任务 | — | — | — | 脚本 | selfboot | — | →15 | 11 个函数 · ⊞ import_table/flowtable.md |
+| 接管与解析 | 14 | 模块 · import_table | 任务 | — | — | — | 脚本 | selfboot | — | →15 | 12 个函数 · ⊞ import_table/flowtable.md |
 | 编排入口 | 15 | 模块 · init | 任务 | — | — | — | 脚本 | selfboot | — | →16 | 4 个函数 · ⊞ init/flowtable.md |
 | 接管与解析 | 16 | 模块 · intake | 任务 | — | — | — | 脚本 | selfboot | — | →17 | 9 个函数 · ⊞ intake/flowtable.md |
 | 渲染 | 17 | 模块 · label | 任务 | — | — | — | 脚本 | selfboot | — | →18 | 9 个函数 · ⊞ label/flowtable.md |
@@ -33,11 +33,11 @@ level: L0
 | 接管与解析 | 20 | 模块 · ledger | 任务 | — | — | — | 脚本 | selfboot | — | →21 | 9 个函数 · ⊞ ledger/flowtable.md |
 | 产物审核 | 21 | 模块 · manifest | 任务 | — | — | — | 脚本 | selfboot | — | →22 | 29 个函数 · ⊞ manifest/flowtable.md |
 | 接管与解析 | 22 | 模块 · parse | 任务 | — | — | — | 脚本 | selfboot | — | →23 | 15 个函数 · ⊞ parse/flowtable.md |
-| 接管与解析 | 23 | 模块 · parse_legacy | 任务 | — | — | — | 脚本 | selfboot | — | →24 | 25 个函数 · ⊞ parse_legacy/flowtable.md |
+| 接管与解析 | 23 | 模块 · parse_legacy | 任务 | — | — | — | 脚本 | selfboot | — | →24 | 26 个函数 · ⊞ parse_legacy/flowtable.md |
 | 接管与解析 | 24 | 模块 · parse_ooxml | 任务 | — | — | — | 脚本 | selfboot | — | →25 | 11 个函数 · ⊞ parse_ooxml/flowtable.md |
 | 接管与解析 | 25 | 模块 · parse_pdf | 任务 | — | — | — | 脚本 | selfboot | — | →26 | 9 个函数 · ⊞ parse_pdf/flowtable.md |
 | 接管与解析 | 26 | 模块 · parse_text | 任务 | — | — | — | 脚本 | selfboot | — | →27 | 13 个函数 · ⊞ parse_text/flowtable.md |
-| 接管与解析 | 27 | 模块 · plan | 任务 | — | — | — | 脚本 | selfboot | — | →28 | 19 个函数 · ⊞ plan/flowtable.md |
+| 接管与解析 | 27 | 模块 · plan | 任务 | — | — | — | 脚本 | selfboot | — | →28 | 20 个函数 · ⊞ plan/flowtable.md |
 | 接管与解析 | 28 | 模块 · pptx_text | 任务 | — | — | — | 脚本 | selfboot | — | →29 | 8 个函数 · ⊞ pptx_text/flowtable.md |
 | 接管与解析 | 29 | 模块 · probe | 任务 | — | — | — | 脚本 | selfboot | — | →30 | 14 个函数 · ⊞ probe/flowtable.md |
 | 循环与漂移 | 30 | 模块 · query | 任务 | — | — | — | 脚本 | selfboot | — | →31 | 9 个函数 · ⊞ query/flowtable.md |

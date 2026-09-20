@@ -495,22 +495,40 @@ def check_header(meta, ft_path, errs):
 #     （列是 编号/问题/推荐答案/指向，指向的是 `M##`），而"⚠? 有没有账"早已由 `clarify.py` 的
 #     frontier（前驱已定的 ⚠?）覆盖 ⇒ 判据无处安放，且需求已被满足。
 ID_RE = re.compile(r'\bM\d{2,}#[A-Za-z]+\d+\b')
-LEDGER_SEARCH_UP = 4          # 成果根与各流程目录平级，向上找几层够用（子表在 parts/ 下，要多一层）
 
 
 def find_task_ledger(start):
-    """从某个产物所在目录**向上**找 `evidence.json`（任务级产物住成果根）。找不到 → `None`。"""
+    """从某个产物所在目录**向上**找 `evidence.json`（任务级产物住成果根）→ `(账本或 None, 找过的最高目录)`。
+
+    **一路找到盘根，不再只找 4 层**（2026-09-19 改，D-108）：原实现留着 `LEDGER_SEARCH_UP = 4`，
+    理由是"成果根与流程目录平级、最多几层"——可**子表的子表**（`parts/<甲>/parts/<乙>/`）正好比它多一层，
+    于是"我够不着"被报成了"**这次任务没有账本**"（那句是给人和 AI 看的结论），而 `--json` 那份
+    连跳没跳都不说。**同一个词说两件事，比不说更坏**。
+
+    判据仍然是"**最近的先赢**"：一路向上遇到的**第一份** `evidence.json` 就是它（同名文件不会有两个
+    都在同一路径上）。第二项是**找不到时的话**：一路找到哪儿为止——不报这个，"没有账本"与
+    "我把边界设窄了"这两种处境的结论长得一模一样。
+    """
     d = Path(start)
     if d.is_file():
         d = d.parent
-    for _ in range(LEDGER_SEARCH_UP):
+    while True:
         c = d / 'evidence.json'
         if c.is_file():
-            return c
-        if d.parent == d:
-            break
+            return c, d
+        if d.parent == d:                      # 到盘根（`C:\` / `/`）了，再往上还是它自己
+            return None, d
         d = d.parent
-    return None
+
+
+def ledger_display(led, ft_path):
+    """账本的**相对**写法（相对本表目录）——一眼看出它住在上面几层，而不是只报个文件名。"""
+    import os
+    try:
+        return os.path.relpath(led, Path(ft_path).parent if Path(ft_path).is_file()
+                               else Path(ft_path)).replace('\\', '/')
+    except (ValueError, OSError):              # 跨盘符之类：退回原样，别为了好看把路径弄丢
+        return str(led)
 
 
 def ledger_element_ids(path):
@@ -547,8 +565,14 @@ def check_evidence(text, ft_path, errs):
       · 账本**读不动**却又引了 id ⇒ 也是硬错误，但话不一样（"无从判断"不是"你写错了"，
         只是**不可追溯的引用不许交付**）；一句 id 都没引 ⇒ 不报（没有引用就没有可追溯性可谈）。
     """
-    led = find_task_ledger(ft_path)
-    errs.evidence_checked = bool(led)     # 记账：这一层**这次到底跑没跑**（调用方要如实打印，不许默默不用）
+    led, top = find_task_ledger(ft_path)
+    # 记账：这一层**这次到底跑没跑**（调用方要如实打印，不许默默不用）。**三种处境分开**（D-108）：
+    # 跑了 / 一路到盘根都没有账本 / 账本在但读不动（下面那支）。不记 `skip`，调用方就只能把
+    # 后两种都说成"附近没有账本"——那正是"同一个词说两件事"。
+    errs.evidence_checked = bool(led)
+    errs.evidence_ledger = ledger_display(led, ft_path) if led else ''   # 相对本表目录的写法（给人看）
+    errs.evidence_skip = ('' if led else
+                          f'从本表目录一路向上找到 {top}（盘根）都没有 evidence.json')
     if not led:
         return False
     ids = ledger_element_ids(led)

@@ -421,7 +421,8 @@ def plan_paths(root):
             fid = c[0].split('`')[1]
             name, role, mount, rel, grp, _ = ai[fid]
             c[0], c[1], c[2], c[4], c[5] = f'`{fid}` {name}', role, mount, rel, grp
-            c[6] = '待澄清' if name == '白板流程' else ('可落表' if c[6] == '—' else c[6])
+            # 列序见 `plan.FLOW_COLUMNS`（**8 列**：2026-09-19 起多了「合并/拆分理由」，状态退到 `c[7]`）
+            c[7] = '待澄清' if name == '白板流程' else ('可落表' if c[7] == '—' else c[7])
             line = '| ' + ' | '.join(c) + ' |'
         elif line.startswith('| `Q01`'):
             line = '| `Q01` | 白板与合订本哪份算数？ | 取合订本 | `M07` |'
@@ -507,7 +508,9 @@ def plan_paths(root):
     # 夹具里「含流程 = 是」的是 M02/M04/M05/M06/M07（M07 的**版本关系**是 `不确定` ⇒ 它所在流程
     # 状态必须是 `待澄清`，且澄清申请要有账——两条都由 `check` 核）。
     split = {'流程': [{'材料集': ['M02', 'M04', 'M05', 'M06', 'M07'], '名': '夹具流程', '角色': '主',
-                     '挂在': '—', '与其它流程': '—', '并行组': '`G1`', '状态': '待澄清'}],
+                     '挂在': '—', '与其它流程': '—', '并行组': '`G1`',
+                     # 五份并成一条：**这不是机器种子里的任何一组** ⇒ 理由必须写（§4.1 ①）
+                     '合并/拆分理由': '五份讲的是同一条链（夹具）', '状态': '待澄清'}],
              '范围外': [],
              # `注记` = **AI 判断的落点**（§0.1 / §4.1 ②：这类判断不许写成澄清申请的问句）
              '注记': ['白板那条子流程本次不拆：材料只够画主干'],
@@ -523,7 +526,7 @@ def plan_paths(root):
     rc2, out2 = run([sys.executable, str(PLAN_CMD), 'check', str(root / 'plan-split.md'),
                      '--intake', str(root / 'intake.md')])
     ok_split = (rc1 == 0 and '| `F01` 夹具流程 | 主 | — | `M02`、`M04`、`M05`、`M06`、`M07` | — | `G1` '
-                '| 待澄清 |' in d_sp and '主体 = 夹具的两个甲方' in d_sp
+                '| 五份讲的是同一条链（夹具） | 待澄清 |' in d_sp and '主体 = 夹具的两个甲方' in d_sp
                 and '⚠ **AI 判断**：白板那条子流程本次不拆' in d_sp and rc2 == 0)
     bad_split = dict(split)
     bad_split['流程'] = [dict(split['流程'][0], 材料集=['M02', 'M04'])]     # M05 / M06 / M07 没了下落
@@ -565,6 +568,26 @@ def plan_paths(root):
     cases.append(('56 plan 的三处口径：辅助目录（`shots/`）不算流程目录 · `待澄清` 的流程不要求目录 · '
                   '表头三格按**字段名**取值（`；` + 散文照样认）且缺哪格点哪格',
                   ok56, rc1, (out1[-200:] + out2[-200:] + out3[-260:]) if not ok56 else ''))
+    # 63 「合并/拆分理由」（D-111）：并 / 拆是 **AI 的判断** ⇒ 材料集不是机器种子那一组的，必须写一句。
+    #    **两个入口都要有牙**：`build --split` 那个是"当初那个决定"，`check` 那个是"手改之后还作不作数"——
+    #    只装在一个入口上，另一条路就漏（本仓踩过同一形状）。
+    nope = {'流程': [{k: v for k, v in split['流程'][0].items() if k != '合并/拆分理由'}],
+            '范围外': [], '澄清': split['澄清'], '注记': split['注记']}
+    (root / 'split-noreason.json').write_text(json.dumps(nope, ensure_ascii=False, indent=2) + '\n',
+                                              encoding='utf-8', newline='\n')
+    rc_nr, out_nr = run([sys.executable, str(PLAN_CMD), 'build', str(root / 'intake.md'),
+                         '-o', str(root / 'plan-nr.md'), '--scope', str(root / 'scope.json'),
+                         '--split', str(root / 'split-noreason.json')])
+    (root / 'plan-erased.md').write_text(
+        txt.replace('| 五份讲的是同一条链（夹具） |', '| — |'), encoding='utf-8', newline='\n')
+    rc_er, out_er = run([sys.executable, str(PLAN_CMD), 'check', str(root / 'plan-erased.md'),
+                         '--intake', str(root / 'intake.md')])
+    # 机器那一组（单份 / 强合并）**不要求**理由：正例就是夹具 ㊹ 那份（它的四行全是机器种子）
+    ok63 = (rc_nr == 2 and '合并/拆分理由' in out_nr and not (root / 'plan-nr.md').exists()
+            and rc_er == 1 and '合并/拆分理由' in out_er)
+    cases.append(('63 「合并/拆分理由」：AI 并/拆出来的流程（材料集不是机器那一组）必须写一句——'
+                  '`--split` 时退 2 不写盘 · 手改 plan.md 抹掉它 `check` 退 1；机器那一组不要求',
+                  ok63, (rc_nr, rc_er), (out_nr[-200:] + out_er[-240:]) if not ok63 else ''))
     # 57 外部表的**五种真实形态**（2026-09-18 用它们撞过 `import_table`，四处修 + 两处判定"不该硬转"）：
     #    ① 英文表头 + 英文类型值 ② 一行一分支（同编号多行）③ 中文点号编号 + 裸编号引用
     #    ④ 字母编号 ⇒ **不改节点身份、报清楚**（H3：有些形态不该由它硬转）
@@ -1055,6 +1078,45 @@ def import_paths(root):
     cases.append(('㊿b import 反例：编号重复 ⇒ 退 1 · 表头认不出来 ⇒ 退 1（都不产出坏表）',
                   rc3 == 1 and '重复' in out3 and rc4 == 1 and '没认到节点表' in out4, rc3,
                   out3[-160:] + out4[-160:]))
+    # 62 **表头不在第一行**（D-110）：顶上一行是分组标题。多行表头那类外部表里，"哪一行是列名"
+    #    是**人的知识**——让脚本去猜就是赌（分组标题行里恰好有「序号 / 名称」时，它会被当成表头，
+    #    真正的列名那行反而变成数据行）。所以给一只手：`--header-row N`（1 起，分隔行不计），
+    #    并说清两种写歪：越界、那一行里认不出关键列。
+    hdr_src = d / '外部表-两行表头.md'
+    hdr_src.write_text(
+        '# 两行表头夹具\n\n'
+        # 第 1 行是**分组标题**，却恰好含「序号 / 名称」——认列式启发会被它骗：把它当表头，
+        # 真列名那行（第 2 行）反而成了数据行。
+        '| 序号 | 名称 | 名称 | 类型 | 责任方 | 岗位 | 时限 | 下一步 | 备注 |\n'
+        '| 阶段 | 步骤号 | 事项 | 类型 | 责任方 | 岗位 | 时限 | 下一步 | 备注 |\n'
+        '|---|---|---|---|---|---|---|---|---|\n'
+        '| 受理 | 1 | 收件 | 起点 | 甲方 | 前台 | 1天 | 2 | 拿材料 → 出回执 |\n'
+        '| 受理 | 2 | 归档 | 终点 | 甲方 | 档案 | — | — | |\n', encoding='utf-8')
+    hdr_out = d / 'flowtable-hdr.md'
+    rc5, out5 = run([sys.executable, str(IMPORT_CMD), str(hdr_src), '-o', str(hdr_out),
+                     '--header-row', '2', '--id', 'hdr'])
+    got5 = hdr_out.read_text(encoding='utf-8') if hdr_out.exists() else ''
+    rc6, out6 = run([sys.executable, str(IMPORT_CMD), str(hdr_src), '-o', str(d / 'h9.md'),
+                     '--header-row', '9'])
+    # 「那一行里认不出关键列」要另起一张表：上面那张的第 1 行含「序号 / 名称」⇒ 它会**过**认列这一关，
+    # 然后在编号重复那一关被拦（那是另一条路径，也合理，但不是这条要考的）
+    grp_src = d / '外部表-分组行.md'
+    grp_src.write_text(
+        '# 分组行夹具\n\n'
+        '| 受理环节 | 受理环节 | 审批 |\n'
+        '| 阶段 | 步骤号 | 事项 | 类型 | 责任方 | 岗位 | 时限 | 下一步 | 备注 |\n'
+        '|---|---|---|---|---|---|---|---|---|\n'
+        '| 受理 | 1 | 收件 | 起点 | 甲方 | 前台 | 1天 | 2 | |\n', encoding='utf-8')
+    rc7, out7 = run([sys.executable, str(IMPORT_CMD), str(grp_src), '-o', str(d / 'h1.md'),
+                     '--header-row', '1'])
+    ok = (rc5 == 0 and '| 01 |' in got5 and '| 02 |' in got5 and '收件' in got5
+          and '事项→节点名称' in out5 and '步骤号→节点编号' in out5      # 认的是第 2 行那套列名
+          and '序号' not in got5 and '步骤号' not in got5                # 分组行的文字不许进产物
+          and rc6 == 1 and '越界' in out6
+          and rc7 == 1 and '认不出' in out7)
+    cases.append(('62 import `--header-row N`：表头不在第一行时**明说**，不靠认列去猜；'
+                  '越界 / 那一行认不出关键列都当场说清',
+                  ok, (rc5, rc6, rc7), (out5[-200:] + out6[-120:] + out7[-160:]) if not ok else ''))
     return cases
 
 
@@ -1345,6 +1407,17 @@ def materials_paths(root):
                                   + bytes([(i * 7 + 3) % 256 for i in range(6000)]))
     # `00 3a` 反复：按 UTF-16LE 读成一串"低字节恒为 0"的合法汉字（实测在真材料里抓到过这种噪声）
     (ole_d / 'c.doc').write_bytes(_ole_bytes('WordDocument') + b'\x00\x3a' * 300)
+    # `d.doc`：**正文两边夹着"另外两种语言"**（D-109）——内嵌 XML 与 Word 域代码。它们长度够、
+    # 字符也"像字"，前四道判据全过，所以过去会混进账本（下游「依据」一引就是一段标签）。
+    # 用 `\x00\x00` 分隔（UTF-16LE 的 U+0000 不是文本单元 ⇒ run 在此断开，与真 .doc 里一样）。
+    noise_markup = ('<w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom>'
+                    '<o:DocumentProperties><o:Author>张三</o:Author></o:DocumentProperties>'
+                    '</w:WordDocument>')
+    (ole_d / 'd.doc').write_bytes(
+        _ole_bytes('WordDocument')
+        + noise_markup.encode('utf-16-le') + b'\x00\x00'
+        + 'PAGE \\* MERGEFORMAT'.encode('utf-16-le') + b'\x00\x00'
+        + ('本合同项下，甲方每5MW或每半年向乙方支付一次工程款，付款比例另行约定。' * 6).encode('utf-16-le'))
     rc_p, out_p = run([sys.executable, str(PROBE_CMD), str(ole_d), '--json'])
     (ole_d / 'materials.json').write_text(out_p[out_p.index('['):], encoding='utf-8')
     rc, out = run([sys.executable, str(PARSE_CMD), '--materials', str(ole_d / 'materials.json'),
@@ -1358,18 +1431,28 @@ def materials_paths(root):
     except (OSError, ValueError, KeyError):
         pass
     m_a, m_b, m_c = (ole_mats.get('a.doc', {}), ole_mats.get('b.doc', {}), ole_mats.get('c.doc', {}))
+    m_d = ole_mats.get('d.doc', {})
     a_els = [e for e in ole_els if e.get('material_id') == m_a.get('id')]
+    d_els = [e for e in ole_els if e.get('material_id') == m_d.get('id')]
+    d_text = '\n'.join(e.get('text') or '' for e in d_els)
+    d_deg = '\n'.join(e.get('degraded') or '' for e in d_els)
     ok = (rc_p == 0 and rc == 0
           and m_a.get('status') == 'ok' and m_a.get('extractor') == 'py:oletext'
           and a_els and all(e.get('extractor') == 'py:oletext'
                             and 'py:oletext' in (e.get('degraded') or '') for e in a_els)
           and any('5MW' in (e.get('text') or '') for e in a_els)
           and m_b.get('status') == 'unreadable' and '另存为' in (m_b.get('reason') or '')
-          and m_c.get('status') == 'unreadable')
+          and m_c.get('status') == 'unreadable'
+          # D-109：正文留下 · **另外两种语言**不进账本 · 而且**账上说了是判据丢的**
+          and m_d.get('status') == 'ok' and any('5MW' in (e.get('text') or '') for e in d_els)
+          and '<w:' not in d_text and 'MERGEFORMAT' not in d_text and 'o:Author' not in d_text
+          and '内嵌 XML' in d_deg and '域代码' in d_deg)
     cases.append(('51 legacy 降级读法（§1.6）：真 OLE 捞 UTF-16LE 正文（extractor=py:oletext + 逐条挂 degraded）· '
-                  '纯二进制与"错位读出的怪字"都不许当正文',
+                  '纯二进制与"错位读出的怪字"都不许当正文 · '
+                  '**内嵌 XML / 域代码这两种"别的语言"丢掉并记账**（D-109）',
                   ok, rc, (str({k: (v.get('status'), v.get('extractor')) for k, v in ole_mats.items()})
-                           + f' a.doc 元素 {len(a_els)}') if not ok else ''))
+                           + f' a.doc 元素 {len(a_els)} · d.doc 元素 {len(d_els)}'
+                           + (f' · d 的 degraded: {d_deg[:150]}' if not ok else '')) if not ok else ''))
 
     # 52 两份**通用**材料的边界（同样与具体项目无关）：
     #    ① markdown 表格**按行成块**——`依据` 要指得到"第几项"（盲读实测：一整张表并成一个块，只能写人话）；
@@ -1459,7 +1542,7 @@ def materials_paths(root):
     rc_bad, out_bad = run([sys.executable, str(REPO / 'scripts' / 'table_to_dsl.py'), '--check', str(h10_d / 'bad.md')])
     # "没有账本"这一支**必须放在整棵夹具树之外**：H10 是**向上**找账本的，而夹具树自己有一份账本
     # （实测踩到两次：放在 h10/no-ledger 里、放在 root 下，那一支都照样跑起了 H10 —— 夹具自己骗了自己）。
-    # 所以借一个**独立临时目录**（跑完自动删），顺便钉住"向上找"的射程：平级就够，绝不越界到别的任务。
+    # 所以借一个**独立临时目录**（跑完自动删）。
     with tempfile.TemporaryDirectory(prefix='h10-noledger-') as td:
         p = pathlib.Path(td) / 'flowtable.md'
         p.write_text(head + ok_row + end_row, encoding='utf-8')
@@ -1468,14 +1551,29 @@ def materials_paths(root):
     (h10_d / 'broken' / 'evidence.json').write_text('{ 这不是 JSON', encoding='utf-8')
     (h10_d / 'broken' / 'flowtable.md').write_text(head + ok_row + end_row, encoding='utf-8')
     rc_brok, out_brok = run([sys.executable, str(REPO / 'scripts' / 'table_to_dsl.py'), '--check', str(h10_d / 'broken' / 'flowtable.md')])
-    ok = (rc_h10 == 0 and 'H10引用完整' in out_h10
+    # 54b **深层子表**（D-108）：账本在成果根，表在 `a/parts/b/parts/c/`（**比原来的 4 层上限还深一层**）。
+    #     旧实现够不着，于是把它报成"本表附近没有账本"——**同一个词说两件事**。两条路径：
+    #     引用对 ⇒ 退 0 且打印用了哪本账（相对写法能看出它在上面几层）；引用错 ⇒ 退 1 点名（证明它真跑了）。
+    deep = h10_d / 'a' / 'parts' / 'b' / 'parts' / 'c'
+    deep.mkdir(parents=True, exist_ok=True)
+    (deep / 'flowtable.md').write_text(head + ok_row + end_row, encoding='utf-8')
+    rc_deep, out_deep = run([sys.executable, str(REPO / 'scripts' / 'table_to_dsl.py'), '--check', str(deep / 'flowtable.md')])
+    (deep / 'bad.md').write_text(head + ok_row.replace('M01#p001', 'M01#p999') + end_row, encoding='utf-8')
+    rc_deepbad, out_deepbad = run([sys.executable, str(REPO / 'scripts' / 'table_to_dsl.py'), '--check', str(deep / 'bad.md')])
+    ok = (rc_h10 == 0 and 'H10引用完整' in out_h10 and '账本 evidence.json' in out_h10
           and rc_bad == 1 and 'M01#p999' in out_bad
           and rc_none == 0 and 'H10引用完整' not in out_none and '跳过' in out_none
-          and rc_brok == 1 and '账本读不动' in out_brok)
-    cases.append(('54 H10.1 引用完整（§6）：有账本且引用都对 ⇒ 退 0 并打印这一层跑了 · 引错 ⇒ 退 1 点名 · '
-                  '**没有账本 ⇒ 整层跳过不报错** · 账本坏且引了 id ⇒ 退 1',
+          and '盘根' in out_none                       # 跳过的理由要说准：找到哪儿为止
+          and rc_brok == 1 and '账本读不动' in out_brok
+          and rc_deep == 0 and 'H10引用完整' in out_deep
+          and '../../../../../evidence.json' in out_deep
+          and rc_deepbad == 1 and 'M01#p999' in out_deepbad)
+    cases.append(('54 H10.1 引用完整（§6）：有账本且引用都对 ⇒ 退 0 并打印用的是哪本账 · 引错 ⇒ 退 1 点名 · '
+                  '**没有账本 ⇒ 整层跳过不报错**（理由说准"找到盘根"）· 账本坏且引了 id ⇒ 退 1 · '
+                  '**子表的子表（5 层）也够得着**（旧实现 4 层上限够不着，还把它说成"没有账本"）',
                   ok, rc_h10, (f'ok={rc_h10}/{out_h10[-80:]} bad={rc_bad}/{out_bad[-90:]} '
-                               f'none={rc_none}/{out_none[-70:]} brok={rc_brok}/{out_brok[-70:]}') if not ok else ''))
+                               f'none={rc_none}/{out_none[-70:]} brok={rc_brok}/{out_brok[-70:]} '
+                               f'deep={rc_deep}/{out_deep[-80:]} deepbad={rc_deepbad}') if not ok else ''))
 
     # 55 **依据分布**（§5.6，读数不是判据）：受控的表序把"连续段"算准——01,02 只引 M01（一条 2 长的段）、
     #    03 只引 M02（单节点段**不报**）、04,05 引 M01（新起一段）。同时验它**不进** check 的收敛口径。
@@ -1518,6 +1616,92 @@ def materials_paths(root):
     return cases
 
 
+def vlm_paths(root):
+    """T3 → 视觉取证的**整条通道**（§1.3 / §1.5 手段 2；D-112）：账本说"待视觉" → 渲图/取原图 →
+    AI 填骨架 → `check` 写补注 → **两路合并**重出账本。
+
+    为什么值得一条路径：这条通道在 §8 里一直写着"**未进验收路径**"（渲染 PDF 要 pdfplumber +
+    pypdfium2 同时在场，夹具只测到"不参与"那一侧）。**图片材料不用渲染**（`probe` 已记 T3 + 图片魔数，
+    直接用原文件）⇒ 这条通道**可以完全自包含地测**，那半句"未进验收"就没有理由了。
+    """
+    cases = []
+    d = root / 'vlm'
+    d.mkdir(exist_ok=True)
+    _minimal_png(d / '扫描件.png')
+    (d / '正文.md').write_text('# 办法\n\n甲方向乙方提交材料。\n', encoding='utf-8')
+    rc_p, out_p = run([sys.executable, str(PROBE_CMD), str(d), '--json'])
+    (d / 'materials.json').write_text(out_p[out_p.index('['):], encoding='utf-8')
+    rc1, out1 = run([sys.executable, str(PARSE_CMD), '--materials', str(d / 'materials.json'),
+                     '-o', str(d / 'elements.json'), '--notes', str(d / 'notes.json'),
+                     '--ledger', str(d / 'evidence.json'), '--task', 'vlm'])
+    led = {}
+    try:
+        led = json.loads((d / 'evidence.json').read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        pass
+    img = next((m for m in led.get('materials', []) if m.get('kind') == 'image'), {})
+    rc2, out2 = run([sys.executable, str(REPO / 'scripts' / 'render_pages.py'), 'build',
+                     '--materials', str(d / 'materials.json'), '--out-dir', str(d / 'shots'),
+                     '--elements', str(d / 'vision.todo.json')])
+    todo = []
+    try:
+        todo = json.loads((d / 'vision.todo.json').read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        pass
+    # 反例①：**空骨架不许过**（"没填"必须当错，否则空骨架也能混进账本）
+    rc3, out3 = run([sys.executable, str(REPO / 'scripts' / 'render_pages.py'), 'check',
+                     str(d / 'vision.todo.json'), '--notes', str(d / 'none.notes.json')])
+    # **先把这个判断存下来**：下面几行会把 `todo` **就地填满**（模拟 AI），
+    # 而 `ok = (...)` 是在填完之后才算的——直接把它写在那个表达式里就永远为假（我第一版就是这么错的）。
+    skeleton_ok = bool(todo) and all(e.get('text') == '' and re.match(r'^M\d+#v\d+$', e.get('id') or '')
+                                     for e in todo)
+    for e in todo:                                   # 装 AI：读图后填 text、收紧 bbox
+        e['text'] = f'（模拟读图）{e["id"]} 上读到的一句话'
+        e['location']['bbox'] = [0.1, 0.2, 0.5, 0.1]
+    (d / 'vision.json').write_text(json.dumps(todo, ensure_ascii=False, indent=2) + '\n',
+                                   encoding='utf-8', newline='\n')
+    rc4, out4 = run([sys.executable, str(REPO / 'scripts' / 'render_pages.py'), 'check',
+                     str(d / 'vision.json'), '--notes', str(d / 'vision.notes.json')])
+    rc5, out5 = run([sys.executable, str(LEDGER), '--materials', str(d / 'materials.json'),
+                     '--elements', str(d / 'elements.json'), '--elements', str(d / 'vision.json'),
+                     '--notes', str(d / 'notes.json'), '--notes', str(d / 'vision.notes.json'),
+                     '--task', 'vlm', '-o', str(d / 'evidence2.json')])
+    led2 = {}
+    try:
+        led2 = json.loads((d / 'evidence2.json').read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        pass
+    img2 = next((m for m in led2.get('materials', []) if m.get('kind') == 'image'), {})
+    vels = [e for e in led2.get('elements', []) if e.get('extractor') == 'vlm']
+    ok = (rc_p == 0 and rc1 == 0 and rc2 == 0 and rc5 == 0 and skeleton_ok
+          # ① 文本链把 T3 记成"待视觉取证"并**指了路**（原先它是 ok / 零证据 / 没有 reason）
+          and img.get('status') == 'skipped' and '视觉取证' in (img.get('reason') or '')
+          and 'render_pages' in (img.get('reason') or '')
+          # ② 空骨架当场退 1 且**不写补注**
+          and rc3 == 1 and 'text' in out3 and not (d / 'none.notes.json').exists()
+          # ③ 填好之后：补注 unreadable→? 这一侧 + 合并后 `ok`/`vlm`/[inferred]，且**覆盖被打印**
+          and rc4 == 0 and vels and all(e.get('certainty') == 'inferred' for e in vels)
+          and img2.get('status') == 'ok' and img2.get('extractor') == 'vlm'
+          and 'skipped → ok' in out5)
+    cases.append(('64 T3 → 视觉取证整条通道（§1.3 / §1.5 手段 2）：文本链把 T3 记「待视觉取证」并指路 · '
+                  '**空骨架退 1 不写补注** · 填好后两路合并 ⇒ `ok`/`vlm`/`inferred`、覆盖被打印',
+                  ok, (rc1, rc2, rc3, rc4, rc5),
+                  (out1[-160:] + out3[-160:] + out5[-260:] + str(img)[:160]) if not ok else ''))
+    # 反例②：`extractor=vlm` 却自称 `certainty=direct` ⇒ 账本**当场不落盘**（§1.3：视觉是推断）
+    if todo:
+        bad = json.loads(json.dumps(todo))
+        bad[0]['certainty'] = 'direct'
+        (d / 'vision-bad.json').write_text(json.dumps(bad, ensure_ascii=False, indent=2) + '\n',
+                                           encoding='utf-8', newline='\n')
+        rc6, out6 = run([sys.executable, str(LEDGER), '--materials', str(d / 'materials.json'),
+                         '--elements', str(d / 'vision-bad.json'), '--task', 'vlm',
+                         '-o', str(d / 'evidence-bad.json')])
+        cases.append(('64b `vlm` 不许自称 `direct`：账本校验退 1 且**不落盘**（§1.3 的机器拦）',
+                      rc6 == 1 and 'inferred' in out6 and not (d / 'evidence-bad.json').exists(),
+                      rc6, out6[-200:]))
+    return cases
+
+
 def main(argv=None):
     """造夹具 → 比 `drift` 读数 → 跑漂移 13 + 清点 3 + 取子集 10 + 能力指纹 3 + pptx 4 + 材料树若干 + 规范 1 条路径
 
@@ -1547,8 +1731,9 @@ def main(argv=None):
     print(f'{"PASS" if d1_ok else "FAIL"}  ⓪b D1 不把"浏览摘录截断"当等级拔高（`M01#p002` 不许出现）')
     bad += 0 if d1_ok else 1
     for name, good, rc, out in (paths(root, draft) + intake_paths(root) + plan_paths(root)
-                                + query_paths(root) + capability_paths(root) + pptx_paths(root)
-                                + materials_paths(root) + import_paths(root) + spec_paths()):
+                                + query_paths(root) + capability_paths(root) + vlm_paths(root)
+                                + pptx_paths(root) + materials_paths(root) + import_paths(root)
+                                + spec_paths()):
         print(f'{"PASS" if good else "FAIL"}  {name}  （rc={rc}）')
         if not good:
             print('      ' + out.strip().replace('\n', '\n      ')[:500])

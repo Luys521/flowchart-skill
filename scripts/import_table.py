@@ -21,6 +21,7 @@ AI 手上**已经有**一张"准流程表"（别人给的 / 自己上一轮写�
 用法：
     python scripts/import_table.py 外部表.md -o output/<流程名>/flowtable.md [--subject 默认主体]
     python scripts/import_table.py 外部表.md -o ... --id gujia-ea-epc --title "珈伟 × 怡云智 EPC 合作流程"
+    python scripts/import_table.py 外部表.md -o ... --header-row 2      # 顶上还有一行分组标题
 
 退出码：0 = 转出来了（可能带软提示）；1 = 有阻拦项（没认到表 / 编号重复）；2 = 输入读不了。
 """
@@ -74,29 +75,67 @@ def _cells(line):
     return [c.strip() for c in line.strip().strip('|').split('|')]
 
 
-def header_of(text):
-    """外部表 → `(表头, 数据行, 报错)`。认**第一张"像节点表"的表**（至少认出编号与名称两列）。"""
-    header, rows = None, []
+def _tables_of(text):
+    """把整份表切成 `[[内容行…], …]`（**一个 markdown 表一个列表**；分隔行与表外的行丢掉）。
+
+    为什么先切表再判（而不是像原先那样边扫边判）：`--header-row` 说的是"**表里第几行**"，
+    边走边判的话行号会在跨表时悄悄重置——用户说的"第 2 行"到底是哪张表的第 2 行？
+    先切出来，行号才有唯一含义。
+    """
+    tables, cur = [], []
     for line in text.splitlines():
-        if not line.startswith('|'):
-            if header and rows:
-                break                              # 第一张表看完就停
-            header = None
+        if not line.lstrip().startswith('|'):
+            if cur:
+                tables.append(cur)
+                cur = []
             continue
         cells = _cells(line)
         if all(set(c) <= set('-: ') for c in cells):
-            continue
-        if header is None:
+            continue                                   # `|---|---|` 是分隔行，不是内容行（也不占行号）
+        cur.append(cells)
+    if cur:
+        tables.append(cur)
+    return tables
+
+
+def header_of(text, header_row=None):
+    """外部表 → `(表头, 数据行, 报错)`。
+
+    **默认**：认**第一张"像节点表"的表**（表头里至少认出编号与名称两列）。
+    **`header_row` 给了就按行号取**（1 起，分隔行不计），不再靠认列去猜——这是给
+    "多行表头 / 顶上还有一行分组标题"那类外部表留的手：那种表里，**哪一行是列名是人的知识**，
+    让脚本去猜等于赌（实测过的赌法是"哪一行能认出编号与名称就算表头"——分组标题行里恰好
+    写着「环节 / 节点 / 名称」时，它会被当成表头，真正的列名那行反而变成**数据行**）。
+    行号越界、或那一行里认不出关键列，都**当场说清是哪一行、缺哪一列**。
+    """
+    tables = _tables_of(text)
+    if not tables:
+        return None, [], '没认到节点表：整份里没有 markdown 表格'
+    if header_row is not None:
+        rows = tables[0]
+        if not 1 <= header_row <= len(rows):
+            return None, [], (f'--header-row {header_row} 越界：第一张表只有 {len(rows)} 个内容行'
+                              '（1 起，分隔行不计）')
+        header = rows[header_row - 1]
+        got = map_columns(header)[0]
+        miss = [k for k in ('节点编号', '节点名称') if k not in got.values()]
+        if miss:
+            return None, [], (f'--header-row {header_row} 那一行里认不出 {"、".join(miss)}：'
+                              f'{" | ".join(header)}——列名要写清楚（同义词见本脚本的 SYNONYMS），'
+                              '或换一行/换一张表')
+        # 表头**之前**的行（分组标题那类）按"不是数据"丢掉；**之后**的才是数据行
+        return header, [r for r in rows[header_row:] if len(r) == len(header)], ''
+    for rows in tables:
+        for i, cells in enumerate(rows):
             got = map_columns(cells)[0]
             if '节点编号' in got.values() and '节点名称' in got.values():
-                header = cells
-            continue
-        if len(cells) == len(header):
-            rows.append(cells)
-    if not header:
-        return None, [], ('没认到节点表：要有一张表，表头里能认出「节点编号」与「节点名称」'
-                          '（同义词见 SYNONYMS，比如 序号/编号 + 名称/步骤/事项）')
-    return header, rows, ''
+                data = [r for r in rows[i + 1:] if len(r) == len(cells)]
+                if data:
+                    return cells, data, ''
+                break                  # 认出了表头却没有数据行：看下一张（与上一版行为一致）
+    return None, [], ('没认到节点表：要有一张表，表头里能认出「节点编号」与「节点名称」'
+                      '（同义词见 SYNONYMS，比如 序号/编号 + 名称/步骤/事项）；'
+                      '表头不在第一行时用 `--header-row N` 明说')
 
 
 def map_columns(cells):
@@ -302,6 +341,9 @@ def main(argv=None):
     ap.add_argument('--id', dest='aid', help='frontmatter 的 id（默认取产物目录名）')
     ap.add_argument('--title', help='标题（默认取外部表的一级标题）')
     ap.add_argument('--subject', help='外部表没有「执行主体」列时的默认主体（AI 的判断，写在这里）')
+    ap.add_argument('--header-row', type=int, metavar='N',
+                    help='**表头就是第一张表的第 N 行**（1 起，分隔行不计）——多行表头 / 顶上还有'
+                         '分组标题时用它，别让脚本去猜；那一行之前的内容行不当数据')
     a = ap.parse_args(argv)
 
     try:
@@ -309,7 +351,7 @@ def main(argv=None):
     except OSError as e:
         print(f'⚠ 读不了: {e}', file=sys.stderr)
         return 2
-    header, raw, err = header_of(text)
+    header, raw, err = header_of(text, a.header_row)
     if err:
         print(f'✗ {err}', file=sys.stderr)
         return 1

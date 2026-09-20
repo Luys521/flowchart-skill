@@ -106,10 +106,16 @@ def _run_checks(p, tbl_meta, rows):
 def _report_checks(title, nodes, edges, errs, slot_notes, as_json):
     """打印校验结果（--json 走结构化，否则走人类可读文本）。"""
     hard = errs.hard
+    checked = bool(getattr(errs, 'evidence_checked', False))
+    led = getattr(errs, 'evidence_ledger', '') or ''
+    skip = getattr(errs, 'evidence_skip', '') or ''
     if as_json:
         print(json.dumps({'hard': findings_receipt(errs.hard),
                           'soft': findings_receipt(errs.soft),
-                          'nodes': len(nodes), 'edges': len(edges)},
+                          'nodes': len(nodes), 'edges': len(edges),
+                          # **机器那份也要说清 H10 跑没跑**（D-108）：`--json` 的消费者
+                          # （门②、等价夹具、子代理）以前只能从文本里猜这一层。
+                          'evidence': {'checked': checked, 'ledger': led, 'skip': skip}},
                          ensure_ascii=False, indent=1))
     else:
         print(f'《{title}》  节点:{len(nodes)}  边(解析):{len(edges)}')
@@ -120,9 +126,11 @@ def _report_checks(title, nodes, edges, errs, slot_notes, as_json):
         else:
             print('✓ 结构校验通过（①节点 ②类型 ③关系）：'
                   'H1起止 · H2编号 · H3引用 · H4分支 · H5结束 · H6死循环 · H7语义 · H8连通 · H9表头'
-                  + (' · H10引用完整' if getattr(errs, 'evidence_checked', False) else ''))
-        if not getattr(errs, 'evidence_checked', False):
-            print('ℹ H10 引用完整这一层跳过：本表附近没有证据账本（纯口头需求 / 示例表 / 自举树都属这类）')
+                  + (f' · H10引用完整（账本 {led}）' if checked and led else ''))
+        if not checked:
+            # **跳过的理由要说准**（D-108）：一路向上找遍了没有账本 ≠ "本表附近没有账本"。
+            print(f'ℹ H10 引用完整这一层跳过：{skip or "本表附近没有证据账本"}'
+                  '（纯口头需求 / 示例表 / 自举树都属这类）')
         if errs.soft:
             print('⚠ 软提示（不阻断，请 AI 处理并打 ⚠ 留痕）：')
             for m in errs.soft:
