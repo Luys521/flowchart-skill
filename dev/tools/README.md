@@ -14,7 +14,9 @@
 | 谁依赖谁、方向对不对？ | `layering.py` | 分层门禁：模块层只许依赖公共层，越层即退 1 |
 | **有什么是白写的？** | `hygiene.py` | 没人引用的 import + 没人调的模块级函数（只看当前工作树，不要底本） |
 | **图读起来顺不顺？** | `aesthetic.py` | 三条审美律的读数：主轴偏心 / 绕行率 / 通道半径（`visual-spec` §0.1，D-91） |
+| **自举树怎么来的？** | `selfboot_gen.py` | 把函数级依赖图落成**流程表树**（`output/self-boot/`）——收口仪式的第 2 步，跑完还要 `build.py` 再与基线比（见下节） |
 | **工作区怎么这么大？** | `sweep.py` | 清场：删掉本仓库自己生成的临时物（验收 / 自检现场 + `__pycache__`），**绝不碰 `output/` 与基线** |
+| **十一道门一次跑完？** | `accept.py` | 验收器（见文末"验收：一条命令"）；它自己不是门，是**跑门的那台机器** |
 
 一句话记住：**`fn_graph` 是事实源；`coverage` / `api_audit` / `hygiene` 是静态的（看代码、看图），`equiv` 是动态的（真跑命令、比字节）。**
 `coverage` 问「**画全了吗**」，`api_audit` 问「**丢没丢**」，`hygiene` 问「**白没白写**」——三件互补，不替代。
@@ -132,7 +134,17 @@
 - **与另几件的区别**：`coverage` 问"画全了吗"、`api_audit` 问"丢没丢"、本件问"**白没白写**"。
   它不需要 git 底本（只看现状），也不判"设计是否合理"。
 
-## 净化：一件顺手工具（不算仪器）
+## 生成器与顺手工具（不算仪器）
+
+**`selfboot_gen.py`** —— 把 `fn-graph.json` 落成**流程表树**：根表一行一个模块、每行 `⊞` 指向该模块
+的函数表（`output/self-boot/`）。它是**收口仪式**的第 2 步，顺序不可换：
+
+```text
+python dev/tools/fn_graph.py        # ① 事实源（改了 scripts/ 就要重跑）
+python dev/tools/selfboot_gen.py    # ② 落成流程表树
+python scripts/build.py output/self-boot/flowtable.md   # ③ 出三份产物
+# ④ 与 `dev/baseline/self-boot/` 逐字节比（面③ 会自动做这件事）
+```
 
 ### `sweep.py` —— 清场：把"自己生成的临时物"删掉
 

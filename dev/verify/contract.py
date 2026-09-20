@@ -308,6 +308,45 @@ def run_face(tmp=None):
                 f'{doc} 的{label}与现算一致',
                 f'文档 {" / ".join(got)} ← 现算 {" / ".join(str(w) for w in want)}')
 
+    # README 的**目录表**与「两套完整渲染成果」那张表（2026-09-19 补，D-114）：同一类"会宣称现状"的
+    # 数字，此前一处都没核过——实测漂了两处（`templates/ 2 份模板` 实为 3 个文件；自举那条
+    # `39 节点 / 38 边 / 内嵌 37 张 / drawio 38 页` 实为 46/45/44/45，而它是**上一版模块数的残留**）。
+    # 判据与上面同一条：**写了就必须对得上**（G7 说"绝对数字本该现跑现取"，但写错比不写更坏）。
+    rd = (SKILL / 'README.md').read_text(encoding='utf-8')
+    py_all = sorted(SCRIPTS.glob('*.py'))
+    n_cli_all = sum(1 for p in py_all if '__main__' in p.read_text(encoding='utf-8'))
+    for pat, want, label in [
+            (r'scripts/\s+[^（]*（(\d+) 模块 = (\d+) 个带 CLI 的入口 \+ (\d+) 个纯库）',
+             (len(py_all), n_cli_all, len(py_all) - n_cli_all), 'README 的 scripts 规模'),
+            (r'references/\s+[^（]*（(\d+) 份）',
+             (len(list((SKILL / 'references').glob('*.md'))),), 'README 的 references 份数'),
+            (r'templates/\s+(\d+) 份模板',
+             (len(list((SKILL / 'templates').glob('*.md'))),), 'README 的 templates 份数')]:
+        m = re.search(pat, rd)
+        got = tuple(int(x) for x in m.groups()) if m else ()
+        c.check(got == want, f'{label}与现算一致', f'文档 {got} ← 现算 {want}')
+    # 自举那条：**从基线现算**（它进库、确定性有保证）：节点 / 边 / 内嵌模块子图 / drawio 页
+    sb_dir = SKILL / 'dev' / 'baseline' / 'self-boot'
+    if (sb_dir / 'flowtable.md').is_file():
+        from flowtable import COLUMNS, parse_table          # 表解析器只有一份，别在这儿另写一个
+        _t, _m, rows = parse_table((sb_dir / 'flowtable.md').read_text(encoding='utf-8'))
+        want = (len(rows),
+                sum(str(r[COLUMNS.index('下个节点')]).count('→') for r in rows),
+                len(list(sb_dir.glob('*/flowtable.md'))),
+                (sb_dir / 'self-boot-flow.drawio').read_text(encoding='utf-8').count('<diagram '))
+        m2 = re.search(r'(\d+) 节点 / (\d+) 边，\*\*内嵌 (\d+) 张模块子图\*\*[^、]*、drawio (\d+) 页', rd)
+        got = tuple(int(x) for x in m2.groups()) if m2 else ()
+        c.check(got == want, 'README 的自举规模与现算一致（节点 / 边 / 内嵌 / drawio 页）',
+                f'文档 {got} ← 现算 {want}')
+    # `dev/tools/` 的名册也在这里核一次（**单向**：每个脚本都要在地图里被点名）。
+    # 为什么单向：README 是**人看的**，它引用产品脚本（`build.py` / `recon.py`…）是正常的指路；
+    # 但**自己家新增一件工具却没写进地图**，就是"清单的唯一出处"失信——实测漏过 `selfboot_gen.py`。
+    tr = (TOOLS / 'README.md').read_text(encoding='utf-8')
+    named = set(re.findall(r'`([A-Za-z_][\w./-]*\.py)`', tr))
+    miss_tools = sorted(p.name for p in TOOLS.glob('*.py') if p.name not in named)
+    c.check(not miss_tools, 'dev/tools 的每个脚本都在自己的地图里被点名',
+            f'没被点名：{"、".join(miss_tools)}' if miss_tools else '')
+
     # 同一类数字还有一处：`REPO-MAP` 第四节那份**模块名册与规模**。它是"现状的唯一出处"，
     # 却被手写过一遍——**实测漂了 4 个模块**（写 40/26/17，实为 44/30/19：漏了 `cells` `plan`
     # `import_table` `capability` 四个，而门禁全绿）。这里把两个"现算源"拉进来对账：
