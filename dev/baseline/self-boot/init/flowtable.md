@@ -15,6 +15,6 @@ parent: ../flowtable.md
 | 入口 | 01 | 开始 | 开始 | — | — | — | 脚本 | selfboot | — | 1→05 | 流程起点（结构性节点，不是函数） · 入口：1→main |
 | 模块级 | 02 | _reject_conflict | 任务 | — | — | — | 脚本 | selfboot | — | →06 | ★ target 被同名文件或非空目录占用时打印原因并返回 True。 · L16 · 函数 |
 | 模块级 | 03 | _copy_templates | 任务 | — | — | — | 脚本 | selfboot | — | →06 | ★ 把两份模板复制进 target；模板缺失即返回 False（调用方退 1）。 · L31 · 函数 |
-| 模块级 | 04 | _print_summary | 任务 | — | — | — | 脚本 | selfboot | — | →06 | ★ 打印初始化结果与下一步指引。 · L48 · 函数 |
-| 模块级 | 05 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→03｜3→04 | L56 · 函数 · 分支：1→_reject_conflict 2→_copy_templates 3→_print_summary |
+| 模块级 | 04 | _print_summary | 任务 | — | — | — | 脚本 | selfboot | — | →06 | ★ 打印初始化结果与下一步指引。 · L51 · 函数 |
+| 模块级 | 05 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→03｜3→04 | L59 · 函数 · 分支：1→_reject_conflict 2→_copy_templates 3→_print_summary |
 | 出口 | 06 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |

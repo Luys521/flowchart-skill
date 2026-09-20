@@ -8,7 +8,7 @@ meta:
 layout:
   col_x:
   - 400
-  width: 780
+  width: 880
   origin_x: -180
 nodes:
 - id: '01'
@@ -21,7 +21,7 @@ nodes:
   row: 0
   col: 0
   stage: 入口
-  route: 1→02｜2→05｜3→09｜4→11
+  route: 1→02｜2→05｜3→09｜4→12
   desc: 流程起点（结构性节点，不是函数） · 入口：1→dump 2→table 3→todo_from_doc 4→main
 - id: '02'
   name: dump
@@ -33,7 +33,7 @@ nodes:
   row: 1
   col: 0
   stage: 模块级
-  route: →12
+  route: →13
   desc: ★ 标准写盘：UTF-8 / LF / 缩进 2 / 中文不转义（与 `ledger.dump` 同一套口径）。 · L41 · 函数
 - id: '03'
   name: load
@@ -45,7 +45,7 @@ nodes:
   row: 6
   col: 0
   stage: 模块级
-  route: →12
+  route: →13
   desc: ★ 读 JSON（容忍 BOM）。 · L46 · 函数
 - id: '04'
   name: as_spec
@@ -57,7 +57,7 @@ nodes:
   row: 3
   col: 0
   stage: 模块级
-  route: →12
+  route: →13
   desc: '★ `AI 列` 归一成 `{列名: {''列'': …, ''前缀'': …}}`——允许写成一个名字列表（整格替换）。 · L51 · 函数'
 - id: '05'
   name: table
@@ -81,7 +81,7 @@ nodes:
   row: 9
   col: 0
   stage: 模块级
-  route: →12
+  route: →13
   desc: ★ 一行 markdown 表格 → 单元格列表。 · L65 · 函数
 - id: '07'
   name: _key_of
@@ -93,7 +93,7 @@ nodes:
   row: 10
   col: 0
   stage: 模块级
-  route: →12
+  route: →13
   desc: ★ 单元格里的键：取第一个词并去掉反引号（`` `M02` 甲.md `` → `M02`；`` `F01` 名称 `` … · L70 · 函数
 - id: 08
   name: _scan
@@ -118,9 +118,21 @@ nodes:
   row: 4
   col: 0
   stage: 模块级
-  route: →08
-  desc: ★ 读**已写出的产物** → 待填清单（键与现值都现取；模块只声明"哪些列是 AI 的"）。 · L99 · 函数
+  route: 1→08｜2→10
+  desc: ★ 读**已写出的产物** → 待填清单（键与现值都现取；模块只声明"哪些列是 AI 的"）。 · L99 · 函数 · 分支：1→_scan 2→_fp
 - id: '10'
+  name: _fp
+  lines:
+  - _fp
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 11
+  col: 0
+  stage: 模块级
+  route: →13
+  desc: ★ 产物的骨架指纹（前 16 位）。写进待填清单、由 `fill` 回比。 · L117 · 函数
+- id: '11'
   name: fill
   lines:
   - fill
@@ -130,9 +142,9 @@ nodes:
   row: 7
   col: 0
   stage: 模块级
-  route: →08
-  desc: ★ 把答案写回产物 → `(新文本, 错误清单)`。**按列名写**，列数与列序不可能被破坏。 · L115 · 函数
-- id: '11'
+  route: 1→08｜2→10
+  desc: ★ 把答案写回产物 → `(新文本, 错误清单)`。**按列名写**，列数与列序不可能被破坏。 · L123 · 函数 · 分支：1→_scan 2→_fp
+- id: '12'
   name: main
   lines:
   - main
@@ -142,16 +154,16 @@ nodes:
   row: 5
   col: 0
   stage: 模块级
-  route: 1→03｜2→10
-  desc: L156 · 函数 · 分支：1→load 2→fill
-- id: '12'
+  route: 1→03｜2→11
+  desc: L167 · 函数 · 分支：1→load 2→fill
+- id: '13'
   name: 结束
   lines:
   - 结束
   type: end
   subject: 脚本
   executor: selfboot
-  row: 11
+  row: 12
   col: 0
   stage: 出口
   route: —
@@ -173,20 +185,20 @@ edges:
   polarity: main
   label: '3'
 - from: '01'
-  to: '11'
+  to: '12'
   kind: jumpR
   polarity: main
   label: '4'
 - from: '02'
-  to: '12'
+  to: '13'
   kind: jumpR
   polarity: main
 - from: '03'
-  to: '12'
+  to: '13'
   kind: jumpR
   polarity: main
 - from: '04'
-  to: '12'
+  to: '13'
   kind: jumpR
   polarity: main
 - from: '05'
@@ -194,12 +206,12 @@ edges:
   kind: spine
   polarity: main
 - from: '06'
-  to: '12'
+  to: '13'
   kind: jumpR
   polarity: main
 - from: '07'
-  to: '12'
-  kind: spine
+  to: '13'
+  kind: jumpR
   polarity: main
 - from: 08
   to: '06'
@@ -215,17 +227,33 @@ edges:
   to: 08
   kind: jumpR
   polarity: main
+  label: '1'
+- from: 09
+  to: '10'
+  kind: jumpR
+  polarity: main
+  label: '2'
 - from: '10'
-  to: 08
+  to: '13'
   kind: spine
   polarity: main
 - from: '11'
-  to: '03'
+  to: 08
   kind: spine
   polarity: main
   label: '1'
 - from: '11'
   to: '10'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '12'
+  to: '03'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '12'
+  to: '11'
   kind: jumpR
   polarity: main
   label: '2'

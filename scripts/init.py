@@ -30,7 +30,10 @@ def _reject_conflict(target):
 
 def _copy_templates(target):
     """把两份模板复制进 target；模板缺失即返回 False（调用方退 1）。"""
-    pairs = [('flowtable-template.md', 'flowtable.md'),
+    # **发空骨架，不发格式基准**（D-105）：`flowtable-template.md` 逐字等于 `examples/workflow`
+    # 那张 30 节点的自举表——那是给人**对照格式**用的。拿它当用户的第一张表，一跑 `clarify.py`
+    # 就会报**示例自己的** `⚠?` 并 exit 1。
+    pairs = [('flowtable-skeleton.md', 'flowtable.md'),
              ('checklist-template.md', 'checklist.md')]
     for src_name, dst_name in pairs:
         src = TPL_DIR / src_name

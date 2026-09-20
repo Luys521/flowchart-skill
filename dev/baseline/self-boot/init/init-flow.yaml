@@ -58,7 +58,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →06
-  desc: ★ 打印初始化结果与下一步指引。 · L48 · 函数
+  desc: ★ 打印初始化结果与下一步指引。 · L51 · 函数
 - id: '05'
   name: main
   lines:
@@ -70,7 +70,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→03｜3→04
-  desc: L56 · 函数 · 分支：1→_reject_conflict 2→_copy_templates 3→_print_summary
+  desc: L59 · 函数 · 分支：1→_reject_conflict 2→_copy_templates 3→_print_summary
 - id: '06'
   name: 结束
   lines:

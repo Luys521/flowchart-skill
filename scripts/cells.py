@@ -102,7 +102,9 @@ def todo_from_doc(doc, tables, note=''):
     rows, errs = _scan(text, tables)
     if errs:
         raise ValueError('; '.join(errs))
-    todo = {'产物': str(doc), '表': tables,
+    # **骨架指纹**（D-105）：`fill` 靠它认「这份答案是对着哪一版骨架填的」。
+    # 没有它时，骨架换过、答案还是旧的——**键还在的行会被旧结论覆盖**，而 fill 一声不吭（实测过）。
+    todo = {'产物': str(doc), '表': tables, '骨架指纹': _fp(text),
             '要求': note or '每格都要填；判不出来就写 `—`（**留空会被 check 当错**）。'
                             '值里不要写竖线（脚本会转义，但转义后的样子不好读）。',
             '待填': [{'表': t['名'], '键': k,
@@ -112,9 +114,18 @@ def todo_from_doc(doc, tables, note=''):
     return todo
 
 
-def fill(text, answers, tables, keys=()):
+def _fp(text):
+    """产物的骨架指纹（前 16 位）。写进待填清单、由 `fill` 回比。"""
+    import hashlib
+    return hashlib.sha256(text.encode('utf-8')).hexdigest()[:16]
+
+
+def fill(text, answers, tables, keys=(), expect_fp=''):
     """把答案写回产物 → `(新文本, 错误清单)`。**按列名写**，列数与列序不可能被破坏。"""
     errs = []
+    if expect_fp and expect_fp != _fp(text):
+        return '', ['骨架对不上：这份待填清单是**另一个版本**的产物出的（产物改过或换了一份）——'
+                    '重跑 `build --todo` 拿新清单再填，别把旧结论写进新骨架']
     if not isinstance(answers, dict):
         return '', ['答案必须是一个对象：`{"键": {"列名": "值"}}`']
     rows, errs = _scan(text, tables)
@@ -178,7 +189,8 @@ def main(argv=None):
     if '表' not in todo or '待填' not in todo:
         print(f'⚠ 待填清单不完整（它该由 `build --todo` 产出）: {todo_p}', file=sys.stderr)
         return 2
-    new, errs = fill(text, answers, todo['表'], [r['键'] for r in todo['待填']])
+    new, errs = fill(text, answers, todo['表'], [r['键'] for r in todo['待填']],
+                                expect_fp=todo.get('骨架指纹', ''))
     if errs:
         print(f'✗ 答案没过（{len(errs)} 条；**没有写盘**）：')
         for x in errs[:20]:

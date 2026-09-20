@@ -47,7 +47,7 @@ description: 用户要把流程、SOP、审批链路、合同或白板整理成�
 
 成果根**默认是用户给的路径**（"帮我看看这个目录"里的那个目录）；没给就用仓库 `output/`。**每次回显路径**。
 
-每个流程目录里共 **8 个文件**——**交付 6 件**（三份视图 + `flowtable.md` + `checklist.md` + 层级索引），**2 件不交付**（`-flow.yaml` 内部中间表示、`-flow.manifest.json` 渲染契约）：
+每个流程目录里共 **8 个文件**——**交付 6 件**（三份视图 + `flowtable.md` + `checklist.md` + 层级索引），**2 件不交付**（`-flow.yaml` 内部中间表示、`-flow.manifest.json` 渲染契约）。⚠ **三份视图里 `html` 是必需的，`drawio` / `svg` 缺依赖时会降级**（注册表里它们是 `required: False`）——降级**必须留痕说明**，不许静默少交：
 
 ```text
 <成果根>/<名称>/
@@ -167,7 +167,7 @@ python scripts/plan.py check <成果根>/plan.md --intake <成果根>/intake.md 
 
 ### 落表（11）
 
-按 `templates/flowtable-template.md` 的列规范填写 `<成果根>/<名称>/flowtable.md`；列含义见 `references/flowtable-spec.md`。
+`init.py` 已经把 **`templates/flowtable-skeleton.md`（空骨架）** 与 `checklist-template.md` 拷进来了：照着骨架填 `<成果根>/<名称>/flowtable.md`。列含义见 `references/flowtable-spec.md`；**格式基准是 `examples/workflow/`**（30 节点那张自举表），拿不准怎么写时对照它——`templates/flowtable-template.md` 是它的逐字副本，**别拿它当自己的表**（里面是示例自己的内容）。
 
 - **判断节点**：每个可能结果都要有一条出口，且每条出口都带标签（≤4 字）。**要"选一条走"只能用判断**；
   其余类型的多出口一律**并行**（全都走），标签只是路线名。四种类型与三个形状见 `references/flowtable-spec.md` §2《类型登记表》。

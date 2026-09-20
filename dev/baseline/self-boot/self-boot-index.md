@@ -8,7 +8,7 @@
 - **L0 主流程** `flowtable.md`——《self-boot — 模块索引》（id: selfboot-map）（45 节点）
   - **L1 子流程** `artifact/flowtable.md`——《artifact.py 函数流程表》（id: selfboot-artifact）（4 节点）
   - **L1 子流程** `build/flowtable.md`——《build.py 函数流程表》（id: selfboot-build）（27 节点）
-  - **L1 子流程** `cells/flowtable.md`——《cells.py 函数流程表》（id: selfboot-cells）（12 节点）
+  - **L1 子流程** `cells/flowtable.md`——《cells.py 函数流程表》（id: selfboot-cells）（13 节点）
   - **L1 子流程** `clarify/flowtable.md`——《clarify.py 函数流程表》（id: selfboot-clarify）（16 节点）
   - **L1 子流程** `drift/flowtable.md`——《drift.py 函数流程表》（id: selfboot-drift）（29 节点）
   - **L1 子流程** `engine/flowtable.md`——《engine.py 函数流程表》（id: selfboot-engine）（28 节点）
