@@ -610,6 +610,19 @@ def run_face(tmp=None):
         missing = sorted(k for k in refs if k not in set(ids))
         c.check(not missing, '被引用的 D 编号都存在（指针不许指空）',
                 '；'.join(f'{k} ← {"、".join(sorted(refs[k])[:3])}' for k in missing))
+        # **G 编号同理**（2026-09-19，D-132）：D 有这条断言、G 一直没有，而 §8 那类表里满是
+        # "登记在 G25""见 G14"这类指针——**指空的话，读的人照着它去翻，翻不到任何东西**，
+        # 正是上面这条 D 断言当年要拦的形态。收 G10/G12/G21②/G22 时是**人工**核过一遍的
+        # （26 行、0 处指空），这里把它接成判据，免得下次还得靠人核。
+        g_cs = SKILL / 'dev' / 'coding-spec.md'
+        g_def = set(re.findall(r'^\| (G\d+) \|', g_cs.read_text(encoding='utf-8'), re.M))
+        g_refs = {}
+        for p, t in srcs + [(g_cs, g_cs.read_text(encoding='utf-8'))]:
+            for m in re.findall(r'G\d+', t):
+                if m not in g_def:            # 定义格 `| G12 |` 本身也在 g_def 里，天然通过
+                    g_refs.setdefault(m, set()).add(p.name)
+        c.check(not g_refs, '被引用的 G 编号都存在（缺口编号也不许指空）',
+                '；'.join(f'{k} ← {"、".join(sorted(v)[:3])}' for k, v in sorted(g_refs.items())))
         # 索引要**覆盖全部编号、且不重不漏**（2026-09-19 补，D-118）：决策日志 116 条、每条 1.5 KB，
         # 找"这事定过没有"原先只能 grep 标题。加一段按主题的索引之后，最容易出的错是
         # "新加的条目忘了写进索引"——那种错机器一眼能判：**索引里的编号并集 == 实际标题的编号集**。
