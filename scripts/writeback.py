@@ -45,12 +45,19 @@ def _row_key(cells):
 
     原表写「无」或留空、回写按约定统一成 `—`/`-` 时**语义没变**，逐格比却判成整行改动，
     于是"什么都没动"的 sync 也会冒出伪 diff——而 diff 是 --apply 前唯一要复核的界面（D-12）。
+
+    「下个节点」那一格还要**归一分隔符两侧的空格**（G51）：回写把各分支用 `' ｜ '` 连起来，
+    而作者完全可以写 `是→03｜否→04`（SKILL.md 只规定分隔符是 `｜`，没说空格）。不归一的话，
+    分支文本一字未变也会整行重写。**只归一 `｜` 与 `→` 两侧的空白**——标签内部的空格是内容
+    （`等 3 天→05` 与 `等3天→05` 不是同一件事），不许一起吃掉。
     """
     cs = list(cells) + [''] * (N_COLS - len(cells))
     key = list(cs)
     for idx in (C_INPUT, C_BASIS, C_OUTPUT, C_TIME, C_NEXT):
         v = (cs[idx] or '').strip()
         key[idx] = '—' if (v == '' or v in _PLACEHOLDERS) else v
+    if key[C_NEXT] != '—':
+        key[C_NEXT] = re.sub(r'\s*→\s*', '→', re.sub(r'\s*｜\s*', '｜', key[C_NEXT]))
     for idx in (C_SUBJECT, C_EXECUTOR):
         v = (cs[idx] or '').strip()
         key[idx] = '-' if (v == '' or v in _PLACEHOLDERS) else v
@@ -109,14 +116,20 @@ def build_rows(data, orig=None):
                 spare.setdefault(tid, tl)
         branches = []
         for e in by_from.get(n['id'], []):     # 文档顺序 = 作者书写顺序，不按编号推
-            hit = None
+            hit, hit_i = None, None
             for i, (raw, lb, tid, _tl) in enumerate(pool):
                 if not taken[i] and tid == e['to'] and lb == (e.get('label') or ''):
                     taken[i] = True
-                    hit = raw
+                    hit, hit_i = raw, i
                     break
-            branches.append(hit if hit else new_token(e, order, n['id']) + spare.get(e['to'], ''))
-        nxt = f' {BRANCH_SEP} '.join(branches) if branches else '—'
+            branches.append((hit_i if hit_i is not None else len(pool) + 1,
+                             hit if hit else new_token(e, order, n['id']) + spare.get(e['to'], '')))
+        # **分支顺序以原表为准**（G54）：图里那几条边的顺序是渲染器的产出，而作者在表里调过
+        # 顺序（图的拓扑没变）时，按图序写回去等于把排版选择静默还原。匹配到原 token 的按其在
+        # 原格里的位置排；图里新增的边（原表没有对应 token）保持图序、排在后面。
+        # 稳定排序：未匹配的相对次序不变。
+        branches.sort(key=lambda t: t[0])
+        nxt = f' {BRANCH_SEP} '.join(t[1] for t in branches) if branches else '—'
         rows.append({'id': n['id'], 'name': n['name'],
                      'type': TYPE_EN_ZH.get(n['type'], n['type']),
                      'stage': '',          # 图里没有语义列（D-73）：这几项一律由 _rebuild_rows 定
@@ -249,17 +262,17 @@ def _split_table_block(orig_lines, orig_text, orig_ft):
         end_idx += 1
     head = '\n'.join(orig_lines[:header_idx])
     after = orig_lines[end_idx:]
-    # 前言与表头之间的空行原样保留（少一行也算 diff 噪声）
-    # 表头前**连续几个**空行就留几个：只看紧邻一行的话，原文有两个空行回写后只剩一个，
-    # 于是"没改任何节点"也会冒出一行 diff——而 diff 正是 --apply 该不该落盘的判据。
-    _k = 0
-    _i = header_idx - 1
-    while _i >= 0 and not orig_lines[_i].strip():
-        _k += 1
-        _i -= 1
-    # 表头就在文件第 0 行时没有前言可接，gap 必须是空——否则凭空多一个前导空行，
-    # "没改任何节点"也会冒出一行伪 diff（裸表流程表正是这个形态）
-    gap = '\n' * (_k + 1) if header_idx > 0 else ''
+    # 前言与表头之间的空行**逐字原样**保留（少一行、多一行都算 diff 噪声，而 diff 正是
+    # `--apply` 该不该落盘的判据）。判据：把尾随空行整段切出来（**含只含空格的行**），
+    # 而不是"数几个空行再补几个换行"——后者对 `' '` 这种行会数两遍（G52）。
+    if header_idx == 0:
+        head, gap = '', ''                           # 裸表：没有前言可接，不许凭空多一个前导空行
+    else:
+        last = header_idx
+        while last > 0 and not orig_lines[last - 1].strip():
+            last -= 1
+        head = ('\n'.join(orig_lines[:last]) + '\n') if last else ''
+        gap = ''.join(l + '\n' for l in orig_lines[last:header_idx])
     tail = '\n' if orig_text.endswith('\n') else ''
     return head, after, gap, tail
 
@@ -343,7 +356,9 @@ def _keep_after_table(after, rows):
 
 def _emit_table(out_path, head, gap, body, kept_after, tail, nl, enc, rows, default):
     """前言 / 表格体 / 表后内容拼回，按原换行符与编码落盘，并打印回写统计。"""
-    out = head.rstrip('\n') + gap + '\n'.join(body)
+    # `head` 现在**自带行尾换行**（`_split_table_block` 改的，G52），所以这里不再 rstrip：
+    # 原先"head 去尾换行 + 补 gap"的算法对只含空格的行会把换行数算多，整份文件冒伪 diff。
+    out = head + gap + '\n'.join(body)
     if kept_after:
         out += '\n' + '\n'.join(kept_after)
     out += tail

@@ -107,7 +107,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →29
-  desc: ★ 定位主表表头行号：第一个含「项目运作阶段」的表头行（配置小节的表没有这一列）；无则 None。 · L91 · 函数
+  desc: ★ 定位主表表头行号：第一个含「项目运作阶段」的表头行（配置小节的表没有这一列）；无则 None。 · L95 · 函数
 - id: 09
   name: _read_layout_sections
   lines:
@@ -119,7 +119,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →16
-  desc: ★ 读主表之前的「渲染配置」「主体配色」两个小节 → (cfg, colors, dup_subject)。 · L97 · 函数
+  desc: ★ 读主表之前的「渲染配置」「主体配色」两个小节 → (cfg, colors, dup_subject)。 · L101 · 函数
 - id: '10'
   name: _merge_meta
   lines:
@@ -131,7 +131,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →29
-  desc: ★ 把配置小节归一化并入 meta（键名与插入顺序不变，下游消费方零改动）。 · L113 · 函数
+  desc: ★ 把配置小节归一化并入 meta（键名与插入顺序不变，下游消费方零改动）。 · L117 · 函数
 - id: '11'
   name: _is_separator_row
   lines:
@@ -143,7 +143,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →29
-  desc: ★ GFM 表格分隔行判定：允许 `---` / `:---` / `:---:`（冒号对齐）。 · L125 · 函数
+  desc: ★ GFM 表格分隔行判定：允许 `---` / `:---` / `:---:`（冒号对齐）。 · L129 · 函数
 - id: '12'
   name: _read_body_rows
   lines:
@@ -155,7 +155,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 读主表数据行：跳表头与分隔行，遇非表格行即停 → rows。 · L130 · 函数 · ⇢ 依赖 semantics.split_table_row
+  desc: ★ 读主表数据行：跳表头与分隔行，遇非表格行即停 → rows。 · L134 · 函数 · ⇢ 依赖 semantics.split_table_row
 - id: '13'
   name: split_row_cells
   lines:
@@ -167,7 +167,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →29
-  desc: ★ 一行单元格 → 补齐/截断到 N_COLS 的列表。列**按位置**读，所以长度先对齐再取值。 · L166 · 函数
+  desc: ★ 一行单元格 → 补齐/截断到 N_COLS 的列表。列**按位置**读，所以长度先对齐再取值。 · L170 · 函数
 - id: '14'
   name: header_cells
   lines:
@@ -179,7 +179,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →29
-  desc: ★ 主表表头行 → 列名列表（找不到返回 None）。 · L172 · 函数
+  desc: ★ 主表表头行 → 列名列表（找不到返回 None）。 · L176 · 函数
 - id: '15'
   name: parse_table
   lines:
@@ -191,7 +191,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→06｜2→07｜3→08｜4→09｜5→10｜6→12
-  desc: ★ 返回 (title, meta, rows)。三区结构（D-59）：frontmatter 身份 + 正文配置小节 +… · L183 · 函数
+  desc: ★ 返回 (title, meta, rows)。三区结构（D-59）：frontmatter 身份 + 正文配置小节 +… · L187 · 函数
     · 分支：1→_extract_title 2→_read_frontmatter 3→_locate_main_table 4→_read_layout_sections
     5→_merge_meta 6→_read_body_rows
 - id: '16'
@@ -205,7 +205,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 在 lines[start:stop] 里找 `## {name}` 小节，返回其表格数据行 [[c1, c2], …… · L202 · 函数
+  desc: ★ 在 lines[start:stop] 里找 `## {name}` 小节，返回其表格数据行 [[c1, c2], …… · L206 · 函数
     · ⇢ 依赖 semantics.split_table_row
 - id: '17'
   name: parse_next
@@ -218,7 +218,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →21
-  desc: ★ 解析「下个节点」→ [(label, tid, is_loop)]。 · L226 · 函数
+  desc: ★ 解析「下个节点」→ [(label, tid, is_loop)]。 · L230 · 函数
 - id: '18'
   name: _resolve_target
   lines:
@@ -230,7 +230,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →29
-  desc: ★ 把一段目标文本解析成节点 id：已知 id 优先整体匹配，字母开头的外部 id 整体返回，否则取数字编号。 · L234 · 函数
+  desc: ★ 把一段目标文本解析成节点 id：已知 id 优先整体匹配，字母开头的外部 id 整体返回，否则取数字编号。 · L238 · 函数
 - id: '19'
   name: _report_ambiguous_sep
   lines:
@@ -242,7 +242,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →29
-  desc: ★ H3：分号误用（`通过→05；不通过→06`）会静默丢掉第二条出口——必须拦下，见 DECISIONS.md D-04。 · L247 · 函数
+  desc: ★ H3：分号误用（`通过→05；不通过→06`）会静默丢掉第二条出口——必须拦下，见 DECISIONS.md D-04。 · L251 · 函数
     · ⇢ 依赖 semantics.has_ambiguous_sep
 - id: '20'
   name: _split_route_parts
@@ -255,7 +255,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →18
-  desc: ★ 把「下个节点」原文按分支分隔符切开，逐段解析成 (raw, label, tid, is_loop)。 · L254 · 函数 · ⇢ 依赖 semantics.split_branches
+  desc: ★ 把「下个节点」原文按分支分隔符切开，逐段解析成 (raw, label, tid, is_loop)。 · L258 · 函数 · ⇢ 依赖 semantics.split_branches
 - id: '21'
   name: parse_next_raw
   lines:
@@ -267,7 +267,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→19｜2→20
-  desc: ★ 同 parse_next，但多返回该分支的**原样文本**：[(raw, label, tid, is_loop)]。 · L285 · 函数
+  desc: ★ 同 parse_next，但多返回该分支的**原样文本**：[(raw, label, tid, is_loop)]。 · L289 · 函数
     · 分支：1→_report_ambiguous_sep 2→_split_route_parts
 - id: '22'
   name: build_edges
@@ -280,7 +280,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →17
-  desc: ★ 按「下个节点」取出边，**不做判定**；返回 (edges, dangling)。 · L297 · 函数
+  desc: ★ 按「下个节点」取出边，**不做判定**；返回 (edges, dangling)。 · L301 · 函数
 - id: '23'
   name: wrote_route
   lines:
@@ -292,7 +292,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →29
-  desc: ★ "下个节点"单元格里到底写没写内容（不判断写得对不对）——分辨"真没有出口"与"目标编号不存在"。 · L314 · 函数
+  desc: ★ "下个节点"单元格里到底写没写内容（不判断写得对不对）——分辨"真没有出口"与"目标编号不存在"。 · L318 · 函数
 - id: '24'
   name: _parent_by_declaration
   lines:
@@ -304,7 +304,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→27｜2→28
-  desc: ★ 子表 frontmatter 声明了「父表」→ 直接定位并校验回指，O(1)；未声明或校验不过返回 None。 · L321 · 函数 · 分支：1→_has_backref
+  desc: ★ 子表 frontmatter 声明了「父表」→ 直接定位并校验回指，O(1)；未声明或校验不过返回 None。 · L325 · 函数 · 分支：1→_has_backref
     2→_backref_node
 - id: '25'
   name: _parent_by_scan
@@ -317,7 +317,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →13
-  desc: ★ 未声明的表：沿目录向上扫 `*.md`，找 ▣ 指到 me 的那张父表（一路走到盘根）；找不到 None。 · L332 · 函数 · ⇢ 依赖
+  desc: ★ 未声明的表：沿目录向上扫 `*.md`，找 ▣ 指到 me 的那张父表（一路走到盘根）；找不到 None。 · L336 · 函数 · ⇢ 依赖
     semantics.subflow_ref
 - id: '26'
   name: find_parent_table
@@ -330,7 +330,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→15｜2→24｜3→25
-  desc: ★ 这张流程表是不是别人的下钻子图？是则返回 (父表 Path, 父节点名)，不是返回 None。 · L361 · 函数 · 分支：1→parse_table
+  desc: ★ 这张流程表是不是别人的下钻子图？是则返回 (父表 Path, 父节点名)，不是返回 None。 · L365 · 函数 · 分支：1→parse_table
     2→_parent_by_declaration 3→_parent_by_scan
 - id: '27'
   name: _has_backref
@@ -343,7 +343,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→13｜2→15
-  desc: ★ 父表文件里是否存在一条 ▣ 指回 me（「父表」声明的双向一致性校验，D-58）。 · L388 · 函数 · 分支：1→split_row_cells
+  desc: ★ 父表文件里是否存在一条 ▣ 指回 me（「父表」声明的双向一致性校验，D-58）。 · L392 · 函数 · 分支：1→split_row_cells
     2→parse_table · ⇢ 依赖 semantics.subflow_target
 - id: '28'
   name: _backref_node
@@ -356,7 +356,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→13｜2→15
-  desc: ★ 父表中指回 me 的那条 ▣ 所在行的节点名（面包屑显示用）。 · L403 · 函数 · 分支：1→split_row_cells 2→parse_table
+  desc: ★ 父表中指回 me 的那条 ▣ 所在行的节点名（面包屑显示用）。 · L407 · 函数 · 分支：1→split_row_cells 2→parse_table
     · ⇢ 依赖 semantics.subflow_target
 - id: '29'
   name: 结束

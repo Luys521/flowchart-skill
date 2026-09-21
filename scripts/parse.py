@@ -69,14 +69,20 @@ def _adapter_args(name, a):
                      '--max-slides', str(a.max_slides)],
                     ['--slides', a.slides, '--sheet', a.sheet, '--rows', a.rows])
     if name == 'parse_pdf':
-        return _opt(['--max-pages', str(a.max_pages), '--max-chars', str(a.max_chars)],
-                    ['--pages', a.pages])
+        base = ['--max-pages', str(a.max_pages)]
+        if a.max_chars is not None:                  # 不给就用 parse_pdf 自己的默认（G63）
+            base += ['--max-chars', str(a.max_chars)]
+        return _opt(base, ['--pages', a.pages])
     if name == 'parse_legacy':
         args = ['--timeout', str(a.timeout)]
         return args + (['--soffice', a.soffice] if a.soffice else [])
     if name == 'parse_text':
-        args = ['--max-chars', str(a.max_chars), '--max-rows', str(a.max_rows),
-                '--max-cols', str(a.max_cols)]
+        # **`--max-chars` 只在这条路上"没给才不传"**（G63）：分派器的默认是 4000（PDF 单页），
+        # 而 `parse_text` 自己的默认是 2000（一个引用块）——原先无条件把 4000 塞进去，同一份材料
+        # 直跑与过分派器会得到**不同的元素边界与 id**（§2.2 的幂等在两个入口之间失效）。
+        # 现在各自用自己的默认；显式给了 flag 才覆盖（与 `query --batch 0` 同一口径，D-106）。
+        args = (['--max-chars', str(a.max_chars)] if a.max_chars is not None else []) + \
+               ['--max-rows', str(a.max_rows), '--max-cols', str(a.max_cols)]
         return args + (['--encoding', a.encoding] if a.encoding else [])
     return []
 
@@ -322,7 +328,9 @@ def main(argv=None):
     ap.add_argument('--max-cols', type=int, default=50, help='[parse_ooxml] 每张 sheet 列上限')
     ap.add_argument('--max-slides', type=int, default=200, help='[parse_ooxml] pptx 最多读多少张幻灯片')
     ap.add_argument('--max-pages', type=int, default=50, help='[parse_pdf] 最多抽多少页')
-    ap.add_argument('--max-chars', type=int, default=4000, help='[parse_pdf] 单页最多多少字')
+    ap.add_argument('--max-chars', type=int, default=None,
+                    help='单页（PDF）/ 单块（文本）最多多少字；**不给则各适配器用自己的默认**'
+                         '（PDF 4000 · 文本 2000）——同一份材料两条路必须切出同样的边界（G63）')
     ap.add_argument('--soffice', help='[parse_legacy] 显式指定转换器命令')
     ap.add_argument('--timeout', type=int, default=180, help='[parse_legacy] 单份材料转换 / 抽取超时秒数')
     ap.add_argument('--encoding', default='', help='[parse_text] 显式指定编码（如 gbk）；默认只认 UTF-8 / UTF-16')

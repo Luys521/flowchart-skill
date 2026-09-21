@@ -39,12 +39,16 @@ def slide_lines(xml):
     """一张幻灯片的 XML → 文本行（按 `<a:p>` 切段，段内 `<a:t>` 顺序拼接，去空段）。
 
     `a:p` 是段落、`a:t` 是文字运行——只取这两个，**不碰样式/坐标**：判语义是 AI 的事（§0 责任边界）。
+
+    **只去两端的空白，不压段内空白**（G65）：原先 `' '.join(line.split())` 把段内连续空格折成一个，
+    于是 `location.quote` 不再是逐字原文（最严解释下碰到 §1.6「不改字」），引用粒度也跟着退化。
+    `<a:br/>`（软换行）目前仍并进同一段——按形状级切是另一版判据，仍登记在 G65。
     """
     out = []
     for para in PARA_RE.findall(xml):
         line = unescape(''.join(RUN_RE.findall(para))).strip()
         if line:
-            out.append(' '.join(line.split()))       # 段内换行/多空格压成单个空格
+            out.append(line)
     return out
 
 

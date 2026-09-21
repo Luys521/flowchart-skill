@@ -69,22 +69,26 @@ def _read_frontmatter(lines):
     body_start = 0
     if lines and lines[0].strip() == '---':
         end = next((i for i in range(1, len(lines)) if lines[i].strip() == '---'), None)
-        if end is not None:
-            body_start = end + 1
-            fm = '\n'.join(lines[1:end])
-            loaded = None
-            if fm.strip():
-                if yaml is None:
-                    meta['__fm_error__'] = '缺少 PyYAML，无法解析 frontmatter'
-                else:
-                    try:
-                        loaded = yaml.safe_load(fm)
-                    except yaml.YAMLError as e:
-                        meta['__fm_error__'] = str(e).splitlines()[0]
-            if isinstance(loaded, dict):
-                meta.update(loaded)
-            elif loaded is not None:
-                meta['__fm_error__'] = f'frontmatter 应为键值映射，实际是 {type(loaded).__name__}'
+        # **只有开行、没有闭合 `---`** ⇒ 整块身份区会被当成正文、键全丢且一个字都不报（G68）：
+        # 那是"静默丢语义"（与 H9 键封闭要拦的形态同类），所以在这里记成语法错误交给 H9。
+        if end is None:
+            meta['__fm_error__'] = 'frontmatter 没有闭合的 `---`（只有开行，整块身份区会被忽略）'
+            return meta, body_start
+        body_start = end + 1
+        fm = '\n'.join(lines[1:end])
+        loaded = None
+        if fm.strip():
+            if yaml is None:
+                meta['__fm_error__'] = '缺少 PyYAML，无法解析 frontmatter'
+            else:
+                try:
+                    loaded = yaml.safe_load(fm)
+                except yaml.YAMLError as e:
+                    meta['__fm_error__'] = str(e).splitlines()[0]
+        if isinstance(loaded, dict):
+            meta.update(loaded)
+        elif loaded is not None:
+            meta['__fm_error__'] = f'frontmatter 应为键值映射，实际是 {type(loaded).__name__}'
     return meta, body_start
 
 

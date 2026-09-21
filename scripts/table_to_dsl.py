@@ -173,7 +173,17 @@ def _assemble_dsl(nodes, edges, mode, lane_order, colors, title, hint):
             col_x = [snap(x, DEFAULT_GRID['node']) for x in raw_cx]
         else:
             col_x = [] if raw_cx is not None else [DEFAULT_COL_X]
-        dsl_nodes = build_dsl_nodes(nodes, {n['id']: n for n in hint['nodes']})
+        # **旧几何的形状坏了要说人话**（G49）：`hint['nodes']` 缺键原先直接 KeyError 裸栈——
+        # 而提示来自"用户手改过 / 旧版本的 yaml"，那是**外部输入**。抛 ValueError（人话），
+        # 由 `_write_dsl` 接住退 2——与 `engine.load` 把 KeyError 兜成中文同一手法。
+        try:
+            hnodes = {n['id']: n for n in hint['nodes']}
+        except (KeyError, TypeError) as e:
+            raise ValueError(
+                f'旧几何（提示）形状不对（{type(e).__name__}: {str(e)[:80]}）——'
+                f'它可能被手改过或是旧版本的产物；用 `--no-layout` 丢弃旧几何重排，'
+                f'或删掉那份 yaml 再跑') from e
+        dsl_nodes = build_dsl_nodes(nodes, hnodes)
         # 先用（提示的）行列推出 kind，再让提示只覆盖几何
         base_edges = auto_layout(dsl_nodes, edges)
         dsl_edges = reuse_hint(base_edges, hint)
@@ -294,9 +304,17 @@ def _center_canvas(dsl, mode):
 
 
 def _write_dsl(p, nodes, edges, mode, lane_order, colors, title, layout_path, out_path):
-    """--write 路径：读布局提示 → 组装 DSL → 量一次并居中画布 → 落盘 DSL 与渲染契约；返回退出码。"""
+    """--write 路径：读布局提示 → 组装 DSL → 量一次并居中画布 → 落盘 DSL 与渲染契约；返回退出码。
+
+    **旧几何形状不对**（G49）：`_assemble_dsl` 抛 `ValueError`（提示是外部输入），这里接住
+    打人话并退 2——原先它一路 KeyError 裸栈出去，读的人以为脚本坏了。
+    """
     hint = _load_hint(layout_path, mode)
-    dsl = _assemble_dsl(nodes, edges, mode, lane_order, colors, title, hint)
+    try:
+        dsl = _assemble_dsl(nodes, edges, mode, lane_order, colors, title, hint)
+    except ValueError as e:
+        print(f'✗ {e}')
+        return 2
     _center_canvas(dsl, mode)
     out = _emit_dsl(dsl, p, out_path)
     _emit_manifest(dsl, out, p)

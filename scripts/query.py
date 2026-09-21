@@ -157,16 +157,25 @@ def select(els, material, grep, ranges, skip, batch):
 
 def render(rows, total, meta, limit, rwin=None):
     """这一批（markdown）+ **游标行**——AI 靠它决定"要不要再要一口"，而不是一次把全部灌进去。"""
+    # 空批与越界要**分开说**（G60）：原先 `本次给第 {skip+1}–{skip+len(rows)}` 在 0 条时
+    # 打出"第 100–99 条"这种反向区间，且不管 `--skip` 有没有越界都写"这一批就是全部命中"。
+    got = (f'本次给第 {meta["skip"] + 1}–{meta["skip"] + len(rows)} 条' if rows
+           else f'本次给 0 条（`--skip {meta["skip"]}` 起没有命中）')
     out = [f'# 取子集：{meta["what"]}', '',
            f'> `scripts/query.py` 从 `{meta["ledger"]}`（sha256 {meta["sha"]}）取子集：'
-           f'命中 {total} 条，本次给第 {meta["skip"] + 1}–{meta["skip"] + len(rows)} 条'
+           f'命中 {total} 条，{got}'
            f'（每批 {meta["batch"]} 条，摘录截到 {limit} 字）。**只看这一批就够判断吗？**', '',
            '| ' + ' | '.join(COLUMNS) + ' |', '|' + '---|' * len(COLUMNS)]
     for mid, ordinal, el in rows:
         out.append(f'| `{el.get("id")}` | `{mid}` #{ordinal} | {el.get("kind")} | '
                    f'{loc_text(el)} | {excerpt(el, limit, rwin)} |')
     nxt = meta['skip'] + len(rows)
-    out += ['', f'▶ 下一批：`--skip {nxt}`' if nxt < total else '▶ 已到末尾（这一批就是全部命中）']
+    if nxt < total:
+        out += ['', f'▶ 下一批：`--skip {nxt}`']
+    elif meta['skip'] >= total:
+        out += ['', f'▶ `--skip {meta["skip"]}` 已越界（命中共 {total} 条，从 0 起数）']
+    else:
+        out += ['', '▶ 已到末尾（命中的都给出过了）']
     return '\n'.join(out) + '\n'
 
 

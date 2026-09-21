@@ -59,7 +59,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →03
-  desc: ★ 沿父表链向上找**第一个**声明了配色的祖先 → (祖先映射, 祖先 Path)（找不到返回 ({}, None)）。 · L73 · 函数 ·
+  desc: ★ 沿父表链向上找**第一个**声明了配色的祖先 → (祖先映射, 祖先 Path)（找不到返回 ({}, None)）。 · L77 · 函数 ·
     ⇢ 依赖 flowtable.find_parent_table、flowtable.parse_table
 - id: '05'
   name: resolve_colors
@@ -72,7 +72,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→03｜2→04
-  desc: '★ 本表声明 + 向上继承 → ({主体: {''fill'',''stroke''}}, [硬错误…])。见 D-49/D-59。 · L103
+  desc: '★ 本表声明 + 向上继承 → ({主体: {''fill'',''stroke''}}, [硬错误…])。见 D-49/D-59。 · L107
     · 函数 · 分支：1→_color_map 2→_inherit_colors'
 - id: '06'
   name: _declare_subjects
@@ -85,7 +85,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →10
-  desc: ★ 显式声明过的主体直接占座（即便本表没用到也保留，图例与主图同构）→ 新字典。 · L127 · 函数
+  desc: ★ 显式声明过的主体直接占座（即便本表没用到也保留，图例与主图同构）→ 新字典。 · L131 · 函数
 - id: '07'
   name: _assign_lane_colors
   lines:
@@ -97,7 +97,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →02
-  desc: ★ 显式泳道序里的主体按泳道序取色；空泳道同样占一档（它要画，没颜色会与其他列割裂）。 · L135 · 函数
+  desc: ★ 显式泳道序里的主体按泳道序取色；空泳道同样占一档（它要画，没颜色会与其他列割裂）。 · L139 · 函数
 - id: 08
   name: _assign_node_colors
   lines:
@@ -109,7 +109,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →02
-  desc: ★ 节点「执行主体」列里还没占座的主体按出现顺序取色；占位符（-/—/空）不算主体。 · L142 · 函数
+  desc: ★ 节点「执行主体」列里还没占座的主体按出现顺序取色；占位符（-/—/空）不算主体。 · L146 · 函数
 - id: 09
   name: subject_map
   lines:
@@ -121,7 +121,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→06｜2→07｜3→08
-  desc: ★ 按出现顺序给「执行主体」分配调色板；给了显式泳道序则**按泳道序**取色。 · L152 · 函数 · 分支：1→_declare_subjects
+  desc: ★ 按出现顺序给「执行主体」分配调色板；给了显式泳道序则**按泳道序**取色。 · L156 · 函数 · 分支：1→_declare_subjects
     2→_assign_lane_colors 3→_assign_node_colors
 - id: '10'
   name: 结束

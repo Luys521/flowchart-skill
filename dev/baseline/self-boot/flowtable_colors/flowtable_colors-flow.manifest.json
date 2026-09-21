@@ -2,8 +2,8 @@
  "title": "flowtable_colors.py 函数流程表",
  "layout": "flow",
  "source": "flowtable.md",
- "dsl_sha256": "892a668fb248ac4e",
- "source_sha256": "d63fb58bb42cf9f5",
+ "dsl_sha256": "ebf24ef824001cbd",
+ "source_sha256": "67b8ceba2937627a",
  "counts": {
   "nodes": 10,
   "edges": 13,

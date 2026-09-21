@@ -224,6 +224,15 @@ def _check_header_rules(c, tmp):
     rc, out = run('table_to_dsl.py', '--check', p)
     c.check(rc == 1 and 'refs 有空条目' in out, 'refs 的空条目被拦（写了键就不能是空值）')
 
+    # frontmatter 只有开行、没有闭合 `---`（G68）：整块身份区会被当成正文、键全丢却一个字都不报
+    # —— 那是"静默丢语义"，必须由 H9 报出来。
+    p = tmp / 'h9_unclosed.md'
+    p.write_text('---\nid: x\nlevel: L0\n' + body, encoding='utf-8')
+    rc, out = run('table_to_dsl.py', '--check', p)
+    c.check(rc == 1 and 'H9' in out and '没有闭合' in out,
+            'G68 frontmatter 缺闭合 `---` ⇒ H9 报出来（原先整块被静默忽略）',
+            (out.strip().splitlines() or [''])[-1][:60] if out.strip() else '')
+
     # 条目式元信息已废弃：表头区（frontmatter 之后、表格之前）不许再出现 `- 键：值` 条目，
     # 否则两套表头机制混用，早晚漂移
     p = tmp / 'h9_bullet.md'
@@ -476,6 +485,26 @@ def _check_cli_failure_paths(c, tmp):
     rc, out = run('table_to_dsl.py', '--check', p)
     c.check(rc == 0 and '边(解析):5' in out, '任务节点多出口（无标签 = 并行）：放行且解析出 2 条边',
             out.strip()[-90:])
+
+    # ── G49：**旧几何形状不对**（用户手改过 / 旧版本产物）要说人话，不许 KeyError 裸栈 ──────
+    p = tmp / 'hint_bad.md'
+    p.write_text(HEAD + ''.join(OK), encoding='utf-8')
+    bad_yaml = tmp / 'hint_bad.yaml'
+    bad_yaml.write_text('nodes:\n  - col: 0\n', encoding='utf-8')     # 缺 `id` 键
+    rc, out = run('table_to_dsl.py', '--write', '--layout', bad_yaml, p,
+                  '-o', str(tmp / 'hint_bad-flow.yaml'))
+    c.check(rc == 2 and '形状不对' in out and 'Traceback' not in out,
+            'G49 旧几何形状不对 ⇒ 退 2 + 人话（原先 KeyError 裸栈）',
+            (out.strip().splitlines() or [''])[-1][:70] if out.strip() else '')
+
+    # ── G55：`--browser` 指向不存在的路径 ⇒ 人话（原先 FileNotFoundError 裸栈）────────────
+    html = tmp / 'shot_src.html'
+    html.write_text('<!DOCTYPE html><html><body><svg viewBox="0 0 10 10"></svg></body></html>',
+                    encoding='utf-8')
+    rc, out = run('shot.py', html, '--browser', str(tmp / '没有这个浏览器.exe'))
+    c.check(rc == 1 and '路径不存在' in out and 'Traceback' not in out,
+            'G55 `--browser` 路径不存在 ⇒ 退 1 + 人话（原先 FileNotFoundError 裸栈）',
+            (out.strip().splitlines() or [''])[-1][:70] if out.strip() else '')
 
 
 def _check_swimlane_slots(c, tmp):
@@ -1585,6 +1614,43 @@ def _check_writeback_pseudo_diff(c, tmp):
     c.check('补了时限' in kept and '日期 | 节点 | 改动' in kept,
             'G53 表后的文档表格（第二列恰好是节点编号）**原样保留**（原先被当散行吃掉）',
             '没保住' if '补了时限' not in kept else '')
+
+    # ⑦ G51：分支分隔符两侧**空格写法**不该被当成改动（回写统一成 `' ｜ '`）
+    t = _fresh('pd_sep_space')
+    _rcs, out_s = _roundtrip(t, HEAD + ''.join([
+        OK[0],
+        row('受理', '02', '资料齐全？', '判断', '甲方', '受理员', '—',
+            '齐全→03｜不齐→回 01', '★'),            # 无空格写法（SKILL.md 只规定分隔符是 `｜`）
+        OK[2], OK[3]]))
+    c.check('逐字节一致' in out_s,
+            'G51 `是→03｜否→04`（分隔符无空格）不被归一成 `｜` 后重写整行',
+            (out_s.strip().splitlines() or [''])[-1][:60])
+
+    # ⑧ G52：表头前一行**只含空格**时不许把换行数算多
+    t = _fresh('pd_space_blank')
+    spaced = HEAD.replace('## 流程表\n\n|', '## 流程表\n \n|')
+    c.check(spaced != HEAD, '前置：夹具真的造出了"只含空格的行"')
+    _rcs, out_s = _roundtrip(t, spaced + ''.join(OK))
+    c.check('逐字节一致' in out_s,
+            'G52 表头前只含空格的行不再被数两遍（不加多余换行）',
+            (out_s.strip().splitlines() or [''])[-1][:60])
+
+    # ⑨ G54：分支顺序是**作者的排版选择**——表里对调顺序（图没动）不许被改回图序
+    t = _fresh('pd_branch_order')
+    _roundtrip(t, HEAD + ''.join(OK))                 # 先按原序建出图（OK[1] 是 `齐全→03 ｜ 不齐→回 01`）
+    ft_bo = t / 'flowtable.md'
+    ft_bo.write_text(HEAD + ''.join([
+        OK[0],
+        row('受理', '02', '资料齐全？', '判断', '甲方', '受理员', '—',
+            '不齐→回 01 ｜ 齐全→03', '★'),            # 同目标同标签，只对调顺序
+        OK[2], OK[3]]), encoding='utf-8')
+    rc_bo, out_bo = run('sync.py', prod(t, 'drawio'), ft_bo)
+    synced = (t / 'flowtable.sync.md').read_text(encoding='utf-8') \
+        if (t / 'flowtable.sync.md').exists() else ''
+    cell = next((l for l in synced.splitlines() if l.startswith('| ') and '| 02 |' in l), '')
+    c.check(rc_bo == 0 and '不齐→回 01 ｜ 齐全→03' in cell,
+            'G54 分支顺序以原表为准（图没动时不许按图边序改回去）',
+            cell[-46:] if cell else f'rc={rc_bo}')
 
     # ⑤ G43：自产图里手画一个节点后，整份**不许**被判 external（那会把没动过的行按几何重排）
     import xml_reader as _xr

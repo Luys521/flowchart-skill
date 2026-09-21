@@ -34,7 +34,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →10
-  desc: L27 · 函数
+  desc: ★ 显式路径也要**验存在**（G55）：原样返回的话，`subprocess.run` 会抛 · L27 · 函数
 - id: '03'
   name: build_crop_page
   lines:
@@ -46,7 +46,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →10
-  desc: ★ 把 flow.html 的内联 SVG 裁到 [y0,y1) 区间，保留原 <style>（否则 class 失效全变… · L36 · 函数
+  desc: ★ 把 flow.html 的内联 SVG 裁到 [y0,y1) 区间，保留原 <style>（否则 class 失效全变… · L39 · 函数
 - id: '04'
   name: _parse_args
   lines:
@@ -58,7 +58,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →10
-  desc: ★ 解析命令行参数。 · L60 · 函数
+  desc: ★ 解析命令行参数。 · L63 · 函数
 - id: '05'
   name: _output_path
   lines:
@@ -70,7 +70,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →10
-  desc: ★ 输出 PNG 路径（默认同目录同名 .shot.png），父目录不存在则先建。 · L71 · 函数
+  desc: ★ 输出 PNG 路径（默认同目录同名 .shot.png），父目录不存在则先建。 · L74 · 函数
 - id: '06'
   name: _parse_crop
   lines:
@@ -82,7 +82,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →10
-  desc: ★ --crop 形如 0:1200 → (y0, y1)；非法时第三项为错误文案。 · L79 · 函数
+  desc: ★ --crop 形如 0:1200 → (y0, y1)；非法时第三项为错误文案。 · L82 · 函数
 - id: '07'
   name: _unlink_quiet
   lines:
@@ -94,7 +94,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →10
-  desc: ★ 删文件；不存在或删不掉都静默忽略。 · L93 · 函数
+  desc: ★ 删文件；不存在或删不掉都静默忽略。 · L96 · 函数
 - id: 08
   name: _capture_screenshot
   lines:
@@ -106,7 +106,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →07
-  desc: ★ 起无头浏览器对裁剪页截图并轮询等文件落盘；成功返回 True。 · L101 · 函数
+  desc: ★ 起无头浏览器对裁剪页截图并轮询等文件落盘；成功返回 True。 · L104 · 函数
 - id: 09
   name: main
   lines:
@@ -118,7 +118,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→03｜3→04｜4→05｜5→06｜6→07｜7→08
-  desc: L118 · 函数 · 分支：1→find_browser 2→build_crop_page 3→_parse_args 4→_output_path
+  desc: L124 · 函数 · 分支：1→find_browser 2→build_crop_page 3→_parse_args 4→_output_path
     5→_parse_crop 6→_unlink_quiet 7→_capture_screenshot
 - id: '10'
   name: 结束

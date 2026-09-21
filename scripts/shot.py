@@ -25,8 +25,11 @@ CANDIDATES = [
 
 
 def find_browser(explicit=None):
+    """显式路径也要**验存在**（G55）：原样返回的话，`subprocess.run` 会抛
+    `FileNotFoundError` 裸栈出去——而"路径打错"本该是一句人话（本仓对 validate 钉的就是这条）。
+    找不到时返回 None，由调用方统一报错。"""
     if explicit:
-        return explicit
+        return explicit if os.path.exists(explicit) else None
     for c in CANDIDATES:
         if os.path.exists(c):
             return c
@@ -107,7 +110,10 @@ def _capture_screenshot(exe, page, out, w, h):
     _unlink_quiet(out)
     cmd = [exe, '--headless=new', '--disable-gpu', '--hide-scrollbars',
            f'--screenshot={out.resolve()}', f'--window-size={w},{h}', page.resolve().as_uri()]
-    subprocess.run(cmd, capture_output=True)
+    try:
+        subprocess.run(cmd, capture_output=True)
+    except OSError:
+        return False                    # 起不来（路径在这之后失效 / 权限）→ 由调用方报人话（G55）
     for _ in range(60):
         if out.exists() and out.stat().st_size > 0:
             break
@@ -136,7 +142,10 @@ def main(argv=None):
         return 1
     exe = find_browser(a.browser)
     if not exe:
-        print('✗ 找不到 Chromium 内核浏览器（Edge/Chrome），用 --browser 指定路径')
+        if a.browser:
+            print(f'✗ `--browser` 指的路径不存在：{a.browser}')
+        else:
+            print('✗ 找不到 Chromium 内核浏览器（Edge/Chrome），用 --browser 指定路径')
         return 1
     if not _capture_screenshot(exe, page, out, w, h):
         print('✗ 截图失败，请检查浏览器路径')

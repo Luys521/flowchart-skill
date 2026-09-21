@@ -90,6 +90,9 @@ GAP_COLUMNS = ('缺口', '触发', '需要哪份材料', '要哪一片（AI 填�
 READOUT_COLUMNS = ('材料', '撑着的节点', '占比', '材料状态', '连续段')
 DISPOSITIONS = ('已修', '已解释', '待验')
 GAP_STATES = ('待取证', '已取证', '已放弃')
+# 缺口**只能由这两条**产生（§5.2）：D4 含流程的材料零引用 · D5 读了没用上。
+# D1—D3 是"表写错了"（进漂移账），不该出现在缺口清单里——判据号封闭由 `check_gap_rows` 守（G57）。
+GAP_RULES = ('D4', 'D5')
 # **只算"浏览摘录"的那一类降级**（D1 要跳过它，见 `rule_d1`）：`ledger.degrade` 给每条摘录超限的
 # 元素挂 `quote 截断到 N 字`——那是 §2.3 的写盘契约，正文与逐字引用都不受影响。
 DISPLAY_ONLY_DEGRADED = 'quote 截断'
@@ -323,13 +326,19 @@ def read_side_table(path):
 
     `recon` / `intake` 与本脚本同属模块层，模块之间**不许有代码依赖**（`layering.py` 门禁），
     协作走产物——这正是那条纪律的用法：这里把它当**一张表**读，而不是把对方当库调。
-    没给路径（或文件不在）→ 空字典 + 无报错：对应判据整条跳过（§5.2 的启用条件）。
+    没给路径 → 空字典 + 无报错：对应判据整条跳过（§5.2 的启用条件）。
+
+    **"没给"与"给了但文件不在"是两回事**（G58）：路径打错时原先也返回空字典、无报错 ⇒ 判据
+    静默跳过，而 `build` 的头部还把这个路径列进「输入：」（它只看 flag）——用户打错一个文件名，
+    得到的是"跳过 D2"加一句"用过假设账"。现在文件不存在按**读坏**报（build / check 退 2）。
 
     **行坏了必须报，不许静默跳过**（本轮实测的教训：夹具里一行少了一列，于是整份假设账
     被当成"没给"——D2 静默不跑，而表头还写着"跳过了 D2"。那种绿比红危险）。
     """
-    if not path or not Path(path).exists():
+    if not path:
         return {}, ''
+    if not Path(path).exists():
+        return {}, f'{path}: 给了路径但文件不在（不是"没给"——打错名字会让对应判据静默跳过）'
     text = Path(path).read_text(encoding='utf-8-sig')
     header, out, err = None, {}, ''
     for line in text.splitlines():
@@ -462,12 +471,21 @@ def check_drift_rows(drift, live):
 
 
 def check_gap_rows(gaps, live):
-    """缺口清单 → 错误清单（状态封闭 · `已取证` 要写清要哪一片 · `已放弃` 要写理由 · 同样双向对账）。"""
+    """缺口清单 → 错误清单（状态封闭 · `已取证` 要写清要哪一片 · `已放弃` 要写理由 · 同样双向对账）。
+
+    **触发判据号也收口**（G57）：漂移表那边有 `rule not in RULES` 的对称校验，缺口表原先没有，
+    于是塞一条 `D9 不存在的判据` + `已放弃` + 说明，照样算收敛。缺口只能由 **D4 / D5** 产生
+    （§5.2：D4 = 含流程的材料零引用；D5 = 读了没用上）——判据号封闭，和漂移表一个口径。
+    """
     errs = []
     file_keys = {(((r.get('触发') or '').split() or [''])[0], (r.get('需要哪份材料') or '').strip('`'))
                  for r in gaps}
     live_keys = {(r[0], r[1]) for r in live}
     for r in gaps:
+        rule = ((r.get('触发') or '').split() or [''])[0]
+        if rule not in GAP_RULES:
+            errs.append(f'{r.get("缺口")}: 触发判据 {rule!r} 不在 {"/".join(GAP_RULES)} 内'
+                        f'（缺口只能由这两条产生，§5.2）')
         state = r.get('状态（AI 填）')
         if state not in GAP_STATES:
             errs.append(f'{r.get("缺口")}: 状态 {state!r} 不在 {"/".join(GAP_STATES)} 内（必填）')
@@ -620,6 +638,13 @@ def check_header(text, a, th):
     if mt and int(mt.group(1)) != th['coverage_min_elements']:
         errs.append(f'阈值对不上（账里 coverage_min_elements={mt.group(1)}，'
                     f'本次 {th["coverage_min_elements"]}）——阈值变了要重跑 build')
+    # **比例阈值也要比**（G59）：头部记着两个阈值，原先只比元素数下限，于是只改比例
+    # （D5 出不出手全看它）就重现了 `check_header` 要防的"橡皮图章"——对着新阈值重算、
+    # 却按旧账目判收敛。浮点用容差比（两边都是同一个字典渲染出来的，正常情况逐字相同）。
+    mr = re.search(r'`coverage_min_ratio=([\d.]+)`', head)
+    if mr and abs(float(mr.group(1)) - float(th['coverage_min_ratio'])) > 1e-9:
+        errs.append(f'阈值对不上（账里 coverage_min_ratio={mr.group(1)}，'
+                    f'本次 {th["coverage_min_ratio"]}）——阈值变了要重跑 build')
     return errs, notes
 
 

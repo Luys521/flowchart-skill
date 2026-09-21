@@ -343,6 +343,42 @@ def paths(root, draft):
                    '--flowtable', str(root / 'swapped.md'), '--ledger', str(root / 'evidence.json'),
                    '--recon', str(root / 'recon.md'), '--intake', str(root / 'intake.md')])
     cases.append(('㊲ 表里换了成因 ⇒ 旧账不再覆盖（键含「事实」）', 'D1' in d_swap, rc, d_swap[:200]))
+
+    # ── G57：缺口表的「触发」判据号也封闭（漂移表早有对称校验，缺口表原先没有）──────────
+    filled = fill(draft)
+    lines = filled.splitlines()
+    gap_at = next((i for i, l in enumerate(lines) if l.startswith('| `Q')), None)
+    if gap_at is None:
+        cases.append(('G57 缺口表的触发判据号封闭', False, 2, '夹具自身：找不到缺口行'))
+    else:
+        bogus = list(lines)
+        cells = bogus[gap_at].split('|')
+        cells[2] = ' D9 不存在的判据 '            # 「触发」列
+        bogus[gap_at] = '|'.join(cells)
+        (root / 'bogus-gap.md').write_text('\n'.join(bogus) + '\n', encoding='utf-8', newline='\n')
+        rc, out = check(root, '\n'.join(bogus) + '\n')
+        cases.append(('G57 缺口表里塞 `D9 不存在的判据` ⇒ 退 1（缺口只能由 D4/D5 产生）',
+                      rc == 1 and '触发判据' in out, rc, out[-200:]))
+
+    # ── G58：**给了路径但文件不在** ≠ "没给"（后者让对应判据静默跳过）──────────────────
+    rc, out = run([sys.executable, str(DRIFT), 'build', str(root / 'flowtable.md'),
+                   '--recon', str(root / 'recon-typo.md'), '-o', str(root / 'd-typo.md'), '--force'])
+    cases.append(('G58 `--recon` 路径打错 ⇒ 退 2 并说清"不是没给"（原先静默跳过 D2）',
+                  rc == 2 and '文件不在' in out, rc, out[-200:]))
+
+    # ── G59：头部记着**两个**阈值，只比元素数下限会放过"只改比例"的橡皮图章 ──────────────
+    # 先把 d-ok 那本账**填完**（不填的话 check 因"未处置"退 1，测不到阈值那条）。
+    tampered_th = fill((root / 'd-ok.md').read_text(encoding='utf-8'))
+    mm = re.search(r'`coverage_min_ratio=([\d.]+)`', tampered_th)
+    if not mm:
+        cases.append(('G59 比例阈值也参与比对', False, 2, '夹具自身：头部没有 coverage_min_ratio'))
+    else:
+        old = float(mm.group(1))
+        swapped_th = tampered_th.replace(f'coverage_min_ratio={mm.group(1)}',
+                                         f'coverage_min_ratio={old + 0.01:g}')
+        rc, out = check(root, swapped_th)
+        cases.append(('G59 只改 `coverage_min_ratio` ⇒ 退 1（原先只比元素数下限，比例变了没人管）',
+                      rc == 1 and 'coverage_min_ratio' in out, rc, out[-200:]))
     return cases
 
 
@@ -709,6 +745,13 @@ def query_paths(root):
     cases.append(('58 `--batch 0` / `--chars 0` 不许被当成"没给"（静默取默认）⇒ 退 2、说人话',
                   rc1 == 2 and rc2 == 2 and '要比 0 大' in out1 and '要比 0 大' in out2,
                   (rc1, rc2), (out1 if rc1 != 2 else out2)[-200:]))
+    rc, _out = query_run(root, '--skip', '999', '--batch', '5')
+    cases.append(('G60 `--skip` 越界 ⇒ 说"已越界"并给命中总数（不打印反向区间、不谎称"全部命中"）',
+                  '已越界' in _out and '99–' not in _out and '这一批就是全部命中' not in _out,
+                  rc, _out[-200:]))
+    rc, _out = query_run(root, '--grep', '这个词肯定没有', '--batch', '5')
+    cases.append(('G60 零命中 ⇒ 说"本次给 0 条"（不说"第 1–0 条"）',
+                  '本次给 0 条' in _out, rc, _out[-200:]))
     return cases
 
 

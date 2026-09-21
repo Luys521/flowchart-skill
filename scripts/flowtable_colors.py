@@ -57,6 +57,10 @@ def _color_map(colors, errs):
         if not re.fullmatch(r'#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})', h):
             errs.append(f'{COLOR_KEY}：主体「{who}」的颜色「{hexv}」不是合法 hex（#RGB / #RRGGBB）')
             continue
+        # **当前不可达，留作防御**（G70）：`colors` 是 dict，同名主体在解析层就被后写覆盖了
+        # （`flowtable._read_layout_sections` 按 dict 键去重，并把重复键记进 `__color_dup__`，
+        # 由 `flowtable_check._check_color_dup` 报 H9）。所以"同一主体两种颜色"这条在**本函数**
+        # 里进不来——它真正的守门人是 H9 那条。别因为读到这一支就以为它还在执勤。
         if who in m and m[who]['fill'].lower() != h.lower():
             errs.append(f'{COLOR_KEY}：主体「{who}」被声明了两种不同的颜色')
             continue
