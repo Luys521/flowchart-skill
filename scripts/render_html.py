@@ -424,6 +424,11 @@ def collect_views(dsl_path):
     views, pending, absent, keys = [], [], [], {}
     truncated, trunc_seen = [], set()
     unreadable, unread_seen = [], set()
+    # `bad`：**已经判定"进不了视图"的表**（读不动 / 缺席 / 还没备好 DSL）。见 G47：
+    # 原先去重只靠 `keys`，而读不动那一刻要 `keys.pop`（不给出点下去没反应的下钻入口），
+    # 于是第二张父表再引用同一张表时会把它**第二次 append 进 views**；absent / pending
+    # 两条路更是完全没有去重，同一张表被几个节点引用就被数几遍——"内嵌 N 张"于是虚高。
+    bad = set()
     # 队列里带上"这张 yaml 是从哪张流程表来的"：读不动时要靠它报出是哪一张。
     seen, queue = {root}, [(root, None)]
     # 上限只在**收视图那一处**判（`len(views) >= MAX_VIEWS`），不再兼作 while 的退出条件。
@@ -444,6 +449,7 @@ def collect_views(dsl_path):
             # "DSL 读不动，渲染时跳过"；两份记录视角不同，是有意的。
             if src_md is not None and src_md not in unread_seen:
                 unread_seen.add(src_md)
+                bad.add(src_md)
                 unreadable.append(Path(os.path.relpath(str(src_md), str(base))).as_posix())
             # 读不动 = 渲染时没有它的视图本体 → **退回认领**，把 `keys` 收敛成"只收能 load 的"。
             # `keys` 是主图节点画不画内衬线（`data-sub`）的判据：留着它，用户就得到一枚点了没
@@ -457,9 +463,10 @@ def collect_views(dsl_path):
             if not rel:
                 continue
             md = (yp.parent / rel).resolve()
-            if md in keys:                                # 这张表已经有视图了，复用
+            if md in keys or md in bad:                   # 已经有视图 / 已判定进不了视图
                 continue
             if not md.exists():
+                bad.add(md)                               # 同一张缺席的表被多张父表引用只报一次
                 absent.append(md)
                 continue
             yml = (md.parent / f'{artifact_stem(md)}-flow.yaml').resolve()
@@ -467,6 +474,7 @@ def collect_views(dsl_path):
                 keys[md] = MAIN_VIEW
                 continue
             if not yml.exists():
+                bad.add(md)                               # 同 `absent`：计数不重复
                 pending.append(md)
                 continue
             key = Path(os.path.relpath(str(md), str(base))).as_posix()

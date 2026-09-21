@@ -358,7 +358,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →41
-  desc: L577 · 函数 · ⇢ 依赖 engine.Engine.height
+  desc: L586 · 函数 · ⇢ 依赖 engine.Engine.height
 - id: '29'
   name: structured
   lines:
@@ -370,7 +370,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →41
-  desc: ★ 报错列表 → 结构化回执（D-55）：subject/fix 供 AI 修复循环直接消费。 · L596 · 函数 · ⇢ 依赖 semantics.findings_receipt
+  desc: ★ 报错列表 → 结构化回执（D-55）：subject/fix 供 AI 修复循环直接消费。 · L605 · 函数 · ⇢ 依赖 semantics.findings_receipt
 - id: '30'
   name: _showcase_blocks
   lines:
@@ -382,7 +382,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →41
-  desc: ★ showcase 档门禁：网格吸附提示非零即阻断（D-55）；应阻断时返回 True。 · L601 · 函数
+  desc: ★ showcase 档门禁：网格吸附提示非零即阻断（D-55）；应阻断时返回 True。 · L610 · 函数
 - id: '31'
   name: main
   lines:
@@ -394,7 +394,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→18｜2→28｜3→30
-  desc: ★ 供 build.py / sync.py 调用：加载 → 检查 → 打印 → 退出码。 · L610 · 函数 · 分支：1→check 2→report
+  desc: ★ 供 build.py / sync.py 调用：加载 → 检查 → 打印 → 退出码。 · L619 · 函数 · 分支：1→check 2→report
     3→_showcase_blocks · ⇢ 依赖 engine.load
 - id: '32'
   name: _cli_parser
@@ -407,7 +407,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →41
-  desc: ★ cli 的 argparse 定义（模型侧门禁 / 产物几何自检）。 · L619 · 函数
+  desc: ★ cli 的 argparse 定义（模型侧门禁 / 产物几何自检）。 · L628 · 函数
 - id: '33'
   name: _cli_json
   lines:
@@ -419,7 +419,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→18｜2→29
-  desc: ★ --json：结构化结果（message/subject/fix，见 D-55）→ 退出码。 · L633 · 函数 · 分支：1→check
+  desc: ★ --json：结构化结果（message/subject/fix，见 D-55）→ 退出码。 · L642 · 函数 · 分支：1→check
     2→structured · ⇢ 依赖 engine.load
 - id: '34'
   name: cli
@@ -432,7 +432,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→27｜2→31｜3→32｜4→33
-  desc: ★ 命令行入口。**必须显式给路径**——缺参数时绝不能退回校验某个样例并报"全部通过"， · L642 · 函数 · 分支：1→artifact_main
+  desc: ★ 命令行入口。**必须显式给路径**——缺参数时绝不能退回校验某个样例并报"全部通过"， · L651 · 函数 · 分支：1→artifact_main
     2→main 3→_cli_parser 4→_cli_json
 - id: '35'
   name: check_grid.chk

@@ -180,7 +180,11 @@ def _gen_dsl(ft, yaml_path, quality, no_layout):
         # 读旧 yaml 的节点 id，跑完后再 diff——新加的节点在 --layout 模式下会被拍到 col=0，
         # 经常不是用户想要的列；与其静默产出列归属不直观的图，不如明说。
         old_ids = _ids(yaml_path)
-        args = ['--write', '--layout', str(yaml_path), str(ft), '-o', str(yaml_path)]
+        # **追加而不是重赋值**（G46）：原先整份重写 args，把 `--quality` 丢了——于是 showcase 档
+        # 在"已有 flow.yaml"这条路上对 DSL 生成静默失效（结构校验那一关仍按 quality 拦，
+        # 所以只在"软提示"这一类上现形，且直接调 table_to_dsl 也测不到）。
+        args = ['--write', '--layout', str(yaml_path), str(ft), '-o', str(yaml_path),
+                '--quality', quality]
         print('（复用已有 flow.yaml 的几何）')
     rc = t2d_main(args)
     if rc != 0:
@@ -278,8 +282,10 @@ def _render_products(yaml_path, products, ft, no_pages):
     """
     prev = {p: p.read_bytes() for p in products.values() if p.exists()}
     for kind, path in products.items():
-        ctx = _render_ctx(kind, yaml_path, ft, no_pages)
         try:
+            # `_render_ctx` **也在 try 里**（G45）：它原先在 try 之外，一旦抛异常就直接从 build
+            # 逃出去——而前几份产物已经落盘，"审不过就还原"只对已写下的那几份成立。
+            ctx = _render_ctx(kind, yaml_path, ft, no_pages)
             rc = _renderer(kind)(str(yaml_path), str(path), ctx=ctx)
         except ValueError as e:
             # 节点 id 撞上 drawio 结构 id（0/1/title/lane-*）是**表里能改**的东西：
@@ -316,7 +322,15 @@ def _audit_contract(yaml_path, products, prev):
         print(f'✗ 找不到渲染契约 {mf_path}：它应由 table_to_dsl --write 产出，缺失说明上游被跳过')
         _rollback(prev, *products.values())
         return 1
-    mf = json.loads(mf_path.read_text(encoding='utf-8'))
+    try:
+        # 契约读坏也走**同一条还原路**（G45）：原先 `json.loads` 裸着，一份截断的 manifest
+        # 会让异常从 build 逃出去——产物已落盘、契约没还原，盘上留半批交付物。
+        mf = json.loads(mf_path.read_text(encoding='utf-8'))
+    except (OSError, ValueError) as e:
+        print(f'✗ 渲染契约读不了（{type(e).__name__}: {str(e)[:150]}）：{mf_path}')
+        print('  → 它应由 table_to_dsl --write 重新产出；先用 --no-layout 重跑一次 build')
+        _rollback(prev, *products.values())
+        return 1
     specs = {kind: {'path': p, 'ids': _bind(RENDERERS[kind]['ids']),
                     'label': RENDERERS[kind]['label']}
              for kind, p in products.items()}
@@ -599,7 +613,15 @@ def main(argv=None):
     if _audit_geometry(products, prev, expect_lanes=_lane_source(yaml_path)) != 0:
         _rollback_manifest(prev_mf, yaml_path)
         return 1
-    _write_layer_index(ft, out_dir, stem)
+    # 层级索引是**交付 6 件**之一，它派生失败同样不许留半批交付物（G45）：原先 `parse_table`
+    # 抛异常会带着已落盘的那几份产物一起逃出 main（traceback 退 1，产物/契约都没还原）。
+    try:
+        _write_layer_index(ft, out_dir, stem)
+    except Exception as e:                          # noqa: BLE001 —— 见下：任何异常都走同一条还原路
+        print(f'✗ 层级索引派生失败（{type(e).__name__}: {str(e)[:200]}）——产物与契约已还原')
+        _rollback(prev, *products.values())
+        _rollback_manifest(prev_mf, yaml_path)
+        return 1
     _report_receipt(products, ft, prev, plan)
     _report_pending(yaml_path)
     return 0

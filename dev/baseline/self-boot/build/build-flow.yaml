@@ -8,7 +8,7 @@ meta:
 layout:
   col_x:
   - 400
-  width: 1560
+  width: 1620
   origin_x: 0
 nodes:
 - id: '01'
@@ -142,7 +142,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: ★ 跑碰撞检测；未过则报错并返回 1。 · L197 · 函数 · ⇢ 依赖 validate.main
+  desc: ★ 跑碰撞检测；未过则报错并返回 1。 · L201 · 函数 · ⇢ 依赖 validate.main
 - id: '12'
   name: _prepare_views
   lines:
@@ -154,7 +154,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→05｜2→06
-  desc: ★ 备齐后代子表的 DSL（BFS 至多 5 轮），报告内嵌/缺失并返回视图计划。 · L208 · 函数 · 分支：1→_prepare_child
+  desc: ★ 备齐后代子表的 DSL（BFS 至多 5 轮），报告内嵌/缺失并返回视图计划。 · L212 · 函数 · 分支：1→_prepare_child
     2→_gate_child_view · ⇢ 依赖 render_html.collect_views
 - id: '13'
   name: _render_products
@@ -167,7 +167,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→03｜2→23｜3→25
-  desc: ★ 按**注册表**渲染全部产物；任一失败即还原旧产物并返回 None。 · L269 · 函数 · 分支：1→_rollback 2→_renderer
+  desc: ★ 按**注册表**渲染全部产物；任一失败即还原旧产物并返回 None。 · L273 · 函数 · 分支：1→_rollback 2→_renderer
     3→_render_ctx
 - id: '14'
   name: _audit_contract
@@ -180,7 +180,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→03｜2→22
-  desc: ★ 拿自检产出的契约反查**注册表里的每一份产物**；不过则还原产物并返回 1。 · L304 · 函数 · 分支：1→_rollback 2→_bind
+  desc: ★ 拿自检产出的契约反查**注册表里的每一份产物**；不过则还原产物并返回 1。 · L310 · 函数 · 分支：1→_rollback 2→_bind
     · ⇢ 依赖 manifest.check、manifest.manifest_path_for、manifest.summary
 - id: '15'
   name: _lane_source
@@ -193,7 +193,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: ★ 底稿是不是泳道布局。 · L335 · 函数 · ⇢ 依赖 engine.load
+  desc: ★ 底稿是不是泳道布局。 · L349 · 函数 · ⇢ 依赖 engine.load
 - id: '16'
   name: _audit_geometry
   lines:
@@ -205,7 +205,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→03｜2→22
-  desc: ★ 反解**注册表里每一份产物**的真实坐标再跑几何门禁；不过则还原产物并返回 1。 · L345 · 函数 · 分支：1→_rollback 2→_bind
+  desc: ★ 反解**注册表里每一份产物**的真实坐标再跑几何门禁；不过则还原产物并返回 1。 · L359 · 函数 · 分支：1→_rollback 2→_bind
     · ⇢ 依赖 manifest.artifact_geometry、validate.check_artifact
 - id: '17'
   name: _write_layer_index
@@ -218,7 +218,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: ★ 从各表 ▣ 声明派生层级索引，写 <stem>-index.md 并报告表数与层级。 · L370 · 函数 · ⇢ 依赖 layer_index.build_layer_index、layer_index.format_index_md
+  desc: ★ 从各表 ▣ 声明派生层级索引，写 <stem>-index.md 并报告表数与层级。 · L384 · 函数 · ⇢ 依赖 layer_index.build_layer_index、layer_index.format_index_md
 - id: '18'
   name: _product_note
   lines:
@@ -230,7 +230,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: ★ 每类产物在交付清单里那句"它是干嘛的"（与 `_render_ctx` 同理：每类一处，集中放）。 · L386 · 函数
+  desc: ★ 每类产物在交付清单里那句"它是干嘛的"（与 `_render_ctx` 同理：每类一处，集中放）。 · L400 · 函数
 - id: '19'
   name: _report_receipt
   lines:
@@ -242,7 +242,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →18
-  desc: ★ 留存被覆盖旧版为 .bak，并打印交付清单与 sha256 回执。 · L398 · 函数
+  desc: ★ 留存被覆盖旧版为 .bak，并打印交付清单与 sha256 回执。 · L412 · 函数
 - id: '20'
   name: _report_pending
   lines:
@@ -254,7 +254,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: ★ 汇总图上 AI 推断处（虚线标出），提醒用户重点核对。 · L426 · 函数 · ⇢ 依赖 semantics.is_pending、semantics.pending_kind
+  desc: ★ 汇总图上 AI 推断处（虚线标出），提醒用户重点核对。 · L440 · 函数 · ⇢ 依赖 semantics.is_pending、semantics.pending_kind
 - id: '21'
   name: build_registry
   lines:
@@ -266,7 +266,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: ★ 按**可用性**装注册表，返回 `(RENDERERS, 缺的可选件, 缺的必需件)`。 · L484 · 函数
+  desc: ★ 按**可用性**装注册表，返回 `(RENDERERS, 缺的可选件, 缺的必需件)`。 · L498 · 函数
 - id: '22'
   name: _bind
   lines:
@@ -278,7 +278,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: ★ 按名字现查 `globals()` 取函数——渲染器与两个**反解器**都走这里。 · L507 · 函数
+  desc: ★ 按名字现查 `globals()` 取函数——渲染器与两个**反解器**都走这里。 · L521 · 函数
 - id: '23'
   name: _renderer
   lines:
@@ -290,7 +290,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →22
-  desc: ★ 按注册表取渲染器实例。**调用时现查 `globals()`**（理由见上面 RENDERERS 的注释）。 · L520 · 函数
+  desc: ★ 按注册表取渲染器实例。**调用时现查 `globals()`**（理由见上面 RENDERERS 的注释）。 · L534 · 函数
 - id: '24'
   name: _product_paths
   lines:
@@ -302,7 +302,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: ★ 产物路径由注册表派生（W5）：`<流程名>-flow<ext>`。 · L525 · 函数
+  desc: ★ 产物路径由注册表派生（W5）：`<流程名>-flow<ext>`。 · L539 · 函数
 - id: '25'
   name: _render_ctx
   lines:
@@ -314,7 +314,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →07
-  desc: ★ 每类渲染器自己的私有选项（经 `ctx` 传，见 ARCHITECTURE.md 第九节）。 · L534 · 函数 · ⇢ 依赖 render_drawio.discover_pages
+  desc: ★ 每类渲染器自己的私有选项（经 `ctx` 传，见 ARCHITECTURE.md 第九节）。 · L548 · 函数 · ⇢ 依赖 render_drawio.discover_pages
 - id: '26'
   name: main
   lines:
@@ -325,11 +325,11 @@ nodes:
   row: 1
   col: 0
   stage: 模块级
-  route: 1→04｜2→08｜3→09｜4→10｜5→11｜6→12｜7→13｜8→14｜9→15｜10→16｜11→17｜12→19｜13→20｜14→24
-  desc: L548 · 函数 · 分支：1→_rollback_manifest 2→_parse_args 3→_check_structure 4→_gen_dsl
-    5→_validate_geometry 6→_prepare_views 7→_render_products 8→_audit_contract 9→_lane_source
-    10→_audit_geometry 11→_write_layer_index 12→_report_receipt 13→_report_pending
-    14→_product_paths · ⇢ 依赖 artifact.artifact_stem、manifest.manifest_path_for
+  route: 1→03｜2→04｜3→08｜4→09｜5→10｜6→11｜7→12｜8→13｜9→14｜10→15｜11→16｜12→17｜13→19｜14→20｜15→24
+  desc: L562 · 函数 · 分支：1→_rollback 2→_rollback_manifest 3→_parse_args 4→_check_structure
+    5→_gen_dsl 6→_validate_geometry 7→_prepare_views 8→_render_products 9→_audit_contract
+    10→_lane_source 11→_audit_geometry 12→_write_layer_index 13→_report_receipt 14→_report_pending
+    15→_product_paths · ⇢ 依赖 artifact.artifact_stem、manifest.manifest_path_for
 - id: '27'
   name: 结束
   lines:
@@ -479,72 +479,77 @@ edges:
   kind: spine
   polarity: main
 - from: '26'
-  to: '04'
+  to: '03'
   kind: jumpR
   polarity: main
   label: '1'
 - from: '26'
-  to: 08
+  to: '04'
   kind: jumpR
   polarity: main
   label: '2'
 - from: '26'
-  to: 09
+  to: 08
   kind: jumpR
   polarity: main
   label: '3'
 - from: '26'
-  to: '10'
+  to: 09
   kind: jumpR
   polarity: main
   label: '4'
 - from: '26'
-  to: '11'
+  to: '10'
   kind: jumpR
   polarity: main
   label: '5'
 - from: '26'
-  to: '12'
+  to: '11'
   kind: jumpR
   polarity: main
   label: '6'
 - from: '26'
+  to: '12'
+  kind: jumpR
+  polarity: main
+  label: '7'
+- from: '26'
   to: '13'
   kind: spine
   polarity: main
-  label: '7'
+  label: '8'
 - from: '26'
   to: '14'
   kind: jumpR
   polarity: main
-  label: '8'
+  label: '9'
 - from: '26'
   to: '15'
   kind: jumpR
   polarity: main
-  label: '9'
+  label: '10'
 - from: '26'
   to: '16'
   kind: jumpR
   polarity: main
-  label: '10'
+  label: '11'
 - from: '26'
   to: '17'
   kind: jumpR
   polarity: main
-  label: '11'
+  label: '12'
 - from: '26'
   to: '19'
   kind: jumpR
   polarity: main
-  label: '12'
+  label: '13'
 - from: '26'
   to: '20'
   kind: jumpR
   polarity: main
-  label: '13'
+  label: '14'
 - from: '26'
   to: '24'
   kind: jumpR
   polarity: main
-  label: '14'
+  label: '15'

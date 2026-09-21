@@ -931,6 +931,69 @@ def _check_build_rollback(c, tmp):
     c.check(st == 'changed', '失败之后 sync 仍能看出"表被直改过"（stale 门禁没被关掉）',
             f'state={st} · {why}')
 
+    # ── G45：**异常不许逃出 main**（逃出去 = 产物/契约都不还原 + traceback 退 1）──────────
+    # ① 契约读坏（`_audit_contract` 的 `json.loads` 原先裸着）。
+    # 注意：**不能直接把盘上那份 manifest 改坏**——`_gen_dsl` 每一轮都会重写它，
+    # 改坏了也读不到。所以把 `build.manifest_path_for` 指向一份自己造的坏文件，
+    # 模拟"契约在渲染之后坏掉/被截断"这件事本身。
+    touched = prod(ad, 'html').read_bytes()        # 渲染前那一版（本轮 build 会覆盖它）
+    bad_mf = ad / 'corrupt.manifest.json'
+    bad_mf.write_text('{ 这不是 JSON', encoding='utf-8')
+    orig_mpf = _b.manifest_path_for
+    _b.manifest_path_for = lambda _y: bad_mf
+    try:
+        try:
+            rc_c, exc_c = _b.main([str(ft)]), ''
+        except Exception as e:                    # noqa: BLE001 —— 逃出来的异常正是本条要拦的
+            rc_c, exc_c = None, f'{type(e).__name__}: {str(e)[:80]}'
+    finally:
+        _b.manifest_path_for = orig_mpf
+    c.check(rc_c == 1 and not exc_c,
+            'G45 渲染契约读坏 ⇒ 退 1（不是 traceback 从 main 逃出去）',
+            exc_c or f'rc={rc_c}')
+    c.check(prod(ad, 'html').read_bytes() == touched,
+            'G45 契约读坏时产物**还原成渲染前那一版**（不留半批交付物）')
+
+    # ② 层级索引派生失败（`_write_layer_index` 的 `parse_table` 原先裸着）——也在 try 里了
+    touched2 = prod(ad, 'html').read_bytes()
+    orig_idx = _b._write_layer_index
+
+    def boom_index(*a, **kw):
+        raise RuntimeError('（夹具）层级索引派生故意失败')
+
+    _b._write_layer_index = boom_index
+    try:
+        try:
+            rc_i, exc_i = _b.main([str(ft)]), ''
+        except Exception as e:                    # noqa: BLE001
+            rc_i, exc_i = None, f'{type(e).__name__}: {str(e)[:80]}'
+    finally:
+        _b._write_layer_index = orig_idx
+    c.check(rc_i == 1 and not exc_i, 'G45 层级索引派生抛异常 ⇒ 退 1（不是 traceback）',
+            exc_i or f'rc={rc_i}')
+    c.check(prod(ad, 'html').read_bytes() == touched2,
+            'G45 索引失败时产物也还原（交付 6 件缺一件 = 不留半批）')
+
+    # ── G46：复用已有 flow.yaml 那条分支**不许丢 `--quality`** ─────────────────────────
+    # 症状只在"软提示"这一类上现形，而 `_check_structure` 挡在前面 ⇒ 从 CLI 看不出来；
+    # 所以这里替换 `t2d_main` 把 argv 记下来，直接钉住"写 DSL 那一趟带没带 quality"。
+    calls = []
+    orig_t2d = _b.t2d_main
+
+    def rec_t2d(argv, *a, **kw):
+        calls.append(list(argv))
+        return 0                                     # 不真跑：本用例只查 argv
+
+    _b.t2d_main = rec_t2d
+    try:
+        _b.main([str(ft), '--quality', 'showcase'])   # yaml 已存在 ⇒ 走复用几何那条分支
+    finally:
+        _b.t2d_main = orig_t2d
+    write_calls = [c_ for c_ in calls if '--write' in c_]
+    c.check(write_calls and all('--quality' in c_ and 'showcase' in c_ for c_ in write_calls),
+            'G46 复用旧几何时 `--quality` 仍传下去（原先整份重写 args 把它丢了）',
+            f'写 DSL 那几趟：{write_calls}')
+
 
 def _check_renderer_registry(c, tmp):
     c.section('渲染器注册表：换渲染器 = 改注册表一行（证明它是活的开关，不是摆设）')
@@ -1509,6 +1572,20 @@ def _check_writeback_pseudo_diff(c, tmp):
             'G42 表头行/分隔行的原文写法照抄（`|---|` 形态不再冒伪 diff）',
             (out_s.strip().splitlines() or [''])[-1][:60])
 
+    # ⑥ G53：表后的**文档表格**不许被当成"表内散行"吃掉
+    # 判据原先只有"第二列等于某个节点编号"，于是「变更记录」这类文档表格（3 列）里
+    # 只要有一格恰好是节点编号，那一行就被无声丢弃，`--apply` 时写进真表。
+    t = _fresh('pd_after_doc')
+    doc_after = ('\n## 变更记录\n\n'
+                 '| 日期 | 节点 | 改动 |\n| --- | --- | --- |\n'
+                 '| 2026-09-21 | 03 | 现场核验：补了时限 |\n')
+    _rcs, out_s = _roundtrip(t, HEAD + ''.join(OK) + doc_after)
+    kept = (t / 'flowtable.sync.md').read_text(encoding='utf-8') \
+        if (t / 'flowtable.sync.md').exists() else ''
+    c.check('补了时限' in kept and '日期 | 节点 | 改动' in kept,
+            'G53 表后的文档表格（第二列恰好是节点编号）**原样保留**（原先被当散行吃掉）',
+            '没保住' if '补了时限' not in kept else '')
+
     # ⑤ G43：自产图里手画一个节点后，整份**不许**被判 external（那会把没动过的行按几何重排）
     import xml_reader as _xr
     t = _fresh('pd_native')
@@ -1955,6 +2032,15 @@ def _check_artifact_gate(c, tmp):
         rc, out = run('validate.py', '--artifact', prod(ad, name))
         c.check(rc == 0 and '真实坐标复核通过' in out, f'{name}: 完好产物复核通过',
                 (out.strip().splitlines() or [''])[-1][:70] if rc != 0 else '')
+
+    # G48：**坏产物不许裸崩**——原先反解器抛 ValueError 会带着 traceback 退 1，
+    # 而"输入读不了"是仪器故障（退 2），读者要的是一句人话（文件坏了 / 不是本工具的产物）。
+    junk = ad / 'junk.drawio'
+    junk.write_text('这不是 XML，也不是任何产物', encoding='utf-8')
+    rc, out = run('validate.py', '--artifact', junk)
+    c.check(rc == 2 and '产物读不了' in out and 'Traceback' not in out,
+            'G48 坏产物 ⇒ 退 2 + 人话（不许 traceback）',
+            (out.strip().splitlines() or [''])[-1][:70] if out.strip() else '')
 
     # 线宽三份产物必须一致：svg 不写 `stroke-width` 就吃 SVG 默认值 1，而 html/drawio 都是 2 ——
     # 曾经只有它细一半。这是**肉眼**发现的（几何自检查的是坐标，量不到线宽），所以钉在这里。
@@ -2976,6 +3062,55 @@ def _check_source_freshness(c, tmp):
             f'rc={rc7}')
 
 
+def _check_index_and_views(c, tmp):
+    """G47 / G50：**同一张子表被多处引用**时，计数与警告都不许重复；派生物不许被报成孤儿表。"""
+    c.section('子表被多处引用：内嵌计数与"缺席/待备"清单不重复（G47）')
+    d = tmp / 'views'
+    shutil.rmtree(d, ignore_errors=True)
+    d.mkdir(parents=True)
+    ft = d / 'flowtable.md'
+    # 两个节点都指向**同一张缺席的子表**：`collect_views` 原先在 absent 这条路上完全没有去重，
+    # 于是"N 张缺席"按引用次数虚高（读不动的表还会被第二次 append 进 views）。
+    ft.write_text(HEAD + ''.join([
+        OK[0],
+        row('受理', '02', '子流程甲', '任务', '甲方', '甲', '—', '→03', '⊞ parts/缺/flowtable.md'),
+        row('核验', '03', '子流程乙', '任务', '乙方', '乙', '—', '→04', '⊞ parts/缺/flowtable.md'),
+        OK[3]]), encoding='utf-8')
+    run('table_to_dsl.py', '--write', ft, '-o', prod(d, 'yaml'))
+    import render_html as _rh
+    got = _rh.collect_views(prod(d, 'yaml'))
+    c.check(len(got['absent']) == 1,
+            'G47 同一张缺席子表被两个节点引用 ⇒ 只记一次（原先按引用次数重复计入）',
+            f"absent={len(got['absent'])} · pending={len(got['pending'])}")
+    c.check(len(got['views']) == 0, 'G47 缺席的子表不进 views（下钻入口不许点了没反应）',
+            f"views={len(got['views'])}")
+
+    c.section('派生物不许被报成孤儿表（G50）')
+    # `layer_index --write` 支持给**任意**表写索引（含子表）；原先 `generated` 只豁免主表那一个
+    # 名字 ⇒ 给子表写过索引后再 build，那份索引被报成"孤儿表"——工具让写的它自己骂。
+    d2 = tmp / 'orphanidx'
+    shutil.rmtree(d2, ignore_errors=True)
+    (d2 / 'parts' / '甲').mkdir(parents=True)
+    ft2 = d2 / 'flowtable.md'
+    ft2.write_text(HEAD + ''.join([
+        OK[0],
+        row('受理', '02', '子流程甲', '任务', '甲方', '甲', '—', '→04', '⊞ parts/甲/flowtable.md'),
+        row('归档', '04', '归档', '结束', '双方', '双方共责', '—', '—')]), encoding='utf-8')
+    sub = d2 / 'parts' / '甲' / 'flowtable.md'
+    # 子表也要**结构完整**（`OK[0]` 指向 02，而子表里没有 02 ⇒ H3 会拦下——G40 修好后这不难踩到）
+    sub.write_text(HEAD + ''.join([
+        row('受理', '01', '收到申请', '开始', '甲方', '受理员', '—', '→04'),
+        row('归档', '04', '归档', '结束', '双方', '双方共责', '—', '—')]), encoding='utf-8')
+    rc0, out0 = run('build.py', ft2)
+    if not c.check(rc0 == 0, '前置：带子表的稿子可 build', out0.strip()[-90:] if rc0 else ''):
+        return
+    (d2 / 'parts' / '甲' / '甲-index.md').write_text('# 子表索引\n', encoding='utf-8')
+    rc1, out1 = run('build.py', ft2)
+    c.check(rc1 == 0 and '孤儿表' not in out1,
+            'G50 给子表写过的 `*-index.md`（派生物）不被报成孤儿表',
+            [l for l in out1.splitlines() if '孤儿' in l][:1] or f'rc={rc1}')
+
+
 def run_face(tmp):
     c = Case('面② 门禁拦截')
     tmp.mkdir(parents=True, exist_ok=True)
@@ -3028,6 +3163,7 @@ def run_face(tmp):
     _check_escape(c, tmp)
     _check_degradation_trace(c, tmp)
     _check_xml_diff(c, tmp)
+    _check_index_and_views(c, tmp)
     return c
 
 

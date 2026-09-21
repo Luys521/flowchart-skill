@@ -71,7 +71,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →02
-  desc: ★ 目录树里可达集之外的 .md → 孤儿表警告（生成物与说明文档不算表）。 · L68 · 函数 · ⇢ 依赖 artifact.artifact_stem
+  desc: ★ 目录树里可达集之外的 .md → 孤儿表警告（生成物与说明文档不算表）。 · L68 · 函数
 - id: '06'
   name: _check_identity
   lines:
@@ -83,7 +83,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →13
-  desc: ★ 身份一致性（D-59）：id 全树唯一；level 声明与 ▣ 推导深度一致 → 警告列表。 · L82 · 函数
+  desc: ★ 身份一致性（D-59）：id 全树唯一；level 声明与 ▣ 推导深度一致 → 警告列表。 · L87 · 函数
 - id: '07'
   name: _build_order
   lines:
@@ -95,7 +95,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →13
-  desc: ★ 层级降序（自底向上）排构建顺序，并收集"多条路径到达"的歧义警告 → (order, notes)。 · L100 · 函数
+  desc: ★ 层级降序（自底向上）排构建顺序，并收集"多条路径到达"的歧义警告 → (order, notes)。 · L105 · 函数
 - id: 08
   name: build_layer_index
   lines:
@@ -107,7 +107,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→03｜3→05｜4→06｜5→07
-  desc: '★ 主流程表路径 → {''tables'': {相对路径: 层级信息}, ''order'': [构建顺序], ''notes'':… · L112
+  desc: '★ 主流程表路径 → {''tables'': {相对路径: 层级信息}, ''order'': [构建顺序], ''notes'':… · L117
     · 函数 · 分支：1→_rel 2→_visit_subflow 3→_find_orphans 4→_check_identity 5→_build_order'
 - id: 09
   name: format_index_md
@@ -120,7 +120,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 层级索引 → markdown（<流程名>-index.md 的正文）。 · L126 · 函数
+  desc: ★ 层级索引 → markdown（<流程名>-index.md 的正文）。 · L131 · 函数
 - id: '10'
   name: main
   lines:
@@ -132,7 +132,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→08｜2→09
-  desc: L157 · 函数 · 分支：1→build_layer_index 2→format_index_md · ⇢ 依赖 artifact.artifact_stem
+  desc: L162 · 函数 · 分支：1→build_layer_index 2→format_index_md · ⇢ 依赖 artifact.artifact_stem
 - id: '11'
   name: format_index_md.tree
   lines:
@@ -144,7 +144,7 @@ nodes:
   col: 0
   stage: format_index_md
   route: →12
-  desc: L133 · 嵌套函数
+  desc: L138 · 嵌套函数
 - id: '12'
   name: 递归边界？
   lines:

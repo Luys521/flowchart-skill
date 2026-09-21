@@ -318,16 +318,24 @@ def _rebuild_rows(data, tokens, default, orig_line):
 
 
 def _keep_after_table(after, rows):
-    """表后内容保留：丢掉混进来的表内散行，其余（说明章节等）逐字保留。"""
-    # 表后内容里混进的「表内行」（表格中段被空行隔开的散行）不算表后章节：body 已按 drawio
-    # 重建全部节点，原样保留会出现同一节点两行。散行丢弃、其余内容（说明章节等）逐字保留——
-    # 没有散行时 after 必须原样拼回，否则"无改动"场景做不到逐字节一致。
+    """表后内容保留：丢掉**混进来的表内散行**，其余（说明章节 / 文档表格等）逐字保留。
+
+    表后内容里混进的「表内行」（表格中段被空行隔开的散行）不算表后章节：body 已按 drawio
+    重建全部节点，原样保留会出现同一节点两行。散行丢弃、其余内容逐字保留——
+    没有散行时 after 必须原样拼回，否则"无改动"场景做不到逐字节一致。
+
+    **判据是形状，不只是"第二列等于某个编号"**（G53）：原先只看 `cs[1] in body_ids`，于是表后
+    若有一张普通文档表格（如「变更记录」的 `| 日期 | 节点 | 改动 |`），只要数据行第二列恰好等于
+    某个节点编号，就会被**无声吃掉**，`--apply` 时写进真表。加 `len(cs) >= N_COLS` 这道形状门：
+    真散行是 12 列形态，3 列的文档表格原样保留。
+    """
     body_ids = {r['id'] for r in rows}
     kept_after = []
     for l in after:
         if l.startswith('|'):
             cs = split_table_row(l)
-            if len(cs) >= 2 and (cs[1] in body_ids or cs[1] == '节点编号' or _is_sep_cell(cs[1])):
+            if len(cs) >= N_COLS and (cs[C_ID] in body_ids or cs[C_ID] == '节点编号'
+                                      or _is_sep_cell(cs[C_ID])):
                 continue
         kept_after.append(l)
     return kept_after

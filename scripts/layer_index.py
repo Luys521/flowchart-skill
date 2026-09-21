@@ -68,11 +68,16 @@ def _visit_subflow(ft_path, depth, parent_rp, via, chain, root, tables):
 def _find_orphans(root, tables, main_ft):
     """目录树里可达集之外的 .md → 孤儿表警告（生成物与说明文档不算表）。"""
     notes = []
-    generated = set(NON_TABLE_MD) | {f'{artifact_stem(main_ft)}-index.md'}
     for p in sorted(root.rglob('*.md')):
         rp = _rel(p, root)
         name = p.name
-        if rp in tables or name in generated or name.startswith('README') or name.endswith('.sync.md'):
+        if rp in tables or name.startswith('README') or name.endswith('.sync.md'):
+            continue
+        # **任何 `*-index.md` 都是派生物**（G50）：`layer_index --write` 支持给任意表写索引
+        # （含子表），原先只豁免**主表**那一个名字 ⇒ 给子表写过索引之后再 build，那份索引
+        # 会被报成"孤儿表"——工具让写的它自己骂。派生物不属于任何表，处置是"重建/删掉"，
+        # 不是"改名断链"那种孤儿表。
+        if name in NON_TABLE_MD or name.endswith('-index.md'):
             continue
         notes.append(f'孤儿表: {rp}——没有任何父表通过 ⊞ 引用它'
                      f'（多半是改名/移动后断链，或它本该删掉）')

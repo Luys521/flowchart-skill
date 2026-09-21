@@ -39,13 +39,13 @@ parent: ../flowtable.md
 | 模块级 | 25 | geometry_table | 任务 | — | — | — | 脚本 | selfboot | — | 1→24｜2→40 | ★ 几何表：节点（中心 / 尺寸 / 形状 / 可接端点）+ 边（起点 / 终点 / 端口比例 / 折线）。 · L510 · 函数 · 分支：1→_side_ports 2→geometry_table.r |
 | 模块级 | 26 | _write_geometry_dump | 任务 | — | — | — | 脚本 | selfboot | — | →25 | ★ --dump：把几何表写成 JSON；写不出去返回 1，成功返回 None。 · L541 · 函数 |
 | 模块级 | 27 | artifact_main | 任务 | — | — | — | 脚本 | selfboot | — | 1→23｜2→26 | ★ 读产物 → 几何表 → 复核。`--artifact` 的入口。 · L554 · 函数 · 分支：1→check_artifact 2→_write_geometry_dump · ⇢ 依赖 manifest.artifact_geometry |
-| 模块级 | 28 | report | 任务 | — | — | — | 脚本 | selfboot | — | →41 | L577 · 函数 · ⇢ 依赖 engine.Engine.height |
-| 模块级 | 29 | structured | 任务 | — | — | — | 脚本 | selfboot | — | →41 | ★ 报错列表 → 结构化回执（D-55）：subject/fix 供 AI 修复循环直接消费。 · L596 · 函数 · ⇢ 依赖 semantics.findings_receipt |
-| 模块级 | 30 | _showcase_blocks | 任务 | — | — | — | 脚本 | selfboot | — | →41 | ★ showcase 档门禁：网格吸附提示非零即阻断（D-55）；应阻断时返回 True。 · L601 · 函数 |
-| 模块级 | 31 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→18｜2→28｜3→30 | ★ 供 build.py / sync.py 调用：加载 → 检查 → 打印 → 退出码。 · L610 · 函数 · 分支：1→check 2→report 3→_showcase_blocks · ⇢ 依赖 engine.load |
-| 模块级 | 32 | _cli_parser | 任务 | — | — | — | 脚本 | selfboot | — | →41 | ★ cli 的 argparse 定义（模型侧门禁 / 产物几何自检）。 · L619 · 函数 |
-| 模块级 | 33 | _cli_json | 任务 | — | — | — | 脚本 | selfboot | — | 1→18｜2→29 | ★ --json：结构化结果（message/subject/fix，见 D-55）→ 退出码。 · L633 · 函数 · 分支：1→check 2→structured · ⇢ 依赖 engine.load |
-| 模块级 | 34 | cli | 任务 | — | — | — | 脚本 | selfboot | — | 1→27｜2→31｜3→32｜4→33 | ★ 命令行入口。**必须显式给路径**——缺参数时绝不能退回校验某个样例并报"全部通过"， · L642 · 函数 · 分支：1→artifact_main 2→main 3→_cli_parser 4→_cli_json |
+| 模块级 | 28 | report | 任务 | — | — | — | 脚本 | selfboot | — | →41 | L586 · 函数 · ⇢ 依赖 engine.Engine.height |
+| 模块级 | 29 | structured | 任务 | — | — | — | 脚本 | selfboot | — | →41 | ★ 报错列表 → 结构化回执（D-55）：subject/fix 供 AI 修复循环直接消费。 · L605 · 函数 · ⇢ 依赖 semantics.findings_receipt |
+| 模块级 | 30 | _showcase_blocks | 任务 | — | — | — | 脚本 | selfboot | — | →41 | ★ showcase 档门禁：网格吸附提示非零即阻断（D-55）；应阻断时返回 True。 · L610 · 函数 |
+| 模块级 | 31 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→18｜2→28｜3→30 | ★ 供 build.py / sync.py 调用：加载 → 检查 → 打印 → 退出码。 · L619 · 函数 · 分支：1→check 2→report 3→_showcase_blocks · ⇢ 依赖 engine.load |
+| 模块级 | 32 | _cli_parser | 任务 | — | — | — | 脚本 | selfboot | — | →41 | ★ cli 的 argparse 定义（模型侧门禁 / 产物几何自检）。 · L628 · 函数 |
+| 模块级 | 33 | _cli_json | 任务 | — | — | — | 脚本 | selfboot | — | 1→18｜2→29 | ★ --json：结构化结果（message/subject/fix，见 D-55）→ 退出码。 · L642 · 函数 · 分支：1→check 2→structured · ⇢ 依赖 engine.load |
+| 模块级 | 34 | cli | 任务 | — | — | — | 脚本 | selfboot | — | 1→27｜2→31｜3→32｜4→33 | ★ 命令行入口。**必须显式给路径**——缺参数时绝不能退回校验某个样例并报"全部通过"， · L651 · 函数 · 分支：1→artifact_main 2→main 3→_cli_parser 4→_cli_json |
 | check_grid | 35 | check_grid.chk | 任务 | — | — | — | 脚本 | selfboot | — | →41 | L305 · 嵌套函数 |
 | _ArtifactL | 36 | _ArtifactL.__init__ | 任务 | — | — | — | 脚本 | selfboot | — | →41 | L389 · 方法 |
 | _ArtifactL | 37 | _ArtifactL.rect | 任务 | — | — | — | 脚本 | selfboot | — | →41 | L404 · 方法 |

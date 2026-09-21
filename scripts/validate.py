@@ -558,7 +558,16 @@ def artifact_main(path, dump=None):
     if not p.exists():
         print(f'✗ 找不到 {p}')
         return 1
-    geom = artifact_geometry(p)
+    try:
+        # **坏产物不许裸崩**（G48）：实测喂一份坏 drawio 会从 `artifact_geometry` 里抛
+        # ValueError 栈退 1——而"输入读不了"是**仪器故障**（退 2），且读者要看的是一句人话：
+        # 是文件坏了，还是它根本不是本工具的产物。同函数内 `_write_geometry_dump` 早有同款处置。
+        geom = artifact_geometry(p)
+    except Exception as e:                          # noqa: BLE001 —— 反解器可能抛任何东西
+        print(f'✗ 产物读不了（{type(e).__name__}: {str(e)[:150]}）：{p}')
+        print('  → 文件损坏，或它不是本工具产的 html / drawio / svg；'
+              '重跑 `python scripts/build.py "<流程表>"` 再复核')
+        return 2
     if dump and _write_geometry_dump(geom, dump, p.name):
         return 1
     errs = check_artifact(geom)
