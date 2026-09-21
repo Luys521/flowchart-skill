@@ -672,6 +672,11 @@ def query_paths(root):
     cases.append(('⑭ 只给 rows= 不许把命中筛成 0（它只管显示）', rc == 0 and '命中 59 条' in out, rc, out))
     rc, out = query_run(root, '--range', 'pages=9-1')
     cases.append(('⑮ 范围语法错 → 退 2 + 人话', rc == 2 and '上界小于下界' in out, rc, out))
+    # ⑮b（D-130）：**多个 `rows=` 不许静默取第一个**。`rows=` 只裁显示窗口，所以"给了两个、
+    # 只用第一个"不会报错、只会少打一段——读的人会以为那张表就这么短（§2.3 同一条纪律）。
+    rc, out = query_run(root, '--range', 'rows=1-2', '--range', 'rows=5-6')
+    cases.append(('⑮b 两个 `rows=` ⇒ 退 2 说清给了几个（不静默挑第一个）',
+                  rc == 2 and '只认一个' in out, rc, out))
     rc, out = run([sys.executable, str(QUERY), str(root / 'intake.md')])
     cases.append(('⑯ 喂错形态（不是账本）→ 退 2 + 人话', rc == 2 and '合法 JSON' in out, rc, out))
 
@@ -1768,6 +1773,78 @@ def parallel_paths(root):
     return cases
 
 
+def idempotency_paths(root):
+    """**幂等：同输入两次同字节**（`PIPELINE-SPEC` §2.4 / §8）——材料链那一侧。
+
+    为什么值得一条：这条此前**只被人工跑过一次**（§8 那行的原话："本轮人工实测：`probe → 三个适配器
+    → ledger` 两次同字节"）——也就是说它是一张**没有人守的账**。产物侧有面③ 的"build 两次产物不变"，
+    材料链侧一直是空白，而这一侧恰恰是"同一份材料两次跑出两本不同的账"的唯一守卫
+    （那类缺陷的特征是：不会报错，只会让人拿着两本互不相认的账做事）。
+
+    做法：**同一个目录跑两遍**，中间把那四个产物删掉。
+    - 为什么不跑两个目录：账本里记着材料与落点的路径，两个目录会让"路径不同"污染比较
+      ——那测的就不是幂等，是路径；
+    - 为什么要先删：不删就是"覆盖写"语义，与"同输入两次"不是同一个问题。
+    判据：两遍都 rc=0，四个产物**逐字节相同**，且仓库根不多一个字节。
+    材料只用纯文本三件（md / csv / txt）——**不引可选依赖**：夹具在任何环境都得跑得起来，
+    不然门⑪ 会因为"这台机器没装 python-docx"而红，那是把环境问题算成产品缺陷。
+    """
+    import hashlib
+    cases = []
+    d = root / 'idem'
+    mat = d / '材料'
+    mat.mkdir(parents=True, exist_ok=True)
+    (mat / '办法.md').write_text('# 付款办法\n\n甲方向乙方提交材料，审批通过后付款。\n',
+                                 encoding='utf-8', newline='\n')
+    (mat / '清单.csv').write_text('序号,名称\n1,材料一\n2,材料二\n', encoding='utf-8', newline='\n')
+    (mat / '说明.txt').write_text('第一步受理；第二步核验；第三步交付。\n',
+                                  encoding='utf-8', newline='\n')
+    outs = ('materials.json', 'elements.json', 'notes.json', 'evidence.json')
+
+    def once():
+        rc_p, out_p = run([sys.executable, str(PROBE_CMD), str(mat), '--json'])
+        if rc_p != 0:
+            return rc_p, 1, out_p
+        (d / 'materials.json').write_text(out_p[out_p.index('['):], encoding='utf-8', newline='\n')
+        # 默认落盘（不传 -o）：`elements.json` / `notes.json` 落在 materials.json 旁边（D-119）
+        rc_c, out_c = run([sys.executable, str(PARSE_CMD), '--materials', str(d / 'materials.json'),
+                           '--ledger', str(d / 'evidence.json'), '--task', 'idem'])
+        return rc_p, rc_c, out_c
+
+    def snap():
+        return {n: hashlib.md5((d / n).read_bytes()).hexdigest()
+                for n in outs if (d / n).is_file()}
+
+    rc1 = once()
+    first = snap()
+    for n in outs:                       # 先删再跑：这才是"同输入两次"，不是"覆盖写"
+        p = d / n
+        if p.exists():
+            p.unlink()
+    rc2 = once()
+    second = snap()
+    dirty = repo_root_clean()
+    diff = sorted(n for n in set(first) | set(second) if first.get(n) != second.get(n))
+    # **实质判据**：四个文件逐字节相同，在"整条链什么都没抽出来"时也成立 —— 那样的绿是假的。
+    # 所以顺手核一次内容够不够：3 份材料都在账上、元素数 ≥ 3（三份各至少一条）。
+    n_mat, n_el = 0, 0
+    try:
+        led = json.loads((d / 'evidence.json').read_text(encoding='utf-8'))
+        n_mat = len(led.get('materials') or [])
+        n_el = len(led.get('elements') or [])       # 元素是**顶层**的（`materials[]` 只记材料层）
+    except (OSError, ValueError):
+        pass
+    ok = (rc1[1] == 0 and rc2[1] == 0 and len(first) == len(outs) and first == second
+          and not dirty and n_mat == 3 and n_el >= 3)
+    cases.append(('66 幂等（材料链）：`probe → parse → ledger` 同输入跑两遍 ⇒ 四个产物**逐字节相同** · '
+                  '仓库根不多一个字节',
+                  ok, (rc1[1], rc2[1]),
+                  (f'第一遍 {sorted(first)} · 第二遍 {sorted(second)} · 不同 {diff} · '
+                   f'材料 {n_mat} 份 / 元素 {n_el} 条（两样都要够，不然"同字节"是空跑出来的）· '
+                   f'仓库根多出 {dirty or "无"} · {rc2[2].strip()[-100:]}') if not ok else ''))
+    return cases
+
+
 def main(argv=None):
     """造夹具 → 比 `drift` 读数 → 跑漂移 13 + 清点 3 + 取子集 10 + 能力指纹 3 + pptx 4 + 材料树若干 + 规范 1 条路径
 
@@ -1798,7 +1875,8 @@ def main(argv=None):
     bad += 0 if d1_ok else 1
     for name, good, rc, out in (paths(root, draft) + intake_paths(root) + plan_paths(root)
                                 + query_paths(root) + capability_paths(root) + vlm_paths(root)
-                                + parallel_paths(root) + pptx_paths(root) + materials_paths(root)
+                                + parallel_paths(root) + idempotency_paths(root)
+                                + pptx_paths(root) + materials_paths(root)
                                 + import_paths(root) + spec_paths()):
         print(f'{"PASS" if good else "FAIL"}  {name}  （rc={rc}）')
         if not good:

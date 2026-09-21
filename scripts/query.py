@@ -207,7 +207,16 @@ def main(argv=None):
         print(f'✗ {e}')
         return 2
     ranges = [r for r in got if r[0] in SEL_KINDS]        # `rows=` 只管显示，不参与选择
-    rwin = next(((r[1], r[2]) for r in got if r[0] == 'rows'), None)
+    # **多个 `rows=` 不许静默取第一个**（2026-09-19 修，D-130）：`rows=` 不参与选择、只裁显示窗口，
+    # 所以"给了两个、只用第一个"不会报错、只会少打一段——读的人以为那张表就这么短
+    # （与 §2.3"截断处必须留省略标记"同一条纪律：不许让人误判"就这么多"）。
+    # 与 `parse_range` 的"语法错不猜"同一取向：**给不清就当场说清**，不替他挑一个。
+    rws = [r for r in got if r[0] == 'rows']
+    if len(rws) > 1:
+        print(f'✗ 一次只认一个 `rows=`（给了 {len(rws)} 个：'
+              + '、'.join(f'rows={r[1]}-{r[2]}' for r in rws) + '）')
+        return 2
+    rwin = (rws[0][1], rws[0][2]) if rws else None
     text = Path(a.ledger).read_text(encoding='utf-8-sig')
     try:
         led = json.loads(text)

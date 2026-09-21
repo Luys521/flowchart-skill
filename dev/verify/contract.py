@@ -610,6 +610,83 @@ def run_face(tmp=None):
     leak = [t for t in DEV if t in sk]
     c.check(not leak, 'SKILL.md 只写出图流程，不掺维护指令', '；'.join(leak))
 
+    c.section('SKILL.md 写全了材料链的入口（L0—L2）')
+    # 兑现 `dev/coding-spec.md` G21 那句"**能机器化的只有一步**：本文件可断言 SKILL.md 提到
+    # L0—L2 的入口命令"——它当时就点明，上面那条断言管的是**反面**（别把维护动作写进 SKILL.md），
+    # 所以拦不住"整条链根本没写进去"。
+    #
+    # 为什么判在 SKILL.md 上：它是**调度层**，是出图时 AI 读的那一份。链条在 `dev/` 有契约、
+    # 每个命令 `--help` 都能跑通，都替代不了"AI 知道有这一步"——**没有门面的能力等于没有**。
+    # 判据是逐字点名 `scripts/<cmd>.py`（不是"提到过这几个词"：`plan` 出现在别处太多了）。
+    L0L2 = ('probe', 'parse', 'ledger', 'recon', 'intake', 'plan', 'drift', 'query')
+    miss_cmd = [t for t in L0L2
+                if not re.search(r'scripts/%s\.py(?![\w.])' % t, sk)]
+    c.check(not miss_cmd, f'SKILL.md 逐字点名了材料链的 {len(L0L2)} 个入口命令',
+            '没提到：' + '、'.join(miss_cmd) if miss_cmd else '')
+
+    c.section('规范里的欠账都登记过（"无欠账"的机器判据）')
+    # 用户 2026-09-19 给这一轮的验收判据是「**规范自洽 + 无欠账**」。这句话得能机器判，否则它只是
+    # 一句愿心——所以两条判据落在这里（本节 + 下一节）。
+    #
+    # 「无欠账」在本仓的定义是：**每一笔欠账都登记在案**——要么点一个 `G` 号（`coding-spec` 第三节
+    # 就是那张账），要么当场写清"**不该有仪器**/刻意不做"并给理由。**不许有第三种状态**：
+    # 一句"仍无仪器 / 仍无人跑"孤零零挂在规范的现状栏里，读的人无从知道它是漏了还是故意的。
+    # 实测的来历：`REPO-MAP` 的依赖边数漂了两轮没人喊、`drift` 的 stderr 乱码没人喊、
+    # G20 说 H10.1 未实现而 §6 说已实现——三件事同一个形态：**账没登记，于是没人管**。
+    #
+    # 射程（声明不许比射程宽）：只扫**两张表**——`coding-spec` 的 G 系列行、`PIPELINE-SPEC` §8 的
+    # 表格行。正文里的叙述（"原先未实现，现改为…"）不在此列：那是历史，不是现状声明。
+    # **G 行要先把首格那个 `| Gxx |` 去掉**再判——不去掉的话每行都"自带一个 G 号"，
+    # 判据恒绿（第一版就是这么写的，量出来 0 处，等于装饰；这是第二次踩同一个坑）。
+    # **它只判"有没有登记处"，不判"登记得对不对"**——后者要人去读那张账。
+    DEBT = re.compile(r'未实现|没有仪器|无仪器|没人跑|无人跑|仍未|待定')
+    REG = re.compile(r'G\d+|不该有仪器|不适用|不是可判定的'
+                     r'|\*\*(已收口|不该有仪器|不适用|部分|仍未做|未实现|待定)\*\*')
+    debt_rows = []
+    cs_lines = (SKILL / 'dev' / 'coding-spec.md').read_text(encoding='utf-8').splitlines()
+    g_at = next((i for i, l in enumerate(cs_lines) if l.startswith('## 三、缺口')), None)
+    if g_at is not None:
+        for i, l in enumerate(cs_lines[g_at:], g_at + 1):
+            m = re.match(r'\| G\d+ \|', l)
+            if not m:
+                continue
+            rest = l.split('|', 2)[2]          # 去掉首格，见上
+            if DEBT.search(rest) and not REG.search(rest):
+                debt_rows.append(f'coding-spec.md:{i}')
+    ps_lines = (SKILL / 'dev' / 'PIPELINE-SPEC.md').read_text(encoding='utf-8').splitlines()
+    s8 = next((i for i, l in enumerate(ps_lines) if l.startswith('## 8 本期新规则由谁拦')), None)
+    if s8 is not None:
+        # 表从 §8 之后的**第一个 `|` 行**开始，到其后第一个非 `|` 行为止。
+        # **第一版这里写错了**（当场自查出来的）：判据写成"遇到非 `|` 行就 break"，
+        # 而 `## 8` 后面紧跟一个空行 ⇒ 扫描在表之前就退出，**一处都没扫到、整条恒绿**。
+        # 恒绿的仪器比没有仪器更坏（它让人以为有人守）——所以下面这段先定位表，再扫表内。
+        body = ps_lines[s8:s8 + 400]
+        t0 = next((i for i, l in enumerate(body) if l.startswith('|')), None)
+        if t0 is not None:
+            t1 = next((i for i, l in enumerate(body[t0:], t0)
+                       if not l.startswith('|')), len(body))
+            for i, l in enumerate(body[t0:t1], s8 + t0 + 1):
+                if DEBT.search(l) and not REG.search(l):
+                    debt_rows.append(f'PIPELINE-SPEC.md:{i}')
+    c.check(not debt_rows, '两张规范表里的每一笔欠账都登记过（G 号，或写明"不该有仪器"）',
+            '没登记：' + '；'.join(debt_rows[:4]) if debt_rows else '')
+
+    c.section('同一条判据的状态只有一个家（H 的现状归 PIPELINE-SPEC）')
+    # 为什么：`coding-spec` G20 写着"H10.1，**未实现**"，而 `PIPELINE-SPEC` §6 的 H 表、§8 的现状列、
+    # 门⑪ 夹具 54 三处都写着"已实现并进验收"（2026-09-18）。**同一条规则的状态在两处漂开了**，
+    # 而面① 那批断言核路径、核数字、核编号，**不核"同一条规则在两处的状态描述是否一致"**。
+    # 规矩（与 SKILL.md "一条规则只陈述一次"同源）：**H 判据的现状只在 `PIPELINE-SPEC` 声明**，
+    # 别处只许指路。
+    # 射程：只认**加粗**的状态词（本仓声明状态就用加粗），口语式的历史叙述（"从'未进验收'改
+    # '已进验收'"）不在此列——判的是"有没有第二处**声明**"，不是"有没有提到 H"。
+    ST = re.compile(r'\*\*(已实现|未实现|已进验收|进验收|不实现)\*\*')
+    HR = re.compile(r'H\d+(?:\.\d+)?')
+    dup = [f'{p.relative_to(SKILL).as_posix()}:{i}' for p, t in docs_all.items()
+           if p.name != 'PIPELINE-SPEC.md'
+           for i, l in enumerate(t.splitlines(), 1) if HR.search(l) and ST.search(l)]
+    c.check(not dup, 'H 判据的状态只在 PIPELINE-SPEC 声明（别处只许指路，不许复述）',
+            '复述：' + '；'.join(dup[:3]) if dup else '')
+
     c.section('.gitignore 存在且盖住已知派生量')
     # 这个文件在发布的包里**丢失过**，而 `dev/tools/accept.py`(6 处)、`dev/verify/run.py`、本文件都在
     # 引用它声称的口径（"`output/` 与 `dev/tools/fn-*.json` 都在 .gitignore 里"）——"代码里写着、
