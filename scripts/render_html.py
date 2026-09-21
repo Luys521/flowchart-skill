@@ -18,7 +18,7 @@ from pathlib import Path
 from engine import load
 from geometry import arc_px
 from semantics import arrow_markers, pending_style, subflow_target, SUB_INSET
-from artifact import artifact_stem
+from artifact import artifact_name, artifact_stem
 from manifest import MAIN_VIEW
 
 # 可下钻节点的记号：**框内一道内衬线**，同形状向内缩 `SUB_INSET` 这么多像素（见 D-78）。
@@ -199,7 +199,9 @@ def _display_desc(desc):
     不是给人看的语义。把它原样摊在悬浮框里，用户读到的是一串目录名。
     """
     d = re.sub(r'^\s*⚠\s*', '', desc)                    # 与既有行为一致，不动
-    d = re.sub(r'^\s*⊞\s*[^\s；;]*\s*[；;]\s*', '', d)     # ⊞ + 路径 + 分隔符
+    # `⊞ + 路径`，**分隔符（`；`/`;`）可有可无**（G71）：规范里的示例带分号，但没强制；
+    # 写成 `⊞ parts/x.md ⚠ 推断` 时原先剥不掉，用户会在悬浮框里看到一串目录名。
+    d = re.sub(r'^\s*⊞\s*[^\s；;]*\s*(?:[；;]\s*)?', '', d)
     return d
 
 
@@ -469,7 +471,7 @@ def collect_views(dsl_path):
                 bad.add(md)                               # 同一张缺席的表被多张父表引用只报一次
                 absent.append(md)
                 continue
-            yml = (md.parent / f'{artifact_stem(md)}-flow.yaml').resolve()
+            yml = (md.parent / artifact_name(artifact_stem(md), 'yaml')).resolve()
             if yml == root:                               # 子表又指回主表 → 回主视图，不重复嵌一份
                 keys[md] = MAIN_VIEW
                 continue

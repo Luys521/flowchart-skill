@@ -13,7 +13,7 @@ import argparse
 import json
 from pathlib import Path
 
-from artifact import artifact_stem
+from artifact import artifact_name, artifact_stem
 from geometry import snap, ceil_to, DEFAULT_COL_X, DEFAULT_GRID
 from flowtable import Errors, COLOR_KEY, parse_table
 from flowtable_check import run_checks, check_header, check_evidence
@@ -214,7 +214,7 @@ def _emit_dsl(dsl, p, out_path):
     早先这里对约定名写死 `flow.yaml`，于是"直接跑 table_to_dsl 不带 -o"与
     "跑 build.py" 产出两个不同名字的 yaml——手工跑一次就把 build 的几何提示换了个文件。
     """
-    out = Path(out_path) if out_path else p.with_name(f'{artifact_stem(p)}-flow.yaml')
+    out = Path(out_path) if out_path else p.with_name(artifact_name(artifact_stem(p), 'yaml'))
     out.write_text(yaml.safe_dump(dsl, allow_unicode=True, sort_keys=False), encoding='utf-8', newline='\n')
     print(f'✓ 已生成内部 DSL: {out}  → 下一步：python validate.py "{out}"')
     return out
@@ -245,7 +245,7 @@ def _run_fresh(p):
     """
     from artifact import artifact_stem
     from manifest import manifest_path_for, source_stale, source_fingerprint
-    yaml_path = p.with_name(f'{artifact_stem(p)}-flow.yaml')
+    yaml_path = p.with_name(artifact_name(artifact_stem(p), 'yaml'))
     state, detail = source_stale(p, manifest_path_for(yaml_path))
     if state == 'same':
         print(f'✓ 表自上次渲染后未变（指纹 {detail}）')

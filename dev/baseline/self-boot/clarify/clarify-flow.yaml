@@ -155,7 +155,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→08｜2→09｜3→10｜4→11
-  desc: ★ 简报 → 人可读文本。**只报状态，不下结论**——"已收敛"不等于"已把关"（见 D-02）。 · L228 · 函数 · 分支：1→_add_inferred
+  desc: ★ 简报 → 人可读文本。**只报状态，不下结论**——"已收敛"不等于"已把关"（见 D-02）。 · L232 · 函数 · 分支：1→_add_inferred
     2→_add_verdict_head 3→_add_frontier 4→_add_waiting
 - id: '13'
   name: _emit_report
@@ -168,7 +168,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →12
-  desc: ★ 按 --json 或人可读两种口径打印简报。 · L251 · 函数
+  desc: ★ 按 --json 或人可读两种口径打印简报。 · L255 · 函数
 - id: '14'
   name: main
   lines:
@@ -180,7 +180,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→07｜3→13
-  desc: L261 · 函数 · 分支：1→load_nodes 2→brief 3→_emit_report · ⇢ 依赖 flowtable.build_edges
+  desc: L265 · 函数 · 分支：1→load_nodes 2→brief 3→_emit_report · ⇢ 依赖 flowtable.build_edges
 - id: '15'
   name: frontier.ring_why
   lines:

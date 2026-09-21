@@ -152,6 +152,11 @@ def _decodes(seg, skip_head=0, trim_tail=True):
     for i in range(skip_head + 1):
         body = seg[i:]
         for cut in range(4 if trim_tail else 1):
+            if cut >= len(body):
+                break                      # **空串洞**（G73）：`body[:len(body)-cut]` 在 cut ≥ len(body)
+                #                            时会退化成 `b''`，而空串**能**解成 UTF-8 ⇒ 一份
+                #                            ≤3 字节的坏头会被判"是文本"。`break` 而不是 `continue`：
+                #                            再退更多位只会更空。
             try:
                 (body[:len(body) - cut] if cut else body).decode('utf-8')
                 return True
@@ -359,8 +364,10 @@ ARTIFACT_NAMES = ('materials.json', 'elements.json', 'notes.json', 'evidence.jso
 def _is_artifact_name(path_str):
     """这份"新文件"是不是**本工具链自己的产物**？（产物名 / `.todo.json` / `.bak` ⇒ 是）
 
-    与 `artifact.NON_TABLE_MD` 同一类登记，但这里只按**名字**判、且**不 import**（probe 在流水线最上游，
-    不该为了一个名字表把下游模块拖进来）。
+    ⚠ **与 `artifact.NON_TABLE_MD` 有五处重名**（G73），**这是有意的第二份、不是漂移**：
+    `probe` 在流水线最上游，不该为了一个名字表把下游模块拖进来（分层纪律），所以这里只按
+    **basename** 判、且不 import。代价写在案上：真把一份 `flowtable.md` 当新材料丢进材料根，
+    不会被判"根下多了没入账的文件"——要认这一条，得让 probe 依赖 artifact，另一个取舍。
     """
     n = Path(path_str).name
     return n in ARTIFACT_NAMES or n.endswith('.todo.json') or n.endswith('.bak')

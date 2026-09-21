@@ -80,15 +80,25 @@ def _output_path(src, out_spec):
 
 
 def _parse_crop(spec):
-    """--crop 形如 0:1200 → (y0, y1)；非法时第三项为错误文案。"""
+    """--crop 形如 0:1200 → (y0, y1)；非法时第三项为错误文案。
+
+    `y1 = 0` 与"没给上界"要分开（G71）：`0` 是 falsy，原先既绕过"上界>下界"的校验、
+    又在 `build_crop_page` 里被当成"无上界"静默变成全高——用户写 `--crop 0:0` 想看零高度
+    （或手滑）时，拿到的是一整张图且没有任何提示。`--crop 1200:` / `--crop 0:1200` 才是
+    "只给下界"的写法（上界留空 ⇒ y1=0 表示全高）。
+    """
     if not spec:
         return 0, 0, None
+    parts = spec.split(':')
+    if len(parts) != 2:
+        return 0, 0, '--crop 形如 0:1200（不留空 = 指定上界；`1200:` = 从 1200 到底）'
     try:
-        y0, y1 = (int(x) for x in spec.split(':'))
+        y0 = int(parts[0])
+        y1 = int(parts[1]) if parts[1].strip() else 0     # 上界留空 ⇒ 0 = 全高
     except ValueError:
         return 0, 0, '--crop 形如 0:1200'
     # 负高度窗口在浏览器里行为未定义（可能截出空白或报错），早说比事后猜强。
-    if y1 and y1 <= y0:
+    if parts[1].strip() and y1 <= y0:
         return 0, 0, f'--crop 的上界必须大于下界（收到 {y0}:{y1}）'
     return y0, y1, None
 

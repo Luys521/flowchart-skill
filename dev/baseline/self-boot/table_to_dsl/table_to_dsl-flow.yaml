@@ -130,7 +130,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →16
-  desc: ★ 落盘 DSL 并打印下一步提示，返回 DSL 路径。 · L210 · 函数 · ⇢ 依赖 artifact.artifact_stem
+  desc: ★ 落盘 DSL 并打印下一步提示，返回 DSL 路径。 · L210 · 函数 · ⇢ 依赖 artifact.artifact_name、artifact.artifact_stem
 - id: '11'
   name: _emit_manifest
   lines:
@@ -154,7 +154,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →16
-  desc: ★ `--fresh`：只答一句"这张表自上次渲染后有没有被直改过"，不校验、不产出。 · L239 · 函数 · ⇢ 依赖 artifact.artifact_stem、manifest.manifest_path_for、manifest.source_fingerprint、manifest.source_stale
+  desc: ★ `--fresh`：只答一句"这张表自上次渲染后有没有被直改过"，不校验、不产出。 · L239 · 函数 · ⇢ 依赖 artifact.artifact_name、artifact.artifact_stem、manifest.manifest_path_for、manifest.source_fingerprint、manifest.source_stale
 - id: '13'
   name: _center_canvas
   lines:

@@ -132,7 +132,10 @@ class Engine:
         if self._width is None:
             need = self._measure_edge_need()
             if need is None:
-                return self.grid.width
+                # **结构已坏也要缓存**（G71）：原先直接 `return self.grid.width` 而不写 `_width`，
+                # 于是每次访问都重跑一遍全部边的测量——坏结构上反而最贵。
+                self._width = self.grid.width
+                return self._width
             m = (self.cfg.get('layout') or {}).get('channel_margin', 40)
             self._width = max(self.grid.width, ceil_to(need + m, self.grid.node_grid))
         return self._width

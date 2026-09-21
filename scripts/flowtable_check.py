@@ -316,10 +316,23 @@ def _pruned_adjacency(by_id, edges):
 
 
 def _walk_cycle(u, path, adj, color, reported, errs):
-    """三色 DFS 的一步：沿 adj 下探，遇灰节点（返祖边）就报一条回路，回溯时标黑。"""
+    """三色 DFS（**显式栈**，G72）：沿 adj 下探，遇灰节点（返祖边）就报一条回路，回溯时标黑。
+
+    为什么不用递归：递归深度 = 最长无判断链的长度，>1000 节点的链会 `RecursionError`——
+    那是**我方崩栈**、不是"表有错"，报出来的还是 Python 栈轨迹而不是 H6。显式栈把深度搬到堆上，
+    而**遍历顺序与递归逐字一致**（邻接表顺序、先深后回溯），所以报出的回路条数与文案不变——
+    面② 那三条 H6 夹具（含"绕过判断的并联捷径"那条回归）就是这条等价性的守门人。
+    """
     color[u] = _DFS_GRAY
     path.append(u)
-    for v in adj.get(u, []):
+    stack = [iter(adj.get(u, []))]
+    while stack:
+        try:
+            v = next(stack[-1])
+        except StopIteration:                      # 这一支走完 → 回溯：出路径、标黑
+            stack.pop()
+            color[path.pop()] = _DFS_BLACK
+            continue
         if color[v] == _DFS_GRAY:                  # 返祖边 → 一条回路
             cyc = path[path.index(v):]
             key = frozenset(cyc)
@@ -329,9 +342,9 @@ def _walk_cycle(u, path, adj, color, reported, errs):
                          f'{"→".join(cyc + [cyc[0]])}',
                          subject=cyc[0], fix='在回路中加入判断节点，或删掉一条回边')
         elif color[v] == _DFS_WHITE:
-            _walk_cycle(v, path, adj, color, reported, errs)
-    path.pop()
-    color[u] = _DFS_BLACK
+            color[v] = _DFS_GRAY
+            path.append(v)
+            stack.append(iter(adj.get(v, [])))
 
 
 def check_deadloop(nodes, edges, errs):

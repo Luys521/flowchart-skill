@@ -157,7 +157,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →17
-  desc: '★ 抽取质量门（§1.5「手段 0」）→ `(留下的元素, 覆盖用的补注, 丢掉的元素 id, 读数行, {M##: 级别… · L200 · 函数
+  desc: '★ 抽取质量门（§1.5「手段 0」）→ `(留下的元素, 覆盖用的补注, 丢掉的元素 id, 读数行, {M##: 级别… · L202 · 函数
     · ⇢ 依赖 textquality.readout、textquality.scar、textquality.verdict'
 - id: '13'
   name: merge_notes
@@ -170,7 +170,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →17
-  desc: ★ `[(适配器名, notes)]` → `(合并后的 notes, 冲突说明)`。 · L250 · 函数
+  desc: ★ `[(适配器名, notes)]` → `(合并后的 notes, 冲突说明)`。 · L252 · 函数
 - id: '14'
   name: survey
   lines:
@@ -182,7 +182,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →17
-  desc: ★ 材料层 × 证据 × 补注 → `(每份材料一行, 漏认清单)`。**漏认 = status=ok 却既无元素也无补注… · L268 · 函数
+  desc: ★ 材料层 × 证据 × 补注 → `(每份材料一行, 漏认清单)`。**漏认 = status=ok 却既无元素也无补注… · L270 · 函数
 - id: '15'
   name: _print_survey
   lines:
@@ -194,7 +194,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →17
-  desc: ★ 人读摘要：一份材料一行。**没有证据也没有补注的当场标出来**（那是漏认，不是"空材料"）。 · L301 · 函数
+  desc: ★ 人读摘要：一份材料一行。**没有证据也没有补注的当场标出来**（那是漏认，不是"空材料"）。 · L303 · 函数
 - id: '16'
   name: main
   lines:
@@ -206,7 +206,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→03｜3→04｜4→05｜5→07｜6→08｜7→09｜8→10｜9→11｜10→12｜11→13｜12→14｜13→15
-  desc: L317 · 函数 · 分支：1→_read_json 2→_write_json 3→_last_line 4→_adapter_args 5→_span
+  desc: L319 · 函数 · 分支：1→_read_json 2→_write_json 3→_last_line 4→_adapter_args 5→_span
     6→narrow_materials 7→apply_narrowing 8→run_adapter 9→merge_elements 10→apply_quality
     11→merge_notes 12→survey 13→_print_survey · ⇢ 依赖 artifact.beside、probe.verify_list、textquality.load_thresholds
 - id: '17'

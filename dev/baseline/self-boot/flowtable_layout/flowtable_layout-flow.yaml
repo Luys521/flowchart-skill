@@ -35,7 +35,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →23
-  desc: ★ 「- 泳道列序：A → B → C」→ ['A', 'B', 'C']（兼容 `,` `，` `、` 分隔）。 · L12 · 函数
+  desc: ★ 「- 泳道列序：A → B → C」→ ['A', 'B', 'C']（兼容 `,` `，` `、` 分隔）。 · L13 · 函数
 - id: '03'
   name: apply_swimlane
   lines:
@@ -47,7 +47,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →23
-  desc: ★ 泳道布局：行 = 项目运作阶段、列 = 执行主体。 · L21 · 函数
+  desc: ★ 泳道布局：行 = 项目运作阶段、列 = 执行主体。 · L22 · 函数
 - id: '04'
   name: _topo_order
   lines:
@@ -59,7 +59,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →23
-  desc: ★ Kahn 拓扑序；有环（回路）返回 None，调用方退回表序（见 swimlane-spec §3.1）。 · L39 · 函数
+  desc: ★ Kahn 拓扑序；有环（回路）返回 None，调用方退回表序（见 swimlane-spec §3.1）。 · L40 · 函数
 - id: '05'
   name: _resolve_slot_order
   lines:
@@ -71,7 +71,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →04
-  desc: ★ 定槽位推导用的节点顺序：Kahn 拓扑序；有环退回表序，并把提示写进 notes。 · L60 · 函数
+  desc: ★ 定槽位推导用的节点顺序：Kahn 拓扑序；有环退回表序，并把提示写进 notes。 · L63 · 函数
 - id: '06'
   name: _incoming_sources
   lines:
@@ -83,7 +83,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →23
-  desc: '★ 每个节点的入边来源表（自环边略过）→ {id: [起点, …]}。 · L69 · 函数'
+  desc: '★ 每个节点的入边来源表（自环边略过）→ {id: [起点, …]}。 · L72 · 函数'
 - id: '07'
   name: _solve_slots
   lines:
@@ -95,7 +95,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →23
-  desc: '★ DP 求每个节点的槽号 → {id: 槽号}（多入边取最深的一条）。 · L78 · 函数'
+  desc: '★ DP 求每个节点的槽号 → {id: 槽号}（多入边取最深的一条）。 · L81 · 函数'
 - id: 08
   name: _compact_slots
   lines:
@@ -107,7 +107,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →23
-  desc: ★ 分支可能跳过某个槽号 → 压缩掉空槽，层数才是真实层数。 · L95 · 函数
+  desc: ★ 分支可能跳过某个槽号 → 压缩掉空槽，层数才是真实层数。 · L98 · 函数
 - id: 09
   name: assign_slots
   lines:
@@ -119,7 +119,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→05｜2→06｜3→07｜4→08
-  desc: ★ 槽位求解：把 row 从「阶段号」细化为「槽位号」，返回 (slots, notes)。 · L102 · 函数 · 分支：1→_resolve_slot_order
+  desc: ★ 槽位求解：把 row 从「阶段号」细化为「槽位号」，返回 (slots, notes)。 · L105 · 函数 · 分支：1→_resolve_slot_order
     2→_incoming_sources 3→_solve_slots 4→_compact_slots
 - id: '10'
   name: _forward_successors
@@ -132,7 +132,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →23
-  desc: '★ 只留「行号递增」的前向边 → {起点: {后继, …}}。 · L126 · 函数'
+  desc: '★ 只留「行号递增」的前向边 → {起点: {后继, …}}。 · L129 · 函数'
 - id: '11'
   name: _merge_branch_group
   lines:
@@ -144,7 +144,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →23
-  desc: ★ 把一组汇聚到同一点的分支并到同一行的相邻列（首分支留在原位，其余向右排）。 · L135 · 函数
+  desc: ★ 把一组汇聚到同一点的分支并到同一行的相邻列（首分支留在原位，其余向右排）。 · L138 · 函数
 - id: '12'
   name: _merge_parallel_rows
   lines:
@@ -156,7 +156,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 按「后继集合完全相同且非空」分组，逐组把并行分支并排到同一行。 · L146 · 函数
+  desc: ★ 按「后继集合完全相同且非空」分组，逐组把并行分支并排到同一行。 · L153 · 函数
 - id: '13'
   name: balance_arms
   lines:
@@ -168,7 +168,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →23
-  desc: ★ 并行分支按**墨迹重量**分挂主轴两侧，把主轴摆到中轴上（D-92「臂」）。 · L161 · 函数
+  desc: ★ 并行分支按**墨迹重量**分挂主轴两侧，把主轴摆到中轴上（D-92「臂」）。 · L168 · 函数
 - id: '14'
   name: _apply_row_remap
   lines:
@@ -180,7 +180,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →23
-  desc: ★ 把腾空的层压掉（重排行号），并把 row/col 写回节点。 · L199 · 函数
+  desc: ★ 把腾空的层压掉（重排行号），并把 row/col 写回节点。 · L206 · 函数
 - id: '15'
   name: merge_parallel_branches
   lines:
@@ -192,7 +192,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→10｜2→12｜3→13｜4→14
-  desc: ★ 并行分支并排：同一节点分出的多条前向分支若**汇聚到同一点**，把它们并到一行、占相邻列。 · L207 · 函数 · 分支：1→_forward_successors
+  desc: ★ 并行分支并排：同一节点分出的多条前向分支若**汇聚到同一点**，把它们并到一行、占相邻列。 · L214 · 函数 · 分支：1→_forward_successors
     2→_merge_parallel_rows 3→balance_arms 4→_apply_row_remap
 - id: '16'
   name: _between_in_col
@@ -205,7 +205,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →23
-  desc: ★ 同一列里 c 之外是否已有节点夹在行 a 与 b 之间（判断两节点是否"相邻"）。 · L223 · 函数
+  desc: ★ 同一列里 c 之外是否已有节点夹在行 a 与 b 之间（判断两节点是否"相邻"）。 · L230 · 函数
 - id: '17'
   name: _edge_kind
   lines:
@@ -217,7 +217,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →16
-  desc: ★ 按行列位置推导一条边的 kind：同行 horiz / 回退 loop / 同列相邻 spine / 其余 jumpR。 · L228 · 函数
+  desc: ★ 按行列位置推导一条边的 kind：同行 horiz / 回退 loop / 同列相邻 spine / 其余 jumpR。 · L235 · 函数
 - id: '18'
   name: auto_layout
   lines:
@@ -229,7 +229,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →17
-  desc: ★ 基线布局：row=表序，col=0 单主列；由位置推导 kind；通道交 `router` 现场规划（见 dsl-sp… · L240 · 函数
+  desc: ★ 基线布局：row=表序，col=0 单主列；由位置推导 kind；通道交 `router` 现场规划（见 dsl-sp… · L247 · 函数
 - id: '19'
   name: _index_hints
   lines:
@@ -241,7 +241,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →23
-  desc: '★ 把布局提示的边按 (from, to) 建索引 → {(from, to): [提示边, …]}。 · L260 · 函数'
+  desc: '★ 把布局提示的边按 (from, to) 建索引 → {(from, to): [提示边, …]}。 · L267 · 函数'
 - id: '20'
   name: _pick_hint
   lines:
@@ -253,7 +253,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →23
-  desc: ★ 按「label 相同 > kind 相同 > 任意」挑一条提示边并从池子里消耗掉它；挑不到返回 None。 · L268 · 函数
+  desc: ★ 按「label 相同 > kind 相同 > 任意」挑一条提示边并从池子里消耗掉它；挑不到返回 None。 · L275 · 函数
 - id: '21'
   name: _apply_hint
   lines:
@@ -265,7 +265,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →23
-  desc: ★ 把提示边的手调 kind 与几何键借给 DSL 边（label / polarity 一律来自流程表，不被覆盖）。 · L284 · 函数
+  desc: ★ 把提示边的手调 kind 与几何键借给 DSL 边（label / polarity 一律来自流程表，不被覆盖）。 · L291 · 函数
 - id: '22'
   name: reuse_hint
   lines:
@@ -277,7 +277,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→19｜2→20｜3→21
-  desc: ★ --layout 提示：借用几何键（gutter / channel / gapx / dye / exit / en… · L295 · 函数
+  desc: ★ --layout 提示：借用几何键（gutter / channel / gapx / dye / exit / en… · L302 · 函数
     · 分支：1→_index_hints 2→_pick_hint 3→_apply_hint
 - id: '23'
   name: 结束

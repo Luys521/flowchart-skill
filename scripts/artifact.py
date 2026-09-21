@@ -41,6 +41,16 @@ def artifact_stem(table_path):
     return name or 'flow'
 
 
+def artifact_name(stem, ext):
+    """产物**文件名**：`<流程名>-flow.<ext>`（见 D-51）。
+
+    **唯一出处**（G74）：这条模板原先内联在 7 处以上（`build` ×2 · `table_to_dsl` ×3 ·
+    `sync` ×2 · `render_html` ×1）——而本模块开篇那句"任何地方都不许再拼一遍名字"只管到了
+    `artifact_stem` 那一半，后缀这一半没人管，改一次要人肉找齐。
+    """
+    return f'{stem}-flow.{ext}'
+
+
 def artifact_rel(table_rel, ext='html'):
     """子表流程表的相对路径 → 子图产物的相对路径（见 D-51）。
 
@@ -54,7 +64,7 @@ def artifact_rel(table_rel, ext='html'):
     """
     p = Path(table_rel)
     head = p.parent.as_posix()
-    name = f'{artifact_stem(p)}-flow.{ext}'
+    name = artifact_name(artifact_stem(p), ext)
     return f'{head}/{name}' if head not in ('', '.') else name
 
 

@@ -8,8 +8,8 @@ meta:
 layout:
   col_x:
   - 400
-  width: 680
-  origin_x: -40
+  width: 700
+  origin_x: -240
 nodes:
 - id: '01'
   name: 开始
@@ -21,7 +21,7 @@ nodes:
   row: 0
   col: 0
   stage: 入口
-  route: 1→03｜2→04
+  route: 1→04｜2→05
   desc: 流程起点（结构性节点，不是函数） · 入口：1→artifact_rel 2→beside
 - id: '02'
   name: artifact_stem
@@ -33,9 +33,21 @@ nodes:
   row: 2
   col: 0
   stage: 模块级
-  route: →05
+  route: →06
   desc: ★ 流程表 → 产物名前缀（见 D-51）。规则：**表名是约定名就用目录名，否则用表名**。 · L32 · 函数
 - id: '03'
+  name: artifact_name
+  lines:
+  - artifact_name
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: 模块级
+  route: →06
+  desc: ★ 产物**文件名**：`<流程名>-flow.<ext>`（见 D-51）。 · L44 · 函数
+- id: '04'
   name: artifact_rel
   lines:
   - artifact_rel
@@ -45,52 +57,62 @@ nodes:
   row: 1
   col: 0
   stage: 模块级
-  route: →02
-  desc: ★ 子表流程表的相对路径 → 子图产物的相对路径（见 D-51）。 · L44 · 函数
-- id: '04'
+  route: 1→02｜2→03
+  desc: ★ 子表流程表的相对路径 → 子图产物的相对路径（见 D-51）。 · L54 · 函数 · 分支：1→artifact_stem 2→artifact_name
+- id: '05'
   name: beside
   lines:
   - beside
   type: task
   subject: 脚本
   executor: selfboot
-  row: 3
+  row: 4
   col: 0
   stage: 模块级
-  route: →05
-  desc: ★ **默认落盘位置 = 跟着输入走**：`<输入所在目录>/<name>`（见 D-119）。 · L61 · 函数
-- id: '05'
+  route: →06
+  desc: ★ **默认落盘位置 = 跟着输入走**：`<输入所在目录>/<name>`（见 D-119）。 · L71 · 函数
+- id: '06'
   name: 结束
   lines:
   - 结束
   type: end
   subject: 脚本
   executor: selfboot
-  row: 4
+  row: 5
   col: 0
   stage: 出口
   route: —
   desc: 流程终点（结构性节点，不是函数）
 edges:
 - from: '01'
-  to: '03'
+  to: '04'
   kind: spine
   polarity: main
   label: '1'
 - from: '01'
-  to: '04'
+  to: '05'
   kind: jumpR
   polarity: main
   label: '2'
 - from: '02'
-  to: '05'
+  to: '06'
   kind: jumpR
   polarity: main
 - from: '03'
+  to: '06'
+  kind: jumpR
+  polarity: main
+- from: '04'
   to: '02'
   kind: spine
   polarity: main
+  label: '1'
 - from: '04'
-  to: '05'
+  to: '03'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '05'
+  to: '06'
   kind: spine
   polarity: main

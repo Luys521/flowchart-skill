@@ -35,8 +35,8 @@ parent: ../flowtable.md
 | 模块级 | 21 | _runs_at | 任务 | — | — | — | 脚本 | selfboot | — | 1→13｜2→20 | ★ 按 `shift` 字节对齐扫一遍 → `[(字节偏移, 文本)]`。 · L378 · 函数 · 分支：1→_is_text_unit 2→_emit |
 | 模块级 | 22 | runs_of | 任务 | — | — | — | 脚本 | selfboot | — | →21 | ★ OLE 原始字节 → `(run 列表, 说明)`。**两种对齐都扫**：正文 run 未必从偶数字节开始。 · L393 · 函数 |
 | 模块级 | 23 | fallback_elements | 任务 | — | — | — | 脚本 | selfboot | — | →28 | ★ run 列表 → `elements[]`：**并相邻 run → 按 `max_chars` 切块 → 每条挂降级说… · L428 · 函数 |
-| 模块级 | 24 | parse_legacy | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→05｜3→10｜4→11｜5→22｜6→23 | ★ 一份 legacy 材料 → `(elements, 材料补注, 跳过说明, 报错文案)`。 · L464 · 函数 · 分支：1→no_converter_reason 2→ole_kind 3→convert 4→extract_via_ooxml 5→runs_of 6→fallback_elements |
-| 模块级 | 25 | parse_materials | 任务 | — | — | — | 脚本 | selfboot | — | →24 | ★ 材料层 → `(elements, 材料补注, 摘要, 跳过清单, 报错文案)`。只认 OLE；别的材料**不归我管*… · L502 · 函数 |
-| 模块级 | 26 | _write_json | 任务 | — | — | — | 脚本 | selfboot | — | →28 | ★ 写 JSON：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 ledger.dump）。 · L535 · 函数 |
-| 模块级 | 27 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→03｜2→09｜3→12｜4→25｜5→26 | L540 · 函数 · 分支：1→_read_json 2→find_converter 3→load_thresholds 4→parse_materials 5→_write_json |
+| 模块级 | 24 | parse_legacy | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→05｜3→10｜4→11｜5→22｜6→23 | ★ 一份 legacy 材料 → `(elements, 材料补注, 跳过说明, 报错文案)`。 · L467 · 函数 · 分支：1→no_converter_reason 2→ole_kind 3→convert 4→extract_via_ooxml 5→runs_of 6→fallback_elements |
+| 模块级 | 25 | parse_materials | 任务 | — | — | — | 脚本 | selfboot | — | →24 | ★ 材料层 → `(elements, 材料补注, 摘要, 跳过清单, 报错文案)`。只认 OLE；别的材料**不归我管*… · L505 · 函数 |
+| 模块级 | 26 | _write_json | 任务 | — | — | — | 脚本 | selfboot | — | →28 | ★ 写 JSON：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 ledger.dump）。 · L538 · 函数 |
+| 模块级 | 27 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→03｜2→09｜3→12｜4→25｜5→26 | L543 · 函数 · 分支：1→_read_json 2→find_converter 3→load_thresholds 4→parse_materials 5→_write_json |
 | 出口 | 28 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |

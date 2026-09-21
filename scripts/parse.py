@@ -193,7 +193,9 @@ def merge_elements(per_adapter):
             seen.add(eid)
             owner[eid] = name
     merged = [e for _n, els in per_adapter for e in els]      # 保序展开，再稳定排序
-    merged.sort(key=lambda e: str(e.get('material_id', '')))
+    # **按 (长度, 字符串) 排**（G73）：`M##` 是 `M{i:02d}` 补零的，>99 份材料时 `M100` 的字符串
+    # 序排在 `M99` 前面，账本里的材料顺序会与探测顺序（§0 的路径字典序）对不上。
+    merged.sort(key=lambda e: (len(str(e.get('material_id', ''))), str(e.get('material_id', ''))))
     return merged, ''
 
 

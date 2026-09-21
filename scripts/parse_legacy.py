@@ -455,9 +455,12 @@ def fallback_elements(mid, path, runs, th, note=''):
         out.append({'id': f'{mid}#o{len(out) + 1:03d}', 'material_id': mid, 'kind': 'paragraph',
                     'text': body, 'location': {'path': path.as_posix(), 'quote': body},
                     'extractor': OLETEXT_EXTRACTOR, 'certainty': 'direct', 'degraded': degraded})
-    if len(groups) > len(out):
+    # **判据是"上限截断"**（G73）：原先写 `len(groups) > len(out)`，而 `out` 比 `groups[:cap]` 少
+    # 还可能因为**空组被跳过**（`if not body: continue`）——于是"只收前 N 个"这句会为"跳过空组"报出来，
+    # 两种原因读的人分不清。按上限判，说的是同一件事。
+    if len(groups) > int(th['max_elements']):
         for e in out:
-            e['degraded'] += f'；只收前 {len(out)} 个元素（捞到的 run 还有更多）'
+            e['degraded'] += f'；只收前 {int(th["max_elements"])} 组（捞到的 run 还有更多）'
     return out
 
 

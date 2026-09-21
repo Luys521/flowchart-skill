@@ -204,8 +204,11 @@ def _external_nodes(root_el, native_ids):
         # 它是一个 vertex="1" 的文本框，标签归边不归节点——当成节点就会多出"任务"假节点，
         # 而且它不连任何边，会在摘要里变成一堆孤立节点。自有产物把标签写在边的 value 上
         # （render_drawio.edge_cell），不产生这种 cell，故这条不会误伤。
-        if re.match(r'^(text|image|line|swimlane|edgeLabel|shape=image|shape=line)(;|=|$)', style):
-            continue                      # 标题/图例/图片/边标签等装饰元素，不是流程节点
+        # **`group` 也要跳**（G71）：drawio 的分组容器本身是个 vertex，读进来会变成"组A"这种
+        # 幻影节点（diff 报"+ 新增节点 g1"、摘要里显示"孤立节点"，回写还会把它写进表再被 H8 拦下）。
+        # 组**内**的节点不受影响：drawio 的 cell 在 XML 里是平铺的，`parent` 只是属性。
+        if re.match(r'^(text|image|line|swimlane|group|edgeLabel|shape=image|shape=line)(;|=|$)', style):
+            continue                      # 标题/图例/图片/分组容器/边标签等装饰元素，不是流程节点
         if BG_MARK in style:
             continue                      # 泳道布局的底色带（部门列/阶段带）：是背景，不是流程节点
         if SUB_MARK in style:
@@ -377,7 +380,11 @@ def _root_model(xml_content):
         model = root
     root_el = model.find('root')
     if root_el is None:
-        root_el = ET.Element('root')
+        # **`<mxGraphModel>` 在、`<root>` 不在 = 图内容丢了**（G71）：原先造一个空 root 往下走，
+        # 于是 `brief` 打"节点: 0 边: 0"退 0、`--diff` 还可能打"✓ 与流程表一致，无差异"——
+        # 那是把"文件损坏"报成"图是空的"。与上面几条（压缩格式 / 根元素不对）同一口径：说清原因。
+        raise ValueError('这份图的 <mxGraphModel> 里没有 <root>：图内容丢了（文件截断或存盘中断）。'
+                         '在 drawio 里重新打开并另存一次')
     return model, root_el, pages
 
 

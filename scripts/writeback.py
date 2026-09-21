@@ -436,8 +436,10 @@ def compare_bytes(orig_ft, out_ft):
     if before == after:
         return True, []
     import difflib
-    old_l = Path(orig_ft).read_text(encoding='utf-8', errors='replace').splitlines()
-    new_l = Path(out_ft).read_text(encoding='utf-8', errors='replace').splitlines()
+    # **展示侧也按 BOM 感知解码**（G71）：判据用的是 bytes（上面那两行），而展示原先按裸 utf-8 读，
+    # 于是带 BOM 的表在"真有别处差异"时会多出一条首行伪差异（`\ufeff` 前缀）——判据与展示两套口径。
+    old_l = Path(orig_ft).read_text(encoding='utf-8-sig', errors='replace').splitlines()
+    new_l = Path(out_ft).read_text(encoding='utf-8-sig', errors='replace').splitlines()
     return False, list(difflib.unified_diff(old_l, new_l, 'flowtable.md',
                                            Path(out_ft).name, n=0, lineterm=''))
 

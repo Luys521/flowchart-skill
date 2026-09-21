@@ -25,18 +25,18 @@ parent: ../flowtable.md
 | Engine | 11 | Engine._reserve_left_corridor | 任务 | — | — | — | 脚本 | selfboot | — | 1→09｜2→10 | ★ 左侧走廊的宽度**量**出来，不估（DECISIONS.md D-39）。 · L98 · 方法 · 分支：1→Engine._build 2→Engine._corridor_users · ⇢ 依赖 geometry.ceil_to |
 | Engine | 12 | Engine._measure_edge_need | 任务 | — | — | — | 脚本 | selfboot | — | →28 | ★ 量出所有折线 x 的最大值；结构已坏（如列号越界 / 节点类型未知）时返回 None。 · L117 · 方法 |
 | Engine | 13 | Engine.width | 任务 | — | — | — | 脚本 | selfboot | — | →12 | ★ 画布宽 = max(配置宽, 最外侧通道 + 边距)，吸附粗格。 · L127 · 方法 · ⇢ 依赖 geometry.ceil_to |
-| Engine | 14 | Engine.rect | 任务 | — | — | — | 脚本 | selfboot | — | →28 | L141 · 方法 |
-| Engine | 15 | Engine.path | 任务 | — | — | — | 脚本 | selfboot | — | →28 | L144 · 方法 |
-| Engine | 16 | Engine.polarity | 任务 | — | — | — | 脚本 | selfboot | — | →28 | L147 · 方法 |
-| Engine | 17 | Engine.ports | 任务 | — | — | — | 脚本 | selfboot | — | →28 | L150 · 方法 |
-| Engine | 18 | Engine.label_box | 任务 | — | — | — | 脚本 | selfboot | — | →28 | L153 · 方法 · ⇢ 依赖 label.Labeler.label_box |
-| Engine | 19 | Engine.node_lines | 任务 | — | — | — | 脚本 | selfboot | — | →28 | L156 · 方法 · ⇢ 依赖 semantics.Syntax.node_lines |
-| Engine | 20 | Engine.route_text | 任务 | — | — | — | 脚本 | selfboot | — | →28 | L159 · 方法 · ⇢ 依赖 semantics.Syntax.route_text |
-| Engine | 21 | Engine.legend_rect | 任务 | — | — | — | 脚本 | selfboot | — | →28 | L162 · 方法 |
-| Engine | 22 | Engine.legend_width | 任务 | — | — | — | 脚本 | selfboot | — | →28 | ★ 标题/图例块的**宽**（画布顶部居中那块，默认 600）。 · L165 · 方法 |
-| Engine | 23 | Engine.lanes | 任务 | — | — | — | 脚本 | selfboot | — | →28 | ★ 泳道背景信息；流程布局返回 None（渲染器据此决定画不画泳道带）。 · L173 · 方法 · ⇢ 依赖 swimlane.SwimGrid.lanes |
-| Engine | 24 | Engine.head_band | 任务 | — | — | — | 脚本 | selfboot | — | →28 | ★ 画布顶部是否预留标题带（HTML 版标题在画布外，故不预留）。 · L178 · 方法 · ⇢ 依赖 geometry.RectCache.invalidate |
-| Engine | 25 | Engine.height | 任务 | — | — | — | 脚本 | selfboot | — | →28 | L192 · 方法 |
-| 模块级 | 26 | load | 任务 | — | — | — | 脚本 | selfboot | — | →27 | ★ 加载 DSL(yaml) + 默认字典 → Engine。 · L196 · 函数 |
-| 模块级 | 27 | _load_yaml | 任务 | — | — | — | 脚本 | selfboot | — | →28 | L221 · 函数 |
+| Engine | 14 | Engine.rect | 任务 | — | — | — | 脚本 | selfboot | — | →28 | L144 · 方法 |
+| Engine | 15 | Engine.path | 任务 | — | — | — | 脚本 | selfboot | — | →28 | L147 · 方法 |
+| Engine | 16 | Engine.polarity | 任务 | — | — | — | 脚本 | selfboot | — | →28 | L150 · 方法 |
+| Engine | 17 | Engine.ports | 任务 | — | — | — | 脚本 | selfboot | — | →28 | L153 · 方法 |
+| Engine | 18 | Engine.label_box | 任务 | — | — | — | 脚本 | selfboot | — | →28 | L156 · 方法 · ⇢ 依赖 label.Labeler.label_box |
+| Engine | 19 | Engine.node_lines | 任务 | — | — | — | 脚本 | selfboot | — | →28 | L159 · 方法 · ⇢ 依赖 semantics.Syntax.node_lines |
+| Engine | 20 | Engine.route_text | 任务 | — | — | — | 脚本 | selfboot | — | →28 | L162 · 方法 · ⇢ 依赖 semantics.Syntax.route_text |
+| Engine | 21 | Engine.legend_rect | 任务 | — | — | — | 脚本 | selfboot | — | →28 | L165 · 方法 |
+| Engine | 22 | Engine.legend_width | 任务 | — | — | — | 脚本 | selfboot | — | →28 | ★ 标题/图例块的**宽**（画布顶部居中那块，默认 600）。 · L168 · 方法 |
+| Engine | 23 | Engine.lanes | 任务 | — | — | — | 脚本 | selfboot | — | →28 | ★ 泳道背景信息；流程布局返回 None（渲染器据此决定画不画泳道带）。 · L176 · 方法 · ⇢ 依赖 swimlane.SwimGrid.lanes |
+| Engine | 24 | Engine.head_band | 任务 | — | — | — | 脚本 | selfboot | — | →28 | ★ 画布顶部是否预留标题带（HTML 版标题在画布外，故不预留）。 · L181 · 方法 · ⇢ 依赖 geometry.RectCache.invalidate |
+| Engine | 25 | Engine.height | 任务 | — | — | — | 脚本 | selfboot | — | →28 | L195 · 方法 |
+| 模块级 | 26 | load | 任务 | — | — | — | 脚本 | selfboot | — | →27 | ★ 加载 DSL(yaml) + 默认字典 → Engine。 · L199 · 函数 |
+| 模块级 | 27 | _load_yaml | 任务 | — | — | — | 脚本 | selfboot | — | →28 | L224 · 函数 |
 | 出口 | 28 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |

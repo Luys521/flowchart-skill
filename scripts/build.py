@@ -16,7 +16,7 @@ from pathlib import Path
 
 import yaml
 
-from artifact import artifact_stem
+from artifact import artifact_name, artifact_stem
 from engine import load as load_dsl
 from flowtable import find_parent_table
 from table_to_dsl import (main as t2d_main)
@@ -92,7 +92,7 @@ def _prepare_child(md):
     那张子表就不会被内嵌（不可下钻），与"产物不存在就降级"同一口径。
     """
     from pathlib import Path as _P
-    yml = _P(md).parent / f'{artifact_stem(_P(md))}-flow.yaml'
+    yml = _P(md).parent / artifact_name(artifact_stem(_P(md)), 'yaml')
     if t2d_main(['--check', str(md)]) != 0:
         print(f'  ⚠ 子表未内嵌（结构校验未过）：{md}')
         return False
@@ -140,7 +140,7 @@ def _find_parent(ft):
         return None
     parent_ft, node_name = r
     # 回程链接指向**父图的产物**（同一套命名规则算出来的名字），不是父图流程表。
-    href = os.path.relpath(parent_ft.parent / f'{artifact_stem(parent_ft)}-flow.html',
+    href = os.path.relpath(parent_ft.parent / artifact_name(artifact_stem(parent_ft), 'html'),
                            ft.parent).replace('\\', '/')
     return href, node_name
 
@@ -581,7 +581,7 @@ def main(argv=None):
     # 流程名取目录名（表名是约定名 `flowtable` 时）或表名——`flowtable.md` 不承载语义，
     # 流程的身份在目录上。产物一律叫 `flow.html` 的话，发出去是一堆没有名字的文件。
     stem = artifact_stem(ft)
-    yaml_path = out_dir / f'{stem}-flow.yaml'
+    yaml_path = out_dir / artifact_name(stem, 'yaml')
     if ft.name != 'flowtable.md':
         print(f'· 流程表文件名是 {ft.name}（约定名是 flowtable.md）：产物名按表名取 '
               f'→ {stem}-flow.yaml / {stem}-flow.html / {stem}-flow.drawio')

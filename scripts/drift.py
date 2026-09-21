@@ -304,8 +304,21 @@ def collect(nodes, _edges, els, mats, recon, intake, th):
 
 # ----------------------------------------------------------------读入（表 / 账本 / 两张伴生表）
 def load_thresholds(path=None):
-    """阈值 = 内置默认 + `dictionary.yaml` 的 `drift:` 段（**读取口径只有一处**：`thresholds.load`）。"""
-    return thresholds.load('drift', DEFAULTS, path)
+    """阈值 = 内置默认 + `dictionary.yaml` 的 `drift:` 段（读取口径只有一处：`thresholds.load`）。
+
+    **`coverage_min_elements` 必须是正整数**（G73）：它是"元素数下限"，写成 `-1` 会让**每一份**
+    材料的 D5 都出手（"样本太小不判"这道闸等于被关掉）。`recon` / `query` 那边早已要求正整数，
+    这里原先只要求"是个数"——`thresholds.load` 不做整数校验（比例是浮点，混在一起校不纯），
+    所以在**读回来之后**单独校一次。
+    """
+    th = thresholds.load('drift', DEFAULTS, path)
+    n = th.get('coverage_min_elements')
+    if not isinstance(n, int) or isinstance(n, bool) or n < 1:
+        print(f'⚠ drift 阈值 coverage_min_elements={n!r} 不是正整数，已退回默认 '
+              f'{DEFAULTS["coverage_min_elements"]}（它是元素数下限，0 或负数会把"样本太小不判"关掉）',
+              file=sys.stderr)
+        th['coverage_min_elements'] = DEFAULTS['coverage_min_elements']
+    return th
 
 
 def load_flowtable(path):

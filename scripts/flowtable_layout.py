@@ -6,6 +6,7 @@
 
 本模块不依赖 flowtable / semantics / geometry：它只吃节点与边这些已经是纯数据的入参。
 """
+import collections
 import re
 
 
@@ -45,10 +46,12 @@ def _topo_order(ids, edges):
             continue
         outs[e['from']].append(e['to'])
         indeg[e['to']] += 1
-    q = [i for i in ids if indeg[i] == 0]
+    # **用 deque 而不是 list.pop(0)**（G71）：后者是 O(n) 的搬移，整趟退化成 O(n²)——
+    # 本仓的图表（几百节点）感觉不到，但它是白拿的，与"单列函数流"那条纪律同一取向。
+    q = collections.deque(i for i in ids if indeg[i] == 0)
     order = []
     while q:
-        cur = q.pop(0)
+        cur = q.popleft()
         order.append(cur)
         for v in outs[cur]:
             indeg[v] -= 1
@@ -136,7 +139,11 @@ def _merge_branch_group(grp, row, col, moved):
     """把一组汇聚到同一点的分支并到同一行的相邻列（首分支留在原位，其余向右排）。"""
     grp = sorted(grp, key=lambda x: row[x])
     base_r = row[grp[0]]
-    nxt = max((c for i, c in col.items() if row[i] == base_r), default=col[grp[0]]) + 1
+    # `default` 取**本行现有列号的最大值**（G72）：原先是 `col[grp[0]]`，当 base 行上没有别的
+    # 节点时它未必是最右列，新列可能压在左侧已有节点上（随后 `balance_arms` 重编号兜住了，
+    # 但"先造一个重叠再靠后面修"不该是设计）。`col.values()` 为空时退回 0（+1 得 1）。
+    nxt = max((c for i, c in col.items() if row[i] == base_r),
+              default=max(col.values(), default=0)) + 1
     for k in grp[1:]:
         row[k], col[k] = base_r, nxt
         nxt += 1

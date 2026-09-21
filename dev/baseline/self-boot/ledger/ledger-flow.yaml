@@ -106,7 +106,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 按 §2.1 的键序组装账本：**多余的键一律丢弃**（模型封闭，不许夹带）。 · L176 · 函数 · ⇢ 依赖 capability.stamp
+  desc: ★ 按 §2.1 的键序组装账本：**多余的键一律丢弃**（模型封闭，不许夹带）。 · L178 · 函数 · ⇢ 依赖 capability.stamp
 - id: 09
   name: dump
   lines:
@@ -118,7 +118,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 写盘契约（§2.4）：UTF-8 / **LF** / 缩进 2 / 中文不转义 / 末尾一个换行。返回字节数。 · L195 · 函数
+  desc: ★ 写盘契约（§2.4）：UTF-8 / **LF** / 缩进 2 / 中文不转义 / 末尾一个换行。返回字节数。 · L197 · 函数
 - id: '10'
   name: main
   lines:
@@ -130,7 +130,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→03｜3→04｜4→05｜5→06｜6→07｜7→08｜8→09
-  desc: L203 · 函数 · 分支：1→_read_json 2→check_materials 3→check_elements 4→degrade 5→check_notes
+  desc: L205 · 函数 · 分支：1→_read_json 2→check_materials 3→check_elements 4→degrade 5→check_notes
     6→apply_notes 7→assemble 8→dump · ⇢ 依赖 artifact.beside
 - id: '11'
   name: 结束

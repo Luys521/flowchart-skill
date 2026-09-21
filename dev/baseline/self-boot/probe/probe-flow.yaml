@@ -106,7 +106,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →07
-  desc: ★ 能按 UTF-8 解码且无 NUL 字节 → 文本（T1）；否则 None。**头尾都要过**。 · L163 · 函数
+  desc: ★ 能按 UTF-8 解码且无 NUL 字节 → 文本（T1）；否则 None。**头尾都要过**。 · L168 · 函数
 - id: 09
   name: sniff
   lines:
@@ -118,7 +118,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→03｜3→04｜4→06｜5→08｜6→11
-  desc: ★ 一个文件 → `(tier, probe, status, reason, kind)`。`probe` 是**判据*… · L185 · 函数
+  desc: ★ 一个文件 → `(tier, probe, status, reason, kind)`。`probe` 是**判据*… · L190 · 函数
     · 分支：1→_bmp_ok 2→_read_head 3→_ooxml_kind 4→_pdf_tier 5→_text_tier 6→_read_tail
 - id: '10'
   name: _mtime
@@ -131,7 +131,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →18
-  desc: ★ 修改时间（ISO 8601 本地时区）；取不到返回空串（不崩）—§3「替代」的末位兜底。 · L236 · 函数
+  desc: ★ 修改时间（ISO 8601 本地时区）；取不到返回空串（不崩）—§3「替代」的末位兜底。 · L241 · 函数
 - id: '11'
   name: _read_tail
   lines:
@@ -143,7 +143,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →18
-  desc: ★ 末 n 字节（不足就全给）；读不动返回空（调用方按"没有尾部"处理，不崩）。 · L243 · 函数
+  desc: ★ 末 n 字节（不足就全给）；读不动返回空（调用方按"没有尾部"处理，不崩）。 · L248 · 函数
 - id: '12'
   name: _sha_and_size
   lines:
@@ -155,7 +155,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →18
-  desc: ★ → `(sha256, 字节数)`，**分块读**（默认 1 MiB 一块）。 · L255 · 函数
+  desc: ★ → `(sha256, 字节数)`，**分块读**（默认 1 MiB 一块）。 · L260 · 函数
 - id: '13'
   name: probe_tree
   lines:
@@ -167,7 +167,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→09｜2→10｜3→12
-  desc: ★ 路径（文件或目录）→ `materials[]`；目录按**材料路径字典序**编号 `M01`…（PIPELINE-S… · L273 · 函数
+  desc: ★ 路径（文件或目录）→ `materials[]`；目录按**材料路径字典序**编号 `M01`…（PIPELINE-S… · L278 · 函数
     · 分支：1→sniff 2→_mtime 3→_sha_and_size
 - id: '14'
   name: verify_list
@@ -180,7 +180,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→12｜2→15
-  desc: ★ **陈化检查**：`materials[]` 记的与材料根**当下**还对不对得上（PIPELINE-SPEC §1.… · L303 · 函数
+  desc: ★ **陈化检查**：`materials[]` 记的与材料根**当下**还对不对得上（PIPELINE-SPEC §1.… · L308 · 函数
     · 分支：1→_sha_and_size 2→_is_artifact_name
 - id: '15'
   name: _is_artifact_name
@@ -193,7 +193,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →18
-  desc: ★ 这份"新文件"是不是**本工具链自己的产物**？（产物名 / `.todo.json` / `.bak` ⇒ 是） · L359 · 函数
+  desc: ★ 这份"新文件"是不是**本工具链自己的产物**？（产物名 / `.todo.json` / `.bak` ⇒ 是） · L364 · 函数
 - id: '16'
   name: _print_table
   lines:
@@ -205,7 +205,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →18
-  desc: ★ 人读摘要：一行一份材料。 · L369 · 函数
+  desc: ★ 人读摘要：一行一份材料。 · L376 · 函数
 - id: '17'
   name: main
   lines:
@@ -217,7 +217,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→13｜2→14｜3→16
-  desc: L378 · 函数 · 分支：1→probe_tree 2→verify_list 3→_print_table
+  desc: L385 · 函数 · 分支：1→probe_tree 2→verify_list 3→_print_table
 - id: '18'
   name: 结束
   lines:

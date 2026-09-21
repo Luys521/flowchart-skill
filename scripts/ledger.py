@@ -153,7 +153,7 @@ def apply_notes(materials, notes):
     （probe 给的初值被第一条补注改写不算覆盖，那是正常路径）。
     """
     by_id = {m.get('id'): m for m in materials}
-    n_unreadable, overrides, touched = 0, [], set()
+    overrides, touched = [], set()
     for note in notes:
         m = by_id.get(note.get('material_id'))
         if m is None:
@@ -168,8 +168,10 @@ def apply_notes(materials, notes):
             overrides.append(f'{mid}: {before} → {m.get("status")}'
                              f'（{note.get("extractor") or "补注"}）')
         touched.add(mid)
-        if m.get('status') == 'unreadable':
-            n_unreadable += 1
+    # **口径是"落账后 status=unreadable 的**材料**数"，不是补注条数**（G73）：原先在补注循环里自增，
+    # 于是同一份材料两条补注会被数两次、先 unreadable 后改回 ok 也会数歪——而调用方把这句话
+    # 印成"读不动 N **份**"。循环外统一数一次才与"份"对齐。
+    n_unreadable = sum(1 for m in materials if m.get('status') == 'unreadable')
     return len(notes), n_unreadable, overrides
 
 

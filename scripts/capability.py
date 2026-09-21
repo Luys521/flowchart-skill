@@ -135,9 +135,15 @@ def read_md(text):
 
 
 def read_json(obj):
-    """从产物对象里读章（`evidence.json` 顶层键）。缺失/歪掉都返回 `None` → 由 `compare` 说清。"""
-    got = obj.get(KEY) if isinstance(obj, dict) else None
-    return got if isinstance(got, dict) else None
+    """从产物对象里读章（`evidence.json` 顶层键）→ **章原样**，或 `None`（没这个键）。
+
+    **键在但不是对象时原样返回**（G73）：原先这里把非 dict 一律折成 `None`，于是 `compare` 里
+    那条 `bad`（"章读不动 = 产物被改坏了"）**永远进不来**——一份章被改坏的账本会被报成
+    `absent`（"来自盖指纹之前的版本"），那是两种处境、两句话。现在把值原样交给 `compare` 判。
+    """
+    if not isinstance(obj, dict) or KEY not in obj:
+        return None
+    return obj[KEY]
 
 
 def _describe():

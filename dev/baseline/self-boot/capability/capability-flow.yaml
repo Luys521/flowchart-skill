@@ -130,7 +130,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →14
-  desc: ★ 从产物对象里读章（`evidence.json` 顶层键）。缺失/歪掉都返回 `None` → 由 `compare`… · L137 · 函数
+  desc: ★ 从产物对象里读章（`evidence.json` 顶层键）→ **章原样**，或 `None`（没这个键）。 · L137 · 函数
 - id: '11'
   name: _describe
   lines:
@@ -142,7 +142,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→03｜2→05
-  desc: ★ 纯打印模式的两行（顺带报每组覆盖多少份文件——"射程"要看得见）。 · L143 · 函数 · 分支：1→files 2→stamp
+  desc: ★ 纯打印模式的两行（顺带报每组覆盖多少份文件——"射程"要看得见）。 · L149 · 函数 · 分支：1→files 2→stamp
 - id: '12'
   name: cmd_check
   lines:
@@ -154,7 +154,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→05｜2→06｜3→09｜4→10
-  desc: ★ 逐份核对产物上的章。**退 2** = 有对不上的（缺章也算）或读不了。 · L151 · 函数 · 分支：1→stamp 2→compare
+  desc: ★ 逐份核对产物上的章。**退 2** = 有对不上的（缺章也算）或读不了。 · L157 · 函数 · 分支：1→stamp 2→compare
     3→read_md 4→read_json
 - id: '13'
   name: main
@@ -167,7 +167,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→05｜2→11｜3→12
-  desc: L186 · 函数 · 分支：1→stamp 2→_describe 3→cmd_check
+  desc: L192 · 函数 · 分支：1→stamp 2→_describe 3→cmd_check
 - id: '14'
   name: 结束
   lines:

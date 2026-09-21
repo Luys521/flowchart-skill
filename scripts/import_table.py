@@ -138,6 +138,26 @@ def header_of(text, header_row=None):
                       '表头不在第一行时用 `--header-row N` 明说')
 
 
+def dropped_rows(text, header):
+    """本表里**列数与表头不一致、因而没被导入**的行数（G73）。
+
+    为什么单列一条：`data = [r for r in rows if len(r) == len(header)]` 是**静默**丢弃——丢一条
+    节点不打招呼，读的人只看得到"认到的列"，看不出少了几行。典型成因是单元格里的 `|` 没转义。
+
+    定位方式是**按表头内容找回那张表**（`cells == want`），**不重写"哪张表才是节点表"的选择规则**
+    ——那条规则只有 `header_of` 一处（G73 要的是"说出来"，不是再抄一遍）。两张表表头逐格相同时
+    取第一张，极少数情况下计数可能偏大，但它是告警不是判据。
+    """
+    want = list(header or [])
+    if not want:
+        return 0
+    for rows in _tables_of(text):
+        for i, cells in enumerate(rows):
+            if cells == want:
+                return sum(1 for r in rows[i + 1:] if len(r) != len(cells))
+    return 0
+
+
 def map_columns(cells):
     """表头 → `({下标: 契约列}, 认不出的列名)`。**按"最长的同义词"取胜，平局按关键列**。
 
@@ -383,6 +403,10 @@ def main(argv=None):
     print('  · 认到的列：' + ' / '.join(f'{header[i]}→{t}' for i, t in sorted(cols.items())))
     if ignored:
         print(f'  · **没认到的列（原样丢掉，请核对是否漏了信息）**：{" / ".join(ignored)}')
+    _dropped = dropped_rows(text, header)
+    if _dropped:
+        print(f'  · ⚠ **有 {_dropped} 行列数与表头不一致，没有导入**——多半是单元格里的 `|` 没转义；'
+              f'核对一下是不是漏了节点（G73）')
     for c in COLUMNS:
         if c not in cols.values():
             print(f'  · 缺列 `{c}` ⇒ 留 `{NO}`' + ('（AI 要填：依据要指到 element id）'

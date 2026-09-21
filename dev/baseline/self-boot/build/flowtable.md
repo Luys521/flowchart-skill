@@ -16,9 +16,9 @@ parent: ../flowtable.md
 | 模块级 | 02 | _ids | 任务 | — | — | — | 脚本 | selfboot | — | →27 | ★ 读 flow.yaml 里的节点 id 集合；读不动（文件坏/不存在/缺 id 键）返回空集。 · L42 · 函数 |
 | 模块级 | 03 | _rollback | 任务 | — | — | — | 脚本 | selfboot | — | →27 | ★ 审核未过 → 把刚写下的产物还原成审核前的样子（原本不存在的就删掉）。 · L53 · 函数 |
 | 模块级 | 04 | _rollback_manifest | 任务 | — | — | — | 脚本 | selfboot | — | →27 | ★ 渲染契约跟产物**同进同退**：失败时还原成上一版（原本不存在的就删掉）。见 D-81。 · L66 · 函数 · ⇢ 依赖 manifest.manifest_path_for |
-| 模块级 | 05 | _prepare_child | 任务 | — | — | — | 脚本 | selfboot | — | →27 | ★ 给一张后代子表补上 DSL（结构校验 → 转 DSL）。见 D-52。 · L81 · 函数 · ⇢ 依赖 artifact.artifact_stem、table_to_dsl.main |
+| 模块级 | 05 | _prepare_child | 任务 | — | — | — | 脚本 | selfboot | — | →27 | ★ 给一张后代子表补上 DSL（结构校验 → 转 DSL）。见 D-52。 · L81 · 函数 · ⇢ 依赖 artifact.artifact_name、artifact.artifact_stem、table_to_dsl.main |
 | 模块级 | 06 | _gate_child_view | 任务 | — | — | — | 脚本 | selfboot | — | →27 | ★ 对一张**会内嵌的子表**跑几何门禁；只警告不阻断（见 D-52）。 · L108 · 函数 · ⇢ 依赖 engine.load、validate.check |
-| 模块级 | 07 | _find_parent | 任务 | — | — | — | 脚本 | selfboot | — | →27 | ★ 这张流程表是不是别人的下钻子图？是则返回 (父图相对链接, 父节点名)，不是返回 None。 · L131 · 函数 · ⇢ 依赖 artifact.artifact_stem、flowtable.find_parent_table |
+| 模块级 | 07 | _find_parent | 任务 | — | — | — | 脚本 | selfboot | — | →27 | ★ 这张流程表是不是别人的下钻子图？是则返回 (父图相对链接, 父节点名)，不是返回 None。 · L131 · 函数 · ⇢ 依赖 artifact.artifact_name、artifact.artifact_stem、flowtable.find_parent_table |
 | 模块级 | 08 | _parse_args | 任务 | — | — | — | 脚本 | selfboot | — | →27 | ★ 解析 build 的命令行参数。 · L148 · 函数 |
 | 模块级 | 09 | _check_structure | 任务 | — | — | — | 脚本 | selfboot | — | →27 | ★ 跑结构校验；未过则报错并返回 1。 · L164 · 函数 · ⇢ 依赖 table_to_dsl.main |
 | 模块级 | 10 | _gen_dsl | 任务 | — | — | — | 脚本 | selfboot | — | →02 | ★ 生成 DSL（可复用已有 flow.yaml 几何）；复用时提示新增节点，失败返回 1。 · L174 · 函数 · ⇢ 依赖 table_to_dsl.main |
@@ -37,5 +37,5 @@ parent: ../flowtable.md
 | 模块级 | 23 | _renderer | 任务 | — | — | — | 脚本 | selfboot | — | →22 | ★ 按注册表取渲染器实例。**调用时现查 `globals()`**（理由见上面 RENDERERS 的注释）。 · L534 · 函数 |
 | 模块级 | 24 | _product_paths | 任务 | — | — | — | 脚本 | selfboot | — | →27 | ★ 产物路径由注册表派生（W5）：`<流程名>-flow<ext>`。 · L539 · 函数 |
 | 模块级 | 25 | _render_ctx | 任务 | — | — | — | 脚本 | selfboot | — | →07 | ★ 每类渲染器自己的私有选项（经 `ctx` 传，见 ARCHITECTURE.md 第九节）。 · L548 · 函数 · ⇢ 依赖 render_drawio.discover_pages |
-| 模块级 | 26 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→03｜2→04｜3→08｜4→09｜5→10｜6→11｜7→12｜8→13｜9→14｜10→15｜11→16｜12→17｜13→19｜14→20｜15→24 | L562 · 函数 · 分支：1→_rollback 2→_rollback_manifest 3→_parse_args 4→_check_structure 5→_gen_dsl 6→_validate_geometry 7→_prepare_views 8→_render_products 9→_audit_contract 10→_lane_source 11→_audit_geometry 12→_write_layer_index 13→_report_receipt 14→_report_pending 15→_product_paths · ⇢ 依赖 artifact.artifact_stem、manifest.manifest_path_for |
+| 模块级 | 26 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→03｜2→04｜3→08｜4→09｜5→10｜6→11｜7→12｜8→13｜9→14｜10→15｜11→16｜12→17｜13→19｜14→20｜15→24 | L562 · 函数 · 分支：1→_rollback 2→_rollback_manifest 3→_parse_args 4→_check_structure 5→_gen_dsl 6→_validate_geometry 7→_prepare_views 8→_render_products 9→_audit_contract 10→_lane_source 11→_audit_geometry 12→_write_layer_index 13→_report_receipt 14→_report_pending 15→_product_paths · ⇢ 依赖 artifact.artifact_name、artifact.artifact_stem、manifest.manifest_path_for |
 | 出口 | 27 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |

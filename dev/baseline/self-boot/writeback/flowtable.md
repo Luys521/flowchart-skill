@@ -35,5 +35,5 @@ parent: ../flowtable.md
 | 模块级 | 21 | _verify_written | 任务 | — | — | — | 脚本 | selfboot | — | 1→09｜2→10 | ★ 回写后自检（H1–H8），并报警分支走向冲突与缺语义的节点；返回**是否通过**。 · L370 · 函数 · 分支：1→branch_conflicts 2→format_conflicts · ⇢ 依赖 flowtable_check.run_checks |
 | 模块级 | 22 | write | 任务 | — | — | — | 脚本 | selfboot | — | 1→06｜2→11｜3→12｜4→13｜5→14｜6→16｜7→17｜8→18｜9→19｜10→20｜11→21 | ★ drawio 读回结果 + 原流程表 → 更新后的流程表（回写闭环主入口）。 · L406 · 函数 · 分支：1→orig_tokens 2→_read_drawio 3→_read_orig_snapshot 4→_semantic_snapshot 5→_orig_line_index 6→_split_table_block 7→_table_frame 8→_rebuild_rows 9→_keep_after_table 10→_emit_table 11→_verify_written · ⇢ 依赖 flowtable.parse_table |
 | 模块级 | 23 | compare_bytes | 任务 | — | — | — | 脚本 | selfboot | — | →25 | ★ 回写结果 vs 原文的**文件级**复核 → (是否逐字节一致, unified diff 行列表)。 · L429 · 函数 |
-| 模块级 | 24 | main | 任务 | — | — | — | 脚本 | selfboot | — | →22 | L445 · 函数 |
+| 模块级 | 24 | main | 任务 | — | — | — | 脚本 | selfboot | — | →22 | L447 · 函数 |
 | 出口 | 25 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |

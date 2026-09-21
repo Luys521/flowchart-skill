@@ -15,7 +15,7 @@ import yaml as _yaml
 
 from xml_reader import read, brief, diff
 from writeback import write, compare_bytes, branch_conflicts, format_conflicts
-from artifact import artifact_stem
+from artifact import artifact_name, artifact_stem
 from flowtable_layout import auto_layout
 from table_to_dsl import main as t2d_main
 from validate import main as validate_main
@@ -135,12 +135,15 @@ def _gen_dsl(data, orig, out_ft, yaml_opt):
     # 泳道布局的行列按「阶段 × 主体」语义重排，table_to_dsl 会忽略 --layout 提示——文案分开说，别让人找错地方
     from flowtable import parse_table
     _t, wb_meta, _r = parse_table(out_ft.read_text(encoding='utf-8-sig'))
-    if '泳道' in (wb_meta.get('输出布局') or ''):
-        print('--- 生成 DSL（泳道布局按阶段×主体重排，不借用原图几何）---')
-    else:
-        print('--- 生成 DSL（带入原图二维布局）---')
-    rc = t2d_main(['--write', '--layout', hint_path, str(out_ft), '-o', str(yaml_out)])
-    Path(hint_path).unlink(missing_ok=True)
+    try:
+        print('--- 生成 DSL（泳道布局按阶段×主体重排，不借用原图几何）---'
+              if '泳道' in (wb_meta.get('输出布局') or '')
+              else '--- 生成 DSL（带入原图二维布局）---')
+        rc = t2d_main(['--write', '--layout', hint_path, str(out_ft), '-o', str(yaml_out)])
+    finally:
+        # **异常路径也要清**（G71）：原先 unlink 排在 `t2d_main` 之后且无 finally——
+        # `t2d_main` 抛异常时临时 hint 就留在系统临时目录里（跑一次漏一个）。
+        Path(hint_path).unlink(missing_ok=True)
     if rc != 0:
         print('✗ DSL 生成未通过结构校验，请修正流程表后重跑')
         return yaml_out, 1
@@ -166,7 +169,7 @@ def _source_guard(orig):
     没有基线（首版契约没记指纹）时判不出，这时不拦——旧行为保持不变。
     """
     from manifest import manifest_path_for, source_stale
-    yaml_path = orig.parent / f'{artifact_stem(orig)}-flow.yaml'
+    yaml_path = orig.parent / artifact_name(artifact_stem(orig), 'yaml')
     return source_stale(orig, manifest_path_for(yaml_path))
 
 
@@ -204,7 +207,7 @@ def _apply(orig, out_ft, yaml_out, data, force, stale=None):
     # 产物审核任意一环）。失败时表已经换成图里那版，用户的手工改动再也回不来——build 那边
     # "不留半成品"的纪律在这里一直是缺的。底本只留内存，不落 `.bak`：用户不需要多一个"要不要删"的
     # 文件，这里只需要一次失败回滚。
-    yaml_target = orig.parent / f'{artifact_stem(orig)}-flow.yaml'
+    yaml_target = orig.parent / artifact_name(artifact_stem(orig), 'yaml')
     prev = {p: p.read_bytes() for p in (orig, yaml_target) if p.exists()}
     shutil.copyfile(out_ft, orig)
     shutil.copyfile(yaml_out, yaml_target)

@@ -168,7 +168,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →29
-  desc: ★ 阈值 = 内置默认 + `dictionary.yaml` 的 `drift:` 段（**读取口径只有一处**：`th… · L306 · 函数
+  desc: ★ 阈值 = 内置默认 + `dictionary.yaml` 的 `drift:` 段（读取口径只有一处：`thresh… · L306 · 函数
     · ⇢ 依赖 thresholds.load
 - id: '14'
   name: load_flowtable
@@ -181,7 +181,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →29
-  desc: ★ 流程表 → `(nodes, edges, errs)`。用的是**结构校验的唯一入口**（`run_checks`）… · L311 · 函数
+  desc: ★ 流程表 → `(nodes, edges, errs)`。用的是**结构校验的唯一入口**（`run_checks`）… · L324 · 函数
     · ⇢ 依赖 flowtable.parse_table、flowtable_check.run_checks
 - id: '15'
   name: index_ledger
@@ -194,7 +194,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →29
-  desc: ★ 账本 → `(元素 id → 元素, 材料 id → 材料)`。取不到的键不硬造（下游按"没有"处理）。 · L317 · 函数
+  desc: ★ 账本 → `(元素 id → 元素, 材料 id → 材料)`。取不到的键不硬造（下游按"没有"处理）。 · L330 · 函数
 - id: '16'
   name: read_side_table
   lines:
@@ -206,7 +206,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →29
-  desc: '★ `recon.md` / `intake.md` → `({M##: {列: 值}}, 报错)`。**列按名字取**，… · L324 · 函数'
+  desc: '★ `recon.md` / `intake.md` → `({M##: {列: 值}}, 报错)`。**列按名字取**，… · L337 · 函数'
 - id: '17'
   name: inputs_of
   lines:
@@ -218,7 +218,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→15｜2→16
-  desc: ★ 一次运行的三份输入 → `(元素表, 材料表, 假设账, 清点, 报错)`。 · L366 · 函数 · 分支：1→index_ledger 2→read_side_table
+  desc: ★ 一次运行的三份输入 → `(元素表, 材料表, 假设账, 清点, 报错)`。 · L379 · 函数 · 分支：1→index_ledger 2→read_side_table
 - id: '18'
   name: prepare
   lines:
@@ -230,7 +230,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→11｜2→12｜3→13｜4→14｜5→17
-  desc: ★ `build` / `check` 共用的准备 → `{判据读数, 阈值, 硬错, 读坏, 跳过了哪几条}`。 · L379 · 函数 · 分支：1→rule_readout
+  desc: ★ `build` / `check` 共用的准备 → `{判据读数, 阈值, 硬错, 读坏, 跳过了哪几条}`。 · L392 · 函数 · 分支：1→rule_readout
     2→collect 3→load_thresholds 4→load_flowtable 5→inputs_of
 - id: '19'
   name: parse_doc
@@ -243,7 +243,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →29
-  desc: ★ `drift.md` → `(漂移行, 缺口行, 报错)`。三张表的表头**必须逐字对得上**（列规范在代码里只有一份… · L398 · 函数
+  desc: ★ `drift.md` → `(漂移行, 缺口行, 报错)`。三张表的表头**必须逐字对得上**（列规范在代码里只有一份… · L411 · 函数
 - id: '20'
   name: _blank
   lines:
@@ -255,7 +255,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →29
-  desc: ★ 空值判据（`—` / 空 / `无` 都算没填）——只给下面两个对账函数用，所以排在这里。 · L431 · 函数
+  desc: ★ 空值判据（`—` / 空 / `无` 都算没填）——只给下面两个对账函数用，所以排在这里。 · L444 · 函数
 - id: '21'
   name: check_drift_rows
   lines:
@@ -267,7 +267,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →20
-  desc: ★ 漂移账 → 错误清单。**该表与"现在的读数"双向对账**： · L436 · 函数
+  desc: ★ 漂移账 → 错误清单。**该表与"现在的读数"双向对账**： · L449 · 函数
 - id: '22'
   name: check_gap_rows
   lines:
@@ -279,7 +279,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →20
-  desc: ★ 缺口清单 → 错误清单（状态封闭 · `已取证` 要写清要哪一片 · `已放弃` 要写理由 · 同样双向对账）。 · L473 · 函数
+  desc: ★ 缺口清单 → 错误清单（状态封闭 · `已取证` 要写清要哪一片 · `已放弃` 要写理由 · 同样双向对账）。 · L486 · 函数
 - id: '23'
   name: _esc
   lines:
@@ -291,7 +291,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →29
-  desc: ★ 单元格里的 `｜` 会撕表 → 换全角（与 `intake.py` 同一口径）。 · L504 · 函数
+  desc: ★ 单元格里的 `｜` 会撕表 → 换全角（与 `intake.py` 同一口径）。 · L517 · 函数
 - id: '24'
   name: render
   lines:
@@ -303,7 +303,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →23
-  desc: ★ 漂移清单 + 缺口清单（markdown）。**表头先写输入指纹、跳过的判据与本次阈值**—— · L509 · 函数
+  desc: ★ 漂移清单 + 缺口清单（markdown）。**表头先写输入指纹、跳过的判据与本次阈值**—— · L522 · 函数
 - id: '25'
   name: cmd_build
   lines:
@@ -315,7 +315,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→18｜2→24
-  desc: ★ 出草稿：机器列已填，AI 那几列留空（`待验` / `待取证`）。 · L547 · 函数 · 分支：1→prepare 2→render ·
+  desc: ★ 出草稿：机器列已填，AI 那几列留空（`待验` / `待取证`）。 · L560 · 函数 · 分支：1→prepare 2→render ·
     ⇢ 依赖 artifact.beside、cells.dump、cells.todo_from_doc
 - id: '26'
   name: check_header
@@ -328,7 +328,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →29
-  desc: ★ `drift.md` 头部（`>` 行）↔ 本次调用的**输入 / 阈值 / 表** → `(错误, 提示)`。 · L595 · 函数
+  desc: ★ `drift.md` 头部（`>` 行）↔ 本次调用的**输入 / 阈值 / 表** → `(错误, 提示)`。 · L608 · 函数
 - id: '27'
   name: cmd_check
   lines:
@@ -340,7 +340,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→18｜2→19｜3→21｜4→22｜5→26
-  desc: ★ 查收敛：**拿当前表重跑判据**，与文件里的处置对账（§5.4）。 · L651 · 函数 · 分支：1→prepare 2→parse_doc
+  desc: ★ 查收敛：**拿当前表重跑判据**，与文件里的处置对账（§5.4）。 · L664 · 函数 · 分支：1→prepare 2→parse_doc
     3→check_drift_rows 4→check_gap_rows 5→check_header
 - id: '28'
   name: main
@@ -353,7 +353,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→25｜2→27
-  desc: ★ 子命令分发。**用显式 if 而不是 `set_defaults(func=…)`**：后者在静态调用图里看不见， · L688 · 函数 ·
+  desc: ★ 子命令分发。**用显式 if 而不是 `set_defaults(func=…)`**：后者在静态调用图里看不见， · L701 · 函数 ·
     分支：1→cmd_build 2→cmd_check
 - id: '29'
   name: 结束

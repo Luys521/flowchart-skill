@@ -12,7 +12,7 @@ level: L0
 | 项目运作阶段 | 节点编号 | 节点名称 | 节点类型 | 输入 | 依据 | 输出 | 执行主体 | 执行者 | 行动所需时间 | 下个节点 | 节点描述 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 入口 | 01 | 开始 | 开始 | — | — | — | 脚本 | selfboot | — | →02 | 模块清单（结构性节点，不是函数） |
-| 接管与解析 | 02 | 模块 · artifact | 任务 | — | — | — | 脚本 | selfboot | — | →03 | 3 个函数 · ⊞ artifact/flowtable.md |
+| 接管与解析 | 02 | 模块 · artifact | 任务 | — | — | — | 脚本 | selfboot | — | →03 | 4 个函数 · ⊞ artifact/flowtable.md |
 | 编排入口 | 03 | 模块 · build | 任务 | — | — | — | 脚本 | selfboot | — | →04 | 25 个函数 · ⊞ build/flowtable.md |
 | 接管与解析 | 04 | 模块 · capability | 任务 | — | — | — | 脚本 | selfboot | — | →05 | 12 个函数 · ⊞ capability/flowtable.md |
 | 接管与解析 | 05 | 模块 · cells | 任务 | — | — | — | 脚本 | selfboot | — | →06 | 11 个函数 · ⊞ cells/flowtable.md |
@@ -26,7 +26,7 @@ level: L0
 | 布局与配色 | 13 | 模块 · flowtable_colors | 任务 | — | — | — | 脚本 | selfboot | — | →14 | 8 个函数 · ⊞ flowtable_colors/flowtable.md |
 | 布局与配色 | 14 | 模块 · flowtable_layout | 任务 | — | — | — | 脚本 | selfboot | — | →15 | 21 个函数 · ⊞ flowtable_layout/flowtable.md |
 | 渲染 | 15 | 模块 · geometry | 任务 | — | — | — | 脚本 | selfboot | — | →16 | 33 个函数 · ⊞ geometry/flowtable.md |
-| 接管与解析 | 16 | 模块 · import_table | 任务 | — | — | — | 脚本 | selfboot | — | →17 | 12 个函数 · ⊞ import_table/flowtable.md |
+| 接管与解析 | 16 | 模块 · import_table | 任务 | — | — | — | 脚本 | selfboot | — | →17 | 13 个函数 · ⊞ import_table/flowtable.md |
 | 编排入口 | 17 | 模块 · init | 任务 | — | — | — | 脚本 | selfboot | — | →18 | 4 个函数 · ⊞ init/flowtable.md |
 | 接管与解析 | 18 | 模块 · intake | 任务 | — | — | — | 脚本 | selfboot | — | →19 | 9 个函数 · ⊞ intake/flowtable.md |
 | 渲染 | 19 | 模块 · label | 任务 | — | — | — | 脚本 | selfboot | — | →20 | 9 个函数 · ⊞ label/flowtable.md |

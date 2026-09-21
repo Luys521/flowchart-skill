@@ -6,7 +6,7 @@
 ## 层级树
 
 - **L0 主流程** `flowtable.md`——《self-boot — 模块索引》（id: selfboot-map）（49 节点）
-  - **L1 子流程** `artifact/flowtable.md`——《artifact.py 函数流程表》（id: selfboot-artifact）（5 节点）
+  - **L1 子流程** `artifact/flowtable.md`——《artifact.py 函数流程表》（id: selfboot-artifact）（6 节点）
   - **L1 子流程** `build/flowtable.md`——《build.py 函数流程表》（id: selfboot-build）（27 节点）
   - **L1 子流程** `capability/flowtable.md`——《capability.py 函数流程表》（id: selfboot-capability）（14 节点）
   - **L1 子流程** `cells/flowtable.md`——《cells.py 函数流程表》（id: selfboot-cells）（13 节点）
@@ -16,11 +16,11 @@
   - **L1 子流程** `drift/flowtable.md`——《drift.py 函数流程表》（id: selfboot-drift）（29 节点）
   - **L1 子流程** `engine/flowtable.md`——《engine.py 函数流程表》（id: selfboot-engine）（28 节点）
   - **L1 子流程** `flowtable/flowtable.md`——《flowtable.py 函数流程表》（id: selfboot-flowtable）（29 节点）
-  - **L1 子流程** `flowtable_check/flowtable.md`——《flowtable_check.py 函数流程表》（id: selfboot-flowtable_check）（38 节点）
+  - **L1 子流程** `flowtable_check/flowtable.md`——《flowtable_check.py 函数流程表》（id: selfboot-flowtable_check）（37 节点）
   - **L1 子流程** `flowtable_colors/flowtable.md`——《flowtable_colors.py 函数流程表》（id: selfboot-flowtable_colors）（10 节点）
   - **L1 子流程** `flowtable_layout/flowtable.md`——《flowtable_layout.py 函数流程表》（id: selfboot-flowtable_layout）（23 节点）
   - **L1 子流程** `geometry/flowtable.md`——《geometry.py 函数流程表》（id: selfboot-geometry）（35 节点）
-  - **L1 子流程** `import_table/flowtable.md`——《import_table.py 函数流程表》（id: selfboot-import_table）（14 节点）
+  - **L1 子流程** `import_table/flowtable.md`——《import_table.py 函数流程表》（id: selfboot-import_table）（15 节点）
   - **L1 子流程** `init/flowtable.md`——《init.py 函数流程表》（id: selfboot-init）（6 节点）
   - **L1 子流程** `intake/flowtable.md`——《intake.py 函数流程表》（id: selfboot-intake）（11 节点）
   - **L1 子流程** `label/flowtable.md`——《label.py 函数流程表》（id: selfboot-label）（11 节点）

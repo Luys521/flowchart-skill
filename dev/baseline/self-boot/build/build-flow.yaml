@@ -70,7 +70,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: ★ 给一张后代子表补上 DSL（结构校验 → 转 DSL）。见 D-52。 · L81 · 函数 · ⇢ 依赖 artifact.artifact_stem、table_to_dsl.main
+  desc: ★ 给一张后代子表补上 DSL（结构校验 → 转 DSL）。见 D-52。 · L81 · 函数 · ⇢ 依赖 artifact.artifact_name、artifact.artifact_stem、table_to_dsl.main
 - id: '06'
   name: _gate_child_view
   lines:
@@ -94,7 +94,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: ★ 这张流程表是不是别人的下钻子图？是则返回 (父图相对链接, 父节点名)，不是返回 None。 · L131 · 函数 · ⇢ 依赖 artifact.artifact_stem、flowtable.find_parent_table
+  desc: ★ 这张流程表是不是别人的下钻子图？是则返回 (父图相对链接, 父节点名)，不是返回 None。 · L131 · 函数 · ⇢ 依赖 artifact.artifact_name、artifact.artifact_stem、flowtable.find_parent_table
 - id: 08
   name: _parse_args
   lines:
@@ -329,7 +329,7 @@ nodes:
   desc: L562 · 函数 · 分支：1→_rollback 2→_rollback_manifest 3→_parse_args 4→_check_structure
     5→_gen_dsl 6→_validate_geometry 7→_prepare_views 8→_render_products 9→_audit_contract
     10→_lane_source 11→_audit_geometry 12→_write_layer_index 13→_report_receipt 14→_report_pending
-    15→_product_paths · ⇢ 依赖 artifact.artifact_stem、manifest.manifest_path_for
+    15→_product_paths · ⇢ 依赖 artifact.artifact_name、artifact.artifact_stem、manifest.manifest_path_for
 - id: '27'
   name: 结束
   lines:

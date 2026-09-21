@@ -106,7 +106,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →12
-  desc: ★ 跑质量门禁；未过则报错并返回 1。 · L150 · 函数 · ⇢ 依赖 validate.main
+  desc: ★ 跑质量门禁；未过则报错并返回 1。 · L153 · 函数 · ⇢ 依赖 validate.main
 - id: 09
   name: _source_guard
   lines:
@@ -118,7 +118,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →12
-  desc: ★ 《流程表》自上次渲染后是否被直改过 → `(state, 说明)`。 · L161 · 函数 · ⇢ 依赖 artifact.artifact_stem、manifest.manifest_path_for、manifest.source_stale
+  desc: ★ 《流程表》自上次渲染后是否被直改过 → `(state, 说明)`。 · L164 · 函数 · ⇢ 依赖 artifact.artifact_name、artifact.artifact_stem、manifest.manifest_path_for、manifest.source_stale
 - id: '10'
   name: _apply
   lines:
@@ -130,7 +130,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →12
-  desc: ★ --apply：两道覆盖门禁通过后覆盖原表/DSL 并重渲染，返回退出码。 · L173 · 函数 · ⇢ 依赖 artifact.artifact_stem、build.main、flowtable.parse_table、writeback.branch_conflicts、writeback.format_conflicts
+  desc: ★ --apply：两道覆盖门禁通过后覆盖原表/DSL 并重渲染，返回退出码。 · L176 · 函数 · ⇢ 依赖 artifact.artifact_name、artifact.artifact_stem、build.main、flowtable.parse_table、writeback.branch_conflicts、writeback.format_conflicts
 - id: '11'
   name: main
   lines:
@@ -142,7 +142,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→03｜2→04｜3→05｜4→06｜5→07｜6→08｜7→09｜8→10
-  desc: L227 · 函数 · 分支：1→_parse_args 2→_resolve_paths 3→_read_back 4→_write_back 5→_gen_dsl
+  desc: L230 · 函数 · 分支：1→_parse_args 2→_resolve_paths 3→_read_back 4→_write_back 5→_gen_dsl
     6→_quality_gate 7→_source_guard 8→_apply
 - id: '12'
   name: 结束

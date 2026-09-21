@@ -300,7 +300,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→05｜3→10｜4→11｜5→22｜6→23
-  desc: ★ 一份 legacy 材料 → `(elements, 材料补注, 跳过说明, 报错文案)`。 · L464 · 函数 · 分支：1→no_converter_reason
+  desc: ★ 一份 legacy 材料 → `(elements, 材料补注, 跳过说明, 报错文案)`。 · L467 · 函数 · 分支：1→no_converter_reason
     2→ole_kind 3→convert 4→extract_via_ooxml 5→runs_of 6→fallback_elements
 - id: '25'
   name: parse_materials
@@ -313,7 +313,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →24
-  desc: ★ 材料层 → `(elements, 材料补注, 摘要, 跳过清单, 报错文案)`。只认 OLE；别的材料**不归我管*… · L502 · 函数
+  desc: ★ 材料层 → `(elements, 材料补注, 摘要, 跳过清单, 报错文案)`。只认 OLE；别的材料**不归我管*… · L505 · 函数
 - id: '26'
   name: _write_json
   lines:
@@ -325,7 +325,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →28
-  desc: ★ 写 JSON：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 ledger.dump）。 · L535 · 函数
+  desc: ★ 写 JSON：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 ledger.dump）。 · L538 · 函数
 - id: '27'
   name: main
   lines:
@@ -337,7 +337,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→03｜2→09｜3→12｜4→25｜5→26
-  desc: L540 · 函数 · 分支：1→_read_json 2→find_converter 3→load_thresholds 4→parse_materials
+  desc: L543 · 函数 · 分支：1→_read_json 2→find_converter 3→load_thresholds 4→parse_materials
     5→_write_json
 - id: '28'
   name: 结束

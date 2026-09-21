@@ -24,20 +24,20 @@ parent: ../flowtable.md
 | 模块级 | 10 | rule_d5 | 任务 | — | — | — | 脚本 | selfboot | — | →02 | ★ D5 读了没用上 → **缺口**：元素够多、被引用比例却过低（"只读了开头"）。 · L218 · 函数 |
 | 模块级 | 11 | rule_readout | 任务 | — | — | — | 脚本 | selfboot | — | →29 | ★ **依据分布**（§5.6，读数不是判据）→ `(每份材料一行, 汇总一句)`。 · L240 · 函数 |
 | 模块级 | 12 | collect | 任务 | — | — | — | 脚本 | selfboot | — | 1→05｜2→06｜3→07｜4→08｜5→09｜6→10 | ★ 跑全部**启用**的判据 → `(漂移行, 缺口行)`。缺哪个输入就整条跳过（§5.2 启用条件）。 · L282 · 函数 · 分支：1→_cited 2→rule_d1 3→rule_d2 4→rule_d3 5→rule_d4 6→rule_d5 |
-| 模块级 | 13 | load_thresholds | 任务 | — | — | — | 脚本 | selfboot | — | →29 | ★ 阈值 = 内置默认 + `dictionary.yaml` 的 `drift:` 段（**读取口径只有一处**：`th… · L306 · 函数 · ⇢ 依赖 thresholds.load |
-| 模块级 | 14 | load_flowtable | 任务 | — | — | — | 脚本 | selfboot | — | →29 | ★ 流程表 → `(nodes, edges, errs)`。用的是**结构校验的唯一入口**（`run_checks`）… · L311 · 函数 · ⇢ 依赖 flowtable.parse_table、flowtable_check.run_checks |
-| 模块级 | 15 | index_ledger | 任务 | — | — | — | 脚本 | selfboot | — | →29 | ★ 账本 → `(元素 id → 元素, 材料 id → 材料)`。取不到的键不硬造（下游按"没有"处理）。 · L317 · 函数 |
-| 模块级 | 16 | read_side_table | 任务 | — | — | — | 脚本 | selfboot | — | →29 | ★ `recon.md` / `intake.md` → `({M##: {列: 值}}, 报错)`。**列按名字取**，… · L324 · 函数 |
-| 模块级 | 17 | inputs_of | 任务 | — | — | — | 脚本 | selfboot | — | 1→15｜2→16 | ★ 一次运行的三份输入 → `(元素表, 材料表, 假设账, 清点, 报错)`。 · L366 · 函数 · 分支：1→index_ledger 2→read_side_table |
-| 模块级 | 18 | prepare | 任务 | — | — | — | 脚本 | selfboot | — | 1→11｜2→12｜3→13｜4→14｜5→17 | ★ `build` / `check` 共用的准备 → `{判据读数, 阈值, 硬错, 读坏, 跳过了哪几条}`。 · L379 · 函数 · 分支：1→rule_readout 2→collect 3→load_thresholds 4→load_flowtable 5→inputs_of |
-| 模块级 | 19 | parse_doc | 任务 | — | — | — | 脚本 | selfboot | — | →29 | ★ `drift.md` → `(漂移行, 缺口行, 报错)`。三张表的表头**必须逐字对得上**（列规范在代码里只有一份… · L398 · 函数 |
-| 模块级 | 20 | _blank | 任务 | — | — | — | 脚本 | selfboot | — | →29 | ★ 空值判据（`—` / 空 / `无` 都算没填）——只给下面两个对账函数用，所以排在这里。 · L431 · 函数 |
-| 模块级 | 21 | check_drift_rows | 任务 | — | — | — | 脚本 | selfboot | — | →20 | ★ 漂移账 → 错误清单。**该表与"现在的读数"双向对账**： · L436 · 函数 |
-| 模块级 | 22 | check_gap_rows | 任务 | — | — | — | 脚本 | selfboot | — | →20 | ★ 缺口清单 → 错误清单（状态封闭 · `已取证` 要写清要哪一片 · `已放弃` 要写理由 · 同样双向对账）。 · L473 · 函数 |
-| 模块级 | 23 | _esc | 任务 | — | — | — | 脚本 | selfboot | — | →29 | ★ 单元格里的 `｜` 会撕表 → 换全角（与 `intake.py` 同一口径）。 · L504 · 函数 |
-| 模块级 | 24 | render | 任务 | — | — | — | 脚本 | selfboot | — | →23 | ★ 漂移清单 + 缺口清单（markdown）。**表头先写输入指纹、跳过的判据与本次阈值**—— · L509 · 函数 |
-| 模块级 | 25 | cmd_build | 任务 | — | — | — | 脚本 | selfboot | — | 1→18｜2→24 | ★ 出草稿：机器列已填，AI 那几列留空（`待验` / `待取证`）。 · L547 · 函数 · 分支：1→prepare 2→render · ⇢ 依赖 artifact.beside、cells.dump、cells.todo_from_doc |
-| 模块级 | 26 | check_header | 任务 | — | — | — | 脚本 | selfboot | — | →29 | ★ `drift.md` 头部（`>` 行）↔ 本次调用的**输入 / 阈值 / 表** → `(错误, 提示)`。 · L595 · 函数 |
-| 模块级 | 27 | cmd_check | 任务 | — | — | — | 脚本 | selfboot | — | 1→18｜2→19｜3→21｜4→22｜5→26 | ★ 查收敛：**拿当前表重跑判据**，与文件里的处置对账（§5.4）。 · L651 · 函数 · 分支：1→prepare 2→parse_doc 3→check_drift_rows 4→check_gap_rows 5→check_header |
-| 模块级 | 28 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→25｜2→27 | ★ 子命令分发。**用显式 if 而不是 `set_defaults(func=…)`**：后者在静态调用图里看不见， · L688 · 函数 · 分支：1→cmd_build 2→cmd_check |
+| 模块级 | 13 | load_thresholds | 任务 | — | — | — | 脚本 | selfboot | — | →29 | ★ 阈值 = 内置默认 + `dictionary.yaml` 的 `drift:` 段（读取口径只有一处：`thresh… · L306 · 函数 · ⇢ 依赖 thresholds.load |
+| 模块级 | 14 | load_flowtable | 任务 | — | — | — | 脚本 | selfboot | — | →29 | ★ 流程表 → `(nodes, edges, errs)`。用的是**结构校验的唯一入口**（`run_checks`）… · L324 · 函数 · ⇢ 依赖 flowtable.parse_table、flowtable_check.run_checks |
+| 模块级 | 15 | index_ledger | 任务 | — | — | — | 脚本 | selfboot | — | →29 | ★ 账本 → `(元素 id → 元素, 材料 id → 材料)`。取不到的键不硬造（下游按"没有"处理）。 · L330 · 函数 |
+| 模块级 | 16 | read_side_table | 任务 | — | — | — | 脚本 | selfboot | — | →29 | ★ `recon.md` / `intake.md` → `({M##: {列: 值}}, 报错)`。**列按名字取**，… · L337 · 函数 |
+| 模块级 | 17 | inputs_of | 任务 | — | — | — | 脚本 | selfboot | — | 1→15｜2→16 | ★ 一次运行的三份输入 → `(元素表, 材料表, 假设账, 清点, 报错)`。 · L379 · 函数 · 分支：1→index_ledger 2→read_side_table |
+| 模块级 | 18 | prepare | 任务 | — | — | — | 脚本 | selfboot | — | 1→11｜2→12｜3→13｜4→14｜5→17 | ★ `build` / `check` 共用的准备 → `{判据读数, 阈值, 硬错, 读坏, 跳过了哪几条}`。 · L392 · 函数 · 分支：1→rule_readout 2→collect 3→load_thresholds 4→load_flowtable 5→inputs_of |
+| 模块级 | 19 | parse_doc | 任务 | — | — | — | 脚本 | selfboot | — | →29 | ★ `drift.md` → `(漂移行, 缺口行, 报错)`。三张表的表头**必须逐字对得上**（列规范在代码里只有一份… · L411 · 函数 |
+| 模块级 | 20 | _blank | 任务 | — | — | — | 脚本 | selfboot | — | →29 | ★ 空值判据（`—` / 空 / `无` 都算没填）——只给下面两个对账函数用，所以排在这里。 · L444 · 函数 |
+| 模块级 | 21 | check_drift_rows | 任务 | — | — | — | 脚本 | selfboot | — | →20 | ★ 漂移账 → 错误清单。**该表与"现在的读数"双向对账**： · L449 · 函数 |
+| 模块级 | 22 | check_gap_rows | 任务 | — | — | — | 脚本 | selfboot | — | →20 | ★ 缺口清单 → 错误清单（状态封闭 · `已取证` 要写清要哪一片 · `已放弃` 要写理由 · 同样双向对账）。 · L486 · 函数 |
+| 模块级 | 23 | _esc | 任务 | — | — | — | 脚本 | selfboot | — | →29 | ★ 单元格里的 `｜` 会撕表 → 换全角（与 `intake.py` 同一口径）。 · L517 · 函数 |
+| 模块级 | 24 | render | 任务 | — | — | — | 脚本 | selfboot | — | →23 | ★ 漂移清单 + 缺口清单（markdown）。**表头先写输入指纹、跳过的判据与本次阈值**—— · L522 · 函数 |
+| 模块级 | 25 | cmd_build | 任务 | — | — | — | 脚本 | selfboot | — | 1→18｜2→24 | ★ 出草稿：机器列已填，AI 那几列留空（`待验` / `待取证`）。 · L560 · 函数 · 分支：1→prepare 2→render · ⇢ 依赖 artifact.beside、cells.dump、cells.todo_from_doc |
+| 模块级 | 26 | check_header | 任务 | — | — | — | 脚本 | selfboot | — | →29 | ★ `drift.md` 头部（`>` 行）↔ 本次调用的**输入 / 阈值 / 表** → `(错误, 提示)`。 · L608 · 函数 |
+| 模块级 | 27 | cmd_check | 任务 | — | — | — | 脚本 | selfboot | — | 1→18｜2→19｜3→21｜4→22｜5→26 | ★ 查收敛：**拿当前表重跑判据**，与文件里的处置对账（§5.4）。 · L664 · 函数 · 分支：1→prepare 2→parse_doc 3→check_drift_rows 4→check_gap_rows 5→check_header |
+| 模块级 | 28 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→25｜2→27 | ★ 子命令分发。**用显式 if 而不是 `set_defaults(func=…)`**：后者在静态调用图里看不见， · L701 · 函数 · 分支：1→cmd_build 2→cmd_check |
 | 出口 | 29 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |

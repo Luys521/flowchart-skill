@@ -23,8 +23,8 @@ parent: ../flowtable.md
 | 模块级 | 09 | _add_verdict_head | 任务 | — | — | — | 脚本 | selfboot | — | →16 | ★ 追加「待你裁决」总账行（环内项单算，不并入"等上游"）。 · L185 · 函数 |
 | 模块级 | 10 | _add_frontier | 任务 | — | — | — | 脚本 | selfboot | — | →16 | ★ 追加当前 frontier 及每项的走向、材料现状。 · L199 · 函数 |
 | 模块级 | 11 | _add_waiting | 任务 | — | — | — | 脚本 | selfboot | — | →16 | ★ 追加「暂时问不了」两栏：等上游 / 环内互为前驱互相等待。 · L210 · 函数 |
-| 模块级 | 12 | render | 任务 | — | — | — | 脚本 | selfboot | — | 1→08｜2→09｜3→10｜4→11 | ★ 简报 → 人可读文本。**只报状态，不下结论**——"已收敛"不等于"已把关"（见 D-02）。 · L228 · 函数 · 分支：1→_add_inferred 2→_add_verdict_head 3→_add_frontier 4→_add_waiting |
-| 模块级 | 13 | _emit_report | 任务 | — | — | — | 脚本 | selfboot | — | →12 | ★ 按 --json 或人可读两种口径打印简报。 · L251 · 函数 |
-| 模块级 | 14 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→07｜3→13 | L261 · 函数 · 分支：1→load_nodes 2→brief 3→_emit_report · ⇢ 依赖 flowtable.build_edges |
+| 模块级 | 12 | render | 任务 | — | — | — | 脚本 | selfboot | — | 1→08｜2→09｜3→10｜4→11 | ★ 简报 → 人可读文本。**只报状态，不下结论**——"已收敛"不等于"已把关"（见 D-02）。 · L232 · 函数 · 分支：1→_add_inferred 2→_add_verdict_head 3→_add_frontier 4→_add_waiting |
+| 模块级 | 13 | _emit_report | 任务 | — | — | — | 脚本 | selfboot | — | →12 | ★ 按 --json 或人可读两种口径打印简报。 · L255 · 函数 |
+| 模块级 | 14 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→07｜3→13 | L265 · 函数 · 分支：1→load_nodes 2→brief 3→_emit_report · ⇢ 依赖 flowtable.build_edges |
 | frontier | 15 | frontier.ring_why | 任务 | — | — | — | 脚本 | selfboot | — | →16 | ★ 环内节点的阻塞说明：点名它的环内前驱，说明是互相等、不是等上游。 · L113 · 嵌套函数 |
 | 出口 | 16 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |

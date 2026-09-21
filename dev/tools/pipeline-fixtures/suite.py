@@ -2312,6 +2312,17 @@ def audit_paths(root):
         cases.append(('G39 `无关(M##)` 是合法取值：`intake check` 不许裸抛 KeyError',
                       False, 2, f'夹具自身没造出来：probe={rc_p} ledger={ok_l} intake={ok_i}'))
 
+    # ── G73：**≤3 字节的坏头不许被判成"文本"**（`_decodes` 的空串洞）────────────────────
+    tiny = d / 'tiny'
+    tiny.mkdir(exist_ok=True)
+    (tiny / 'x.bin').write_bytes(b'\x80\x81')          # 两个非法 UTF-8 字节：整段解不开，
+    #                                                    旧代码"退 2 位"后退化成空串而**空串可解**
+    rc_t, out_t = run([sys.executable, str(PROBE_CMD), str(tiny), '--json'])
+    tj = json.loads(out_t[out_t.index('['):]) if '[' in out_t else []
+    got_t = (tj[0].get('tier'), tj[0].get('kind')) if tj else (None, None)
+    cases.append(('G73 ≤3 字节的坏头 ⇒ T4（不许因为"退位后退化成空串"被判成可直读文本）',
+                  got_t == ('T4', 'unknown'), rc_t, f'tier/kind={got_t}'))
+
     # ── G44：纯流程表模式（一个输入都不给）——build 出的账，它自己打印的 check 必须能过 ──
     dm = d / 'drift-bare.md'
     ft = root / 'flowtable.md'

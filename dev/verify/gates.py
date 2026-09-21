@@ -506,6 +506,12 @@ def _check_cli_failure_paths(c, tmp):
             'G55 `--browser` 路径不存在 ⇒ 退 1 + 人话（原先 FileNotFoundError 裸栈）',
             (out.strip().splitlines() or [''])[-1][:70] if out.strip() else '')
 
+    # ── G71：`--crop 0:0` / `1200:0` 的 `y1=0` 不许被当成"没给上界" ─────────────────────
+    rc, out = run('shot.py', html, '--crop', '0:0')
+    c.check(rc == 1 and '上界必须大于下界' in out,
+            'G71 `--crop 0:0` ⇒ 报"上界必须大于下界"（原先 y1=0 是 falsy、静默变成全高）',
+            (out.strip().splitlines() or [''])[-1][:70] if out.strip() else '')
+
 
 def _check_swimlane_slots(c, tmp):
     c.section('泳道列序 → 槽位模式：行=槽位、列序显式、空泳道保留')
@@ -1959,6 +1965,32 @@ def _check_external_reader(c, tmp):
     c.check(rc3 == 0 and '受理' in out3 and '受理员' not in out3,
             '外部图两行标签：节点名只取第一行（第二行是执行者）', out3.strip()[:80])
     c.check(rc3 == 0 and '来自外部工具' in out3, '外部图照报"须补进《流程表》"')
+
+    # ④ G71：`<mxGraphModel>` 在、`<root>` 不在 = **图内容丢了**——不许当"空图"退 0
+    #    （原先造一个空 root 往下走：brief 打"节点: 0 边: 0"，`--diff` 还可能打"✓ 无差异"）
+    noroot = tmp / 'noroot.drawio'
+    noroot.write_text('<mxfile><diagram id="p" name="坏图">'
+                      '<mxGraphModel pageWidth="800" pageHeight="600"><nothing/></mxGraphModel>'
+                      '</diagram></mxfile>', encoding='utf-8')
+    rc4, out4 = run('xml_reader.py', noroot)
+    c.check(rc4 == 1 and '没有 <root>' in out4 and 'Traceback' not in out4,
+            'G71 缺 `<root>` 的损坏图 ⇒ 退 1 + 说清"图内容丢了"（不许当空图退 0）',
+            (out4.strip().splitlines() or [''])[-1][:70] if out4.strip() else '')
+
+    # ⑤ G71：第三方图的**分组容器**（`style="group"`）是装饰，不许读成幻影节点
+    grp = tmp / 'group.drawio'
+    grp.write_text(
+        '<mxfile><diagram id="p" name="带分组"><mxGraphModel>'
+        '<root><mxCell id="0"/><mxCell id="1" parent="0"/>'
+        '<mxCell id="g1" value="组A" style="group;" vertex="1" parent="1">'
+        '<mxGeometry x="20" y="20" width="400" height="300" as="geometry"/></mxCell>'
+        '<mxCell id="n1" value="受理" style="rounded=1;" vertex="1" parent="g1">'
+        '<mxGeometry x="40" y="40" width="160" height="60" as="geometry"/></mxCell>'
+        '</root></mxGraphModel></diagram></mxfile>', encoding='utf-8')
+    rc5, out5 = run('xml_reader.py', grp)
+    c.check(rc5 == 0 and '节点: 1' in out5 and '组A' not in out5,
+            'G71 分组容器（`style=group`）不算节点（否则 diff 报"+ 新增节点 g1"、回写还会写进表）',
+            out5.strip()[:80])
 
 
 def _check_manifest_audit(c, tmp):

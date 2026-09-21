@@ -212,8 +212,12 @@ def _add_waiting(lines, b):
     if not b['waiting']:
         return
     joined = lambda ws: '、'.join(f'{w["id"]} {w["name"]}' for w in ws)
-    upstream = [w for w in b['waiting'] if not w.get('cycle')]
-    ring = [w for w in b['waiting'] if w.get('cycle')]
+    # **`blocked` 里已经报过的不再在 waiting 栏重报**（G74）：`waiting` 是"前驱未决"的全集，
+    # 而 `blocked` 是它的**带理由子集**（"环内互相等待 / 先定 X 才能问它"）——原先两处都印，
+    # 同一个节点在简报里出现两次，读的人会以为有两处待办。
+    _blocked_ids = {bl['id'] for bl in b['blocked']}
+    upstream = [w for w in b['waiting'] if not w.get('cycle') and w['id'] not in _blocked_ids]
+    ring = [w for w in b['waiting'] if w.get('cycle') and w['id'] not in _blocked_ids]
     # 两栏分开：环内项说成"等上游"会让人一直等一个永远不会先定的前驱。
     if upstream:
         lines.append('')

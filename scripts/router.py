@@ -169,6 +169,10 @@ class Router(RectCache):
         `gutter_inner` 走廊 x（`280 = DEFAULT_COL_X 400 − 120 = 首列左沿外 40`）——旧值能work，
         靠的正是"主轴恒为最左列"这个前提；前提一破（分支分挂两侧），走左廊的回路就得绕过整条
         左臂：实测 `05f→05b` 绕行 385%（实走 1260px、最短 260px）。
+
+        ⚠ **左族镜像复用右族那两个参数**（G72）：`right_channel_step` / `right_channel_offset`
+        的名字里带"右"，但左族**刻意同口径**——两侧束距与贴列距离必须一致，否则同一张图左右
+        不对称，而 `dictionary.yaml` 里只有这两个数。命名是历史（D-92 先做右族），不是"只对右边生效"。
         """
         step_l = snap(lay.get('right_channel_step', 50), GL)
         off_l = snap(lay.get('right_channel_offset', 40), GL)

@@ -94,7 +94,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →10
-  desc: ★ 删文件；不存在或删不掉都静默忽略。 · L96 · 函数
+  desc: ★ 删文件；不存在或删不掉都静默忽略。 · L106 · 函数
 - id: 08
   name: _capture_screenshot
   lines:
@@ -106,7 +106,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →07
-  desc: ★ 起无头浏览器对裁剪页截图并轮询等文件落盘；成功返回 True。 · L104 · 函数
+  desc: ★ 起无头浏览器对裁剪页截图并轮询等文件落盘；成功返回 True。 · L114 · 函数
 - id: 09
   name: main
   lines:
@@ -118,7 +118,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→03｜3→04｜4→05｜5→06｜6→07｜7→08
-  desc: L124 · 函数 · 分支：1→find_browser 2→build_crop_page 3→_parse_args 4→_output_path
+  desc: L134 · 函数 · 分支：1→find_browser 2→build_crop_page 3→_parse_args 4→_output_path
     5→_parse_crop 6→_unlink_quiet 7→_capture_screenshot
 - id: '10'
   name: 结束
