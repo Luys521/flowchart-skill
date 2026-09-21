@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-r"""accept.py — **验收：一条命令跑完十一道门，只给一个结论**。
+r"""accept.py — **验收：一条命令跑完十二道门，只给一个结论**。
 
 **为什么**：用户只做最终环节的验收。前面四件仪器各答一个问题、各有一条命令，收口时却要人把
 五六条命令按顺序跑完再自己汇总——那不叫验收，那叫"人肉 CI"。本工具把收口清单固化成一台仪器：
 `python dev/tools/accept.py` 跑完、印一份回执、用**退出码**说结论。
 
-十一道门（判据**全部从被跑命令的输出里读**，不写死任何计数——写死会在下次改动后变成假绿）：
+十二道门（判据**全部从被跑命令的输出里读**，不写死任何计数——写死会在下次改动后变成假绿）：
 
 | 门 | 覆盖 | 判据来源 |
 | --- | --- | --- |
@@ -19,7 +19,8 @@ r"""accept.py — **验收：一条命令跑完十一道门，只给一个结论
 | ⑧ 卫生 | scripts/*.py 的未用 import／死函数归零 | hygiene.py 退出码（0 过 / 1 有白写 / 其它=仪器故障）；**射程只有 scripts/**，见 D-88 |
 | ⑨ 审美 | 三条审美律的读数不许退化（偏心 / 绕行 / 通道半径） | `aesthetic.py` 的读数与退出码；阈值见 `references/visual-spec.md` §0.1（当前收口值，见 G12） |
 | ⑩ 等价 | 夹具自身有效 + 工作树可观测行为与底本 tag 逐字节相同 | `table_to_dsl --check` 对 `equiv-fixtures/*.md` 的期望结果；`equiv.py make-base` / `suite` 的退出码 |
-| ⑪ 材料链 · 漂移 · 取子集 | `drift.py` 的判据 D1—D5 与账目对账 · `query.py` 的取子集边界 · pptx 全链（判 T1 / 摘要 / 按张撬开） | `pipeline-fixtures/suite.py` 的 `PASS/FAIL` 行 + 退出码；夹具在系统临时目录里现造现跑 |
+| ⑪ 材料链 · 漂移 · 取子集 | `drift.py` 的判据 D1—D5 与账目对账 · `query.py` 的取子集边界 · pptx 全链（判 T1 / 摘要 / 按张撬开）· 幂等 · 只读 · 缺依赖提示 · 拒绝分支 | `pipeline-fixtures/suite.py` 的 `PASS/FAIL` 行 + 退出码；夹具在系统临时目录里现造现跑 |
+| ⑫ API 面 | 对外函数面**丢没丢**（底本 tag ↔ 工作树） | `api_audit.py` 的退出码（0 无丢失/无签名变更 · 1 有 · 2 底本读不了=仪器故障）＋ 它印的四个计数 |
 
 **门⑤在仓库外的副本上跑**：`build.py` 会往树里写 html / drawio / `.bak` / yaml。验收**不改产物**，
 所以先把树整棵复制到临时目录再 build——副本的根目录仍叫 `self-boot`，产物名（`self-boot-flow.html`
@@ -46,7 +47,7 @@ r"""accept.py — **验收：一条命令跑完十一道门，只给一个结论
 
 | 码 | 含义 |
 | --- | --- |
-| `0` | 十一道门全过 |
+| `0` | 十二道门全过 |
 | `1` | 有门未过（命令跑起来了、结论是"不过"） |
 | `2` | **仪器故障**：表树不存在 / 命令起不来 / 输出解析不了（此时树是半成品或结论不可信） |
 
@@ -614,6 +615,41 @@ def gate_hygiene(g):
         g.failed('有未用 import 或没人调的模块级函数（上面点名了具体位置）')
 
 
+# ----------------------------------------------------------------门⑫ API 面
+def gate_api(g):
+    """门⑫：**对外函数面的增删记账**——底本 tag 有、工作树没有的（丢失 / 签名变更）为 0。
+
+    为什么它够格当一道门（`coding-spec` G8 的另一半，2026-09-19 D-131 收口）：那条规则是
+    "对外 API 增删要记账"（第 19 行），而此前**只有等价性那一半进了验收**——`equiv` 比的是
+    "可观测行为逐字节相同"，它回答不了"**谁把函数删了**"：删掉一个没人走的公开函数，
+    `equiv` 照样全绿。`api_audit.py` 早就能跑（要 git 底本，本仓 2026-09-17 起就有 tag
+    `api-base`），只是**只在有人想起来时手跑一次**——那正是"规则停在中间"的形态。
+
+    判据**从它的输出里读**（不写死计数，也不自己再解析一遍源码）：退出码 0 = 无丢失且无签名变更。
+    `api_audit` 的三态契约与本门一致（0/1/2），所以 2 直接当**仪器故障**——不是"门没过"。
+    **射程**：它比的是"底本 tag ↔ 工作树"，所以它**只在你提交前后有意义**；工作树脏的时候
+    它报的是"你正在改的东西"，那是对的（改动要不要紧、要不要重钉 tag，是人来判，
+    本门只保证"**丢函数这件事不会静默发生**"）。`--near` 的近似改名那一档**不计入失败**
+    （同文件内找到对应新函数 = 改名，不是删）——那是 `api_audit` 自己的取舍，门沿用。
+    """
+    try:
+        r = run([PY, TOOLS / 'api_audit.py'])
+    except OSError as e:
+        return g.broken(f'api_audit.py 起不来（{type(e).__name__}: {e}）')
+    if r.returncode == 2:
+        return g.broken('api_audit 退 2：底本读不了（没有 git / tag `api-base` 不在）')
+    if r.returncode not in (0, 1):
+        return g.broken(f'api_audit 退出码 {r.returncode}（不是它的 0/1/2 契约）')
+    for ln in (r.stdout or '').splitlines():
+        s = ln.strip()
+        if s.startswith(('丢失', '签名变更', '疑似改名', '新增', '结论')):
+            g.note(s)
+    if r.returncode == 0:
+        g.passed()
+    else:
+        g.failed('对外函数面有丢失或签名变更（上面点名了）——要么补回来，要么记进 DECISIONS')
+
+
 # ----------------------------------------------------------------门⑩ 等价
 def gate_equiv(g, scratch):
     """门⑩：equiv 链自身健康，且工作树的可观测行为与底本 tag 逐字节相同。
@@ -737,9 +773,9 @@ def _bytes_of(p):
 def main(argv=None):
     sys.stdout.reconfigure(encoding='utf-8')
     ap = argparse.ArgumentParser(
-        description='验收：一条命令跑完十一道门，只给一个结论',
+        description='验收：一条命令跑完十二道门，只给一个结论',
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog='退出码：0 十一道门全过 / 1 有门未过 / 2 仪器故障（树不存在、命令起不来、输出解析不了）')
+        epilog='退出码：0 十二道门全过 / 1 有门未过 / 2 仪器故障（树不存在、命令起不来、输出解析不了）')
     ap.add_argument('--tables-root', default=str(DEFAULT_TABLES),
                     help=f'流程表树根（默认 {rel(DEFAULT_TABLES, ROOT)}）')
     ap.add_argument('--scratch', help='临时目录（默认落在仓库内 .accept_tmp/；见下方注释）')
@@ -771,7 +807,8 @@ def main(argv=None):
              lambda g: gate_aesthetic(g, tables_root)),
             ('⑩', '等价 equiv（夹具 + 可观测行为逐字节）',
              lambda g: gate_equiv(g, scratch)),
-            ('⑪', '材料链 · 漂移 · 取子集 pipeline-fixtures 夹具', lambda g: gate_drift(g))]
+            ('⑪', '材料链 · 漂移 · 取子集 pipeline-fixtures 夹具', lambda g: gate_drift(g)),
+            ('⑫', 'API 面 api_audit（丢失 / 签名变更 = 0）', lambda g: gate_api(g))]
     for num, title, fn in plan:
         g = Gate(num, title)
         print(f'\n=== 门{num} {title} ===')
@@ -794,7 +831,7 @@ def main(argv=None):
     for g in gates:
         print(f'  {g.mark} 门{g.name} {g.title}'
               + (f'   {g.reason}' if g.ok is not True else ''))
-    print(f'十一道门：{npass} 过 / {len(failed)} 未过 / {len(broken)} 仪器故障')
+    print(f'十二道门：{npass} 过 / {len(failed)} 未过 / {len(broken)} 仪器故障')
     missing = tables_is_missing(tables_root) if broken else ''
     if missing:
         print(f'  ⚠ {len(broken)} 道门无法裁决，根因是同一件事：{missing}')
@@ -806,10 +843,10 @@ def main(argv=None):
         verdict = '有门未过，未收口'
     else:
         code = 0
-        verdict = '十一道门全过'
+        verdict = '十二道门全过'
     print(f'退出码 {code}：{verdict}')
     # 收尾（2026-09-19 改，D-113）：**结论先印完，清理不参与判分**。三条不变的原则照旧——
-    #   ① 不"先删再建"（撞批量删除的安全钩子）；② 退出码只由十一道门决定；③ 没过就留现场。
+    #   ① 不"先删再建"（撞批量删除的安全钩子）；② 退出码只由十二道门决定；③ 没过就留现场。
     # 改的只有一条：**过了就收掉"本次新建的"那几项**。原先写着"不替你删"，可它没有配套的收口——
     # 实测每跑一次留 5.7 MB / 140 个文件（门⑤ 的 build-* 副本），连跑十几轮攒到 134 MB / 2579 个文件，
     # 而没人会想起来清。`ignore_errors=True`：删不掉（被占用 / 权限）只多印一行，绝不改结论。

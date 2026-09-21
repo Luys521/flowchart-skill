@@ -13,6 +13,7 @@
  10 公共层内部无环：读数（`cohesion.py --cycles`）为 0 组，**且**仪器喂一张造出来的环能报出非零（D-127）
  11 stderr 编码：带 CLI 的模块若往 stderr 打非 ASCII 必须自己配编码；**纯库一律走 `console.warn`**
     （且它在管道下也读得出来——判据读的是**原始字节**，不是实现；D-127 / D-129）
+ 12 一手文本文件也一律 LF：源码 / 文档 / 夹具与产物同一条尺子，全树一个 CR 都不许有（D-131）
 
 （清单与 `run_face` 的 `c.section` 一一对应；增删小节时这里要跟着改。）
 """
@@ -156,6 +157,28 @@ def run_face(tmp):
     # 这样写产物那一侧的回归当场现形，而不是等到换平台。
     c.check(not crlf, 'build 写出的产物没有 CR（跨平台同字节）',
             '；'.join(crlf[:4]))
+
+    c.section('一手写的文本文件也一律 LF（D-131：与产物同一条尺子）')
+    # 上面那节只管**产物**，而"跨平台同字节"这句话对**源码与文档**同样成立——`.gitattributes` 是
+    # `* -text`（Git 不碰字节），所以仓库里存的是什么字节，Linux 检出拿到的就是什么。
+    # 实测（2026-09-19，D-131 收 G24 时）：**88 个受版本控制的文本文件是 CRLF**
+    # （36 md / 43 py / 6 json / 2 txt / 1 yaml）——包括 `SKILL.md` 与所有 `dev/verify/*.py`。
+    # 判据按扩展名扫全树（跳过生成物、用户材料与临时目录），**一手与产物用同一条尺子**：
+    # 少了这一条，G24 那笔账就会以"产物都对"的形态一直挂着。
+    TEXT_EXT = ('.md', '.py', '.json', '.yaml', '.yml', '.txt', '.csv', '.tsv',
+                '.html', '.svg', '.drawio', '.xml')
+    SKIP_DIRS = {'.git', 'output', '.accept_tmp', '.verify_tmp', '__pycache__',
+                 'archive', 'old', '.workbuddy'}
+    cr_files = []
+    for p in sorted(SKILL.rglob('*')):
+        if not p.is_file() or p.suffix.lower() not in TEXT_EXT:
+            continue
+        if set(p.relative_to(SKILL).parts) & SKIP_DIRS:
+            continue
+        if b'\r\n' in p.read_bytes():
+            cr_files.append(p.relative_to(SKILL).as_posix())
+    c.check(not cr_files, f'全仓 {len(TEXT_EXT)} 类文本文件一个 CR 都没有（一手写的也在内）',
+            (f'{len(cr_files)} 个：' + '、'.join(cr_files[:3])) if cr_files else '')
 
     c.section('examples/ 是只读的事实源')
     # D-66 之后 examples/ **只有** flowtable.md（产物在 dev/baseline/），所以这条能直接

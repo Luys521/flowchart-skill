@@ -1786,12 +1786,16 @@ def main(argv=None):
         return 2
 
     # ② 写产物：写不出去同样是仪器故障（2）
+    # **`newline='\n'` 是必须的**（2026-09-19，D-131）：不传时 Windows 会把 `\n` 翻成 `\r\n`，
+    # 于是这三份 JSON 与 `fn-graph.md` 是 CRLF，而它旁边的**一手文件**是 LF——同一棵树两种字节，
+    # 面③ 那条"全仓文本文件一个 CR 都没有"当场红。正是 D-116 在产物侧修过的同一个形态
+    # （"写的那一侧没人管"），这次轮到生成器自己。
     try:
         OUT_JSON.parent.mkdir(parents=True, exist_ok=True)
         for path, payload in ((OUT_JSON, graph), (OUT_GROUPS, groups), (OUT_DEPS, deps)):
             path.write_text(json.dumps(payload, ensure_ascii=False, indent=2),
-                            encoding="utf-8")
-        OUT_MD.write_text(render_md(graph, groups, deps), encoding="utf-8")
+                            encoding="utf-8", newline="\n")
+        OUT_MD.write_text(render_md(graph, groups, deps), encoding="utf-8", newline="\n")
     except OSError as exc:
         print(f"✗ 产物写不出去（仪器故障）：{exc}", file=sys.stderr)
         return 2

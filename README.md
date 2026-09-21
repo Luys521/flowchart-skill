@@ -155,12 +155,12 @@ output/<名称>/
 > 上面是**当时**的形态（样例还叫 `self-demo`、产物还在样例目录里、`dev/verify/` 还在根）。
 > 2026-09-15 的目录重构（D-66）把样例改名 `workflow`、产物移进 `dev/baseline/`、`dev/verify/`+`dev/tools/` 移进 `dev/`。
 
-**当前实测（2026-09-17 原样重跑；用例数随代码增长，以现跑现取为准：`python dev/verify/run.py`）**：
+**那次会话的实测（2026-09-17 原样重跑；**下面的用例数与门数都是当时的读数**，今天的以现跑现取为准：`python dev/verify/run.py` / `python dev/tools/accept.py`）**：
 
 ```text
 面① 契约一致性   36/36 通过      面③ 不变式      17/17 通过
 面② 门禁拦截    383/383 通过     面④ 端到端往返   17/17 通过   → EXIT=0
-dev/tools/accept.py  十一道门全过（0 仪器故障）
+dev/tools/accept.py  十二道门全过（0 仪器故障）
 ```
 
 `build.py` 在样例上也已实跑通过，输出见上文「快速开始」。即：**这套代码在本机是活的**——

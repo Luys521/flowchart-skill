@@ -3,7 +3,7 @@
  "layout": "flow",
  "source": "flowtable.md",
  "dsl_sha256": "e126d9958c44b442",
- "source_sha256": "d21ec8d7d7b491ca",
+ "source_sha256": "dee581c9b9333fa0",
  "counts": {
   "nodes": 6,
   "edges": 6,

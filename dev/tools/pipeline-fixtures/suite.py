@@ -875,6 +875,25 @@ def pptx_paths(root):
     return cases
 
 
+def _zip_docx(path):
+    """一份**用手写的 zipfile 造**的最小 docx（`word/document.xml` 在 ⇒ `parse_ooxml` 就认）。
+
+    为什么不用 `python-docx` 造（夹具里别处是那么造的）：**这一条恰恰要把 `docx` 藏起来跑**
+    ——setup 依赖它，就等于"没装 python-docx 的机器上这条夹具自己先塌"。夹具的输入不该由
+    被测的那件能力来生产。
+    """
+    import zipfile
+    ns = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
+    doc = (f'<?xml version="1.0" encoding="UTF-8"?><w:document xmlns:w="{ns}"><w:body>'
+           '<w:p><w:r><w:t>第一步受理；第二步核验。</w:t></w:r></w:p></w:body></w:document>')
+    with zipfile.ZipFile(path, 'w') as z:
+        z.writestr('[Content_Types].xml',
+                   '<?xml version="1.0" encoding="UTF-8"?><Types '
+                   'xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+                   '<Default Extension="xml" ContentType="application/xml"/></Types>')
+        z.writestr('word/document.xml', doc)
+
+
 def _minimal_docx(path):
     """一份**真**的最小 docx（`python-docx` 自己造的，所以它必然合法）。"""
     import docx
@@ -1845,6 +1864,165 @@ def idempotency_paths(root):
     return cases
 
 
+def closing_paths(root):
+    """**G25 / G26 的四笔欠账**（D-131）：拒绝分支逐条踩一脚 + 只读 + 缺依赖。
+
+    为什么值得一组：这些判据**实现都在、夹具一直没有**——"实现了"与"拦得住"是两件事，
+    而规范对它们的要求都是硬话：§1.4 的"**退 1 且不落盘**"（静默写出一本坏账比不写坏得多）、
+    "**只读**"（不许改材料）、"**缺依赖报可执行的错**"（不许 traceback、不许静默降级）。
+    登记在 `coding-spec` G25 / G26，2026-09-19 之前一直是"没人跑过那一脚"。
+
+    做法上的两个刻意的选择：
+    - **坏输入手写**（不像别的用例走产品的写入器）：要考的正是"产品对坏输入的处置"，
+      而产品自己写出来的输入必然合法；手写的那份同时也就是"坏成什么样才算坏"的存档。
+    - **缺依赖用 `PYTHONPATH` 里一个会抛 `ImportError` 的假模块**（不是一个改过环境的真缺）：
+      这样**装了 python-docx 的机器也跑得到那一条**，不然它会被环境跳过——那又变回"没人跑"。
+    """
+    import hashlib
+    cases = []
+    d = root / 'closing'
+    d.mkdir(parents=True, exist_ok=True)
+    mat = d / '材料'
+    mat.mkdir(parents=True, exist_ok=True)
+    good = mat / '办法.md'
+    good.write_text('# 付款办法\n\n甲方向乙方提交材料，审批通过后付款。\n',
+                    encoding='utf-8', newline='\n')
+    other = mat / '说明.md'
+    other.write_text('# 说明\n\n第一步受理；第二步核验。\n', encoding='utf-8', newline='\n')
+
+    def sha(p):
+        return hashlib.sha256(p.read_bytes()).hexdigest()
+
+    def material(mid, path, **kw):
+        m = {'id': mid, 'path': str(path), 'sha256': sha(path), 'bytes': path.stat().st_size,
+             'mtime': '2026-09-19T10:00:00', 'tier': 'T1', 'kind': 'text', 'probe': 'text',
+             'status': 'ok'}
+        m.update(kw)
+        return m
+
+    # ── 67 「只读」：跑完整条链，材料目录里每个文件的字节都不许变 ───────────────
+    # 原先只有"没往仓库根写字节"（㉗），**材料本身变没变没人核**——而"只读"是 §1.4 的第一条硬要求。
+    mats = d / 'ro-materials.json'
+    mats.write_text(json.dumps([material('M01', good), material('M02', other)],
+                               ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    before = {p.name: sha(p) for p in sorted(mat.iterdir()) if p.is_file()}
+    rc, out = run([sys.executable, str(PARSE_CMD), '--materials', str(mats),
+                   '--ledger', str(d / 'ro.json'), '--task', 'ro'])
+    after = {p.name: sha(p) for p in sorted(mat.iterdir()) if p.is_file()}
+    cases.append(('67 「只读」：跑完 probe → parse → ledger，材料目录里每个文件的 sha256 逐个不变（§1.4 硬要求 1）',
+                  rc == 0 and before == after, rc,
+                  f'跑前 {before} · 跑后 {after} · {out.strip()[-110:]}' if before != after or rc else ''))
+
+    # ── 68 缺依赖报**可执行**的错（不是 traceback、也不是静默降级）─────────────────
+    blocker = d / 'blocker'
+    blocker.mkdir(exist_ok=True)
+    # 一个会抛 ImportError 的假 `docx`：`deps.import_dep` 收的正是 ImportError
+    (blocker / 'docx.py').write_text("raise ImportError('（夹具）故意让 docx 装不上')\n",
+                                     encoding='utf-8', newline='\n')
+    dx = mat / '协议.docx'
+    _zip_docx(dx)                          # **自己拿 zipfile 造**：见下面注释
+    dm = d / 'dep-materials.json'
+    dm.write_text(json.dumps([material('M01', dx, kind='docx', probe='ooxml')],
+                             ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    env = dict(os.environ, PYTHONPATH=str(blocker), PYTHONDONTWRITEBYTECODE='1')
+    p = subprocess.run([sys.executable, str(PARSE_CMD), '--materials', str(dm),
+                        '--ledger', str(d / 'dep.json'), '--task', 'dep'],
+                       capture_output=True, text=True, encoding='utf-8', cwd=str(REPO), env=env,
+                       timeout=300)
+    dep_out = (p.stdout or '') + (p.stderr or '')
+    # 期望是 **rc=2**（硬失败）而不是"降级成读不动"：`python-docx` 在 §1.4 的清单里是**必须**依赖
+    # （可选的是 OCR 与 soffice），硬失败 + 可执行提示正是那条要求；静默降级才是错。
+    cases.append(('68 缺依赖报**可执行**的错：把 `docx` 藏起来跑同一条链 ⇒ **退 2** 并把'
+                  '`python -m pip install python-docx` 打在脸上，**没有 traceback**（§1.4 硬要求 4）',
+                  p.returncode == 2 and 'python -m pip install python-docx' in dep_out
+                  and 'Traceback' not in dep_out, p.returncode,
+                  (f'rc={p.returncode} 提示在={"python -m pip install python-docx" in dep_out} '
+                   f'traceback={"Traceback" in dep_out} · {dep_out.strip()[-130:]}')))
+
+    # ── 69 账本 schema 的拒绝分支：**退 1 且不落盘** ─────────────────────────────
+    bad_cases = [
+        ('materials 的 `kind` 不在封闭枚举内', [material('M01', good, kind='docx2')], [],
+         d / 'bad-kind.json', 'kind 只能是'),
+        ('同一份材料 `id` 重复', [material('M01', good), material('M01', other)], [],
+         d / 'bad-mid.json', 'id 重复'),
+        ('`status=unreadable` 不给 reason', [material('M01', good, status='unreadable')], [],
+         d / 'bad-reason.json', '必须给 reason'),
+    ]
+    bad = []
+    for label, ms, es, outp, needle in bad_cases:
+        bm = d / 'bad-materials.json'
+        bm.write_text(json.dumps(ms, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+        cmd = [sys.executable, str(LEDGER), '--materials', str(bm), '-o', str(outp)]
+        if es:
+            be = d / 'bad-elements.json'
+            be.write_text(json.dumps(es, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+            cmd += ['--elements', str(be)]
+        rc, out = run(cmd)
+        if not (rc == 1 and needle in out and not outp.exists()):
+            bad.append(f'{label}（rc={rc} 命中={needle in out} 落盘={outp.exists()}）')
+    # 元素层：`id` 重复（同一批里两条同 id）
+    dup_e = [{'id': 'M01#p001', 'material_id': 'M01', 'kind': 'paragraph', 'text': 'A',
+              'location': {'path': 'M01', 'quote': 'A'}, 'extractor': 'py:text',
+              'certainty': 'direct'},
+             {'id': 'M01#p001', 'material_id': 'M01', 'kind': 'paragraph', 'text': 'B',
+              'location': {'path': 'M01', 'quote': 'B'}, 'extractor': 'py:text',
+              'certainty': 'direct'}]
+    bm = d / 'ok-materials.json'
+    bm.write_text(json.dumps([material('M01', good)], ensure_ascii=False, indent=2) + '\n',
+                  encoding='utf-8')
+    be = d / 'dup-elements.json'
+    be.write_text(json.dumps(dup_e, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    outp = d / 'bad-dup.json'
+    rc, out = run([sys.executable, str(LEDGER), '--materials', str(bm),
+                   '--elements', str(be), '-o', str(outp)])
+    if not (rc == 1 and 'id 重复' in out and not outp.exists()):
+        bad.append(f'元素 id 重复（rc={rc} 命中={"id 重复" in out} 落盘={outp.exists()}）')
+    cases.append(('69 账本 schema 的拒绝分支：坏 `kind` / 材料 id 重复 / `unreadable` 无 reason / '
+                  '元素 id 重复 ⇒ **退 1 且不落盘**（§2.1 键封闭）',
+                  not bad, 1, '；'.join(bad)))
+
+    # ── 70 `parse` 的拒绝分支：id 重复 / 补注冲突 / 漏认 ─────────────────────────
+    bad = []
+    # ① 跨适配器元素 id 重复：两份材料**同 id**且都可读 ⇒ 各自产出 `M01#p00x`，撞在一起
+    same = d / 'same-id-materials.json'
+    same.write_text(json.dumps([material('M01', good), material('M01', other)],
+                               ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    rc, out = run([sys.executable, str(PARSE_CMD), '--materials', str(same),
+                   '--elements', str(d / 'x1.json'), '--notes', str(d / 'x2.json')])
+    if not (rc == 1 and '元素 id 重复' in out and not (d / 'x1.json').exists()):
+        bad.append(f'id 重复（rc={rc} 命中={"元素 id 重复" in out} 落盘={(d / "x1.json").exists()}）')
+    # ② 补注冲突：同 id 的一份可读、一份读不动（GBK 不显式授权）⇒ 两条补注写不同的值
+    gbk = mat / '乱码.txt'
+    gbk.write_bytes('第一步受理。\n'.encode('gbk'))
+    conflict = d / 'conflict-materials.json'
+    conflict.write_text(json.dumps([material('M01', good), material('M01', gbk)],
+                                   ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    rc, out = run([sys.executable, str(PARSE_CMD), '--materials', str(conflict),
+                   '--elements', str(d / 'y1.json'), '--notes', str(d / 'y2.json')])
+    if not (rc == 1 and '补注冲突' in out and not (d / 'y1.json').exists()):
+        bad.append(f'补注冲突（rc={rc} 命中={"补注冲突" in out} 落盘={(d / "y1.json").exists()}）')
+    # ③ 漏认（探测说谎）：`status=ok` 却没有任何适配器认领它的 `kind`
+    #    **必须是 `tier=T2`**——第一版写成 T1 时**这条永远不触发**，现场排查出来：
+    #    `parse_text` 的认领判据是"`status=ok` 且 `tier=T1`"（**不看 kind**，文本是通则），
+    #    所以 T1 永远有兜底认领者 ⇒ 漏认在 T1 上不可达；而 T2 没有兜底（要转换器），
+    #    无人认领才是真的"探测的声明比读者的射程宽"。
+    liar = d / 'liar-materials.json'
+    nobody = mat / '没人认领.bin'
+    nobody.write_bytes(b'\x01\x02\x03')
+    liar.write_text(json.dumps([material('M01', nobody, tier='T2', kind='unknown',
+                                         probe='synthetic')],
+                               ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    rc, out = run([sys.executable, str(PARSE_CMD), '--materials', str(liar),
+                   '--elements', str(d / 'z1.json'), '--notes', str(d / 'z2.json')])
+    # 判据打在**那行原文**上：`survey` 把它印成"**探测说谎**"（"漏认"是文档串里的词）
+    if not (rc == 1 and '探测说谎' in out and not (d / 'z1.json').exists()):
+        bad.append(f'漏认（rc={rc} 命中={"探测说谎" in out} 落盘={(d / "z1.json").exists()}）')
+    cases.append(('70 `parse` 的拒绝分支：跨适配器**元素 id 重复** / **补注冲突** / '
+                  '**漏认（`status=ok` 却零证据）** ⇒ 退 1 且不产出（§1.4 冲突与漏认不许静默）',
+                  not bad, 1, '；'.join(bad)))
+    return cases
+
+
 def main(argv=None):
     """造夹具 → 比 `drift` 读数 → 跑漂移 13 + 清点 3 + 取子集 10 + 能力指纹 3 + pptx 4 + 材料树若干 + 规范 1 条路径
 
@@ -1876,6 +2054,7 @@ def main(argv=None):
     for name, good, rc, out in (paths(root, draft) + intake_paths(root) + plan_paths(root)
                                 + query_paths(root) + capability_paths(root) + vlm_paths(root)
                                 + parallel_paths(root) + idempotency_paths(root)
+                                + closing_paths(root)
                                 + pptx_paths(root) + materials_paths(root)
                                 + import_paths(root) + spec_paths()):
         print(f'{"PASS" if good else "FAIL"}  {name}  （rc={rc}）')

@@ -171,7 +171,7 @@ def main(argv=None):
     print(f'\n→ 重钉完成：样例 {len(wdiff)} 项（{n_prod} 个产物）· 自举树 {len(diff)} 项')
     print('  下一步（**要人过目，所以不替你跑**）：')
     print('    python dev/verify/run.py            # 四面')
-    print('    python dev/tools/accept.py          # 十一道门')
+    print('    python dev/tools/accept.py          # 十二道门')
     print('    git add -A && git commit …          # 提交这一版基线')
     print('    git tag -f api-base HEAD            # **只在有意改了可观测行为时**')
     return 0
