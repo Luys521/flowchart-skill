@@ -350,14 +350,16 @@ def gate_aesthetic(g, tables_root):
     # **阈值不写死在这里**（2026-09-19，D-132）：从它印的汇总行里读——这个文件的纪律是
     # "判据全部从被跑命令的输出里读"，而阈值原先在本函数里另有四个字面量，与 `visual-spec` §0.1
     # 的表**当时并不一致**（规范写"绕行均值 ≤35%"，这里执行 45%）。唯一出处是 `aesthetic.LIMITS`。
-    lim = dict(re.findall(r'阈值\s*偏心<=([\d.]+)\s*·\s*半径<=([\d.]+)\s*·\s*'
-                          r'绕行<=(\d+)%\s*/\s*最坏<=(\d+)%', tail)[0]) if re.search(
-        r'阈值\s*偏心<=', tail) else None
-    if lim is None:
+    m2 = re.search(r'阈值\s*偏心<=([\d.]+)\s*·\s*半径<=([\d.]+)\s*·\s*'
+                   r'绕行<=(\d+)%\s*/\s*最坏<=(\d+)%', tail)
+    if m2 is None:
         return g.broken('aesthetic.py 的汇总行里找不到阈值（它该印"阈值 偏心<=… · 半径<=… · '
                         '绕行<=… / 最坏<=…"）')
-    off_lim, rad_lim, det_lim, worst_lim = (float(lim['偏心']), float(lim['半径']),
-                                           float(lim['绕行']), float(lim['最坏']))
+    # 逐个取组——**别用 `dict(re.findall(...))`**：四个组时 `findall` 回的是 4 元组，`dict()` 当场
+    # 抛 `ValueError: dictionary update sequence element #0 has length 4`。这一版就是那么写的，
+    # 而**四面测不到门⑨ 自己的健康**（它在 accept.py 里），是 `accept.py` 跑起来才现的形。
+    off_lim, rad_lim = float(m2.group(1)), float(m2.group(2))
+    det_lim, worst_lim = float(m2.group(3)), float(m2.group(4))
     bad = []
     if off > off_lim:
         bad.append(f'主轴偏心 {off:.2f} > {off_lim}')
