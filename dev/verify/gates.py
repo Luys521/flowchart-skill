@@ -13,6 +13,7 @@ CLI 失败路径 / 泳道 / 流程并行分支 / 微残段 / 底色铺满 / 回�
 """
 import re
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -1927,6 +1928,37 @@ def _check_escape(c, tmp):
             + ('' if rc == 0 else f' · {out.strip()[-120:]}'))
 
 
+def _check_degradation_trace(c, tmp):
+    c.section('降级必须留痕：字典缺段要吭声，不能让下游把病因报反（D-129）')
+    # 为什么值得一条：`manifest._default_shapes()` 原先读不动就**静默退回 `{}`**，
+    # 于是症状变成**下游报一堆"形状不符"**——把"字典缺 `shapes:` 段"说成"产物画错了形状"，
+    # 诊断正好指反。留痕之后，读的人第一眼看到的是病因。
+    #
+    # 判据落在**原始 stderr 字节**上（`D-127` 的教训）：不只是"打了一行"，而是"按 utf-8 解得回来"。
+    # 走子进程 + 一个驱动脚本，是因为这条退化路径只认 `manifest.__file__` 旁边的字典——要拿
+    # "缺段的字典"喂它，就得把那个位置指过去（`monkeypatch` 只在进程内做得成）。
+    d = tmp / 'trace'
+    shutil.rmtree(d, ignore_errors=True)
+    d.mkdir(parents=True)
+    (d / 'dictionary.yaml').write_text('grid:\n  lattice: 10\n', encoding='utf-8')  # 没有 shapes 段
+    (d / 'driver.py').write_text(
+        'import sys\n'
+        'sys.path.insert(0, %r)\n'
+        'import manifest\n'
+        'manifest.__file__ = %r\n'
+        'print(manifest._default_shapes())\n'
+        % (str(SKILL / 'scripts'), str(d / 'manifest.py')), encoding='utf-8'), 
+    r = subprocess.run([sys.executable, str(d / 'driver.py')], capture_output=True,
+                       cwd=str(SKILL), timeout=60)
+    raw = r.stderr if isinstance(r.stderr, bytes) else (r.stderr or b'').encode('utf-8', 'replace')
+    err = raw.decode('utf-8', 'replace')
+    c.check(r.returncode == 0 and r.stdout.strip() == b'{}',
+            '缺 `shapes:` 段仍**退回默认**（降级不变成崩溃）', (r.stdout or b'').decode('utf-8', 'replace').strip())
+    c.check('⚠' in err and 'shapes' in err and '\\u26a0' not in err,
+            '缺段留痕读得出来（原始 stderr 按 utf-8 解得回原句，且点明是字典的问题）',
+            err.strip()[:110] or '（stderr 是空的：又变成静默降级了）')
+
+
 def _check_xml_diff(c, tmp):
     c.section('质检补漏：往返差异要带文件级复核（`sync` 那条路，D-123）')
     # 自造夹具（D-42）：先 build 出一对"表 + drawio"，再比它们——
@@ -2847,6 +2879,7 @@ def run_face(tmp):
     _check_artifact_gate(c, tmp)
     _check_init_conflict(c, tmp)
     _check_escape(c, tmp)
+    _check_degradation_trace(c, tmp)
     _check_xml_diff(c, tmp)
     return c
 

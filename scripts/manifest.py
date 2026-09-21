@@ -14,6 +14,7 @@ from collections import Counter
 from pathlib import Path
 
 from semantics import is_pending
+from console import warn
 import deps
 
 try:
@@ -122,12 +123,25 @@ def _default_shapes():
 
     不走 `engine.load`（那要一份 DSL）：形状是**字典级**的事实，DSL 只能覆盖 subject 与 layout，
     `Model` 从不改 `shapes`（见 engine.py 的 `Model.__init__`）。
+
+    **读不出来要吭声**（2026-09-19 修，D-129）：原先读不动就**静默退回 `{}`**，而症状是
+    **下游报一堆"形状不符"**——把"字典缺 `shapes:` 段"说成"产物画错了形状"，诊断正好指反。
+    这与"降级必须留痕"直接冲突，所以每一条退化路径都留痕（走 `console.warn`：本模块是纯库，
+    它不能假定调用方把 stderr 配成了 utf-8）。
     """
     p = Path(__file__).with_name('dictionary.yaml')
     try:
-        return ((yaml.safe_load(p.read_text(encoding='utf-8')) or {}).get('shapes') or {})
-    except (OSError, ValueError, AttributeError):
+        doc = yaml.safe_load(p.read_text(encoding='utf-8')) or {}
+    except (OSError, ValueError, AttributeError) as e:
+        warn(f'⚠ 读不到随包字典 `{p.name}`（{type(e).__name__}）——`shapes` 退化为空，'
+             f'下面报出的"形状不符"多半是这一条引起的')
         return {}
+    shapes = doc.get('shapes') if isinstance(doc, dict) else None
+    if not isinstance(shapes, dict) or not shapes:
+        warn(f'⚠ 随包字典 `{p.name}` 的 `shapes:` 段缺失或为空——形状反查退化为空，'
+             f'下面报出的"形状不符"多半是这一条引起的')
+        return {}
+    return shapes
 
 
 def _compare_shapes(manifest, html_text):

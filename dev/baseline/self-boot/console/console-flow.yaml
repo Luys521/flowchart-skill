@@ -1,5 +1,5 @@
 meta:
-  title: thresholds.py 函数流程表
+  title: console.py 函数流程表
   subjects:
     脚本:
       fill: '#dae8fc'
@@ -22,11 +22,11 @@ nodes:
   col: 0
   stage: 入口
   route: 1→02
-  desc: 流程起点（结构性节点，不是函数） · 入口：1→load
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→warn
 - id: '02'
-  name: load
+  name: warn
   lines:
-  - load
+  - warn
   type: task
   subject: 脚本
   executor: selfboot
@@ -34,8 +34,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →03
-  desc: ★ `dictionary.yaml` 的 `section:` 段 → 一份"**默认 + 覆盖**"的字典。 · L32 · 函数 · ⇢ 依赖
-    console.warn
+  desc: ★ 一句留痕 → stderr，**任何流编码下都读得出来**（结尾没换行就补一个）。 · L28 · 函数
 - id: '03'
   name: 结束
   lines:

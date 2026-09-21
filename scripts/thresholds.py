@@ -17,12 +17,15 @@ r"""thresholds.py — 数值字典的**读取口径，只有这一处**（D-121�
 
 **但"段不存在"要吭一声**：整份文件读到了、只是没有这个段，多半是**改名漏改**——
 这正是"静默退回默认"最难查的那一种。所以那一支印一行到 stderr（正常情况所有段都在，
-只有真出问题才看得见）。**段存在但形状不对**（列表 / 标量）只退回默认、不吭声：
+只有真出问题才看得见）。**走 `console.warn` 而不是 `print(..., file=sys.stderr)`**（D-129）：
+本模块是**纯库**，而库不能保证调用方把 stderr 配成了 utf-8（实测 Windows 管道下是 gbk，
+`⚠` 会退化成字面量 `\u26a0`、中文全成 `?`）——**读不出来的告警等于没有告警**，而这一句正是
+"段名改了"的唯一报警器。**段存在但形状不对**（列表 / 标量）只退回默认、不吭声：
 那是 `coding-spec` G-类里登记过的笔误形态，夹具专门喂过（`recon: [1,2]`）。
 """
-import sys
 from pathlib import Path
 
+from console import warn
 from semantics import DICT_NAME
 
 
@@ -43,8 +46,7 @@ def load(section, defaults, path=None, positive_int=False):
         return th
     got = doc.get(section) if isinstance(doc, dict) else None
     if got is None:
-        print(f'⚠ `{p.name}` 里没有 `{section}:` 段——这一段退回内置默认（段名是不是改了？）',
-              file=sys.stderr)
+        warn(f'⚠ `{p.name}` 里没有 `{section}:` 段——这一段退回内置默认（段名是不是改了？）')
         return th
     if not isinstance(got, dict):          # 形状不对（`recon: [1,2]` 这种笔误）⇒ 退回默认
         return th

@@ -11,7 +11,8 @@
   8 图例带：带内不得出现节点/折点（origin_y 已按带高下推，这是结构保证）
   9 门面一致：`Engine.sizes` 必须直接指向 `grid.sizes`（否则两层各拿一份尺寸，改了不同步）
  10 公共层内部无环：读数（`cohesion.py --cycles`）为 0 组，**且**仪器喂一张造出来的环能报出非零（D-127）
- 11 stderr 编码：带 CLI 的模块若往 stderr 打非 ASCII，必须自己把它配成 utf-8（纯库豁免，名单打出来；D-127）
+ 11 stderr 编码：带 CLI 的模块若往 stderr 打非 ASCII 必须自己配编码；**纯库一律走 `console.warn`**
+    （且它在管道下也读得出来——判据读的是**原始字节**，不是实现；D-127 / D-129）
 
 （清单与 `run_face` 的 `c.section` 一一对应；增删小节时这里要跟着改。）
 """
@@ -280,12 +281,17 @@ def run_face(tmp):
     # 两句都只在真出问题时才出现，也就是说**它们恰好在最需要被读到的时候读不出来**。
     #
     # 判据取"**CLI 模块（进程入口）必须自己定两个流的编码**"：进程的流编码是入口的职责，
-    # 而且这条把"将来往 stderr 加一句中文"也一并管住。**纯库豁免**——库不该改全局流状态
-    # （`thresholds` 就是纯库，它的告警靠调用方），但豁免名单要打出来，别让这份依赖隐形。
+    # 而且这条把"将来往 stderr 加一句中文"也一并管住。**纯库不许自己写**——它们一律走
+    # `console.warn`（D-129 收的那个唯一出口），所以下面第二条从"豁免名单"升成了**硬判据**。
     nonascii = re.compile(r'[^\x00-\x7f]')
 
     def _stderr_nonascii(src_text):
-        """AST：这个模块有没有往 stderr 打**非 ASCII**。行内正则认不出 `f-string` 与多行调用。"""
+        """AST：这个模块有没有往 stderr **写非 ASCII 文本**。行内正则认不出 f-string 与多行调用。
+
+        **只看文本层**（`print(..., file=sys.stderr)` / `sys.stderr.write`）——`console.warn`
+        走的是**字节层**（`sys.stderr.buffer.write`），那正是本仓唯一被允许的写法；
+        它不是"扫描器的漏网"，下面第三条会**从产物侧**证明它真的读得出来。
+        """
         hits = 0
         for node in ast.walk(ast.parse(src_text)):
             if not isinstance(node, ast.Call):
@@ -305,7 +311,7 @@ def run_face(tmp):
                     break
         return hits
 
-    bad_err, exempt = [], []
+    bad_err, lib_err = [], []
     for p in sorted(SCRIPTS.glob('*.py')):
         t = p.read_text(encoding='utf-8')
         if not _stderr_nonascii(t):
@@ -313,12 +319,26 @@ def run_face(tmp):
         if '__main__' in t:
             if 'sys.stderr.reconfigure' not in t:
                 bad_err.append(p.stem)
-        else:
-            exempt.append(p.stem)
+        elif p.stem != 'console':          # `console` 是那个出口本身，见下
+            lib_err.append(p.stem)
     c.check(not bad_err,
             '带 CLI 的模块：往 stderr 打中文的自己配了编码（不再有"只配 stdout"的）',
             '没配：' + '、'.join(bad_err) if bad_err else '')
-    print(f'     · 纯库豁免（它们的告警靠调用方定编码）：{"、".join(exempt) or "无"}')
+    c.check(not lib_err,
+            '纯库不自己往 stderr 写中文——一律走 `console.warn`（留痕出口只有一个）',
+            '裸写：' + '、'.join(lib_err) if lib_err else '')
+
+    # 第三条**判在产物上**：把一句留痕放进**管道**（本地编码那一档，实测 stderr=gbk），
+    # 读**原始字节**、按 utf-8 解——解不回原句就是没修好。为什么不信"实现写对了"：
+    # 这套判据的第一版就是只看"有没有配 `reconfigure`"，而真正要保证的是**读得出来**。
+    prog = ('import sys; sys.path.insert(0, "scripts"); from console import warn; '
+            'warn("\u26a0 段名是不是改了？")')
+    r = subprocess.run([PY, '-c', prog], capture_output=True, cwd=str(SKILL), timeout=60)
+    raw = r.stderr if isinstance(r.stderr, bytes) else (r.stderr or '').encode('utf-8', 'replace')
+    got = raw.decode('utf-8', 'replace').strip()
+    c.check(r.returncode == 0 and '⚠ 段名是不是改了？' in got and '\\u26a0' not in got,
+            '留痕在**管道**下也读得出来（原始 stderr 按 utf-8 解得回原句，不退化）',
+            got[:90] or '（stderr 是空的）')
     return c
 
 
