@@ -72,7 +72,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →12
-  desc: ★ 范围语法 → `(起, 止)`；**语法与校验只有一处**（`semantics.parse_span`，D-122）。 · L129 · 函数
+  desc: ★ 范围语法 → `(起, 止)`；**语法与校验只有一处**（`semantics.parse_span`，D-122）。 · L144 · 函数
     · ⇢ 依赖 semantics.parse_span
 - id: '06'
   name: parse_pptx
@@ -85,7 +85,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →12
-  desc: ★ `.pptx` **字节** → `(elements, 报错文案)`。**一张幻灯片一个 element**（零依赖… · L134 · 函数
+  desc: ★ `.pptx` **字节** → `(elements, 报错文案)`。**一张幻灯片一个 element**（零依赖… · L149 · 函数
     · ⇢ 依赖 pptx_text.other_text_parts、pptx_text.slides
 - id: '07'
   name: container_kind
@@ -98,7 +98,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →12
-  desc: ★ PK 容器的**字节** → `'docx'` / `'xlsx'` / `'pptx'`；不是 OOXML 返回 N… · L185 · 函数
+  desc: ★ PK 容器的**字节** → `'docx'` / `'xlsx'` / `'pptx'`；不是 OOXML 返回 N… · L200 · 函数
 - id: 08
   name: parse_materials
   lines:
@@ -110,7 +110,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→03｜2→04｜3→06｜4→07
-  desc: ★ 材料层 → `(elements, 补注, 摘要, 跳过清单, 报错文案)`。非 OOXML / 非 ok 的一律**… · L205 · 函数
+  desc: ★ 材料层 → `(elements, 补注, 摘要, 跳过清单, 报错文案)`。非 OOXML / 非 ok 的一律**… · L220 · 函数
     · 分支：1→parse_docx 2→parse_xlsx 3→parse_pptx 4→container_kind
 - id: 09
   name: _read_json
@@ -123,7 +123,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →12
-  desc: ★ 读 JSON（容忍 BOM）。 · L268 · 函数
+  desc: ★ 读 JSON（容忍 BOM）。 · L283 · 函数
 - id: '10'
   name: _write_notes
   lines:
@@ -135,7 +135,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →12
-  desc: ★ 写材料层补注：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 `ledger.dump`… · L272 · 函数
+  desc: ★ 写材料层补注：UTF-8 / LF / 缩进 2 / 中文不转义（与账本同一套写盘口径，见 `ledger.dump`… · L287 · 函数
 - id: '11'
   name: main
   lines:
@@ -147,7 +147,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→05｜2→08｜3→09｜4→10
-  desc: L276 · 函数 · 分支：1→_span 2→parse_materials 3→_read_json 4→_write_notes
+  desc: L291 · 函数 · 分支：1→_span 2→parse_materials 3→_read_json 4→_write_notes
 - id: '12'
   name: 结束
   lines:

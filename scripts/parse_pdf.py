@@ -91,18 +91,22 @@ def parse_pdf(path, mid, max_pages, max_chars, pages=None):
     if err:
         return None, '', err
     out, shared, cut_pages = [], [], 0
+    failed = []
     with pdfplumber.open(str(path)) as pdf:
         total = len(pdf.pages)
+        read = 0                                       # 本轮**实读**页数（收窄/截断后）
         for pno, page in enumerate(pdf.pages, 1):
             if pno > max_pages:
                 shared.append(f'只取前 {max_pages} 页（共 {total} 页）')
                 break
             if pages and not (pages[0] <= pno <= pages[1]):
                 continue                                # `--pages`：**只要这几页**（收窄，见下 shared 记账）
+            read += 1
             try:
                 text = (page.extract_text() or '').strip()
             except Exception as e:                      # 单页坏不让整份失败
                 shared.append(f'第 {pno} 页抽取失败：{type(e).__name__}')
+                failed.append(f'第 {pno} 页 {type(e).__name__}')
                 continue
             if not text:
                 continue
@@ -116,9 +120,11 @@ def parse_pdf(path, mid, max_pages, max_chars, pages=None):
             if cut:
                 el['degraded'] = f'第 {pno} 页正文截断到 {max_chars} 字'
             out.append(el)
-    thin = thin_note(total, out, load_thresholds())
+    # 尺子二的分母必须是**本轮实读页数**（G29）：拿整份页数当分母、收窄后的元素当分子，
+    # 收窄越窄"每页字数"越低，必然触发假"文字层薄"——把 AI 骗去转图片。
+    thin = thin_note(read, out, load_thresholds())
     if thin:
-        shared.append(thin)                             # 材料级说明：挂到这份材料的每条上（与页数上限同档）
+        shared.append(thin + (f'（本轮只读 {read} 页）' if read < total else ''))
     note = '；'.join(dict.fromkeys(shared))              # 去重但保序
     if pages:
         # 收窄是**材料级**事实（这份材料整体只取了那几页）⇒ 挂到它的每条上（与页数上限同一档）
@@ -171,6 +177,14 @@ def parse_materials(materials, max_pages, max_chars, pages=None):
         done.append(f'{mid} {len(got)} 页' + (f'（{note}）' if note else ''))
         if got:
             notes.append({'material_id': mid, 'extractor': 'py:pdfplumber'})
+        elif '抽取失败' in note:
+            # **每页都抽取失败**（G30）：失败理由原先只进 `done`（`main` 从不打印）⇒ 材料在账本上
+            # 是"status=ok / 零证据 / 无 reason"，分派器判"探测说谎"退 1、真因（内容流损坏）
+            # 在任何输出里都看不见。记 `unreadable` + 逐页原因，让账本说人话。
+            notes.append({'material_id': mid, 'status': 'unreadable',
+                          'reason': f'每页抽取都失败：{note}（pdfplumber 打不开这一份的文本层；'
+                                    f'转图片走 §1.5 手段 2）'})
+            skipped.append(f'{mid}: 每页抽取失败')
         elif pages:
             # **收窄读空 ≠ 材料是空的**（审计实测：原先这里什么都不记 ⇒ 分派器判"探测说谎"、
             # 整链退 1 且一个字节都不落盘，还把矛头指向 probe）。记 `skipped`：它没参与**本轮**，

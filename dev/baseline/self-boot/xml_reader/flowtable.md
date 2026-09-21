@@ -36,21 +36,21 @@ parent: ../flowtable.md
 | 模块级 | 22 | _root_model | 任务 | — | — | — | 脚本 | selfboot | — | →42 | ★ XML 文本 → (mxGraphModel 元素, root 元素, 页数)。解析不了抛 ValueError（带原… · L354 · 函数 |
 | 模块级 | 23 | _order_nodes_and_edges | 任务 | — | — | — | 脚本 | selfboot | — | →42 | ★ 外部图按几何从上到下、从左到右重排，自有图按原始顺序；并丢掉两端不存在的边。 · L384 · 函数 |
 | 模块级 | 24 | read | 任务 | — | — | — | 脚本 | selfboot | — | 1→10｜2→15｜3→16｜4→17｜5→18｜6→19｜7→21｜8→22｜9→23 | ★ 解析 drawio XML → {title, nodes, edges, source, grid, pages}。… · L397 · 函数 · 分支：1→_num 2→_parse_nodes 3→_lanes_bbox 4→_band_width 5→_parse_edges 6→_finalize_types 7→assign_grid 8→_root_model 9→_order_nodes_and_edges |
-| 模块级 | 25 | _frac_pt | 任务 | — | — | — | 脚本 | selfboot | — | →42 | ★ 端口比例 → 绝对坐标。drawio 的 exitX/exitY 是**外接矩形的比例**，缺省即边中点。 · L413 · 函数 |
-| 模块级 | 26 | geometry | 任务 | — | — | — | 脚本 | selfboot | — | →25 | ★ 读回结果 → 几何表 {nodes: {id: {rect, shape}}, edges: [{from, to, … · L420 · 函数 |
-| 模块级 | 27 | _brief_index | 任务 | — | — | — | 脚本 | selfboot | — | →42 | ★ 节点序号表 + 出边索引（摘要按文档顺序、分支按目标序号排）。 · L447 · 函数 |
-| 模块级 | 28 | _brief_node_lines | 任务 | — | — | — | 脚本 | selfboot | — | →42 | ★ 一行一节点（判断/多分支缩进列出各分支）。 · L456 · 函数 |
-| 模块级 | 29 | brief | 任务 | — | — | — | 脚本 | selfboot | — | 1→27｜2→28 | ★ AI/人可读的拓扑摘要：一行一节点，判断/多分支节点缩进列出各分支。 · L478 · 函数 · 分支：1→_brief_index 2→_brief_node_lines |
-| 模块级 | 30 | _next_of | 任务 | — | — | — | 脚本 | selfboot | — | →42 | L502 · 函数 |
-| 模块级 | 31 | _target_id | 任务 | — | — | — | 脚本 | selfboot | — | →42 | ★ 从「回 10 重编」「n2」这类文本里取出目标节点 id： · L511 · 函数 |
-| 模块级 | 32 | _parse_next_cell | 任务 | — | — | — | 脚本 | selfboot | — | →31 | L525 · 函数 · ⇢ 依赖 semantics.split_branches |
-| 模块级 | 33 | _diff_table_rows | 任务 | — | — | — | 脚本 | selfboot | — | →42 | ★ 现有流程表 → {节点id: {name, type, next}}。 · L539 · 函数 · ⇢ 依赖 flowtable.parse_table、flowtable.split_row_cells |
-| 模块级 | 34 | _diff_added_removed | 任务 | — | — | — | 脚本 | selfboot | — | →42 | ★ 新增 / 删除节点清单；新增的节点只有名称与连线，缺的语义列在这里点名。 · L555 · 函数 |
-| 模块级 | 35 | _diff_changed | 任务 | — | — | — | 脚本 | selfboot | — | 1→30｜2→32 | ★ 共有节点的差异清单：名称、类型、分支走向——图里只有这三样可动（D-73）。 · L573 · 函数 · 分支：1→_next_of 2→_parse_next_cell |
-| 模块级 | 36 | diff | 任务 | — | — | — | 脚本 | selfboot | — | 1→33｜2→34｜3→35 | ★ 读回结果 vs 现有流程表 → 差异清单 · L597 · 函数 · 分支：1→_diff_table_rows 2→_diff_added_removed 3→_diff_changed |
-| 模块级 | 37 | _print_json | 任务 | — | — | — | 脚本 | selfboot | — | →42 | ★ --json：输出结构化 JSON。 · L610 · 函数 |
-| 模块级 | 38 | _print_grid | 任务 | — | — | — | 脚本 | selfboot | — | →42 | ★ --grid：输出坐标推断的 row/col。 · L615 · 函数 |
-| 模块级 | 39 | _cmd_diff | 任务 | — | — | — | 脚本 | selfboot | — | →36 | ★ --diff：只报**结构差异**（拓扑层面的：节点/边/标签）。 · L622 · 函数 |
-| 模块级 | 40 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→24｜2→29｜3→37｜4→38｜5→39 | L650 · 函数 · 分支：1→read 2→brief 3→_print_json 4→_print_grid 5→_cmd_diff |
+| 模块级 | 25 | _frac_pt | 任务 | — | — | — | 脚本 | selfboot | — | →42 | ★ 端口比例 → 绝对坐标。drawio 的 exitX/exitY 是**外接矩形的比例**，缺省即边中点。 · L418 · 函数 |
+| 模块级 | 26 | geometry | 任务 | — | — | — | 脚本 | selfboot | — | →25 | ★ 读回结果 → 几何表 {nodes: {id: {rect, shape}}, edges: [{from, to, … · L425 · 函数 |
+| 模块级 | 27 | _brief_index | 任务 | — | — | — | 脚本 | selfboot | — | →42 | ★ 节点序号表 + 出边索引（摘要按文档顺序、分支按目标序号排）。 · L452 · 函数 |
+| 模块级 | 28 | _brief_node_lines | 任务 | — | — | — | 脚本 | selfboot | — | →42 | ★ 一行一节点（判断/多分支缩进列出各分支）。 · L461 · 函数 |
+| 模块级 | 29 | brief | 任务 | — | — | — | 脚本 | selfboot | — | 1→27｜2→28 | ★ AI/人可读的拓扑摘要：一行一节点，判断/多分支节点缩进列出各分支。 · L483 · 函数 · 分支：1→_brief_index 2→_brief_node_lines |
+| 模块级 | 30 | _next_of | 任务 | — | — | — | 脚本 | selfboot | — | →42 | L507 · 函数 |
+| 模块级 | 31 | _target_id | 任务 | — | — | — | 脚本 | selfboot | — | →42 | ★ 从「回 10 重编」「n2」这类文本里取出目标节点 id： · L516 · 函数 |
+| 模块级 | 32 | _parse_next_cell | 任务 | — | — | — | 脚本 | selfboot | — | →31 | L530 · 函数 · ⇢ 依赖 semantics.split_branches |
+| 模块级 | 33 | _diff_table_rows | 任务 | — | — | — | 脚本 | selfboot | — | →42 | ★ 现有流程表 → {节点id: {name, type, next}}。 · L544 · 函数 · ⇢ 依赖 flowtable.parse_table、flowtable.split_row_cells |
+| 模块级 | 34 | _diff_added_removed | 任务 | — | — | — | 脚本 | selfboot | — | →42 | ★ 新增 / 删除节点清单；新增的节点只有名称与连线，缺的语义列在这里点名。 · L560 · 函数 |
+| 模块级 | 35 | _diff_changed | 任务 | — | — | — | 脚本 | selfboot | — | 1→30｜2→32 | ★ 共有节点的差异清单：名称、类型、分支走向——图里只有这三样可动（D-73）。 · L578 · 函数 · 分支：1→_next_of 2→_parse_next_cell |
+| 模块级 | 36 | diff | 任务 | — | — | — | 脚本 | selfboot | — | 1→33｜2→34｜3→35 | ★ 读回结果 vs 现有流程表 → 差异清单 · L602 · 函数 · 分支：1→_diff_table_rows 2→_diff_added_removed 3→_diff_changed |
+| 模块级 | 37 | _print_json | 任务 | — | — | — | 脚本 | selfboot | — | →42 | ★ --json：输出结构化 JSON。 · L615 · 函数 |
+| 模块级 | 38 | _print_grid | 任务 | — | — | — | 脚本 | selfboot | — | →42 | ★ --grid：输出坐标推断的 row/col。 · L620 · 函数 |
+| 模块级 | 39 | _cmd_diff | 任务 | — | — | — | 脚本 | selfboot | — | →36 | ★ --diff：只报**结构差异**（拓扑层面的：节点/边/标签）。 · L627 · 函数 |
+| 模块级 | 40 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→24｜2→29｜3→37｜4→38｜5→39 | L655 · 函数 · 分支：1→read 2→brief 3→_print_json 4→_print_grid 5→_cmd_diff |
 | _geom | 41 | _geom.f | 任务 | — | — | — | 脚本 | selfboot | — | →42 | L77 · 嵌套函数 |
 | 出口 | 42 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |

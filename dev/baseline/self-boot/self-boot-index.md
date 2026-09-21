@@ -16,7 +16,7 @@
   - **L1 子流程** `drift/flowtable.md`——《drift.py 函数流程表》（id: selfboot-drift）（29 节点）
   - **L1 子流程** `engine/flowtable.md`——《engine.py 函数流程表》（id: selfboot-engine）（28 节点）
   - **L1 子流程** `flowtable/flowtable.md`——《flowtable.py 函数流程表》（id: selfboot-flowtable）（29 节点）
-  - **L1 子流程** `flowtable_check/flowtable.md`——《flowtable_check.py 函数流程表》（id: selfboot-flowtable_check）（37 节点）
+  - **L1 子流程** `flowtable_check/flowtable.md`——《flowtable_check.py 函数流程表》（id: selfboot-flowtable_check）（38 节点）
   - **L1 子流程** `flowtable_colors/flowtable.md`——《flowtable_colors.py 函数流程表》（id: selfboot-flowtable_colors）（10 节点）
   - **L1 子流程** `flowtable_layout/flowtable.md`——《flowtable_layout.py 函数流程表》（id: selfboot-flowtable_layout）（23 节点）
   - **L1 子流程** `geometry/flowtable.md`——《geometry.py 函数流程表》（id: selfboot-geometry）（35 节点）
@@ -35,7 +35,7 @@
   - **L1 子流程** `parse_text/flowtable.md`——《parse_text.py 函数流程表》（id: selfboot-parse_text）（15 节点）
   - **L1 子流程** `plan/flowtable.md`——《plan.py 函数流程表》（id: selfboot-plan）（22 节点）
   - **L1 子流程** `pptx_text/flowtable.md`——《pptx_text.py 函数流程表》（id: selfboot-pptx_text）（10 节点）
-  - **L1 子流程** `probe/flowtable.md`——《probe.py 函数流程表》（id: selfboot-probe）（16 节点）
+  - **L1 子流程** `probe/flowtable.md`——《probe.py 函数流程表》（id: selfboot-probe）（18 节点）
   - **L1 子流程** `query/flowtable.md`——《query.py 函数流程表》（id: selfboot-query）（11 节点）
   - **L1 子流程** `recon/flowtable.md`——《recon.py 函数流程表》（id: selfboot-recon）（26 节点）
   - **L1 子流程** `render_drawio/flowtable.md`——《render_drawio.py 函数流程表》（id: selfboot-render_drawio）（27 节点）
@@ -51,7 +51,7 @@
   - **L1 子流程** `textquality/flowtable.md`——《textquality.py 函数流程表》（id: selfboot-textquality）（11 节点）
   - **L1 子流程** `thresholds/flowtable.md`——《thresholds.py 函数流程表》（id: selfboot-thresholds）（3 节点）
   - **L1 子流程** `validate/flowtable.md`——《validate.py 函数流程表》（id: selfboot-validate）（41 节点）
-  - **L1 子流程** `writeback/flowtable.md`——《writeback.py 函数流程表》（id: selfboot-writeback）（23 节点）
+  - **L1 子流程** `writeback/flowtable.md`——《writeback.py 函数流程表》（id: selfboot-writeback）（25 节点）
   - **L1 子流程** `xml_reader/flowtable.md`——《xml_reader.py 函数流程表》（id: selfboot-xml_reader）（42 节点）
 
 ## 构建顺序（自底向上）

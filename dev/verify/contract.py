@@ -48,7 +48,7 @@ def _mds():
     是豁免的（`DECISIONS.md` 按设计要能原样引用当年的旧词与旧举例，见 HISTORY_DOCS），
     扫进来只会把这些记录逼成不实陈述。
     """
-    skip = {'.verify_tmp', '.accept_tmp', '__pycache__', '.git', '.workbuddy', 'output', 'dev'}
+    skip = {'.verify_tmp', '.accept_tmp', '.audit-tmp', '__pycache__', '.git', '.workbuddy', 'output', 'dev'}
     return {p: p.read_text(encoding='utf-8') for p in sorted(SKILL.rglob('*.md'))
             if not (set(p.relative_to(SKILL).parts) & skip)}
 
@@ -88,7 +88,7 @@ def _claim_docs():
     只剔三类不含"现状宣称"的东西：**生成物**（`dev/baseline/**`、`fn-graph.md`）·
     **历史日志**（`DECISIONS.md`，按设计要保留当年的旧路径与旧读数）· 与产品无关的目录。
     """
-    skip = {'.verify_tmp', '.accept_tmp', '__pycache__', '.git', '.workbuddy',
+    skip = {'.verify_tmp', '.accept_tmp', '.audit-tmp', '__pycache__', '.git', '.workbuddy',
             'output', 'baseline', 'archive', 'old', 'fixtures'}
     return {p: p.read_text(encoding='utf-8') for p in sorted(SKILL.rglob('*.md'))
             if not (set(p.relative_to(SKILL).parts) & skip)
@@ -203,7 +203,7 @@ def run_face(tmp=None):
     # 指错路）。**历史文档除外**：它按设计要保留当年的旧路径与旧目录名（HISTORY_DOCS）。
     docs_all = {p: p.read_text(encoding='utf-8') for p in sorted(SKILL.rglob('*.md'))
                 if not (set(p.relative_to(SKILL).parts)
-                        & {'.verify_tmp', '.accept_tmp', '__pycache__', '.git', '.workbuddy', 'archive', 'old'})
+                        & {'.verify_tmp', '.accept_tmp', '.audit-tmp', '__pycache__', '.git', '.workbuddy', 'archive', 'old'})
                 and p.name not in HISTORY_DOCS}
     seen = {}
     for p, t in docs_all.items():
@@ -579,7 +579,7 @@ def run_face(tmp=None):
     # 没有这个文档，被否决过的方案会被下一个会话重新提议一遍；有了它，
     # 代码里的 why-not 注释可以只写一句"见 D-xx"。
     # **指针挂在 README 而不挂 SKILL.md**：SKILL.md 是"出图"的调度层，读它的 AI 不需要
-    # 知道仓库怎么维护（见 SKILL.md 目录表末的说明）。维护入口统一在 README「改完东西跑自检」。
+    # 知道仓库怎么维护。维护入口统一在 README「改完东西跑自检」。
     dp = SKILL / 'dev' / 'DECISIONS.md'
     if c.check(dp.exists(), 'DECISIONS.md 存在'):
         dt = dp.read_text(encoding='utf-8')

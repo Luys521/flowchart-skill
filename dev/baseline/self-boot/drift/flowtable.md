@@ -38,6 +38,6 @@ parent: ../flowtable.md
 | 模块级 | 24 | render | 任务 | — | — | — | 脚本 | selfboot | — | →23 | ★ 漂移清单 + 缺口清单（markdown）。**表头先写输入指纹、跳过的判据与本次阈值**—— · L491 · 函数 |
 | 模块级 | 25 | cmd_build | 任务 | — | — | — | 脚本 | selfboot | — | 1→18｜2→24 | ★ 出草稿：机器列已填，AI 那几列留空（`待验` / `待取证`）。 · L529 · 函数 · 分支：1→prepare 2→render · ⇢ 依赖 artifact.beside、cells.dump、cells.todo_from_doc |
 | 模块级 | 26 | check_header | 任务 | — | — | — | 脚本 | selfboot | — | →29 | ★ `drift.md` 头部（`>` 行）↔ 本次调用的**输入 / 阈值 / 表** → `(错误, 提示)`。 · L577 · 函数 |
-| 模块级 | 27 | cmd_check | 任务 | — | — | — | 脚本 | selfboot | — | 1→18｜2→19｜3→21｜4→22｜5→26 | ★ 查收敛：**拿当前表重跑判据**，与文件里的处置对账（§5.4）。 · L616 · 函数 · 分支：1→prepare 2→parse_doc 3→check_drift_rows 4→check_gap_rows 5→check_header |
-| 模块级 | 28 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→25｜2→27 | ★ 子命令分发。**用显式 if 而不是 `set_defaults(func=…)`**：后者在静态调用图里看不见， · L653 · 函数 · 分支：1→cmd_build 2→cmd_check |
+| 模块级 | 27 | cmd_check | 任务 | — | — | — | 脚本 | selfboot | — | 1→18｜2→19｜3→21｜4→22｜5→26 | ★ 查收敛：**拿当前表重跑判据**，与文件里的处置对账（§5.4）。 · L626 · 函数 · 分支：1→prepare 2→parse_doc 3→check_drift_rows 4→check_gap_rows 5→check_header |
+| 模块级 | 28 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→25｜2→27 | ★ 子命令分发。**用显式 if 而不是 `set_defaults(func=…)`**：后者在静态调用图里看不见， · L663 · 函数 · 分支：1→cmd_build 2→cmd_check |
 | 出口 | 29 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |

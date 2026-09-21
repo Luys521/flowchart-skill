@@ -256,7 +256,12 @@ def _check_relation(mid, cell, rows, mats):
             errs.append(f'{mid}: 记了「副本」，但被复制的那份 {other} 记的是 {back!r}'
                         f'（保留的那份应当 `独立`——§3：只保留 `M##` 小者）')
         return errs
-    want = REVERSE[kind]
+    want = REVERSE.get(kind)
+    if want is None:
+        # `无关(M##)` 是合法取值（§3 取值表与 `TODO_TABLES` 域都列了它），而 `REVERSE` 只装
+        # 互补 / 替代 / 被替代 三对——原先直接下标，撞上 `无关` 当场 KeyError 崩栈退 1（G39）。
+        # §3 的双向一致只要求互补与替代配对；`无关` 不要求对偶。
+        return []
     back = rows[other]['版本关系'].strip()
     if back != f'{want}({mid})':
         return [f'{mid} 记 `{kind}({other})`，但 {other} 记的是 {back!r}'

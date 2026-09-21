@@ -601,9 +601,19 @@ def check_header(text, a, th):
             if now != m.group(2):
                 notes.append(f'流程表自上次 build 起改过了（账里 {m.group(2)} → 现在 {now}）：'
                              f'这正是"改完表再对账"的正常姿势；若"已修"仍被报命中，就是没真修')
+    # **只对"账里记过、这次没给"的输入报错**（G44）：原先只看"这次给没给"，于是 build 用部分输入
+    # 出的账（含"只给流程表"那种）**它自己打印的下一步 check 命令必然失败**——报的还是
+    # "账里记着用过「账本」"，而账里根本没记过。头部那行 `> 输入：…` 才是事实。
+    m_in = re.search(r'^> 输入：(.*)$', head, re.M)
+    recorded = m_in.group(1) if m_in else None
     for key, flag in (('账本', a.ledger), ('假设账', getattr(a, 'recon', None)),
                       ('清点', getattr(a, 'intake', None))):
-        if flag is None:
+        if flag is not None:
+            continue
+        if recorded is None:
+            errs.append(f'头部没有「输入」那一行，无法判断账里用过什么——不补这一行，'
+                        f'「{key}」这类判据会静默少跑（这份 drift.md 不是 `build` 出的？）')
+        elif key in recorded:
             errs.append(f'账里记着用过「{key}」，这次 check 没给——**判据会静默少跑**，'
                         f'那种绿不算收敛（补上 `--{ {"账本": "ledger", "假设账": "recon", "清点": "intake"}[key] }`）')
     mt = re.search(r'`coverage_min_elements=(\d+)`', head)

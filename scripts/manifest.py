@@ -471,6 +471,13 @@ def _run_build(a):
 
 def _run_check(a):
     """check 子命令：manifest.json vs 产物。"""
+    # **一份产物都不给 = 没在反查**（G41）：`check()` 会把所有比较都跳过、返回空错误表，
+    # 而这里原先照样打印"✓ 两份产物与契约逐项一致"退 0——公开命令上的假绿。
+    # "少一份交付物而没人说"是本项目最忌的形态，所以这里当场拦下并给出三种给法。
+    if not (a.html or a.drawio or getattr(a, 'products', None) or a.yaml_path):
+        print('✗ 没给要反查的产物：`check` 至少要知道比谁——'
+              '加 `--html <产物>` / `--drawio <产物>`（或 `--yaml <flow.yaml>` 先验收契约是否过期）')
+        return 2
     mf = json.loads(Path(a.manifest).read_text(encoding='utf-8'))
     errs = check(mf, html=a.html, drawio=a.drawio, yaml_path=a.yaml_path)
     print(f'契约: {summary(mf)}')
@@ -479,7 +486,13 @@ def _run_check(a):
         for e in errs:
             print('   -', e)
         return 1
-    print('✓ 两份产物与契约逐项一致（节点 id 集合 + 边集合）')
+    # 成功语按**实查份数**说（G41/⑬）：原先硬编码"两份"，只给 html 时也是"两份"。
+    n = sum(1 for x in (a.html, a.drawio) if x)
+    if n:
+        print(f'✓ 已反查 {n} 份产物，与契约逐项一致（节点 id 集合 + 边集合）'
+              + ('（契约新鲜度也验过）' if a.yaml_path else ''))
+    else:
+        print('✓ 契约未过期（本次只验新鲜度，没给产物可比）')
     return 0
 
 

@@ -154,7 +154,7 @@ nodes:
   col: 0
   stage: 结构校验
   route: →13
-  desc: 34 个函数 · ⊞ flowtable_check/flowtable.md
+  desc: 35 个函数 · ⊞ flowtable_check/flowtable.md
 - id: '13'
   name: 模块 · flowtable_colors
   lines:
@@ -382,7 +382,7 @@ nodes:
   col: 0
   stage: 接管与解析
   route: →32
-  desc: 14 个函数 · ⊞ probe/flowtable.md
+  desc: 16 个函数 · ⊞ probe/flowtable.md
 - id: '32'
   name: 模块 · query
   lines:
@@ -574,7 +574,7 @@ nodes:
   col: 0
   stage: 同步闭环
   route: →48
-  desc: 21 个函数 · ⊞ writeback/flowtable.md
+  desc: 23 个函数 · ⊞ writeback/flowtable.md
 - id: '48'
   name: 模块 · xml_reader
   lines:

@@ -292,7 +292,11 @@ def run_face(tmp):
             '现状：允许边上的环 0 组（公共层互引 / 编排层互引都没有闭环）',
             out.strip().splitlines()[-1].strip() if rc == 0 else out.strip()[-100:])
     # ② 把一张**造出来的**环喂给同一个函数：它必须报得出来，且认出是哪一层
-    prog = ('import sys; sys.path.insert(0, "dev/tools"); import cohesion; '
+    # **子进程自己配 stdout 编码**（D-63 同一课，只是那次栽在产品脚本、这次栽在测试自己）：
+    # 父进程按 utf-8 解，而 Windows 上 `python -c` 的 stdout 默认是 GBK——不配就是
+    # "仪器明明报对了、断言读成乱码"，红得还没有道理。
+    prog = ('import sys; sys.stdout.reconfigure(encoding="utf-8"); '
+            'sys.path.insert(0, "dev/tools"); import cohesion; '
             'ro = ({"a", "b"}, set(), set()); e = {"a": {"b": {"x"}}, "b": {"a": {"y"}}}; '
             'print(cohesion.cycles(edges=e, rosters=ro))')
     r = subprocess.run([PY, '-c', prog], capture_output=True, text=True, encoding='utf-8',

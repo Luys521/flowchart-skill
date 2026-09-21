@@ -21,60 +21,60 @@ nodes:
   row: 0
   col: 0
   stage: 入口
-  route: 1→15
+  route: 1→17
   desc: 流程起点（结构性节点，不是函数） · 入口：1→main
 - id: '02'
-  name: _read_head
+  name: _bmp_ok
   lines:
-  - _read_head
+  - _bmp_ok
   type: task
   subject: 脚本
   executor: selfboot
   row: 4
   col: 0
   stage: 模块级
-  route: →16
-  desc: ★ 前 n 字节；读不动就返回空（调用方按 T4 记账，不许崩）。 · L63 · 函数
+  route: →03
+  desc: ★ `BM` 后面那 12 字节像不像真 BMP：**保留域必须为 0、大小域必须等于文件大小**。 · L43 · 函数
 - id: '03'
-  name: _ooxml_kind
+  name: _read_head
   lines:
-  - _ooxml_kind
+  - _read_head
   type: task
   subject: 脚本
   executor: selfboot
   row: 5
   col: 0
   stage: 模块级
-  route: →16
-  desc: ★ PK 容器 → `docx` / `xlsx` / `pptx`；不是 OOXML 就返回 None。 · L71 · 函数
+  route: →18
+  desc: ★ 前 n 字节；读不动就返回空（调用方按 T4 记账，不许崩）。 · L83 · 函数
 - id: '04'
-  name: _pdf_tier
+  name: _ooxml_kind
   lines:
-  - _pdf_tier
+  - _ooxml_kind
   type: task
   subject: 脚本
   executor: selfboot
   row: 6
   col: 0
   stage: 模块级
-  route: →16
-  desc: ★ PDF：有字体标记 → 有文本层（T2），否则判扫描件（T3）。依据写成 `/Font` 计数，人可核。 · L88 · 函数
+  route: →18
+  desc: ★ PK 容器 → `docx` / `xlsx` / `pptx`；不是 OOXML 就返回 None。 · L91 · 函数
 - id: '05'
-  name: _decodes
+  name: _count_marker
   lines:
-  - _decodes
+  - _count_marker
   type: task
   subject: 脚本
   executor: selfboot
   row: 8
   col: 0
   stage: 模块级
-  route: →16
-  desc: ★ 这段字节能不能解成 UTF-8。 · L103 · 函数
+  route: →18
+  desc: ★ **分块**数一个字节标记出现几次 —— 不把整份读进内存（G34）。 · L108 · 函数
 - id: '06'
-  name: _text_tier
+  name: _pdf_tier
   lines:
-  - _text_tier
+  - _pdf_tier
   type: task
   subject: 脚本
   executor: selfboot
@@ -82,8 +82,32 @@ nodes:
   col: 0
   stage: 模块级
   route: →05
-  desc: ★ 能按 UTF-8 解码且无 NUL 字节 → 文本（T1）；否则 None。**头尾都要过**。 · L122 · 函数
+  desc: ★ PDF：有字体标记 → 有文本层（T2），否则判扫描件（T3）。依据写成 `/Font` 计数，人可核。 · L126 · 函数
 - id: '07'
+  name: _decodes
+  lines:
+  - _decodes
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 10
+  col: 0
+  stage: 模块级
+  route: →18
+  desc: ★ 这段字节能不能解成 UTF-8。 · L144 · 函数
+- id: 08
+  name: _text_tier
+  lines:
+  - _text_tier
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 9
+  col: 0
+  stage: 模块级
+  route: →07
+  desc: ★ 能按 UTF-8 解码且无 NUL 字节 → 文本（T1）；否则 None。**头尾都要过**。 · L163 · 函数
+- id: 09
   name: sniff
   lines:
   - sniff
@@ -93,46 +117,46 @@ nodes:
   row: 3
   col: 0
   stage: 模块级
-  route: 1→02｜2→03｜3→04｜4→06｜5→09
-  desc: ★ 一个文件 → `(tier, probe, status, reason, kind)`。`probe` 是**判据*… · L144 · 函数
-    · 分支：1→_read_head 2→_ooxml_kind 3→_pdf_tier 4→_text_tier 5→_read_tail
-- id: 08
+  route: 1→02｜2→03｜3→04｜4→06｜5→08｜6→11
+  desc: ★ 一个文件 → `(tier, probe, status, reason, kind)`。`probe` 是**判据*… · L185 · 函数
+    · 分支：1→_bmp_ok 2→_read_head 3→_ooxml_kind 4→_pdf_tier 5→_text_tier 6→_read_tail
+- id: '10'
   name: _mtime
   lines:
   - _mtime
   type: task
   subject: 脚本
   executor: selfboot
-  row: 9
+  row: 11
   col: 0
   stage: 模块级
-  route: →16
-  desc: ★ 修改时间（ISO 8601 本地时区）；取不到返回空串（不崩）—§3「替代」的末位兜底。 · L193 · 函数
-- id: 09
+  route: →18
+  desc: ★ 修改时间（ISO 8601 本地时区）；取不到返回空串（不崩）—§3「替代」的末位兜底。 · L236 · 函数
+- id: '11'
   name: _read_tail
   lines:
   - _read_tail
   type: task
   subject: 脚本
   executor: selfboot
-  row: 10
+  row: 12
   col: 0
   stage: 模块级
-  route: →16
-  desc: ★ 末 n 字节（不足就全给）；读不动返回空（调用方按"没有尾部"处理，不崩）。 · L200 · 函数
-- id: '10'
+  route: →18
+  desc: ★ 末 n 字节（不足就全给）；读不动返回空（调用方按"没有尾部"处理，不崩）。 · L243 · 函数
+- id: '12'
   name: _sha_and_size
   lines:
   - _sha_and_size
   type: task
   subject: 脚本
   executor: selfboot
-  row: 12
+  row: 14
   col: 0
   stage: 模块级
-  route: →16
-  desc: ★ → `(sha256, 字节数)`，**分块读**（默认 1 MiB 一块）。 · L212 · 函数
-- id: '11'
+  route: →18
+  desc: ★ → `(sha256, 字节数)`，**分块读**（默认 1 MiB 一块）。 · L255 · 函数
+- id: '13'
   name: probe_tree
   lines:
   - probe_tree
@@ -142,47 +166,47 @@ nodes:
   row: 2
   col: 0
   stage: 模块级
-  route: 1→07｜2→08｜3→10
-  desc: ★ 路径（文件或目录）→ `materials[]`；目录按**材料路径字典序**编号 `M01`…（PIPELINE-S… · L230 · 函数
+  route: 1→09｜2→10｜3→12
+  desc: ★ 路径（文件或目录）→ `materials[]`；目录按**材料路径字典序**编号 `M01`…（PIPELINE-S… · L273 · 函数
     · 分支：1→sniff 2→_mtime 3→_sha_and_size
-- id: '12'
+- id: '14'
   name: verify_list
   lines:
   - verify_list
   type: task
   subject: 脚本
   executor: selfboot
-  row: 11
+  row: 13
   col: 0
   stage: 模块级
-  route: 1→10｜2→13
-  desc: ★ **陈化检查**：`materials[]` 记的与材料根**当下**还对不对得上（PIPELINE-SPEC §1.… · L260 · 函数
+  route: 1→12｜2→15
+  desc: ★ **陈化检查**：`materials[]` 记的与材料根**当下**还对不对得上（PIPELINE-SPEC §1.… · L303 · 函数
     · 分支：1→_sha_and_size 2→_is_artifact_name
-- id: '13'
+- id: '15'
   name: _is_artifact_name
   lines:
   - _is_artifact_name
   type: task
   subject: 脚本
   executor: selfboot
-  row: 13
+  row: 15
   col: 0
   stage: 模块级
-  route: →16
-  desc: ★ 这份"新文件"是不是**本工具链自己的产物**？（产物名 / `.todo.json` / `.bak` ⇒ 是） · L311 · 函数
-- id: '14'
+  route: →18
+  desc: ★ 这份"新文件"是不是**本工具链自己的产物**？（产物名 / `.todo.json` / `.bak` ⇒ 是） · L359 · 函数
+- id: '16'
   name: _print_table
   lines:
   - _print_table
   type: task
   subject: 脚本
   executor: selfboot
-  row: 14
+  row: 16
   col: 0
   stage: 模块级
-  route: →16
-  desc: ★ 人读摘要：一行一份材料。 · L321 · 函数
-- id: '15'
+  route: →18
+  desc: ★ 人读摘要：一行一份材料。 · L369 · 函数
+- id: '17'
   name: main
   lines:
   - main
@@ -192,40 +216,40 @@ nodes:
   row: 1
   col: 0
   stage: 模块级
-  route: 1→11｜2→12｜3→14
-  desc: L330 · 函数 · 分支：1→probe_tree 2→verify_list 3→_print_table
-- id: '16'
+  route: 1→13｜2→14｜3→16
+  desc: L378 · 函数 · 分支：1→probe_tree 2→verify_list 3→_print_table
+- id: '18'
   name: 结束
   lines:
   - 结束
   type: end
   subject: 脚本
   executor: selfboot
-  row: 15
+  row: 17
   col: 0
   stage: 出口
   route: —
   desc: 流程终点（结构性节点，不是函数）
 edges:
 - from: '01'
-  to: '15'
+  to: '17'
   kind: spine
   polarity: main
   label: '1'
 - from: '02'
-  to: '16'
-  kind: jumpR
+  to: '03'
+  kind: spine
   polarity: main
 - from: '03'
-  to: '16'
+  to: '18'
   kind: jumpR
   polarity: main
 - from: '04'
-  to: '16'
+  to: '18'
   kind: jumpR
   polarity: main
 - from: '05'
-  to: '16'
+  to: '18'
   kind: jumpR
   polarity: main
 - from: '06'
@@ -233,87 +257,100 @@ edges:
   kind: spine
   polarity: main
 - from: '07'
+  to: '18'
+  kind: jumpR
+  polarity: main
+- from: 08
+  to: '07'
+  kind: spine
+  polarity: main
+- from: 09
   to: '02'
   kind: spine
   polarity: main
   label: '1'
-- from: '07'
+- from: 09
   to: '03'
   kind: jumpR
   polarity: main
   label: '2'
-- from: '07'
+- from: 09
   to: '04'
   kind: jumpR
   polarity: main
   label: '3'
-- from: '07'
+- from: 09
   to: '06'
   kind: jumpR
   polarity: main
   label: '4'
-- from: '07'
-  to: 09
-  kind: jumpR
-  polarity: main
-  label: '5'
-- from: 08
-  to: '16'
-  kind: jumpR
-  polarity: main
 - from: 09
-  to: '16'
-  kind: jumpR
-  polarity: main
-- from: '10'
-  to: '16'
-  kind: jumpR
-  polarity: main
-- from: '11'
-  to: '07'
-  kind: spine
-  polarity: main
-  label: '1'
-- from: '11'
   to: 08
   kind: jumpR
   polarity: main
-  label: '2'
-- from: '11'
-  to: '10'
+  label: '5'
+- from: 09
+  to: '11'
   kind: jumpR
   polarity: main
-  label: '3'
+  label: '6'
+- from: '10'
+  to: '18'
+  kind: jumpR
+  polarity: main
+- from: '11'
+  to: '18'
+  kind: jumpR
+  polarity: main
 - from: '12'
-  to: '10'
+  to: '18'
+  kind: jumpR
+  polarity: main
+- from: '13'
+  to: 09
   kind: spine
   polarity: main
   label: '1'
-- from: '12'
-  to: '13'
+- from: '13'
+  to: '10'
   kind: jumpR
   polarity: main
   label: '2'
 - from: '13'
-  to: '16'
+  to: '12'
   kind: jumpR
   polarity: main
+  label: '3'
 - from: '14'
-  to: '16'
-  kind: spine
-  polarity: main
-- from: '15'
-  to: '11'
+  to: '12'
   kind: spine
   polarity: main
   label: '1'
-- from: '15'
-  to: '12'
+- from: '14'
+  to: '15'
   kind: jumpR
   polarity: main
   label: '2'
 - from: '15'
+  to: '18'
+  kind: jumpR
+  polarity: main
+- from: '16'
+  to: '18'
+  kind: spine
+  polarity: main
+- from: '17'
+  to: '13'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '17'
   to: '14'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '17'
+  to: '16'
   kind: jumpR
   polarity: main
   label: '3'

@@ -377,7 +377,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→27｜2→28｜3→29
-  desc: L486 · 函数 · 分支：1→_manifest_parser 2→_run_build 3→_run_check
+  desc: L499 · 函数 · 分支：1→_manifest_parser 2→_run_build 3→_run_check
 - id: '31'
   name: 结束
   lines:

@@ -37,8 +37,18 @@ def hint(name):
 def import_dep(name):
     """import 一个**可选**依赖 → `(模块, 报错文案)`；缺了给**可执行**的提示（§1.4 的硬要求）。
 
-    调用方一律这样用：`mod, err = deps.import_dep('docx')`，`err` 非空就把它当"读不动"的理由
-    （`status=unreadable` + 这句 reason），**不是**当成仪器故障——缺依赖是环境事实，不是命令坏了。
+    调用方一律这样用：`mod, err = deps.import_dep('docx')`。**`err` 非空时怎么处置，分两种**
+    （2026-09-21 按 D-133 对齐，原先这里只有一句"当读不动的理由"，与已进门⑪ 的行为不一致）：
+
+    - **必须依赖**（docx/xlsx 走 python-docx/openpyxl、pdf 走 pdfplumber、yaml）：往上抛，
+      由分派器**整链退 2、一个字节都不落盘**——环境缺件时整批结果不可信，"不落盘"与
+      "审核不过不留产物"同源；提示本身可执行（装什么写在脸上），用户装完重跑即可。
+      判据钉在门⑪ 夹具 68（G26）。
+    - **可选工具**（soffice 这类外部转换器）：**不许**因此整链退 2——它缺了有降级路
+      （`parse_legacy` 的 UTF-16LE 直捞），逐份记 `unreadable` + 提示，退 0。
+
+    判据是"缺了它这条路还有没有自包含的下一步"：有 ⇒ 数据事实（退 0、逐份记账）；
+    没有 ⇒ 仪器故障（退 2、不落盘）。
     """
     try:
         return importlib.import_module(name), ''

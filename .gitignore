@@ -21,6 +21,9 @@ output/
 # ③ 验证现场：`dev/verify/run.py` 全过自动删，有失败才保留（保留时正是最不该提交的时候）。
 .verify_tmp/
 
+# ③c 盲审现场：子代理审计报告与复现探针（与 .verify_tmp 同性质：修的时候要翻，不进库）。
+.audit-tmp/
+
 # ③b 验收现场：`dev/tools/accept.py` 的默认基准目录（它下面还给各道门再建子目录）。
 #     为什么落在仓库内而不是系统临时目录——见 accept.py 的 `_pinned_scratch`。
 .accept_tmp/

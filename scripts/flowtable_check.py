@@ -45,9 +45,11 @@ def _split_row_cells(cells):
 def _check_node_id(id_, seen, errs):
     """H2：编号重复与编号格式校验，合法与否都记入 seen（跨行查重）。
 
-    编号格式：只对"数字开头"的编号做强校验（数字 + 至多一个字母后缀）。
-    数字开头却不止一位后缀（如 10aa）会被 ID_RE 静默截成 10a、连错节点，必须拦下。
-    字母开头的编号（n1 / node-3）是外部 drawio 导入的原样 id，一律放行——它们走精确匹配。
+    编号格式：**主干用纯数字**（`01` / `01a`），数字开头却不止一位后缀（如 `10aa`）会被 ID_RE
+    静默截成 10a、连错节点，必须拦下。**字母开头的编号**（`n1` / `node-3`）是外部 drawio 导入的
+    原样 id，一律放行——它们走精确匹配。**这两者之外的形状（中文 / 符号开头）直接拦**
+    （G36）：原先只判"数字开头"，于是 `材料` 这种编号一路放行，直到取边阶段才以
+    "无法解析「下个节点」段"报错——错误位置指向**别的列**，读者找不着北。
     """
     if id_ in seen:
         errs.err(f'H2 编号重复: 节点 "{id_}" 出现在多行', subject=id_,
@@ -56,11 +58,19 @@ def _check_node_id(id_, seen, errs):
         errs.err(f'H2 编号非法: "{id_}"（数字开头时只允许 数字 + 至多一个字母后缀，如 01 / 01a；'
                  f'10 与 11 之间的第 2 个插入项应叫 10b，不是 10aa）',
                  subject=id_, fix='改成 数字+至多一个字母后缀（如 10b）')
+    elif not id_[0].isdigit() and not re.fullmatch(r'[A-Za-z][A-Za-z0-9_.\-]*', id_):
+        errs.err(f'H2 编号非法: "{id_}"（编号主干用**纯数字**，如 01 / 01a；'
+                 f'字母开头的 id 只保留给外部 drawio 导入的原样编号）',
+                 subject=id_, fix='改成数字编号（如 01）；导入件请走 references/import-existing.md')
     seen[id_] = True
 
 
 def _check_node_semantics(id_, name, subj, typ, who, when, errs):
-    """H7：名称/执行主体/节点类型/执行者/行动所需时间；类型非法兜底成「任务」并返回该类型。"""
+    """H7：名称/执行主体/节点类型/执行者/行动所需时间；类型非法兜底成「任务」并返回该类型。
+
+    「行动所需时间」的**格式软提示**见 `_check_time_format`（G35：字段登记表写了这条校验，
+    代码一直没有——两处脱节）。
+    """
     if not name:
         errs.err(f'H7 节点 {id_}: 缺节点名称', subject=id_, fix='补「节点名称」')
     if not subj:
@@ -75,7 +85,33 @@ def _check_node_semantics(id_, name, subj, typ, who, when, errs):
         errs.warn(f'H7(软) 节点 {id_}: 缺执行者', subject=id_, fix='补「执行者」')
     if not when.strip():
         errs.warn(f'H7(软) 节点 {id_}: 缺行动所需时间', subject=id_, fix='补「行动所需时间」')
+    else:
+        _check_time_format(id_, when, errs)
     return t
+
+
+# 占位符等价类（**本模块自己一份**，与 `writeback._PLACEHOLDERS` 同口径、刻意不收敛：
+# 见 `coding-spec` N8——那几处回答的不是同一个问题，合并会造出假的单一真源）。
+_TIME_EMPTY = ('', '-', '—', '无')
+# 时间写法：`数字[+单位]`，可带一个区间（`1-2 天` / `5-30 秒` / `3个工作日` / `2 小时`）。
+# **刻意宽松**：单位是自由文本（秒/天/工作日/小时都合法），管的是"填的是不是一个量"，
+# 不是"单位写没写规范"——软提示，不阻断。
+_TIME_RE = re.compile(r'^\d+(?:\.\d+)?\s*(?:[-–~]\s*\d+(?:\.\d+)?)?\s*\S{1,8}$')
+
+
+def _check_time_format(id_, when, errs):
+    """H7(软)：「行动所需时间」有值却不像一个量（如 `尽快` / `3` / `两天`）→ 软提示。
+
+    为什么值得有（G35）：字段登记表 §2 的「校验」列写着"格式 `min-max 单位` 或 `—`"，
+    而代码只查了非空——**规范宣称的判据没实现**，等于那句话没人执行。做成**软提示**：
+    它是可读性诉求（悬浮框第三行要能一眼看懂），不是结构约束，不该阻断渲染。
+    """
+    v = when.strip()
+    if v in _TIME_EMPTY or _TIME_RE.match(v):
+        return
+    errs.warn(f'H7(软) 节点 {id_}: 「行动所需时间」"{v}" 不像一个量'
+              f'（形如 `1-2 天` / `3 小时` / `5个工作日`，或填 —）',
+              subject=id_, fix='写成 数字+单位（可带区间），或填 —')
 
 
 def _check_basis(id_, typ, basis, desc, errs):
@@ -159,7 +195,10 @@ def _check_decision_branches(nd, out_e, errs):
     rule = TYPE_RULES['decision']
     k, no_label = len(out_e[i]), sum(1 for e in out_e[i] if not e['label'])
     if k < rule['min_branch']:
-        errs.err(f'H4 判断节点 {i}: 仅 {k} 个分支，需 ≥{rule["min_branch"]} 个带标签分支'
+        # 文案只说**数量**（G37）：判据数的是全部出边，原先写成"需 ≥N 个**带标签**分支"，
+        # 于是"1 条分支且它带标签"时读者看到"仅 1 个分支，需 ≥2 个带标签分支"——自相矛盾。
+        # 缺标签是另一条判据（下面的 elif），两件事不在一条里说。
+        errs.err(f'H4 判断节点 {i}: 仅 {k} 个分支，需 ≥{rule["min_branch"]} 个'
                  f'（补全每个可能结果）',
                  subject=i, fix='补全每个可能结果的分支')
     elif no_label:
@@ -416,13 +455,21 @@ def _check_parent(meta, ft_path, errs):
 
 
 def _check_refs(meta, ft_path, errs):
-    """refs：依赖路径必须真实存在（单条字符串按单元素列表处理）。"""
+    """refs：依赖路径必须真实存在（单条字符串按单元素列表处理）；**写了键就不能是空值**（G38）。
+
+    空值这一半原先漏了：`if item and not …exists()` 把空串整个跳过，于是 `refs: ['']` 静默通过，
+    而同一组规则的 parent / level / id 空值都拦了（spec §3「H9 空值」把四者并列）。
+    """
     refs = meta.get('refs')
     if refs is not None and not isinstance(refs, list):
         refs = [str(refs)]
     for item in (refs or []):
         item = str(item).strip()
-        if item and not (Path(ft_path).parent / item).exists():
+        if not item:
+            errs.err('H9 refs 有空条目（写了键就不能是空值）', subject='表头.refs',
+                     fix='删掉空条目；整份依赖清单都不要就把 refs 整行删掉')
+            continue
+        if not (Path(ft_path).parent / item).exists():
             errs.err(f'H9 refs 依赖不存在: {item}', subject='表头.refs',
                      fix='核对路径（相对本流程表所在目录），或删除该条')
 

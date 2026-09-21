@@ -127,8 +127,13 @@ python scripts/cells.py fill <产物>.md <答案>.json   # 按**列名**把答�
    PK..          → OOXML/zip 容器 → **按"确切部件在不在"判**（word/document.xml / xl/workbook.xml /
                    ppt/presentation.xml）；判据与读它的那个适配器**同源**，见下面的不变式
    D0 CF 11 E0   → OLE 复合文档 → T2（legacy doc/xls）
-   %PDF          → 查文本层：抽前 N 页，字符密度低于阈值 → T3，否则 T2
-   图片魔数      → T3（不用扩展名判，防改名）
+   %PDF          → 有文本层 ⇒ T2，否则 T3。**判据是原始字节里有没有 `/Font`**（分块数，不整份读）
+                   —— 2026-09-21 改准（G33）：原先这里写"抽前 N 页算字符密度 + 阈值进 dictionary.yaml"，
+                   而 probe **刻意保持零第三方依赖**（它是装上依赖前跑的第一条命令），密度那条从未落地。
+                   **已知盲区**：PDF 1.5+ 把字体字典放进压缩对象流（`ObjStm`）时数不到 `/Font`
+                   ⇒ 有文本层的 PDF 被判 T3（后果是走视觉路而不是文本路，数据不丢、可恢复）。
+                   "抽出来太少"那条判据在**下一站**（§1.6 尺子二，`parse_pdf.thin_note`），不在探测层
+   图片魔数      → T3（不用扩展名判，防改名；`BM` 只有 2 字节，还要验保留域与大小域，见 G62）
    压缩包        → 先列目录，再对每个成员递归判档（不许直接标 T4）
 3) 探测必须记账：每份材料一行 {档位, 类型 kind, 依据}；探测失败 → T4 + 原因，不许猜
 ```
@@ -203,6 +208,8 @@ python scripts/parse.py --materials <成果根>/materials.json  # 默认查、**
 上表的「典型格式」只是例子，不是边界。
 
 N 与密度阈值属**数值**：落地时必须写进 `scripts/dictionary.yaml`（数值只有一个家），本文只写"要探测什么"。
+**探测层的"密度"目前只有一处落地**：§1.6 尺子二（`pdf_text_layer:` 段，`parse_pdf.thin_note` 读它）；
+PDF 的**分档**判据是 `/Font` 存在性（见 §1.2 第 2 条，G33），不读字典。
 
 ### 1.3 三档的产出义务
 
@@ -284,8 +291,8 @@ notes                     → [{material_id, status?, reason?, extractor?}]   �
 
 | 材料 | **自包含路径（必须实现）** | 可选加速器（**探测到才用**） | 都没有时 |
 |---|---|---|---|
-| OOXML（docx / xlsx / pptx） | docx/xlsx 用 Python 库（python-docx / openpyxl）· **pptx 零依赖**（标准库 zip + `ppt/slides/*.xml`，公共层 `pptx_text`）—**依赖要显式声明**（见下）。**读者按内容开门**：从内存 `BytesIO` 打开，不让扩展名投票 | 宿主本地 Office SDK（若存在） | 记 T4 + **给可执行提示**（装什么）；**没有读取器的格式不许判 T1**（§1.2 的不变式） |
-| **文本型 `.pdf`（T2）** | `pdfplumber`（**纯 Python**，无外部二进制）抽文本层—一页一个 element | — | 记 T4 + **可执行提示**（装 pdfplumber） |
+| OOXML（docx / xlsx / pptx） | docx/xlsx 用 Python 库（python-docx / openpyxl）· **pptx 零依赖**（标准库 zip + `ppt/slides/*.xml`，公共层 `pptx_text`）—**依赖要显式声明**（见下）。**读者按内容开门**：从内存 `BytesIO` 打开，不让扩展名投票 | 宿主本地 Office SDK（若存在） | **必须依赖缺了 = 仪器故障：整链退 2、一个字节都不落盘**（提示可执行，见下方依赖清单；判据：门⑪ 夹具 68）——只有**加速器**缺了才"记 T4 + 给可执行提示"；**没有读取器的格式不许判 T1**（§1.2 的不变式） |
+| **文本型 `.pdf`（T2）** | `pdfplumber`（**纯 Python**，无外部二进制）抽文本层—一页一个 element | — | **必须依赖缺了 = 仪器故障：整链退 2、不落盘**（提示可执行，见下方依赖清单；门⑪ 夹具 68） |
 | **legacy**（.doc / .xls / .ppt，以及 WPS 的 .wps/.et/.dps） | **没有纯 Python 的可靠读法** ⇒ 只用**外部转换器**（LibreOffice / soffice，若装了）：转成 OOXML 再交给 T1 适配器抽（§1.1 的 T2 定义就是"转换后可用"），`extractor` 写 `soffice+py:docx`（三种目标都算，`.ppt→.pptx` 也有人读）。**缺转换器时按族给话**：`ole_kind` 认出 `WordDocument` / `Workbook` / `PowerPoint Document` 流 ⇒ 提示**指名族与另存目标**——真样本实测（`关于韶关…告知函.wps`，WPS 产出）它其实是 **Word 97-2003 族**，最省事的动作是"**用 WPS 另存为 .docx**"，泛泛说"另存为 OOXML"等于没说 | 宿主本地 Office SDK（若存在） | 记 T4 + 可执行提示（指名族与另存目标，或"装 LibreOffice"） |
 | 图片 / 扫描件 / 截图 / 白板照 | `render_pages.py` **转图片**（图片材料本来就是图，直接读原文件） | **宿主多模态模型**（判据：AI 自报本会话能否直接看图）；OCR（tesseract / paddleocr，可选依赖） | 记 T4 + 进澄清 |
 | 纯文本（md / txt / csv / json …） | `parse_text.py`（**只用标准库**）：**解码 + 按行打块**（一块一个 element，`extractor=py:text`；标记 / 数据文件写 `py:code`）、`.csv` / `.tsv` → `table` + `rows`。**不认结构**（见下） | **宿主模型直读文本**：理解归它 | 直读不可用时仍走得通（标准库永远在） |
@@ -303,6 +310,9 @@ notes                     → [{material_id, status?, reason?, extractor?}]   �
 
 **环境清单要显式**：新增依赖（Python 包）与**可选外部工具**（转换器）都要写成清单（如 `requirements.txt` + 一节"可选外部工具"）；
 缺依赖报的错**要可执行**（说清装什么、或改走哪条路）—不许静默降级。
+**缺依赖的处置分两种**（D-133 定，原先三处文本各说各话）：**必须依赖**缺了 ⇒ **仪器故障**，整链退 2、不落盘（下方清单第一行；门⑪ 夹具 68 钉的就是这条）；
+**可选工具 / 加速器**缺了 ⇒ **数据事实**，逐份记 T4/`unreadable` + 可执行提示、退 0（`parse_legacy` 缺 soffice 走这条——它还有 UTF-16LE 降级读的路）。
+判据是"缺了它这条路还有没有自包含的下一步"：有 ⇒ 退 0 逐份记账；没有 ⇒ 退 2 不落盘。
 
 `extractor` 必须写清**具体走了哪条路**（`sdk:edsdk` / `vlm` / `ocr:tesseract` / `py:openpyxl`）—否则 §0 的"可追溯"就是空话。
 

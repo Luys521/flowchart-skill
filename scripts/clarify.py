@@ -277,7 +277,23 @@ def main(argv=None):
         return 2
 
     errs = Errors()
-    edges, _dangling = build_edges(nodes, errs)
+    edges, dangling = build_edges(nodes, errs)
+    if errs.hard or dangling:
+        # **结构不合法就别装作读过了**（G40）：原先 `errs` 与 `dangling` 收完从不检查，
+        # 边被静默丢弃、frontier 按**缺边图**算（实测把节点误列成"现在可问"）。而 clarify
+        # 自己的契约是"退 2 = 没读过结构校验"——那就明说，让调用方先修结构。
+        # `dangling` 才是 H3 那一半：`build_edges` 按设计只记不报（判定归 ③）。
+        if errs.hard:
+            print(f'✗ 流程表结构不过（{len(errs.hard)} 条硬错）：')
+            for e in errs.hard[:5]:
+                print('   ·', e)
+        if dangling:
+            print(f'✗ 「下个节点」有 {len(dangling)} 处指向不存在的编号'
+                  f'（H3）——这些边会被丢掉，算出来的 frontier 是错的：')
+            for a, b in dangling[:5]:
+                print(f'   · {a} → {b}')
+        print('  → 先跑 `python scripts/table_to_dsl.py --check "<流程表>"` 修结构，再来问。')
+        return 2
 
     b = brief(nodes, edges)
     _emit_report(b, title, a.json)

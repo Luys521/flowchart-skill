@@ -316,7 +316,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →42
-  desc: ★ 端口比例 → 绝对坐标。drawio 的 exitX/exitY 是**外接矩形的比例**，缺省即边中点。 · L413 · 函数
+  desc: ★ 端口比例 → 绝对坐标。drawio 的 exitX/exitY 是**外接矩形的比例**，缺省即边中点。 · L418 · 函数
 - id: '26'
   name: geometry
   lines:
@@ -328,7 +328,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →25
-  desc: '★ 读回结果 → 几何表 {nodes: {id: {rect, shape}}, edges: [{from, to, … · L420 · 函数'
+  desc: '★ 读回结果 → 几何表 {nodes: {id: {rect, shape}}, edges: [{from, to, … · L425 · 函数'
 - id: '27'
   name: _brief_index
   lines:
@@ -340,7 +340,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →42
-  desc: ★ 节点序号表 + 出边索引（摘要按文档顺序、分支按目标序号排）。 · L447 · 函数
+  desc: ★ 节点序号表 + 出边索引（摘要按文档顺序、分支按目标序号排）。 · L452 · 函数
 - id: '28'
   name: _brief_node_lines
   lines:
@@ -352,7 +352,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →42
-  desc: ★ 一行一节点（判断/多分支缩进列出各分支）。 · L456 · 函数
+  desc: ★ 一行一节点（判断/多分支缩进列出各分支）。 · L461 · 函数
 - id: '29'
   name: brief
   lines:
@@ -364,7 +364,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→27｜2→28
-  desc: ★ AI/人可读的拓扑摘要：一行一节点，判断/多分支节点缩进列出各分支。 · L478 · 函数 · 分支：1→_brief_index 2→_brief_node_lines
+  desc: ★ AI/人可读的拓扑摘要：一行一节点，判断/多分支节点缩进列出各分支。 · L483 · 函数 · 分支：1→_brief_index 2→_brief_node_lines
 - id: '30'
   name: _next_of
   lines:
@@ -376,7 +376,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →42
-  desc: L502 · 函数
+  desc: L507 · 函数
 - id: '31'
   name: _target_id
   lines:
@@ -388,7 +388,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →42
-  desc: ★ 从「回 10 重编」「n2」这类文本里取出目标节点 id： · L511 · 函数
+  desc: ★ 从「回 10 重编」「n2」这类文本里取出目标节点 id： · L516 · 函数
 - id: '32'
   name: _parse_next_cell
   lines:
@@ -400,7 +400,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →31
-  desc: L525 · 函数 · ⇢ 依赖 semantics.split_branches
+  desc: L530 · 函数 · ⇢ 依赖 semantics.split_branches
 - id: '33'
   name: _diff_table_rows
   lines:
@@ -412,7 +412,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →42
-  desc: '★ 现有流程表 → {节点id: {name, type, next}}。 · L539 · 函数 · ⇢ 依赖 flowtable.parse_table、flowtable.split_row_cells'
+  desc: '★ 现有流程表 → {节点id: {name, type, next}}。 · L544 · 函数 · ⇢ 依赖 flowtable.parse_table、flowtable.split_row_cells'
 - id: '34'
   name: _diff_added_removed
   lines:
@@ -424,7 +424,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →42
-  desc: ★ 新增 / 删除节点清单；新增的节点只有名称与连线，缺的语义列在这里点名。 · L555 · 函数
+  desc: ★ 新增 / 删除节点清单；新增的节点只有名称与连线，缺的语义列在这里点名。 · L560 · 函数
 - id: '35'
   name: _diff_changed
   lines:
@@ -436,7 +436,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→30｜2→32
-  desc: ★ 共有节点的差异清单：名称、类型、分支走向——图里只有这三样可动（D-73）。 · L573 · 函数 · 分支：1→_next_of 2→_parse_next_cell
+  desc: ★ 共有节点的差异清单：名称、类型、分支走向——图里只有这三样可动（D-73）。 · L578 · 函数 · 分支：1→_next_of 2→_parse_next_cell
 - id: '36'
   name: diff
   lines:
@@ -448,7 +448,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→33｜2→34｜3→35
-  desc: ★ 读回结果 vs 现有流程表 → 差异清单 · L597 · 函数 · 分支：1→_diff_table_rows 2→_diff_added_removed
+  desc: ★ 读回结果 vs 现有流程表 → 差异清单 · L602 · 函数 · 分支：1→_diff_table_rows 2→_diff_added_removed
     3→_diff_changed
 - id: '37'
   name: _print_json
@@ -461,7 +461,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →42
-  desc: ★ --json：输出结构化 JSON。 · L610 · 函数
+  desc: ★ --json：输出结构化 JSON。 · L615 · 函数
 - id: '38'
   name: _print_grid
   lines:
@@ -473,7 +473,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →42
-  desc: ★ --grid：输出坐标推断的 row/col。 · L615 · 函数
+  desc: ★ --grid：输出坐标推断的 row/col。 · L620 · 函数
 - id: '39'
   name: _cmd_diff
   lines:
@@ -485,7 +485,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →36
-  desc: ★ --diff：只报**结构差异**（拓扑层面的：节点/边/标签）。 · L622 · 函数
+  desc: ★ --diff：只报**结构差异**（拓扑层面的：节点/边/标签）。 · L627 · 函数
 - id: '40'
   name: main
   lines:
@@ -497,7 +497,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→24｜2→29｜3→37｜4→38｜5→39
-  desc: L650 · 函数 · 分支：1→read 2→brief 3→_print_json 4→_print_grid 5→_cmd_diff
+  desc: L655 · 函数 · 分支：1→read 2→brief 3→_print_json 4→_print_grid 5→_cmd_diff
 - id: '41'
   name: _geom.f
   lines:

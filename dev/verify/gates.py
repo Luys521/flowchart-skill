@@ -56,6 +56,11 @@ BAD = [
     ('H2 编号非法（10aa）', 'H2', [row('受理', '01', '收到申请', '开始', '甲方', '甲', '—', '→03aa'),
                               row('受理', '03aa', '登记', '任务', '甲方', '甲', '—', '→04'),
                               row('归档', '04', '归档', '结束', '双方', '双方共责', '—', '—')]),
+    # 中文开头的编号原先一路放行（只判"数字开头"），直到取边阶段才以"无法解析「下个节点」段"
+    # 报错——错误位置指向**别的列**。字母开头仍放行（外部 drawio 导入的原样 id，G36）。
+    ('H2 编号非法（中文编号）', 'H2', [row('受理', '材料', '收到申请', '开始', '甲方', '甲', '—', '→02'),
+                                row('受理', '02', '登记', '任务', '甲方', '甲', '—', '→03'),
+                                row('归档', '03', '归档', '结束', '双方', '双方共责', '—', '—')]),
     # H8 逻辑连通：结构写法都对、但流程走不通。这类缺陷渲染出来是一张看着完整的图，
     # 八项质量门禁也全绿（它只管线条与方框），只有 H8 能拦住。
     ('H8 孤儿节点', 'H8', OK + [row('孤儿', '07', '没人指向它', '任务', '乙方', '乙', '—', '→04')]),
@@ -96,8 +101,36 @@ def _structure_bad_cases(c, tmp):
         rc, out = run('table_to_dsl.py', '--check', p)
         c.check(rc == 1 and code in out, name, '报错含 ' + code if rc == 1 else f'rc={rc}（应当为 1）')
 
-    c.section('H6 回归：绕过判断节点的并联捷径，死循环不许漏报')
-    # 旧算法的漏报形态：03→04→05→06→03 这个环上全是任务节点，但 04 有一条并联出口
+    # ── G37：H4 的文案只说**数量**（判据数的是全部出边，"带标签"是另一条判据）──────────
+    p = tmp / 'h4_msg_one_labeled.md'
+    p.write_text(HEAD + ''.join([OK[0],
+                                 row('受理', '02', '资料齐全？', '判断', '甲方', '受理员', '—', '齐全→03'),
+                                 OK[2], OK[3]]), encoding='utf-8')
+    rc, out = run('table_to_dsl.py', '--check', p)
+    bad_msg = '需 ≥2 个带标签分支' in out
+    c.check(rc == 1 and 'H4' in out and not bad_msg,
+            'H4 分支不足时的文案只谈**数量**（1 条带标签分支不许看到"需 ≥2 个带标签分支"）',
+            out.strip().splitlines()[-1][:80] if rc else f'rc={rc}')
+
+    # ── G35：字段登记表的「行动所需时间 = 格式 min-max 单位」原先零实现 ──────────────
+    p = tmp / 'h7_time_format.md'
+    p.write_text(HEAD + ''.join([OK[0],
+                                 row('受理', '02', '登记', '任务', '甲方', '甲', '尽快', '→03'),
+                                 OK[2], OK[3]]), encoding='utf-8')
+    rc, out = run('table_to_dsl.py', '--check', p)
+    c.check(rc == 0 and '行动所需时间' in out and 'H7(软)' in out,
+            '「行动所需时间」不合格式 ⇒ **软提示**（不阻断：rc 0 + 点出那一列）',
+            out.strip().splitlines()[-1][:80] if rc == 0 else f'rc={rc}（软提示不许阻断）')
+    p = tmp / 'h7_time_ok.md'
+    p.write_text(HEAD + ''.join([OK[0],
+                                 row('受理', '02', '登记', '任务', '甲方', '甲', '3个工作日', '→03'),
+                                 OK[2], OK[3]]), encoding='utf-8')
+    rc, out = run('table_to_dsl.py', '--check', p)
+    c.check(rc == 0 and '不像一个量' not in out,
+            '合法时间写法（`3个工作日` / `1-2 天` / `—`）不产生格式提示',
+            out.strip().splitlines()[-1][:80] if rc == 0 else f'rc={rc}')
+
+    c.section('H6 回归：绕过判断节点的并联捷径，死循环不许漏报')    # 旧算法的漏报形态：03→04→05→06→03 这个环上全是任务节点，但 04 有一条并联出口
     # →07（判断）绕到 05/08。只要图里**存在**判断节点就放行，环本身无出口的事实被掩盖。
     # 07 的分支在这里带标签（原始场景是裸 →05｜→08）：裸分支会先吃 H4，把 H6 淹掉。
     p = tmp / 'h6_shortcut.md'
@@ -183,6 +216,13 @@ def _check_header_rules(c, tmp):
     p.write_text(_fm('refs: [不存在的PRD.md]') + body, encoding='utf-8')
     rc, out = run('table_to_dsl.py', '--check', p)
     c.check(rc == 1 and 'refs 依赖不存在' in out, 'refs 指向不存在的依赖被拦')
+
+    # refs 的空条目（G38）：同一组规则的 parent / level / id 空值都拦了，refs 原先被 `if item`
+    # 整个跳过 ⇒ `refs: ['']` 静默通过，而 spec §3「H9 空值」把四者并列。
+    p = tmp / 'h9_refs_empty.md'
+    p.write_text(_fm("refs: ['']") + body, encoding='utf-8')
+    rc, out = run('table_to_dsl.py', '--check', p)
+    c.check(rc == 1 and 'refs 有空条目' in out, 'refs 的空条目被拦（写了键就不能是空值）')
 
     # 条目式元信息已废弃：表头区（frontmatter 之后、表格之前）不许再出现 `- 键：值` 条目，
     # 否则两套表头机制混用，早晚漂移
@@ -1456,6 +1496,38 @@ def _check_writeback_pseudo_diff(c, tmp):
     c.check('逐字节一致' in out_s, '行动时间留空不被归一成「—」重写（占位符等价）',
             (out_s.strip().splitlines() or [''])[-1][:60])
 
+    # ④ G42：表头行 / 分隔行的**原文写法**要照抄（不许按 canonical 模板重生成）
+    # `import_table.py` 产出的表正是 `|---|` 无空格形态，原先每步 sync 都冒一条伪 diff。
+    from flowtable import COLUMNS as _COLS
+    t = _fresh('pd_frame')
+    tight = HEAD.replace('| ' + ' | '.join(_COLS) + ' |', '|' + '|'.join(_COLS) + '|')
+    tight = tight.replace('| ' + ' | '.join(['---'] * len(_COLS)) + ' |',
+                          '|' + '|'.join(['---'] * len(_COLS)) + '|')
+    assert tight != HEAD, '夹具自身失效：没换掉表头/分隔行'
+    _rcs, out_s = _roundtrip(t, tight + ''.join(OK))
+    c.check('逐字节一致' in out_s,
+            'G42 表头行/分隔行的原文写法照抄（`|---|` 形态不再冒伪 diff）',
+            (out_s.strip().splitlines() or [''])[-1][:60])
+
+    # ⑤ G43：自产图里手画一个节点后，整份**不许**被判 external（那会把没动过的行按几何重排）
+    import xml_reader as _xr
+    t = _fresh('pd_native')
+    t_ft = t / 'flowtable.md'
+    t_ft.write_text(HEAD + ''.join(OK), encoding='utf-8')
+    run('table_to_dsl.py', '--write', t_ft, '-o', prod(t, 'yaml'))
+    run('render_drawio.py', prod(t, 'yaml'), '-o', prod(t, 'drawio'))
+    xml = prod(t, 'drawio').read_text(encoding='utf-8')
+    # 手画的形状就是裸 `<mxCell>`（不带我们的 NATIVE_MARK），插在自产节点之后
+    extra = ('<mxCell id="99" value="手画一个" style="rounded=1;" vertex="1" parent="1">'
+             '<mxGeometry x="40" y="900" width="120" height="40" as="geometry"/></mxCell>')
+    mixed = xml.replace('</root>', extra + '</root>', 1)
+    assert extra in mixed, '夹具自身失效：没插进裸 mxCell'
+    d = _xr.read(mixed)
+    c.check(d['source'] == 'native',
+            'G43 自产图插一个裸 `<mxCell>` 后仍判 native（`all()` → `any()`：'
+            '否则整份降级 external、没动过的行被几何重排）',
+            f"source={d['source']} · 节点 {len(d['nodes'])}")
+
 
 def _check_label_overlap(c):
     c.section('质检补漏：标签互相重叠（结构合法但两个词叠在一起）')
@@ -1600,8 +1672,7 @@ def _check_clarify_phase(c, tmp):
         return p
 
     # ① 分层：02 可问（前驱 01 不是 ⚠?）；03 因前驱 02 是 ⚠? 而暂时问不了；04 只是推断，不问
-    ft = write('layer', [
-        OK[0],
+    ft = write('layer', [        OK[0],
         row('裁决', '02', '口径？', '判断', '甲方', '受理员', '—',
             '宽→03 ｜ 严→04', '⚠? 材料未指明宽口径还是严口径，两种走法费用差一倍'),
         row('裁决', '03', '宽口径办理', '任务', '乙方', '工程师', '3个工作日', '→04', '⚠? 宽口径的时限未载明'),
@@ -1619,6 +1690,19 @@ def _check_clarify_phase(c, tmp):
     c.check([w['id'] for w in j.get('waiting', [])] == ['03'],
             '上游未决的 ⚠? 归入"暂时问不了"（不静默漏掉）', f'实际 {[w["id"] for w in j.get("waiting", [])]}')
     c.check(j.get('converged') is False, '仍有待问项时不谎报已收敛')
+
+    # ⑤ G40：表带 H3 硬错时**不许装作读过了**——原先 `build_edges` 收的硬错从不检查，
+    # 边被静默丢弃、frontier 按缺边图算（实测把节点误列成"现在可问"），而它的契约是"退 2"。
+    broken_ft = write('layered_broken', [
+        OK[0],
+        row('裁决', '02', '口径？', '判断', '甲方', '受理员', '—',
+            '宽→99 ｜ 严→04', '⚠? 材料未指明口径'),
+        row('裁决', '04', '严口径办理', '任务', '甲方', '受理员', '—', '→05'),
+        row('归档', '05', '归档', '结束', '双方', '双方共责', '—', '—')])
+    rc, out = run('clarify.py', broken_ft)
+    c.check(rc == 2 and 'H3' in out and '99' in out,
+            'G40 表带 H3 硬错 ⇒ clarify **退 2** 并点名那处悬空引用（不许按缺边图算 frontier）',
+            f'rc={rc} · {out.strip().splitlines()[-1][:60] if out.strip() else ""}')
 
     # ② 环兜底：02↔03 互为未决，朴素规则会判成"谁都不可问"→ 静默卡死。必须退化并说明
     cyc = write('cycle', [
@@ -1647,7 +1731,12 @@ def _check_clarify_phase(c, tmp):
             f'实际 {[f["id"] for f in j2.get("frontier", [])]}')
 
     # ④ 零开销：无 ⚠ 的表不该被这套机制打扰
-    cl = write('clean', [OK[0], OK[3]])
+    # **注意**（G40 修好后照出来的）：这里原先写 `[OK[0], OK[3]]`——`OK[0]` 的「下个节点」是 `→02`，
+    # 而 02 不在表里 ⇒ 这是一张**断链表**，clarify 按缺边图算 frontier 照样退 0，于是"零开销"
+    # 这条断言一直站在一张坏表上（正是 G40 要拦的那种假绿）。改成**结构完整**的两节点表。
+    cl = write('clean', [
+        row('受理', '01', '收到申请', '开始', '甲方', '受理员', '—', '→04'),
+        row('归档', '04', '归档', '结束', '双方', '双方共责', '—', '—')])
     rc, out = run('clarify.py', cl)
     c.check(rc == 0 and '无待决项' in out, '无任何 ⚠ 时：零开销、退出码 0、不误报')
 
@@ -1771,6 +1860,17 @@ def _check_manifest_audit(c, tmp):
     rc, out = run('manifest.py', 'check', mf, '--html', hp, '--drawio', dp, '--yaml', y)
     c.check(rc == 1 and '契约已过期' in out, '手改 yaml 后：报「契约已过期」而非冤枉产物')
     run('build.py', fta)
+
+    # G41：**一份产物都不给 = 没在反查**——原先照样打印"✓ 两份产物与契约逐项一致"退 0
+    # （公开命令上的假绿）。现在退 2 并给三种给法；成功语也按**实查份数**说。
+    rc, out = run('manifest.py', 'check', mf)
+    c.check(rc == 2 and '没给要反查的产物' in out,
+            'G41 不给任何产物 ⇒ 退 2（不许打印"两份产物逐项一致"）',
+            (out.strip().splitlines() or [''])[-1][:70] if out.strip() else '')
+    rc, out = run('manifest.py', 'check', mf, '--html', hp)
+    c.check(rc == 0 and '已反查 1 份产物' in out,
+            'G41 只给 html 时成功语说"1 份"（不再硬编码"两份"）',
+            (out.strip().splitlines() or [''])[-1][:70] if rc == 0 else f'rc={rc}')
 
 
 def _check_edge_merge_gate(c, tmp):

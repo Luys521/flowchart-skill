@@ -30,8 +30,10 @@ STATUSES = ('ok', 'unreadable', 'skipped')
 CERTAINTIES = ('direct', 'inferred')
 
 # §2.1 的键序**写死在这里**：键序固定是"幂等"的一半（另一半是不依赖输入顺序做决策）。
-MATERIAL_KEYS = ('id', 'path', 'sha256', 'bytes', 'mtime', 'tier', 'kind', 'probe', 'status',
-                 'reason', 'extractor')
+# `root` 在 `mtime` 后（§2.1 字段序）——2026-09-21 补：漏了它，`evidence.json` 就丢"材料根"，
+# `probe --verify` 的"根下多了没入账的新文件"半条判据随之静默跳过（G28）。
+MATERIAL_KEYS = ('id', 'path', 'sha256', 'bytes', 'mtime', 'root', 'tier', 'kind', 'probe',
+                 'status', 'reason', 'extractor')
 ELEMENT_KEYS = ('id', 'material_id', 'kind', 'text', 'rows', 'location', 'extractor', 'certainty', 'degraded')
 LOCATION_KEYS = ('path', 'page', 'sheet', 'cell', 'bbox', 'quote')
 # 材料类型（§2.1 封闭枚举）：**与 `probe.py` 的 `KINDS` 同一份口径**——改一处必须改另一处，
@@ -54,7 +56,7 @@ def check_materials(items):
             errs.append(f'materials[{i}]: 不是对象')
             continue
         where = m.get('id') or f'materials[{i}]'
-        for k in ('id', 'path', 'sha256', 'bytes', 'mtime', 'tier', 'kind', 'probe', 'status'):
+        for k in ('id', 'path', 'sha256', 'bytes', 'mtime', 'root', 'tier', 'kind', 'probe', 'status'):
             if k not in m:
                 errs.append(f'{where}: 缺必填字段 {k}')
         if m.get('kind') not in MATERIAL_KINDS:

@@ -95,7 +95,7 @@ def parse_xlsx(blob, path, mid, max_rows, max_cols, sheet='', rows_span=None):
     if err:
         return None, err
     wb = openpyxl.load_workbook(io.BytesIO(blob), read_only=True, data_only=True)
-    out = []
+    out, empty_sheets = [], []
     try:
         for n, ws in enumerate(wb.worksheets, 1):
             if sheet and ws.title != sheet:
@@ -112,18 +112,33 @@ def parse_xlsx(blob, path, mid, max_rows, max_cols, sheet='', rows_span=None):
                 vals = ['' if v is None else str(v) for v in row[:max_cols]]
                 if any(vals):
                     rows.append(vals)
+            if not rows:
+                # **空 sheet 不交空骨架**（G31）：`rows: []` 的 element 是"认出了杯子、杯子是空的"，
+                # 而账本要的是"倒了多少水"——空 element 会变成零证据的证据（§1.3 空骨架不许过）。
+                # 丢条数由材料级说明报（与"没抽出文字"同一档），不静默。
+                empty_sheets.append(ws.title)
+                continue
             el = {'id': f'{mid}#s{n:03d}', 'material_id': mid, 'kind': 'sheet',
                   'text': ws.title, 'rows': rows,
                   'location': {'path': path.as_posix(), 'sheet': ws.title},
                   'extractor': 'py:openpyxl', 'certainty': 'direct'}
             note = '；'.join(x for x in (
                 f'超上限截断（行 > {max_rows} 或列 > {max_cols}）' if cut else '',
-                f'本轮 --rows 只要第 {rows_span[0]}–{rows_span[1]} 行' if rows_span else '') if x)
+                f'本轮 --rows 只要第 {rows_span[0]}–{rows_span[1]} 行' if rows_span else '',
+                f'本轮 --sheet 只要「{sheet}」' if sheet else '') if x)
             if note:
                 el['degraded'] = note
             out.append(el)
     finally:
         wb.close()
+    if empty_sheets:
+        # 丢条数要说出来（G31）：与"超上限截断"同一档的材料级说明，挂到**抽到的每条**上——
+        # 整份全空时 out 为空，这条说明随"零证据"进调用方的记账分支。
+        tell = (f'丢掉 {len(empty_sheets)} 张空表'
+                f'（{"、".join(empty_sheets[:3])}{"…" if len(empty_sheets) > 3 else ""}）：'
+                f'空表不交空骨架（§1.3）')
+        for el in out:
+            el['degraded'] = (el['degraded'] + '；' if el.get('degraded') else '') + tell
     return out, ''
 
 def _span(spec):

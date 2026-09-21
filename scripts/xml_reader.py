@@ -400,7 +400,12 @@ def read(xml_content: str) -> dict:
     nodes = _parse_nodes(root_el)
     edges = _parse_edges(root_el)
     _finalize_types(nodes, edges)
-    native = bool(nodes) and all(n['native'] for n in nodes)
+    # **只要有一个原生节点就按原生处理**（G43）：原先用 `all()`，于是用户在 drawio 里手画一个
+    # 节点（调色板画出来的是裸 `<mxCell>`、不带 NATIVE_MARK）之后，整份自产文件被判 external ⇒
+    # ① 节点序从"cell 序"翻成几何排序，**没动过的行被重排**；② `brief` 打"N 个节点都没有语义"
+    # 的误导告警（其实绝大多数节点在表里都有语义）。而 SKILL.md 明说"插节点、连新关系、改文字、
+    # 拖位置都行"——这是高频路径。几何排序只留给**全外部**文件（一个原生标记都没有）。
+    native = bool(nodes) and any(n['native'] for n in nodes)
     grid = assign_grid(nodes)
     nodes, edges = _order_nodes_and_edges(nodes, edges, native)
     return {'title': '', 'nodes': nodes, 'edges': edges,

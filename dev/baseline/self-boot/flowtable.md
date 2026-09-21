@@ -22,7 +22,7 @@ level: L0
 | 循环与漂移 | 09 | 模块 · drift | 任务 | — | — | — | 脚本 | selfboot | — | →10 | 27 个函数 · ⊞ drift/flowtable.md |
 | 渲染 | 10 | 模块 · engine | 任务 | — | — | — | 脚本 | selfboot | — | →11 | 26 个函数 · ⊞ engine/flowtable.md |
 | 接管与解析 | 11 | 模块 · flowtable | 任务 | — | — | — | 脚本 | selfboot | — | →12 | 27 个函数 · ⊞ flowtable/flowtable.md |
-| 结构校验 | 12 | 模块 · flowtable_check | 任务 | — | — | — | 脚本 | selfboot | — | →13 | 34 个函数 · ⊞ flowtable_check/flowtable.md |
+| 结构校验 | 12 | 模块 · flowtable_check | 任务 | — | — | — | 脚本 | selfboot | — | →13 | 35 个函数 · ⊞ flowtable_check/flowtable.md |
 | 布局与配色 | 13 | 模块 · flowtable_colors | 任务 | — | — | — | 脚本 | selfboot | — | →14 | 8 个函数 · ⊞ flowtable_colors/flowtable.md |
 | 布局与配色 | 14 | 模块 · flowtable_layout | 任务 | — | — | — | 脚本 | selfboot | — | →15 | 21 个函数 · ⊞ flowtable_layout/flowtable.md |
 | 渲染 | 15 | 模块 · geometry | 任务 | — | — | — | 脚本 | selfboot | — | →16 | 33 个函数 · ⊞ geometry/flowtable.md |
@@ -41,7 +41,7 @@ level: L0
 | 接管与解析 | 28 | 模块 · parse_text | 任务 | — | — | — | 脚本 | selfboot | — | →29 | 13 个函数 · ⊞ parse_text/flowtable.md |
 | 接管与解析 | 29 | 模块 · plan | 任务 | — | — | — | 脚本 | selfboot | — | →30 | 20 个函数 · ⊞ plan/flowtable.md |
 | 接管与解析 | 30 | 模块 · pptx_text | 任务 | — | — | — | 脚本 | selfboot | — | →31 | 8 个函数 · ⊞ pptx_text/flowtable.md |
-| 接管与解析 | 31 | 模块 · probe | 任务 | — | — | — | 脚本 | selfboot | — | →32 | 14 个函数 · ⊞ probe/flowtable.md |
+| 接管与解析 | 31 | 模块 · probe | 任务 | — | — | — | 脚本 | selfboot | — | →32 | 16 个函数 · ⊞ probe/flowtable.md |
 | 循环与漂移 | 32 | 模块 · query | 任务 | — | — | — | 脚本 | selfboot | — | →33 | 9 个函数 · ⊞ query/flowtable.md |
 | 接管与解析 | 33 | 模块 · recon | 任务 | — | — | — | 脚本 | selfboot | — | →34 | 24 个函数 · ⊞ recon/flowtable.md |
 | 渲染 | 34 | 模块 · render_drawio | 任务 | — | — | — | 脚本 | selfboot | — | →35 | 24 个函数 · ⊞ render_drawio/flowtable.md |
@@ -57,6 +57,6 @@ level: L0
 | 接管与解析 | 44 | 模块 · textquality | 任务 | — | — | — | 脚本 | selfboot | — | →45 | 9 个函数 · ⊞ textquality/flowtable.md |
 | 接管与解析 | 45 | 模块 · thresholds | 任务 | — | — | — | 脚本 | selfboot | — | →46 | 1 个函数 · ⊞ thresholds/flowtable.md |
 | 产物审核 | 46 | 模块 · validate | 任务 | — | — | — | 脚本 | selfboot | — | →47 | 39 个函数 · ⊞ validate/flowtable.md |
-| 同步闭环 | 47 | 模块 · writeback | 任务 | — | — | — | 脚本 | selfboot | — | →48 | 21 个函数 · ⊞ writeback/flowtable.md |
+| 同步闭环 | 47 | 模块 · writeback | 任务 | — | — | — | 脚本 | selfboot | — | →48 | 23 个函数 · ⊞ writeback/flowtable.md |
 | 同步闭环 | 48 | 模块 · xml_reader | 任务 | — | — | — | 脚本 | selfboot | — | →49 | 40 个函数 · ⊞ xml_reader/flowtable.md |
 | 出口 | 49 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |

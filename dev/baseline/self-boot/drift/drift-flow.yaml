@@ -340,7 +340,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→18｜2→19｜3→21｜4→22｜5→26
-  desc: ★ 查收敛：**拿当前表重跑判据**，与文件里的处置对账（§5.4）。 · L616 · 函数 · 分支：1→prepare 2→parse_doc
+  desc: ★ 查收敛：**拿当前表重跑判据**，与文件里的处置对账（§5.4）。 · L626 · 函数 · 分支：1→prepare 2→parse_doc
     3→check_drift_rows 4→check_gap_rows 5→check_header
 - id: '28'
   name: main
@@ -353,7 +353,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→25｜2→27
-  desc: ★ 子命令分发。**用显式 if 而不是 `set_defaults(func=…)`**：后者在静态调用图里看不见， · L653 · 函数 ·
+  desc: ★ 子命令分发。**用显式 if 而不是 `set_defaults(func=…)`**：后者在静态调用图里看不见， · L663 · 函数 ·
     分支：1→cmd_build 2→cmd_check
 - id: '29'
   name: 结束

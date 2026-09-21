@@ -109,7 +109,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →07
-  desc: ★ 材料层 → `(elements, 补注, 摘要, 跳过清单, 报错文案)`。非 PDF / 非 T2 一律跳过并记账。 · L135 · 函数
+  desc: ★ 材料层 → `(elements, 补注, 摘要, 跳过清单, 报错文案)`。非 PDF / 非 T2 一律跳过并记账。 · L141 · 函数
 - id: 09
   name: main
   lines:
@@ -121,7 +121,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→03｜3→04｜4→08
-  desc: L185 · 函数 · 分支：1→_read_json 2→_write_notes 3→_page_span 4→parse_materials
+  desc: L199 · 函数 · 分支：1→_read_json 2→_write_notes 3→_page_span 4→parse_materials
 - id: '10'
   name: 结束
   lines:

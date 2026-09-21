@@ -54,6 +54,8 @@ RECON_CMD = REPO / 'scripts' / 'recon.py'          # 名字带 _CMD：本文件�
 OOXML_CMD = REPO / 'scripts' / 'parse_ooxml.py'
 IMPORT_CMD = REPO / 'scripts' / 'import_table.py'
 PARSE_CMD = REPO / 'scripts' / 'parse.py'
+PARSE_LEGACY = REPO / 'scripts' / 'parse_legacy.py'
+PARSE_PDF = REPO / 'scripts' / 'parse_pdf.py'
 INTAKE_CMD = REPO / 'scripts' / 'intake.py'
 PLAN_CMD = REPO / 'scripts' / 'plan.py'
 SPEC = REPO / 'dev' / 'PIPELINE-SPEC.md'
@@ -125,6 +127,10 @@ def make_fixture(root):
         {'id': 'M07', 'path': '材料/庚-白板.png', 'sha256': '0' * 64, 'bytes': 7168,
          'mtime': '2026-09-01T10:00:00', 'tier': 'T3', 'kind': 'image', 'probe': '夹具', 'status': 'ok'},
     ]
+    # `root` 是 §2.1 的**必填**字段（G28：ledger 一度把它丢掉 ⇒ 陈化检查少了半条；现在补回后
+    # `check_materials` 也校验它）。这份合成材料的根就是夹具目录本身。
+    for _m in materials:
+        _m['root'] = root.as_posix()
     # `M01#p001` 挂**抽取质量**降级（D1 该命中）；`M01#p002` 只挂**浏览摘录**截断（D1 **不许**命中——
     # 那是 §2.3 的写盘契约，摘录短了不等于证据弱了；2026-09-18 真材料集上实测：不分这两类时，
     # 一份每个节点都规矩引条款的表被报成 23 条"等级拔高"）。
@@ -186,8 +192,12 @@ def ledgerize(root):
     return rc == 0, out
 
 
-def intakeize(root):
+def intakeize(root, only=None):
     """清点卡片：`intake.py build` 出骨架（**用产品的写入器**）→ 填 AI 四列（`INTAKE_AI`）。
+
+    `only`：只填这些材料 id 的答案（小夹具只造了一两份材料时用；`None` = 按 `INTAKE_AI` 全填）。
+    为什么要有它：`cells.fill` 的**第一道闸**就是"键不在产物里"——小夹具配全量答案会当场被拦，
+    那不是被测行为，是夹具自己的形状不对。
 
     为什么要走这条路而不是手写一份 `intake.md`：手写的那版**自己就过不了** `intake.py check`
     （16 条错：主题没标 `⚠`、`读不动` 没与账本逐字一致、`互补` 单向），于是夹具测的东西与规范说的东西
@@ -204,7 +214,8 @@ def intakeize(root):
     # 填 AI 四列**走正式接口**（`cells.py`）：夹具与产品侧同一条路，列序/转义都不由人手保证。
     new, errs = cells.fill(p.read_text(encoding='utf-8'),
                            {k: {'主题': v[0], '含流程': v[1], '版本关系': v[2], '依据': v[3]}
-                            for k, v in INTAKE_AI.items()}, INTAKE_MOD.TODO_TABLES)
+                            for k, v in INTAKE_AI.items() if only is None or k in only},
+                           INTAKE_MOD.TODO_TABLES)
     if errs:
         return False, f'cells.fill 落了空：{errs}'
     p.write_text(new, encoding='utf-8', newline='\n')
@@ -1895,7 +1906,8 @@ def closing_paths(root):
 
     def material(mid, path, **kw):
         m = {'id': mid, 'path': str(path), 'sha256': sha(path), 'bytes': path.stat().st_size,
-             'mtime': '2026-09-19T10:00:00', 'tier': 'T1', 'kind': 'text', 'probe': 'text',
+             'mtime': '2026-09-19T10:00:00', 'root': mat.as_posix(),
+             'tier': 'T1', 'kind': 'text', 'probe': 'text',
              'status': 'ok'}
         m.update(kw)
         return m
@@ -2023,6 +2035,252 @@ def closing_paths(root):
     return cases
 
 
+def audit_paths(root):
+    """**2026-09-21 五路盲审查出的解析族四条**（G27 / G28 / G29 / G30 / G31）的反向夹具。
+
+    为什么另起一组：这四条要求的形态是"**跑得完、但结果是错的**"——转换器时好时坏、
+    收窄后分母错、每页都抽不动、空表 + 收窄不留痕。`materials_paths` 那批考的是"整批硬失败"，
+    形状不同。四条此前**都没有夹具**，全在 `coding-spec` G27—G31 的"门禁抓不到"栏里。
+    """
+    cases = []
+    d = root / 'audit'
+    d.mkdir(parents=True, exist_ok=True)
+    import hashlib
+
+    def sha(p):
+        return hashlib.sha256(p.read_bytes()).hexdigest()
+
+    def mat(mid, path, **kw):
+        m = {'id': mid, 'path': path.as_posix(), 'sha256': sha(path), 'bytes': path.stat().st_size,
+             'mtime': '2026-09-21T10:00:00', 'root': path.parent.as_posix(), 'tier': 'T2',
+             'kind': 'ole', 'probe': '几何夹具', 'status': 'ok'}
+        m.update(kw)
+        return m
+
+    def write_mats(path, items):
+        path.write_text(json.dumps(items, ensure_ascii=False, indent=2) + '\n',
+                        encoding='utf-8', newline='\n')
+
+    # ── G27：两份 legacy、第二份转换失败 ⇒ **不许**把第一份的正文记成第二份的证据 ──────
+    # 共享 outdir 时 `convert` 的"目录里唯一的 .docx"兜底会返回**上一份**的产物，
+    # 于是 M02 的证据其实是 M01 的正文、且没有告警（盲审 monkeypatch 复现）。
+    leg = d / 'legacy'
+    leg.mkdir(exist_ok=True)
+    (leg / 'a.doc').write_bytes(_ole_bytes('WordDocument'))
+    (leg / 'b.doc').write_bytes(_ole_bytes('WordDocument'))
+    _minimal_docx(d / 'seed.docx')                 # 第一份转换产物的内容模板（**真 docx**：
+    # `_zip_docx` 那份缺 `_rels/.rels`，python-docx 读不了——这里要的是"能读出正文的产物"）
+    counter = d / 'convert.count'
+    fake = d / 'fake_soffice.py'
+    fake.write_text(
+        'import pathlib, sys\n'
+        "if '--version' in sys.argv:\n"
+        "    print('fake soffice 1.0')\n"
+        "    sys.exit(0)\n"
+        f"cnt = pathlib.Path(r'{counter.as_posix()}')\n"
+        "n = int(cnt.read_text()) if cnt.exists() else 0\n"
+        "cnt.write_text(str(n + 1))\n"
+        "if n:                       # 第二次起：退 1 且**不产出**任何东西\n"
+        "    sys.exit(1)\n"
+        "out = pathlib.Path(sys.argv[sys.argv.index('--outdir') + 1])\n"
+        "src = pathlib.Path(sys.argv[-1])\n"
+        f"out.joinpath(src.stem + '.docx').write_bytes(pathlib.Path(r'{(d / 'seed.docx').as_posix()}').read_bytes())\n"
+        "sys.exit(0)\n",
+        encoding='utf-8', newline='\n')
+    lm = d / 'legacy-materials.json'
+    write_mats(lm, [mat('M01', leg / 'a.doc'), mat('M02', leg / 'b.doc')])
+    le, ln = d / 'legacy-elements.json', d / 'legacy-notes.json'
+    rc, out = run([sys.executable, str(PARSE_LEGACY),
+                   '--materials', str(lm), '--soffice', f'"{sys.executable}" "{fake}"',
+                   '-o', str(le), '--notes', str(ln)])
+    els = json.loads(le.read_text(encoding='utf-8')) if le.exists() else []
+    nts = json.loads(ln.read_text(encoding='utf-8')) if ln.exists() else []
+    m2_els = [e for e in els if e.get('material_id') == 'M02']
+    m2_bad = [n for n in nts if n.get('material_id') == 'M02' and n.get('status') == 'unreadable']
+    cases.append(('G27 两份 legacy、**第二份转换失败** ⇒ M02 拿不到任何元素（不许把 M01 的正文'
+                  '记成它的证据）且记 `unreadable`',
+                  rc == 0 and bool(els) and not m2_els and bool(m2_bad), rc,
+                  f'总元素 {len(els)}（M02 {len(m2_els)} 条）· M02 补注 {[n.get("status") for n in nts if n.get("material_id") == "M02"]}'
+                  f' · {out.strip()[-160:]}'))
+
+    # ── G28：账本不许丢掉 `materials[].root`（丢了 ⇒ 陈化检查少半条还报"一致"）──────
+    aging = d / 'aging'
+    (aging / '材料').mkdir(parents=True, exist_ok=True)
+    (aging / '材料' / '甲.md').write_text('# 甲\n\n第一步受理。\n', encoding='utf-8', newline='\n')
+    rc, out = run([sys.executable, str(PROBE_CMD), str(aging / '材料'), '--json'])
+    probed = json.loads(out[out.index('['):]) if '[' in out else []
+    pm = aging / 'materials.json'
+    pm.write_text(json.dumps(probed, ensure_ascii=False, indent=2) + '\n',
+                  encoding='utf-8', newline='\n')
+    ev = aging / 'evidence.json'
+    rc1, out1 = run([sys.executable, str(LEDGER), '--materials', str(pm), '-o', str(ev)])
+    led = json.loads(ev.read_text(encoding='utf-8')) if ev.exists() else {}
+    kept = bool(led.get('materials')) and all('root' in m for m in led['materials'])
+    # 抽回 materials[]（这一步刻意手抽：G61 —— `--verify` 自己不校验输入形状，喂整本账本它会
+    # 把 5 个顶层键当成"5 份材料"）。有 root 时，"根下多了新文件"这半条必须判得出来。
+    back = aging / 'back-materials.json'
+    write_mats(back, led.get('materials') or [])
+    (aging / '材料' / '乙.md').write_text('# 乙\n', encoding='utf-8', newline='\n')
+    rc2, out2 = run([sys.executable, str(PROBE_CMD), '--verify', str(back)])
+    cases.append(('G28 过完 `ledger` 的账本仍带 `materials[].root`（§2.1 必填）⇒ '
+                  '根下补一份新材料时 `--verify` **判得出来**（退 2）',
+                  rc1 == 0 and kept and rc2 == 2 and '多了' in out2, (rc1, rc2),
+                  f'root 保住={kept} · 陈化 rc={rc2} · {out2.strip()[-160:]}'))
+
+    # ── G29：`--pages` 收窄**不许**触发假"文字层薄"（分母必须是本轮实读页数）──────────
+    pages = [f'Page {i} body text, about forty chars long here.' for i in range(1, 13)]
+    pdf = d / 'twelve.pdf'
+    pdf.write_bytes(_pdf_pages(pages))
+    pdfm = d / 'pdf-materials.json'
+    write_mats(pdfm, [mat('M01', pdf, kind='pdf-text', probe='有 /Font')])
+    pe = d / 'pdf-elements.json'
+    rc, out = run([sys.executable, str(PARSE_PDF), '--materials', str(pdfm), '--pages', '1-2',
+                   '-o', str(pe)])
+    pels = json.loads(pe.read_text(encoding='utf-8')) if pe.exists() else []
+    thin = '文字层薄' in out or any('文字层薄' in (e.get('degraded') or '') for e in pels)
+    cases.append(('G29 `--pages 1-2`（12 页文档）**不许**判"文字层薄"——分母是收窄后实读页数，'
+                  '不是整份页数（原先收窄越窄越必然误判）',
+                  rc == 0 and len(pels) == 2 and not thin, rc,
+                  f'元素 {len(pels)} 条 · 假薄={thin} · {out.strip()[-160:]}'))
+
+    # ── G30：每页都抽不动 ⇒ 记 `unreadable` + 逐页原因（不许"ok 且零证据无 reason"）────
+    blocker = d / 'blockpdf'
+    blocker.mkdir(exist_ok=True)
+    (blocker / 'pdfplumber.py').write_text(
+        'class _P:\n'
+        '    def extract_text(self):\n'
+        "        raise RuntimeError('（夹具）内容流坏了')\n"
+        'class _PDF:\n'
+        '    pages = [_P(), _P()]\n'
+        '    def __enter__(self): return self\n'
+        '    def __exit__(self, *a): return False\n'
+        'def open(path): return _PDF()\n',
+        encoding='utf-8', newline='\n')
+    bad_pdf = d / 'broken-layer.pdf'
+    bad_pdf.write_bytes(_pdf_bytes(True))          # 有 /Font ⇒ probe 判 pdf-text（T2）
+    bpm = d / 'badpdf-materials.json'
+    write_mats(bpm, [mat('M01', bad_pdf, kind='pdf-text', probe='有 /Font')])
+    bpe, bpn = d / 'badpdf-elements.json', d / 'badpdf-notes.json'
+    env = dict(os.environ, PYTHONPATH=str(blocker), PYTHONDONTWRITEBYTECODE='1')
+    p = subprocess.run([sys.executable, str(PARSE_PDF), '--materials', str(bpm),
+                        '-o', str(bpe), '--notes', str(bpn)],
+                       capture_output=True, text=True, encoding='utf-8', cwd=str(REPO), env=env,
+                       timeout=300)
+    bout = (p.stdout or '') + (p.stderr or '')
+    bnts = json.loads(bpn.read_text(encoding='utf-8')) if bpn.exists() else []
+    why = [n for n in bnts if n.get('material_id') == 'M01' and n.get('status') == 'unreadable'
+           and '抽取失败' in str(n.get('reason') or '')]
+    cases.append(('G30 每页抽取都失败 ⇒ 记 `unreadable` + 逐页原因（原先理由只进 `done`、'
+                  '从不打印 ⇒ 账本上"ok 且零证据无 reason"，真因不可见）',
+                  p.returncode == 0 and bool(why) and 'Traceback' not in bout, p.returncode,
+                  f'补注={[n.get("status") for n in bnts]} · {bout.strip()[-160:]}'))
+
+    # ── G31：空 sheet 不交空骨架 · `--sheet` 收窄要留痕 ──────────────────────────
+    import openpyxl
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = '短名单'
+    ws.append(['序号', '供应商'])
+    ws.append([1, '甲公司'])
+    wb.create_sheet('空表')                        # 一个字都没有的第二张表
+    xl = d / 'sheets.xlsx'
+    wb.save(str(xl))
+    xm = d / 'xlsx-materials.json'
+    write_mats(xm, [mat('M01', xl, tier='T1', kind='xlsx', probe='确切部件')])
+    xe = d / 'xlsx-elements.json'
+    rc, out = run([sys.executable, str(OOXML_CMD), '--materials', str(xm), '-o', str(xe),
+                   '--sheet', '短名单'])
+    xels = json.loads(xe.read_text(encoding='utf-8')) if xe.exists() else []
+    empty_el = [e for e in xels if not (e.get('rows') or [])]
+    traced = all('本轮 --sheet 只要' in (e.get('degraded') or '') for e in xels) and bool(xels)
+    cases.append(('G31 空 sheet **不交空骨架** element · `--sheet` 收窄在留下的元素上**留痕**'
+                  '（两条原先都没有）',
+                  rc == 0 and bool(xels) and not empty_el and traced, rc,
+                  f'元素 {len(xels)} 条（空骨架 {len(empty_el)}）· 留痕={traced} · {out.strip()[-160:]}'))
+
+    # ── G62：`BM` 只有 2 字节 ⇒ 以 "BM" 开头的**文本**不许被判成图片 ──────────────
+    bm_dir = d / 'bmp'
+    bm_dir.mkdir(exist_ok=True)
+    (bm_dir / 'bm_note.txt').write_text('BMW 2026 年度检修计划：第一步受理，第二步核验。\n',
+                                        encoding='utf-8', newline='\n')
+    bmp = bm_dir / 'real.bmp'
+    bmp.write_bytes(b'BM' + (70).to_bytes(4, 'little') + b'\x00' * 4 + (54).to_bytes(4, 'little')
+                    + b'\x00' * 56)                     # 头 14 + 数据 56 = 70 字节，大小域对得上
+    rc, out = run([sys.executable, str(PROBE_CMD), str(bm_dir), '--json'])
+    pj = json.loads(out[out.index('['):]) if '[' in out else []
+    kinds = {pathlib.Path(m['path']).name: m['kind'] for m in pj}
+    cases.append(('G62 `BM` 开头的 UTF-8 文本**不许**判成图片（BMP 魔数要连结构一起验：'
+                  '保留域 + 大小域）· 真 BMP 仍判图片',
+                  kinds.get('bm_note.txt') == 'text' and kinds.get('real.bmp') == 'image', rc,
+                  f'kind={kinds}'))
+
+    # ── G61：`--verify` 要校验输入形状（喂错东西不许"全绿"）──────────────────────
+    shape = d / 'shape'
+    shape.mkdir(exist_ok=True)
+    (shape / '甲.md').write_text('# 甲\n\n第一步受理。\n', encoding='utf-8', newline='\n')
+    rc, out = run([sys.executable, str(PROBE_CMD), str(shape), '--json'])
+    good_mats = shape / 'materials.json'
+    good_mats.write_text(out[out.index('['):] if '[' in out else '[]',
+                         encoding='utf-8', newline='\n')
+    rc1, out1 = run([sys.executable, str(PROBE_CMD), '--verify', str(good_mats)])
+    wrong = shape / 'wrong.json'
+    wrong.write_text('{"a": 1, "b": 2, "c": 3}\n', encoding='utf-8', newline='\n')
+    rc2, out2 = run([sys.executable, str(PROBE_CMD), '--verify', str(wrong)])
+    cases.append(('G61 `--verify` 校验输入形状：喂一个 dict ⇒ **退 2**（原先走的是字典的键，'
+                  '0 条材料却打印"3 份材料……一致"）· 合法材料层照常退 0',
+                  rc1 == 0 and rc2 == 2, (rc1, rc2), f'{out2.strip()[-120:]}'))
+
+    # ── G39：`无关(M##)` 是合法取值，`intake check` 不许裸抛 KeyError ──────────────
+    ik = d / 'intake'
+    (ik / '材料').mkdir(parents=True, exist_ok=True)
+    (ik / '材料' / 'a.md').write_text('# 甲\n\n第一步受理。\n', encoding='utf-8', newline='\n')
+    (ik / '材料' / 'b.md').write_text('# 乙\n\n第二步核验。\n', encoding='utf-8', newline='\n')
+    rc_p, out_p = run([sys.executable, str(PROBE_CMD), str(ik / '材料'), '--json'])
+    (ik / 'materials.json').write_text(out_p[out_p.index('['):] if '[' in out_p else '[]',
+                                       encoding='utf-8', newline='\n')
+    (ik / 'elements.json').write_text(json.dumps(
+        [_elem('M01#p001'), _elem('M02#p001')], ensure_ascii=False, indent=2) + '\n',
+        encoding='utf-8', newline='\n')
+    ok_l, out_l = ledgerize(ik)
+    ok_i, out_i = intakeize(ik, only={'M01', 'M02'})
+    card = ik / 'intake.md'
+    if ok_l and ok_i and card.exists():
+        lines = card.read_text(encoding='utf-8').splitlines(keepends=True)
+        out_lines = []
+        for l in lines:
+            if l.startswith('|') and '`M01`' in l and l.count('|') >= 7:
+                cs = l.rstrip('\n').split('|')
+                cs[5] = ' 无关(M02) '                   # 版本关系列（§3 的合法取值之一）
+                l = '|'.join(cs) + '\n'
+            elif l.startswith('|') and '`M02`' in l and l.count('|') >= 7:
+                cs = l.rstrip('\n').split('|')
+                # `INTAKE_AI` 给 M02 的依据是 `—`（大夹具里它没有证据）；这份小夹具给了它一条，
+                # 于是必须填 element id——否则卡片校验先报"有证据却没填依据"，测不到本条要测的东西。
+                cs[7] = ' `M02#p001` '
+                l = '|'.join(cs) + '\n'
+            out_lines.append(l)
+        card.write_text(''.join(out_lines), encoding='utf-8', newline='\n')
+        rc, out = run([sys.executable, str(INTAKE_CMD), 'check', str(card),
+                       '--ledger', str(ik / 'evidence.json')])
+        cases.append(('G39 `无关(M##)` 是合法取值：`intake check` 不许裸抛 KeyError'
+                      '（原先 `REVERSE[kind]` 直接下标 ⇒ 崩栈退 1）',
+                      rc == 0 and 'Traceback' not in out, rc, f'{out.strip()[-140:]}'))
+    else:
+        cases.append(('G39 `无关(M##)` 是合法取值：`intake check` 不许裸抛 KeyError',
+                      False, 2, f'夹具自身没造出来：probe={rc_p} ledger={ok_l} intake={ok_i}'))
+
+    # ── G44：纯流程表模式（一个输入都不给）——build 出的账，它自己打印的 check 必须能过 ──
+    dm = d / 'drift-bare.md'
+    ft = root / 'flowtable.md'
+    rc1, out1 = run([sys.executable, str(DRIFT), 'build', str(ft), '-o', str(dm)])
+    rc2, out2 = run([sys.executable, str(DRIFT), 'check', str(dm), '--flowtable', str(ft)])
+    cases.append(('G44 纯流程表模式：`build` 只给流程表出的账，**它自己打印的 check 命令必须过**'
+                  '（原先无条件拦"少给输入"，报的还是"账里记着用过「账本」"）',
+                  rc1 == 0 and rc2 == 0, (rc1, rc2),
+                  f'build rc={rc1} · check rc={rc2} · {out2.strip()[-160:]}'))
+    return cases
+
+
 def main(argv=None):
     """造夹具 → 比 `drift` 读数 → 跑漂移 13 + 清点 3 + 取子集 10 + 能力指纹 3 + pptx 4 + 材料树若干 + 规范 1 条路径
 
@@ -2054,7 +2312,7 @@ def main(argv=None):
     for name, good, rc, out in (paths(root, draft) + intake_paths(root) + plan_paths(root)
                                 + query_paths(root) + capability_paths(root) + vlm_paths(root)
                                 + parallel_paths(root) + idempotency_paths(root)
-                                + closing_paths(root)
+                                + closing_paths(root) + audit_paths(root)
                                 + pptx_paths(root) + materials_paths(root)
                                 + import_paths(root) + spec_paths()):
         print(f'{"PASS" if good else "FAIL"}  {name}  （rc={rc}）')

@@ -21,5 +21,5 @@ parent: ../flowtable.md
 | 模块级 | 07 | parse_cards | 任务 | — | — | — | 脚本 | selfboot | — | →11 | ★ `intake.md` → `(表头, {M##: {列: 值}}, 报错)`。表头必须逐字对得上（列规范 §3）。 · L163 · 函数 |
 | 模块级 | 08 | check_cards | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→09 | ★ 卡片 vs 账本 → 错误清单（空 = 过）。**只报不改**（§3 纪律 1：清点不改账本）。 · L191 · 函数 · 分支：1→escape 2→_check_relation · ⇢ 依赖 flowtable_check.citations |
 | 模块级 | 09 | _check_relation | 任务 | — | — | — | 脚本 | selfboot | — | →11 | ★ 版本关系：取值封闭 + **双向一致**（§3 的硬要求，单向声明按错处理）。 · L229 · 函数 |
-| 模块级 | 10 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→03｜2→06｜3→07｜4→08 | L267 · 函数 · 分支：1→duplicate_pairs 2→build_card 3→parse_cards 4→check_cards · ⇢ 依赖 artifact.beside、cells.dump、cells.todo_from_doc |
+| 模块级 | 10 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→03｜2→06｜3→07｜4→08 | L272 · 函数 · 分支：1→duplicate_pairs 2→build_card 3→parse_cards 4→check_cards · ⇢ 依赖 artifact.beside、cells.dump、cells.todo_from_doc |
 | 出口 | 11 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |

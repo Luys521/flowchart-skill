@@ -27,15 +27,35 @@ import zipfile
 from pathlib import Path
 
 # 图片魔数 — 用内容判，防"改扩展名"（PIPELINE-SPEC §1.2）。
+# **`BM` 只有两字节，必须再验结构**（G62）：其余魔数都 ≥3 字节且含高位字节，只有 BMP 会与
+# ASCII 文本碰撞——实测一份以 `BMW 2026…` 开头的 UTF-8 文本被判 T3 图片，与"按内容判"的
+# 宣称相反。所以 BMP 走 `_bmp_ok()`（保留域 + 文件大小域），不放进下面这张表。
 IMAGE_MAGIC = (
     (b'\x89PNG\r\n\x1a\n', 'png'),
     (b'\xff\xd8\xff', 'jpeg'),
     (b'GIF87a', 'gif'),
     (b'GIF89a', 'gif'),
-    (b'BM', 'bmp'),
     (b'II*\x00', 'tiff'),
     (b'MM\x00*', 'tiff'),
 )
+
+
+def _bmp_ok(path):
+    """`BM` 后面那 12 字节像不像真 BMP：**保留域必须为 0、大小域必须等于文件大小**。
+
+    真 BMP 头（BITMAPFILEHEADER）第 6–9 字节保留域恒为 0，第 2–5 字节是文件大小；
+    文本文件以 `BM` 开头时这两处都是可打印 ASCII ⇒ 当场分辨。
+    大小域写 0 的少数导出器也放行（有些库流式写出时先占位）。
+    """
+    head = _read_head(path, 14)
+    if len(head) < 14 or head[6:10] != b'\x00\x00\x00\x00':
+        return False
+    size = int.from_bytes(head[2:6], 'little')
+    try:
+        real = path.stat().st_size
+    except OSError:
+        return False
+    return size in (0, real)
 
 # zip 容器里**真正能被读出来的那个部件** → 具体是哪种 OOXML。
 # **为什么必须是确切部件、不能是目录前缀**（审计抓到的真 bug）：原先写 `n.startswith('word/')`，
@@ -85,20 +105,41 @@ def _ooxml_kind(path):
             return kind
     return None
 
+def _count_marker(path, marker, chunk=1 << 20):
+    """**分块**数一个字节标记出现几次 —— 不把整份读进内存（G34）。
+
+    为什么单列一条：`_pdf_tier` 原先 `path.read_bytes()` 整份读，而同一文件里的 `_sha_and_size`
+    早就因为"400 MiB 的材料让峰值工作集到 421 MiB"改成了分块——**扫描型 PDF 恰恰是大体积的常客**。
+    块边界会切断标记，所以每块留 `len(marker)-1` 字节的回看窗。
+    """
+    n, tail = 0, b''
+    with open(path, 'rb') as f:
+        while True:
+            buf = f.read(chunk)
+            if not buf:
+                return n
+            blob = tail + buf
+            n += blob.count(marker)
+            tail = blob[-(len(marker) - 1):] if len(marker) > 1 else b''
+
+
 def _pdf_tier(path):
     """PDF：有字体标记 → 有文本层（T2），否则判扫描件（T3）。依据写成 `/Font` 计数，人可核。
 
-    **这是粗判**：正式口径是"抽前 N 页算字符密度"（阈值进 `scripts/dictionary.yaml`）；
-    这里先用"有没有字体"当前哨 — 有字体才可能有文本层，没字体必然是扫描件。
+    **这是粗判**，且**刻意保持零第三方依赖**（probe 是装上依赖前跑的第一条命令，见 D-133）：
+    判据是"原始字节里有没有 `/Font`"，不是"抽前 N 页算字符密度"。**已知盲区**：PDF 1.5+ 把字体
+    字典放进压缩对象流（`ObjStm`）时，原始字节里数不到 `/Font`（gs pdfwrite ≥1.5 / qpdf
+    `--object-streams=generate` / Acrobat 优化都会这么写）⇒ 有文本层的 PDF 被判 T3。
+    误判的后果是**走视觉路而不是文本路**（数据不丢、可恢复），所以登记在这里而不引依赖。
     """
     try:
-        blob = path.read_bytes()
+        fonts = _count_marker(path, b'/Font')
+        images = _count_marker(path, b'/Image')
     except OSError:
         return 'T4', 'PDF 读不动'
-    fonts = blob.count(b'/Font')
     if fonts:
         return 'T2', f'PDF 有文本层（/Font x{fonts}）'
-    return 'T3', f'PDF 无字体标记（/Font 0, /Image x{blob.count(b"/Image")}）→判扫描件'
+    return 'T3', f'PDF 无字体标记（/Font 0, /Image x{images}）→判扫描件'
 
 def _decodes(seg, skip_head=0, trim_tail=True):
     """这段字节能不能解成 UTF-8。
@@ -170,6 +211,8 @@ def sniff(path):
             return tier, probe, 'unreadable', probe, kind
         return tier, probe, 'ok', '', kind
 
+    if head[:2] == b'BM' and _bmp_ok(path):
+        return 'T3', '图片魔数（bmp）', 'ok', '', 'image'
     for magic, name in IMAGE_MAGIC:
         if head.startswith(magic):
             return 'T3', f'图片魔数（{name}）', 'ok', '', 'image'
@@ -269,10 +312,13 @@ def verify_list(items):
     """
     bad, notes = [], []
     by_root = {}
+    no_root = 0
     for m in items or []:
         if not isinstance(m, dict):
             continue
         p = str(m.get('path') or '')
+        if not str(m.get('root') or '').strip():
+            no_root += 1                 # 没记 root：下面"根下多了新文件"那半条对它不成立（G28）
         by_root.setdefault(str(m.get('root') or ''), []).append(m)
         fp = Path(p)
         if not fp.exists():
@@ -299,7 +345,9 @@ def verify_list(items):
             bad.append(f'材料根 `{root}` 下多了 {len(new)} 个没入账的文件：'
                        f'{"、".join(new[:3])}{"…" if len(new) > 3 else ""}')
     if not bad:
-        notes.append(f'陈化检查：{len(items or [])} 份材料与材料根当下一致')
+        notes.append(f'陈化检查：{len(items or [])} 份材料与材料根当下一致'
+                     + (f'；其中 {no_root} 份没记 root，「根下多了新文件」那半条对它们跳过了'
+                        if no_root else ''))
     return bad, notes
 
 
@@ -343,6 +391,20 @@ def main(argv=None):
             items = json.loads(Path(a.verify).read_text(encoding='utf-8'))
         except (OSError, ValueError) as e:
             print(f'⚠ 材料层读不了（仪器故障）: {type(e).__name__}: {e}', file=sys.stderr)
+            return 2
+        # **形状要校验**（G61）：原先不校验，喂一本账本（dict）时 `for m in items` 走的是**键**，
+        # 于是一个键都不是材料 ⇒ 0 条问题、却打印"陈化检查：5 份材料与材料根当下一致"（5 是顶层键数）。
+        # 那是"匹配不到就当通过"那一类假绿。两种形状都收：材料层数组 / 账本（取其 `materials`）。
+        if isinstance(items, dict):
+            inner = items.get('materials')
+            if not isinstance(inner, list):
+                print(f'⚠ {a.verify} 不是材料层：既不是数组，也不含 `materials[]` 数组'
+                      f'（--verify 收 `probe --json` 的输出，或一本账本）', file=sys.stderr)
+                return 2
+            items = inner
+        if not isinstance(items, list):
+            print(f'⚠ {a.verify} 不是材料层：顶层应是数组（--verify 收 `probe --json` 的输出）',
+                  file=sys.stderr)
             return 2
         bad, notes = verify_list(items)
         for n in notes:

@@ -8,8 +8,8 @@ meta:
 layout:
   col_x:
   - 400
-  width: 1220
-  origin_x: -140
+  width: 1280
+  origin_x: -40
 nodes:
 - id: '01'
   name: 开始
@@ -21,7 +21,7 @@ nodes:
   row: 0
   col: 0
   stage: 入口
-  route: 1→21｜2→22
+  route: 1→23｜2→24
   desc: 流程起点（结构性节点，不是函数） · 入口：1→compare_bytes 2→main
 - id: '02'
   name: _cell
@@ -33,7 +33,7 @@ nodes:
   row: 5
   col: 0
   stage: 模块级
-  route: →23
+  route: →25
   desc: ★ 单元格文本 → 可安全落进 markdown 表格的形态：`｜` 必须转义成 `\｜`（GFM 规范）， · L28 · 函数
 - id: '03'
   name: _is_sep_cell
@@ -42,10 +42,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 15
+  row: 17
   col: 0
   stage: 模块级
-  route: →23
+  route: →25
   desc: ★ GFM 分隔行单元格：`---` / `:---` / `:---:`（与 table_to_dsl.parse_ta… · L34 · 函数
 - id: '04'
   name: _row_key
@@ -57,7 +57,7 @@ nodes:
   row: 6
   col: 0
   stage: 模块级
-  route: →23
+  route: →25
   desc: ★ 行 → 可比对的键：占位符归一（主体/执行者 → `-`，行动所需时间/下个节点 → `—`）。 · L43 · 函数
 - id: '05'
   name: _tail
@@ -66,10 +66,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 20
+  row: 22
   col: 0
   stage: 模块级
-  route: →23
+  route: →25
   desc: ★ token 里编号之后的自由注解：`不齐全→回 01 补件` → ` 补件`。 · L60 · 函数
 - id: '06'
   name: orig_tokens
@@ -78,7 +78,7 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 19
+  row: 21
   col: 0
   stage: 模块级
   route: →05
@@ -94,7 +94,7 @@ nodes:
   row: 8
   col: 0
   stage: 模块级
-  route: →23
+  route: →25
   desc: ★ 生成一条分支文本（仅用于原表里没有对应项的新增/改动分支）。 · L87 · 函数
 - id: 08
   name: build_rows
@@ -115,7 +115,7 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 18
+  row: 20
   col: 0
   stage: 模块级
   route: →06
@@ -127,10 +127,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 21
+  row: 23
   col: 0
   stage: 模块级
-  route: →23
+  route: →25
   desc: ★ 冲突清单 → 人读文本（文案只有一份：`sync.py` 与同模块的 `write()` 共用，别两处各写一遍）。 · L176 · 函数
 - id: '11'
   name: _read_drawio
@@ -142,7 +142,7 @@ nodes:
   row: 9
   col: 0
   stage: 模块级
-  route: →23
+  route: →25
   desc: ★ 读回 drawio XML（utf-8-sig 兼容带 BOM 的产物）。 · L190 · 函数 · ⇢ 依赖 xml_reader.read
 - id: '12'
   name: _read_orig_snapshot
@@ -154,7 +154,7 @@ nodes:
   row: 10
   col: 0
   stage: 模块级
-  route: →23
+  route: →25
   desc: ★ 原流程表快照：看**字节**判换行符与 BOM，解码出全文与行列表。 · L196 · 函数
 - id: '13'
   name: _semantic_snapshot
@@ -166,7 +166,7 @@ nodes:
   row: 11
   col: 0
   stage: 模块级
-  route: →23
+  route: →25
   desc: ★ 原流程表按 id 的语义快照（阶段/描述/主体/执行者/时间/输入/依据/输出）——id 在原表出现过，语义就以原表为… · L207 · 函数
     · ⇢ 依赖 flowtable.split_row_cells
 - id: '14'
@@ -182,6 +182,18 @@ nodes:
   route: →03
   desc: ★ 原行文本（按 id）：未改动的行**整行照抄**，免得"多/少一个空格"这种伪差异混进 diff。 · L220 · 函数 · ⇢ 依赖 semantics.split_table_row
 - id: '15'
+  name: _header_idx
+  lines:
+  - _header_idx
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 15
+  col: 0
+  stage: 模块级
+  route: →25
+  desc: ★ 主表表头行号：第一个含「节点编号」的 `｜` 行；没有返回 -1。**唯一出处**（G42 起两处共用）。 · L232 · 函数
+- id: '16'
   name: _split_table_block
   lines:
   - _split_table_block
@@ -191,9 +203,22 @@ nodes:
   row: 13
   col: 0
   stage: 模块级
-  route: →23
-  desc: ★ 定位标准表头与表格块边界 → (前言, 表后内容, 前言与表头之间的间隔, 尾换行)。 · L232 · 函数
-- id: '16'
+  route: →15
+  desc: ★ 定位标准表头与表格块边界 → (前言, 表后内容, 前言与表头之间的间隔, 尾换行)。 · L238 · 函数
+- id: '17'
+  name: _table_frame
+  lines:
+  - _table_frame
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 14
+  col: 0
+  stage: 模块级
+  route: 1→03｜2→15
+  desc: ★ 原文的**表头行 / 分隔行** → 能照抄就照抄，否则落 canonical 模板（G42）。 · L267 · 函数 · 分支：1→_is_sep_cell
+    2→_header_idx · ⇢ 依赖 semantics.split_table_row
+- id: '18'
   name: _rebuild_rows
   lines:
   - _rebuild_rows
@@ -204,46 +229,46 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→04｜3→08
-  desc: ★ 逐行重建表格行与表格体（未改动整行照抄），并记下自检所需的 _resolved/_stage。 · L262 · 函数 · 分支：1→_cell
+  desc: ★ 逐行重建表格行与表格体（未改动整行照抄），并记下自检所需的 _resolved/_stage。 · L291 · 函数 · 分支：1→_cell
     2→_row_key 3→build_rows · ⇢ 依赖 semantics.split_table_row
-- id: '17'
+- id: '19'
   name: _keep_after_table
   lines:
   - _keep_after_table
   type: task
   subject: 脚本
   executor: selfboot
-  row: 14
+  row: 16
   col: 0
   stage: 模块级
   route: →03
-  desc: ★ 表后内容保留：丢掉混进来的表内散行，其余（说明章节等）逐字保留。 · L291 · 函数 · ⇢ 依赖 semantics.split_table_row
-- id: '18'
+  desc: ★ 表后内容保留：丢掉混进来的表内散行，其余（说明章节等）逐字保留。 · L320 · 函数 · ⇢ 依赖 semantics.split_table_row
+- id: '20'
   name: _emit_table
   lines:
   - _emit_table
   type: task
   subject: 脚本
   executor: selfboot
-  row: 16
+  row: 18
   col: 0
   stage: 模块级
-  route: →23
-  desc: ★ 前言 / 表格体 / 表后内容拼回，按原换行符与编码落盘，并打印回写统计。 · L307 · 函数
-- id: '19'
+  route: →25
+  desc: ★ 前言 / 表格体 / 表后内容拼回，按原换行符与编码落盘，并打印回写统计。 · L336 · 函数
+- id: '21'
   name: _verify_written
   lines:
   - _verify_written
   type: task
   subject: 脚本
   executor: selfboot
-  row: 17
+  row: 19
   col: 0
   stage: 模块级
   route: 1→09｜2→10
-  desc: ★ 回写后自检（H1–H8），并报警分支走向冲突与缺语义的节点；返回**是否通过**。 · L318 · 函数 · 分支：1→branch_conflicts
+  desc: ★ 回写后自检（H1–H8），并报警分支走向冲突与缺语义的节点；返回**是否通过**。 · L347 · 函数 · 分支：1→branch_conflicts
     2→format_conflicts · ⇢ 依赖 flowtable_check.run_checks
-- id: '20'
+- id: '22'
   name: write
   lines:
   - write
@@ -253,11 +278,12 @@ nodes:
   row: 3
   col: 0
   stage: 模块级
-  route: 1→06｜2→11｜3→12｜4→13｜5→14｜6→15｜7→16｜8→17｜9→18｜10→19
-  desc: ★ drawio 读回结果 + 原流程表 → 更新后的流程表（回写闭环主入口）。 · L354 · 函数 · 分支：1→orig_tokens 2→_read_drawio
+  route: 1→06｜2→11｜3→12｜4→13｜5→14｜6→16｜7→17｜8→18｜9→19｜10→20｜11→21
+  desc: ★ drawio 读回结果 + 原流程表 → 更新后的流程表（回写闭环主入口）。 · L383 · 函数 · 分支：1→orig_tokens 2→_read_drawio
     3→_read_orig_snapshot 4→_semantic_snapshot 5→_orig_line_index 6→_split_table_block
-    7→_rebuild_rows 8→_keep_after_table 9→_emit_table 10→_verify_written · ⇢ 依赖 flowtable.parse_table
-- id: '21'
+    7→_table_frame 8→_rebuild_rows 9→_keep_after_table 10→_emit_table 11→_verify_written
+    · ⇢ 依赖 flowtable.parse_table
+- id: '23'
   name: compare_bytes
   lines:
   - compare_bytes
@@ -267,9 +293,9 @@ nodes:
   row: 1
   col: 0
   stage: 模块级
-  route: →23
-  desc: ★ 回写结果 vs 原文的**文件级**复核 → (是否逐字节一致, unified diff 行列表)。 · L374 · 函数
-- id: '22'
+  route: →25
+  desc: ★ 回写结果 vs 原文的**文件级**复核 → (是否逐字节一致, unified diff 行列表)。 · L406 · 函数
+- id: '24'
   name: main
   lines:
   - main
@@ -279,45 +305,45 @@ nodes:
   row: 2
   col: 0
   stage: 模块级
-  route: →20
-  desc: L390 · 函数
-- id: '23'
+  route: →22
+  desc: L422 · 函数
+- id: '25'
   name: 结束
   lines:
   - 结束
   type: end
   subject: 脚本
   executor: selfboot
-  row: 22
+  row: 24
   col: 0
   stage: 出口
   route: —
   desc: 流程终点（结构性节点，不是函数）
 edges:
 - from: '01'
-  to: '21'
+  to: '23'
   kind: spine
   polarity: main
   label: '1'
 - from: '01'
-  to: '22'
+  to: '24'
   kind: jumpR
   polarity: main
   label: '2'
 - from: '02'
-  to: '23'
+  to: '25'
   kind: jumpR
   polarity: main
 - from: '03'
-  to: '23'
+  to: '25'
   kind: jumpR
   polarity: main
 - from: '04'
-  to: '23'
+  to: '25'
   kind: jumpR
   polarity: main
 - from: '05'
-  to: '23'
+  to: '25'
   kind: jumpR
   polarity: main
 - from: '06'
@@ -325,7 +351,7 @@ edges:
   kind: spine
   polarity: main
 - from: '07'
-  to: '23'
+  to: '25'
   kind: jumpR
   polarity: main
 - from: 08
@@ -337,19 +363,19 @@ edges:
   kind: spine
   polarity: main
 - from: '10'
-  to: '23'
+  to: '25'
   kind: spine
   polarity: main
 - from: '11'
-  to: '23'
+  to: '25'
   kind: jumpR
   polarity: main
 - from: '12'
-  to: '23'
+  to: '25'
   kind: jumpR
   polarity: main
 - from: '13'
-  to: '23'
+  to: '25'
   kind: jumpR
   polarity: main
 - from: '14'
@@ -357,97 +383,116 @@ edges:
   kind: jumpR
   polarity: main
 - from: '15'
-  to: '23'
+  to: '25'
   kind: jumpR
   polarity: main
 - from: '16'
+  to: '15'
+  kind: jumpR
+  polarity: main
+- from: '17'
+  to: '03'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '17'
+  to: '15'
+  kind: spine
+  polarity: main
+  label: '2'
+- from: '18'
   to: '02'
   kind: spine
   polarity: main
   label: '1'
-- from: '16'
+- from: '18'
   to: '04'
   kind: jumpR
   polarity: main
   label: '2'
-- from: '16'
+- from: '18'
   to: 08
   kind: jumpR
   polarity: main
   label: '3'
-- from: '17'
+- from: '19'
   to: '03'
   kind: spine
   polarity: main
-- from: '18'
-  to: '23'
+- from: '20'
+  to: '25'
   kind: jumpR
   polarity: main
-- from: '19'
+- from: '21'
   to: 09
   kind: spine
   polarity: main
   label: '1'
-- from: '19'
+- from: '21'
   to: '10'
   kind: jumpR
   polarity: main
   label: '2'
-- from: '20'
+- from: '22'
   to: '06'
   kind: jumpR
   polarity: main
   label: '1'
-- from: '20'
+- from: '22'
   to: '11'
   kind: jumpR
   polarity: main
   label: '2'
-- from: '20'
+- from: '22'
   to: '12'
   kind: jumpR
   polarity: main
   label: '3'
-- from: '20'
+- from: '22'
   to: '13'
   kind: jumpR
   polarity: main
   label: '4'
-- from: '20'
+- from: '22'
   to: '14'
   kind: jumpR
   polarity: main
   label: '5'
-- from: '20'
-  to: '15'
+- from: '22'
+  to: '16'
   kind: jumpR
   polarity: main
   label: '6'
-- from: '20'
-  to: '16'
-  kind: spine
-  polarity: main
-  label: '7'
-- from: '20'
+- from: '22'
   to: '17'
   kind: jumpR
   polarity: main
-  label: '8'
-- from: '20'
+  label: '7'
+- from: '22'
   to: '18'
-  kind: jumpR
+  kind: spine
   polarity: main
-  label: '9'
-- from: '20'
+  label: '8'
+- from: '22'
   to: '19'
   kind: jumpR
   polarity: main
-  label: '10'
-- from: '21'
-  to: '23'
-  kind: jumpR
-  polarity: main
+  label: '9'
 - from: '22'
   to: '20'
+  kind: jumpR
+  polarity: main
+  label: '10'
+- from: '22'
+  to: '21'
+  kind: jumpR
+  polarity: main
+  label: '11'
+- from: '23'
+  to: '25'
+  kind: jumpR
+  polarity: main
+- from: '24'
+  to: '22'
   kind: spine
   polarity: main

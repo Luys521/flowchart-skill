@@ -12,7 +12,9 @@ r"""parse_legacy.py — legacy（`.doc` / `.xls` / `.ppt`）解析适配器（PI
 1. **材料只读**：转换产物落在系统临时目录，绝不写回材料所在目录（§1.4 硬要求 1）。
 2. **缺转换器不假装能读**：该材料出一条**材料层补注**（`status=unreadable` + **可执行**提示），
    不产 element ——材料读不动是**数据事实**，不是仪器故障，所以**退 0**（§1.4"不许静默降级"的另一半：
-   也不许把"读不动"报成"命令坏了"）。
+   也不许把"读不动"报成"命令坏了"）。⚠ 这条只适用于**可选外部工具**（soffice）：缺了它有降级路
+   （UTF-16LE 直捞）。缺**必须依赖**（python-docx 那类）是仪器故障、整链退 2 不落盘——
+   两件事的判据是"缺了它还有没有自包含的下一步"（D-133，`deps.import_dep` 的 docstring 同款）。
 3. **走了哪条路要记账**：成功元素的 `extractor` 写 `soffice+py:docx` / `soffice+py:openpyxl`，
    出处 `location.path` 改回**原材料**路径（内容来自转换副本，但证据指向用户给的那份）。
 
@@ -210,6 +212,10 @@ def convert(argv, src, target, outdir, timeout):
     产物名**不假定**等于材料名：soffice 各版本对 `.doc`（老 Word 二进制）的出名不完全一致，
     所以先按 `<stem>.<target>` 找，找不到就退到"目录里唯一的 `.<target>`"，都找不到才报错——
     **退 0 却没产出**要当场说清，不许让下游拿到空 elements 还以为是空材料。
+
+    **调用方必须给本份材料一个独立 outdir**（`parse_materials` 按序号建子目录，G27）：
+    "目录里唯一的 .<target>"这条兜底只在**独享目录**下才安全——共享目录里它会把上一份的产物
+    当成这一份的正文（转换失败时静默串料）。
     """
     cmd = list(argv) + ['--headless', '--norestore', '--convert-to', target,
                         '--outdir', str(outdir), str(src)]
@@ -498,14 +504,20 @@ def parse_materials(materials, argv, timeout, th=None):
     th = dict(th or DEFAULT_TH)
     elements, notes, done, skipped = [], [], [], []
     with tempfile.TemporaryDirectory(prefix='parse_legacy_out_') as workdir:
-        for m in materials:
+        for i, m in enumerate(materials):
             mid = m.get('id', '?')
             path = Path(m.get('path', ''))
             if m.get('status') != 'ok':
                 skipped.append(f'{mid}: status={m.get("status")}（不解析）')
                 continue
+            # **每份材料一个独立子目录**（G27）：整批共用一个 outdir 时，`convert` 的
+            # "目录里唯一的 .<target>"兜底会把**上一份**的产物当成这一份的正文——
+            # 转换失败（退 1、无产出）时静默串料，账本上 M02 的证据实际是 M01 的正文。
+            # 独立子目录让"唯一命中"只可能是本份自己的产物（soffice 出名不一致时仍旧成立）。
+            sub = Path(workdir) / f'{i:03d}'
+            sub.mkdir()
             try:
-                got, note, line, err = parse_legacy(path, mid, argv, workdir, timeout, th)
+                got, note, line, err = parse_legacy(path, mid, argv, sub, timeout, th)
             except Exception as e:                       # 单份坏不让整批失败
                 skipped.append(f'{mid}: 解析失败 {type(e).__name__}: {e}')
                 continue

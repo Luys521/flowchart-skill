@@ -229,12 +229,17 @@ def _orig_line_index(orig_lines):
     return orig_line
 
 
+def _header_idx(orig_lines):
+    """主表表头行号：第一个含「节点编号」的 `|` 行；没有返回 -1。**唯一出处**（G42 起两处共用）。"""
+    return next((i for i, l in enumerate(orig_lines)
+                 if l.startswith('|') and '节点编号' in l), -1)
+
+
 def _split_table_block(orig_lines, orig_text, orig_ft):
     """定位标准表头与表格块边界 → (前言, 表后内容, 前言与表头之间的间隔, 尾换行)。"""
     # 保留原文件表头**之前**的全部前言（标题/项目元信息/小标题）；表头与本工具统一生成。
     # 找不到标准表头（含「节点编号」列）时无从界定"表格在哪"，硬猜只会把全文与新表拼一起、节点全量重复。
-    header_idx = next((i for i, l in enumerate(orig_lines)
-                       if l.startswith('|') and '节点编号' in l), -1)
+    header_idx = _header_idx(orig_lines)
     if header_idx < 0:
         raise ValueError(f'原流程表缺少标准表头（须含「节点编号」列的 12 列表头）：{orig_ft}')
     # 表格块 = 表头起**连续**的 | 行；表格之后的全部内容（如「## 列填写规范」整节）原样保留——
@@ -257,6 +262,30 @@ def _split_table_block(orig_lines, orig_text, orig_ft):
     gap = '\n' * (_k + 1) if header_idx > 0 else ''
     tail = '\n' if orig_text.endswith('\n') else ''
     return head, after, gap, tail
+
+
+def _table_frame(orig_lines):
+    """原文的**表头行 / 分隔行** → 能照抄就照抄，否则落 canonical 模板（G42）。
+
+    为什么单列一条：`_rebuild_rows` 无条件按模板重生成这两行（它的入参里没有原文行），
+    于是原文写法不同时（如 `import_table.py` 产出的 `|---|` 无空格形态）"什么都没动"也会
+    冒一条伪 diff——而 diff 正是 `--apply` 该不该落盘的判据（D-12：伪差异会让人学会忽略 diff）。
+
+    "能用"的判据是**逐字可解析且与 `COLUMNS` 同名同数**（间距/对齐随便）：照抄原名行既保住
+    用户排版，又不会把列名写坏（写坏了 H9 会在回写自检那关拦下，但那时已产出一份错表）。
+    """
+    tpl = '| ' + ' | '.join(COLUMNS) + ' |'
+    sep = '| ' + ' | '.join(['---'] * N_COLS) + ' |'
+    i = _header_idx(orig_lines)
+    if i >= 0:
+        cs = [c.strip() for c in split_table_row(orig_lines[i])]
+        if len(cs) == N_COLS and cs == list(COLUMNS):
+            tpl = orig_lines[i]
+        if i + 1 < len(orig_lines) and orig_lines[i + 1].startswith('|'):
+            ss = [c.strip() for c in split_table_row(orig_lines[i + 1])]
+            if len(ss) == N_COLS and all(_is_sep_cell(c) for c in ss):
+                sep = orig_lines[i + 1]
+    return tpl, sep
 
 
 def _rebuild_rows(data, tokens, default, orig_line):
@@ -366,6 +395,9 @@ def write(flow_drawio, orig_ft, out_path):
     orig_line = _orig_line_index(orig_lines)
     head, after, gap, tail = _split_table_block(orig_lines, orig_text, orig_ft)
     rows, body = _rebuild_rows(data, tokens, default, orig_line)
+    # **表头行 / 分隔行以原文为准**（G42）：`_rebuild_rows` 只能按模板生成（它的入参里没有原文行），
+    # 这里就地换回原文那两行——不改任何现有函数的签名（D-53/D-55 铁律），只多一个纯新增的助手。
+    body[0], body[1] = _table_frame(orig_lines)
     kept_after = _keep_after_table(after, rows)
     _emit_table(out_path, head, gap, body, kept_after, tail, nl, enc, rows, default)
     return _verify_written(rows, data, orig_rows)

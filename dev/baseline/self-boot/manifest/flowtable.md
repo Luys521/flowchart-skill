@@ -41,5 +41,5 @@ parent: ../flowtable.md
 | 模块级 | 27 | _manifest_parser | 任务 | — | — | — | 脚本 | selfboot | — | →31 | ★ manifest 的 argparse 定义（build / check 两个子命令）。 · L442 · 函数 |
 | 模块级 | 28 | _run_build | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→03｜3→06｜4→26 | ★ build 子命令：DSL → manifest.json。 · L457 · 函数 · 分支：1→manifest_path_for 2→dsl_fingerprint 3→build 4→summary · ⇢ 依赖 deps.hint |
 | 模块级 | 29 | _run_check | 任务 | — | — | — | 脚本 | selfboot | — | 1→25｜2→26 | ★ check 子命令：manifest.json vs 产物。 · L472 · 函数 · 分支：1→check 2→summary |
-| 模块级 | 30 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→27｜2→28｜3→29 | L486 · 函数 · 分支：1→_manifest_parser 2→_run_build 3→_run_check |
+| 模块级 | 30 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→27｜2→28｜3→29 | L499 · 函数 · 分支：1→_manifest_parser 2→_run_build 3→_run_check |
 | 出口 | 31 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |

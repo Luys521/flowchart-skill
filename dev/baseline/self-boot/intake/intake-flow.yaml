@@ -132,7 +132,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→03｜2→06｜3→07｜4→08
-  desc: L267 · 函数 · 分支：1→duplicate_pairs 2→build_card 3→parse_cards 4→check_cards
+  desc: L272 · 函数 · 分支：1→duplicate_pairs 2→build_card 3→parse_cards 4→check_cards
     · ⇢ 依赖 artifact.beside、cells.dump、cells.todo_from_doc
 - id: '11'
   name: 结束
