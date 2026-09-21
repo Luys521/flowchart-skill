@@ -167,13 +167,20 @@ def run_face(tmp):
     # 少了这一条，G24 那笔账就会以"产物都对"的形态一直挂着。
     TEXT_EXT = ('.md', '.py', '.json', '.yaml', '.yml', '.txt', '.csv', '.tsv',
                 '.html', '.svg', '.drawio', '.xml')
-    SKIP_DIRS = {'.git', 'output', '.accept_tmp', '.verify_tmp', '__pycache__',
-                 'archive', 'old', '.workbuddy'}
+    SKIP_DIRS = {'.git', 'output', '__pycache__', 'archive', 'old', '.workbuddy'}
+    # 临时目录**按前缀跳过**（`--tmp` 可以叫任何名字：`.verify_tmp_c` / `.verify_tmp_dbg` …）——
+    # 第一版写的是精确名 `.verify_tmp`，于是自己调试用的 `.verify_tmp_dbg/` 当场把它判红；
+    # 那些目录里的 `flowtable.md` 是夹具写的（`write_text` 不带 `newline=` ⇒ Windows 翻成 CRLF），
+    # 判它没有意义：**这一条管的是进仓库的一手文件**，不是运行现场。
+    def _skipped(rel):
+        return (set(rel.parts) & SKIP_DIRS
+                or any(x.startswith(('.verify_tmp', '.accept_tmp')) for x in rel.parts))
+
     cr_files = []
     for p in sorted(SKILL.rglob('*')):
         if not p.is_file() or p.suffix.lower() not in TEXT_EXT:
             continue
-        if set(p.relative_to(SKILL).parts) & SKIP_DIRS:
+        if _skipped(p.relative_to(SKILL)):
             continue
         if b'\r\n' in p.read_bytes():
             cr_files.append(p.relative_to(SKILL).as_posix())

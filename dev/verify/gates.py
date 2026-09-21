@@ -1165,7 +1165,8 @@ def _wb_project(tmp, tag):
         row('一', '01', '受理', '开始', '甲方', '受理员', '—', '→02'),
         row('一', '02', '齐全？', '判断', '甲方', '受理员', '—', '通过→03 ｜ 不通过→回 01 修正'),
         row('二', '03', '核验', '任务', '乙方', '工程师', '3个工作日', '→04'),
-        row('三', '04', '归档', '结束', '双方', '双方共责', '—', '—')]), encoding='utf-8')
+        row('三', '04', '归档', '结束', '双方', '双方共责', '—', '—')]), encoding='utf-8',
+        newline='\n')          # 夹具表也钉 LF（D-116 那条"写的那一侧"对夹具同样成立）
     rc, out = run('build.py', ft)
     return d, ft, rc, out
 
@@ -1248,11 +1249,55 @@ def _check_writeback_next_conflict(c, tmp):
         row('一', '01', '受理', '开始', '甲方', '受理员', '—', '→02'),
         row('一', '02', '齐全？', '判断', '甲方', '受理员', '—', '通过→03 ｜ 不通过→回 01 修正'),
         row('二', '03', '核验', '任务', '乙方', '工程师', '3个工作日', '→04'),
-        row('三', '04', '归档', '结束', '双方', '双方共责', '—', '—')]), encoding='utf-8')
+        row('三', '04', '归档', '结束', '双方', '双方共责', '—', '—')]), encoding='utf-8',
+        newline='\n')          # 夹具表也钉 LF（D-116 那条"写的那一侧"对夹具同样成立）
     _rc2, out2 = run('sync.py', prod(a2, 'drawio'), ft2)
     c.check('走向冲突' not in out2, '表与图一致时不误报冲突',
             next((l.strip() for l in out2.splitlines() if '走向冲突' in l), '无告警 ✓'))
     assert orig_next.strip()          # 夹具自检：上面确实取到了"下个节点"列
+
+
+def _drop_edge(drawio, src, tgt):
+    """从 drawio 里摘掉 `source=src, target=tgt` 的那条边 → 摘掉几条（0 或 1）。
+
+    **按 `source`/`target` 属性定位，不按 `id`**：`xml_reader.read` 报的边是
+    `{'from', 'to', 'label', 'dashed', 'pts', …}`，**没有 `id` 这个键**（第一版就是照 `id` 找、
+    于是恒返回 0）。用两个前瞻把属性顺序也放掉。在**原文**上抠掉那个 `mxCell` 块——
+    不重新序列化整份 XML（那会把没考的东西也一起改了）。
+    """
+    import xml_reader
+    data = xml_reader.read(drawio.read_text(encoding='utf-8-sig'))
+    if not any(str(e.get('from')) == src and str(e.get('to')) == tgt
+               for e in data.get('edges') or []):
+        return 0
+    t = drawio.read_text(encoding='utf-8-sig')
+    m = re.search(r'<mxCell\b(?=[^>]*\bsource="%s")(?=[^>]*\btarget="%s")'
+                  r'[^>]*(?:/>|>.*?</mxCell>)' % (re.escape(src), re.escape(tgt)), t, re.S)
+    if not m:
+        return 0
+    drawio.write_text(t[:m.start()] + t[m.end():], encoding='utf-8', newline='\n')
+    return 1
+
+
+def _check_writeback_selfcheck(c, tmp):
+    c.section('回写自检不过 ⇒ 不许覆盖《流程表》（D-84①；G10 补的那一支）')
+    # 为什么值得一条：`sync --apply` 是**唯一会不可逆改写《流程表》**的地方，而面② 现有的守卫
+    # （`_check_apply_guard`）只覆盖**走向冲突**那一支——判据是"表与图的说法不一致"。**另一支一直
+    # 没人跑**：图本身就把表改成了一份**过不了 H1–H8** 的东西（这里摘掉 `02→03` 那条边 ⇒ 断链 +
+    # 02 没了出口）。那种回写结果 `writeback._verify_written` 已经报了 ✗、`sync` 也写了
+    # "这份预览不能当成品"——但**没有人验过它真的拦住了**。G10 记的就是这一笔。
+    d, ft, rc0, out0 = _wb_project(tmp, 'g10')
+    if not c.check(rc0 == 0, '前置：自造夹具 build 通过', out0.strip()[-90:]):
+        return
+    before = ft.read_bytes()
+    dw = prod(d, 'drawio')
+    n = _drop_edge(dw, '02', '03')
+    c.check(n == 1, '前置：drawio 里找到并摘掉 1 条边（02→03）', f'摘掉 {n} 条')
+    rc, out = run('sync.py', dw, ft, '--apply')
+    # 判据打在那两行**原文**上（"自检""不能当成品"是注释里的词，运行时印的是这两句）
+    c.check(rc == 1 and '未过结构校验' in out and '本次不覆盖' in out,
+            '回写自检不过 ⇒ 退 1 并明说"本次不覆盖《流程表》"', out.strip()[-150:])
+    c.check(ft.read_bytes() == before, '被拦下时《流程表》**一字节未动**', '')
 
 
 def _check_apply_guard(c, tmp):
@@ -2747,7 +2792,8 @@ def _check_drawio_weight(c, tmp):
         row('一', '01', '收到申请', '开始', '甲方', '受理员', '—', '→02', '★'),
         row('一', '02', '资料齐全？', '判断', '甲方', '受理员', '—', '齐全→03 ｜ 不齐→回 01', '★'),
         row('二', '03', '现场核验', '任务', '乙方', '工程师', '3个工作日', '→04'),
-        row('三', '04', '归档', '结束', '双方', '双方共责', '—', '—')]), encoding='utf-8')
+        row('三', '04', '归档', '结束', '双方', '双方共责', '—', '—')]), encoding='utf-8',
+        newline='\n')          # 夹具表也钉 LF（D-116 那条"写的那一侧"对夹具同样成立）
     orig = ft.read_text(encoding='utf-8')
     rc0, out0 = run('build.py', ft)
     c.check(rc0 == 0, '前置：主表 build 通过', out0.strip()[-90:])
@@ -2858,6 +2904,7 @@ def run_face(tmp):
     _check_writeback_semantics(c, tmp)
     _check_writeback_next_conflict(c, tmp)
     _check_apply_guard(c, tmp)
+    _check_writeback_selfcheck(c, tmp)
     _check_html_robustness(c, tmp)
     _check_writeback_labels(c, tmp)
     _check_writeback_pseudo_diff(c, tmp)

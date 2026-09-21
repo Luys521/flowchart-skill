@@ -325,10 +325,11 @@ def gate_aesthetic(g, tables_root):
       · 主轴偏心 ≤0.15 —— **达标**（可配平的表实测 0.00）；列数 <3 的表没有两侧可分，"臂"退化，
         工具自己标「单臂」且不进均值（拿它当失败是误伤）。
       · 通道半径 ≤0.5 —— **达标**（实测 0.00~0.17）。
-      · 绕行均值 ≤45%、最坏 ≤60% —— 这是**当前收口值**，不是目标：`visual-spec` §0.1 写的目标是
-        均值 ≤35%，而自举那批单列函数流现在还压在 43%——那批表几十条长跳的竖直跨度互相重叠，
-        谁也借不了谁的竖道，束宽是"条数 × 束距"的硬账（两次"把档分到两侧"的尝试都更差，见 D-92）。
-        要再往下走，得让**跨度**变短（把长跳拆到两列），那是生成器的事。门先把现状钉住，**不许变差**。
+      · 绕行均值 ≤45%、最坏 ≤60% —— 这是**收口值**（D-92 定的），`visual-spec` §0.1 与它逐值一致
+        （当前实测 **41%**）。**这四个数现在只有一个家**：`aesthetic.LIMITS`——本函数从它印的汇总行里
+        读，不再写死在这里；三处同值由面① 一条断言守着（2026-09-19，D-132）。原先 §0.1 挂着
+        "均值 ≤35%"而这里执行 45%，**一条不执行的阈值就是一句空话**；35% 记为已知的机会
+        （要动生成器把长跳拆到两列），不是欠账。门判的始终是"**不许变差**"。
     """
     try:
         r = run([PY, TOOLS / 'aesthetic.py', tables_root])
@@ -346,15 +347,26 @@ def gate_aesthetic(g, tables_root):
     det = float(m.get('绕行', '0'))
     rad = float(m.get('通道半径', '0'))
     worst = max((float(x) for x in re.findall(r'平均绕行\s*(\d+)%', out)), default=0)
+    # **阈值不写死在这里**（2026-09-19，D-132）：从它印的汇总行里读——这个文件的纪律是
+    # "判据全部从被跑命令的输出里读"，而阈值原先在本函数里另有四个字面量，与 `visual-spec` §0.1
+    # 的表**当时并不一致**（规范写"绕行均值 ≤35%"，这里执行 45%）。唯一出处是 `aesthetic.LIMITS`。
+    lim = dict(re.findall(r'阈值\s*偏心<=([\d.]+)\s*·\s*半径<=([\d.]+)\s*·\s*'
+                          r'绕行<=(\d+)%\s*/\s*最坏<=(\d+)%', tail)[0]) if re.search(
+        r'阈值\s*偏心<=', tail) else None
+    if lim is None:
+        return g.broken('aesthetic.py 的汇总行里找不到阈值（它该印"阈值 偏心<=… · 半径<=… · '
+                        '绕行<=… / 最坏<=…"）')
+    off_lim, rad_lim, det_lim, worst_lim = (float(lim['偏心']), float(lim['半径']),
+                                           float(lim['绕行']), float(lim['最坏']))
     bad = []
-    if off > 0.15:
-        bad.append(f'主轴偏心 {off:.2f} > 0.15')
-    if rad > 0.5:
-        bad.append(f'通道半径 {rad:.2f} > 0.5')
-    if det > 45:
-        bad.append(f'绕行均值 {det:.0f}% > 45%')
-    if worst > 60:
-        bad.append(f'绕行最坏 {worst:.0f}% > 60%')
+    if off > off_lim:
+        bad.append(f'主轴偏心 {off:.2f} > {off_lim}')
+    if rad > rad_lim:
+        bad.append(f'通道半径 {rad:.2f} > {rad_lim}')
+    if det > det_lim:
+        bad.append(f'绕行均值 {det:.0f}% > {det_lim:.0f}%')
+    if worst > worst_lim:
+        bad.append(f'绕行最坏 {worst:.0f}% > {worst_lim:.0f}%')
     if bad:
         g.failed('；'.join(bad))
     else:

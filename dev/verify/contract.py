@@ -479,6 +479,33 @@ def run_face(tmp=None):
     c.check(not drift, '代码里的字典兜底常量与 dictionary.yaml 同值（兜底不许自成一套数）',
             '；'.join(drift[:3]))
 
+    c.section('审美三条律的阈值：三个地方逐值一致（唯一出处是 aesthetic.LIMITS）')
+    # 为什么值得一条（2026-09-19，D-132）：这一族阈值原先有**两个家**——`accept.py` 的
+    # `gate_aesthetic` 把 0.15 / 0.5 / 45 / 60 写死在自己的源码里，`visual-spec` §0.1 的表另写一套
+    # （"绕行均值 ≤35% · 最坏 ≤50%"）。**两处当时并不一致**，于是规范里挂着一个没人执行的阈值
+    # ——那正是"声明不许比射程比宽"要拦的东西，而它躲过了所有断言（面② 核参数表与 dictionary.yaml，
+    # 没人核这两个）。现在：唯一出处 `dev/tools/aesthetic.py` 的 `LIMITS`，门从它的**输出**里读，
+    # 规范的表逐值对上——**三处同值**由这里守着。
+    al = (TOOLS / 'aesthetic.py').read_text(encoding='utf-8')
+    lim = {}
+    for node in ast.parse(al).body:
+        if (isinstance(node, ast.Assign) and isinstance(node.value, ast.Dict)
+                and isinstance(node.targets[0], ast.Name) and node.targets[0].id == 'LIMITS'):
+            for k, v in zip(node.value.keys, node.value.values):
+                lim[k.value] = v.value
+    c.check(set(lim) == {'主轴偏心', '通道半径', '绕行均值', '绕行最坏'},
+            'aesthetic.LIMITS 是完整的一份（四个值）', f'{lim}')
+    vs = (SKILL / 'references' / 'visual-spec.md').read_text(encoding='utf-8')
+    row = next((l for l in vs.splitlines() if l.startswith('| **就近**')), '')
+    want = (f"均值 ≤ {lim.get('绕行均值')}%", f"最坏 ≤ {lim.get('绕行最坏')}%")
+    c.check(all(w in row for w in want), 'visual-spec §0.1 的绕行阈值逐值等于 aesthetic.LIMITS',
+            f'表里 {[w for w in want if w not in row]} 找不到')
+    # 偏心 / 通道半径那两条阈值也写在 §0.1 的表里（**通道半径那一行是 2026-09-19 补的**：
+    # 它的阈值原先只活在 `gate_aesthetic` 的文档串里，而 §0.1 那张表压根没有这一行 ——
+    # 四个阈值散在三处，正是这一条判据要收的形态）
+    c.check(f"≤ {lim.get('主轴偏心')}" in vs and f"≤ {lim.get('通道半径')}" in vs,
+            'visual-spec §0.1 的偏心 / 通道半径阈值逐值等于 aesthetic.LIMITS', '')
+
     c.section('门禁编号与检查项数')
     # H 编号是给用户看的规则主题，它的家是 flowtable-spec 第 3 节的三张表。
     # 以前这条断言盯着 table_to_dsl.py 的 docstring，等于**逼代码抄一份规则表**——

@@ -10,8 +10,9 @@
 
 **典型命令**：`python dev/tools/aesthetic.py output/self-boot dev/baseline/workflow`
 **退出码**：0 = 打印完（**本工具不裁决**，阈值见 `visual-spec` §0.1 的表）。
-**为什么还不进验收**：阈值要先在语料上稳定一段时间（当前自举 42% / workflow 7%，离"均值 ≤35%"还差一口气，
-而那口气要改布局引擎的「臂」）；一个会红的门在收口前只会教人绕过它。缺口登记在 `dev/coding-spec.md` §3。
+**它已在验收里**（门⑨，2026-09-17 起）：判的是"读数**不许变差**"（偏心 ≤0.15 · 通道半径 ≤0.5 ·
+绕行均值 ≤45% / 最坏 ≤60%）。**那三个阈值与 `visual-spec` §0.1 的表逐值一致**——2026-09-19（D-132）
+对齐过一次：§0.1 原先写着"绕行均值 ≤35%"，而门按 45% 执行，**一条不执行的阈值就是一句空话**。
 """
 import sys
 from pathlib import Path
@@ -22,6 +23,11 @@ from _paths import SCRIPTS  # noqa: E402
 
 sys.path.insert(0, str(SCRIPTS))
 from engine import load  # noqa: E402
+
+#: 三条审美律的**阈值（唯一出处）**：门⑨ 与这里逐值一致，`visual-spec` §0.1 的表也逐值对上——
+#: 三处同值由**面① 一条断言**守着（2026-09-19，D-132）。原先门⑨ 把 0.15/0.5/45/60 写死在自己的
+#: 源码里、规范另写一套（"绕行均值 ≤35%"），于是"两处同值"只是一句承诺，而它们**当时并不一致**。
+LIMITS = {'主轴偏心': 0.15, '通道半径': 0.5, '绕行均值': 45, '绕行最坏': 60}
 
 
 def _seglen(a, b):
@@ -96,7 +102,8 @@ def main():
     det = sum(m["det"] for m in tot) / n
     rad = sum(m["rad"] for m in tot) / n
     print(f"\n—— {n} 张表（可配平 {len(arm)} 张）：平均主轴偏心 {off:.2f} · 平均绕行 {det * 100:.0f}% · "
-          f"平均通道半径 {rad:.2f}（阈值见 visual-spec §0.1）")
+          f"平均通道半径 {rad:.2f} · 阈值 偏心<={LIMITS['主轴偏心']} · 半径<={LIMITS['通道半径']} · "
+          f"绕行<={LIMITS['绕行均值']}% / 最坏<={LIMITS['绕行最坏']}%")
     return 0
 
 
