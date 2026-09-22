@@ -65,7 +65,7 @@ class Labeler(RectCache):
         为什么是它：平行通道之间的**设计最小间距**就是这个数。横排徽章比它还宽，就会压到相邻
         通道的线——那正是"阻挡线条"的判据；比它窄就谁也压不着。数值只有一个家（字典）。
         """
-        return snap((self.cfg.get('layout') or {}).get('right_channel_step', 50), self.grid.lattice)
+        return snap((self.cfg.get('layout') or {}).get('right_channel_step', 40), self.grid.lattice)
 
     def _rows_for(self, text, seg):
         """这条边的标签排成哪几行：默认一行；**竖段上**且一行宽度超档距 ⇒ 折两排。

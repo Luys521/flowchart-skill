@@ -9,7 +9,7 @@ layout:
   col_x:
   - 400
   width: 680
-  origin_x: -140
+  origin_x: -120
 nodes:
 - id: '01'
   name: 开始

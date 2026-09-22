@@ -1,187 +1,187 @@
 <mxfile host="app.diagrams.net" agent="flowchart-skill/render_drawio.py" version="24.7.17">
   <diagram id="flow-1" name="流程图">
-    <mxGraphModel dx="1422" dy="798" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="760" pageHeight="3610" math="0" shadow="0">
+    <mxGraphModel dx="1422" dy="798" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="700" pageHeight="3610" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
         <mxCell id="title" value="flowchart-skill 自举：一条流程从材料到交付&lt;br&gt;&lt;span style=&quot;font-size:11px;font-weight:400&quot;&gt;&lt;span style=&quot;background:#dae8fc;border:1px solid #6c8ebf&quot;&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/span&gt; 用户执行　&lt;span style=&quot;background:#d5e8d4;border:1px solid #82b366&quot;&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/span&gt; AI执行　&lt;span style=&quot;background:#ffe6cc;border:1px solid #d79b00&quot;&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/span&gt; 脚本执行　&lt;span style=&quot;background:#fff2cc;border:1px solid #bf9000&quot;&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/span&gt; 脚本 + AI执行　&lt;span style=&quot;background:#e1d5e7;border:1px solid #9673a6&quot;&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/span&gt; AI ↔ 用户执行　&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontFamily=Microsoft YaHei;" vertex="1" parent="1">
-          <mxGeometry x="70" y="8" width="600" height="64" as="geometry" />
+          <mxGeometry x="40" y="8" width="600" height="64" as="geometry" />
         </mxCell>
         <object id="01" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;收到材料&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;用户&lt;/div&gt;">
           <mxCell style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
-            <mxGeometry x="300" y="160" width="160" height="60" as="geometry" />
+            <mxGeometry x="280" y="160" width="160" height="60" as="geometry" />
           </mxCell>
         </object>
         <object id="01a" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;建目录&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;init.py&lt;/div&gt;&lt;div style=&quot;color:#b45309;font-size:10px;font-weight:bold;&quot;&gt;1-2 秒&lt;/div&gt;">
           <mxCell style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;dashed=1;dashPattern=6 4;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d97706;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
-            <mxGeometry x="300" y="260" width="160" height="60" as="geometry" />
+            <mxGeometry x="280" y="260" width="160" height="60" as="geometry" />
           </mxCell>
         </object>
         <object id="01b" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;手上是已有图吗？&lt;/div&gt;">
           <mxCell style="rhombus;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;flowchartSkillNative=1;" vertex="1" parent="1">
-            <mxGeometry x="300" y="350" width="160" height="80" as="geometry" />
+            <mxGeometry x="280" y="350" width="160" height="80" as="geometry" />
           </mxCell>
         </object>
         <object id="01c" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;读一张已有的图&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;xml_reader.py · import_table.py&lt;/div&gt;&lt;div style=&quot;color:#b45309;font-size:10px;font-weight:bold;&quot;&gt;1-5 秒&lt;/div&gt;">
           <mxCell style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#fff2cc;strokeColor=#bf9000;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
-            <mxGeometry x="300" y="500" width="160" height="60" as="geometry" />
+            <mxGeometry x="280" y="500" width="160" height="60" as="geometry" />
           </mxCell>
         </object>
         <object id="02" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;读回现状对齐口径&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;AI&lt;/div&gt;" link="data:pageId=sub-9955cf7745d8;⊞ 下钻">
           <mxCell style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
-            <mxGeometry x="300" y="600" width="160" height="60" as="geometry" />
+            <mxGeometry x="280" y="600" width="160" height="60" as="geometry" />
           </mxCell>
         </object>
         <mxCell id="02-sub" value="" style="rounded=1;arcSize=6;fillColor=none;strokeColor=#82b366;strokeWidth=1;opacity=55;flowchartSkillSub=1;" vertex="1" parent="1">
-          <mxGeometry x="302" y="602" width="156" height="56" as="geometry" />
+          <mxGeometry x="282" y="602" width="156" height="56" as="geometry" />
         </mxCell>
         <object id="03" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;探测分档&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;probe.py&lt;/div&gt;&lt;div style=&quot;color:#b45309;font-size:10px;font-weight:bold;&quot;&gt;1-2 秒&lt;/div&gt;">
           <mxCell style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
-            <mxGeometry x="300" y="700" width="160" height="60" as="geometry" />
+            <mxGeometry x="280" y="700" width="160" height="60" as="geometry" />
           </mxCell>
         </object>
         <object id="04" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;侦查：排序与假设&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;recon.py&lt;/div&gt;&lt;div style=&quot;color:#b45309;font-size:10px;font-weight:bold;&quot;&gt;2-10 秒&lt;/div&gt;" link="data:pageId=sub-72a2bec2ab90;⊞ 下钻">
           <mxCell style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
-            <mxGeometry x="300" y="800" width="160" height="60" as="geometry" />
+            <mxGeometry x="280" y="800" width="160" height="60" as="geometry" />
           </mxCell>
         </object>
         <mxCell id="04-sub" value="" style="rounded=1;arcSize=6;fillColor=none;strokeColor=#d79b00;strokeWidth=1;opacity=55;flowchartSkillSub=1;" vertex="1" parent="1">
-          <mxGeometry x="302" y="802" width="156" height="56" as="geometry" />
+          <mxGeometry x="282" y="802" width="156" height="56" as="geometry" />
         </mxCell>
         <object id="05" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;解析入账&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;parse.py → ledger.py&lt;/div&gt;&lt;div style=&quot;color:#b45309;font-size:10px;font-weight:bold;&quot;&gt;5-60 秒&lt;/div&gt;">
           <mxCell style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
-            <mxGeometry x="300" y="900" width="160" height="60" as="geometry" />
+            <mxGeometry x="280" y="900" width="160" height="60" as="geometry" />
           </mxCell>
         </object>
         <object id="06" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;定范围：主体 / 目的 / 材料根&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;AI 问、用户答&lt;/div&gt;">
           <mxCell style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;dashed=1;dashPattern=2 3;verticalAlign=middle;fillColor=#e1d5e7;strokeColor=#dc2626;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
-            <mxGeometry x="300" y="1000" width="160" height="60" as="geometry" />
+            <mxGeometry x="280" y="1000" width="160" height="60" as="geometry" />
           </mxCell>
         </object>
         <object id="07" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;要分堆吗？&lt;/div&gt;">
           <mxCell style="rhombus;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;dashed=1;dashPattern=6 4;verticalAlign=middle;fillColor=#d5e8d4;strokeColor=#d97706;fontSize=11;flowchartSkillNative=1;" vertex="1" parent="1">
-            <mxGeometry x="300" y="1090" width="160" height="80" as="geometry" />
+            <mxGeometry x="280" y="1090" width="160" height="80" as="geometry" />
           </mxCell>
         </object>
         <object id="08" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;清点成卡片&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;AI（脚本 build/check）&lt;/div&gt;">
           <mxCell style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
-            <mxGeometry x="300" y="1240" width="160" height="60" as="geometry" />
+            <mxGeometry x="280" y="1240" width="160" height="60" as="geometry" />
           </mxCell>
         </object>
         <object id="09" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;拆解成计划&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;AI（脚本 build/check）&lt;/div&gt;">
           <mxCell style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
-            <mxGeometry x="300" y="1340" width="160" height="60" as="geometry" />
+            <mxGeometry x="280" y="1340" width="160" height="60" as="geometry" />
           </mxCell>
         </object>
         <object id="10" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;计划要改吗？&lt;/div&gt;">
           <mxCell style="rhombus;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;flowchartSkillNative=1;" vertex="1" parent="1">
-            <mxGeometry x="300" y="1430" width="160" height="80" as="geometry" />
+            <mxGeometry x="280" y="1430" width="160" height="80" as="geometry" />
           </mxCell>
         </object>
         <object id="10b" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;这次有流程吗？&lt;/div&gt;">
           <mxCell style="rhombus;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;flowchartSkillNative=1;" vertex="1" parent="1">
-            <mxGeometry x="300" y="1570" width="160" height="80" as="geometry" />
+            <mxGeometry x="280" y="1570" width="160" height="80" as="geometry" />
           </mxCell>
         </object>
         <object id="11" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;落流程表&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;AI&lt;/div&gt;" link="data:pageId=sub-22801592bfc6;⊞ 下钻">
           <mxCell style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
-            <mxGeometry x="300" y="1720" width="160" height="60" as="geometry" />
+            <mxGeometry x="280" y="1720" width="160" height="60" as="geometry" />
           </mxCell>
         </object>
         <mxCell id="11-sub" value="" style="rounded=1;arcSize=6;fillColor=none;strokeColor=#82b366;strokeWidth=1;opacity=55;flowchartSkillSub=1;" vertex="1" parent="1">
-          <mxGeometry x="302" y="1722" width="156" height="56" as="geometry" />
+          <mxGeometry x="282" y="1722" width="156" height="56" as="geometry" />
         </mxCell>
         <object id="12" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;结构校验？&lt;/div&gt;" link="data:pageId=sub-039c44c48dbb;⊞ 下钻">
           <mxCell style="rhombus;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;flowchartSkillNative=1;" vertex="1" parent="1">
-            <mxGeometry x="300" y="1810" width="160" height="80" as="geometry" />
+            <mxGeometry x="280" y="1810" width="160" height="80" as="geometry" />
           </mxCell>
         </object>
         <mxCell id="12-sub" value="" style="rhombus;fillColor=none;strokeColor=#d79b00;strokeWidth=1;opacity=55;flowchartSkillSub=1;" vertex="1" parent="1">
-          <mxGeometry x="302" y="1812" width="156" height="76" as="geometry" />
+          <mxGeometry x="282" y="1812" width="156" height="76" as="geometry" />
         </mxCell>
         <object id="13" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;逐行回看内容出处&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;AI&lt;/div&gt;" link="data:pageId=sub-fa5bab946885;⊞ 下钻">
           <mxCell style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
-            <mxGeometry x="300" y="1960" width="160" height="60" as="geometry" />
+            <mxGeometry x="280" y="1960" width="160" height="60" as="geometry" />
           </mxCell>
         </object>
         <mxCell id="13-sub" value="" style="rounded=1;arcSize=6;fillColor=none;strokeColor=#82b366;strokeWidth=1;opacity=55;flowchartSkillSub=1;" vertex="1" parent="1">
-          <mxGeometry x="302" y="1962" width="156" height="56" as="geometry" />
+          <mxGeometry x="282" y="1962" width="156" height="56" as="geometry" />
         </mxCell>
         <object id="14" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;有待裁决项？&lt;/div&gt;">
           <mxCell style="rhombus;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;flowchartSkillNative=1;" vertex="1" parent="1">
-            <mxGeometry x="300" y="2050" width="160" height="80" as="geometry" />
+            <mxGeometry x="280" y="2050" width="160" height="80" as="geometry" />
           </mxCell>
         </object>
         <object id="15" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;问并收答复&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;用户&lt;/div&gt;">
           <mxCell style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
-            <mxGeometry x="300" y="2200" width="160" height="60" as="geometry" />
+            <mxGeometry x="280" y="2200" width="160" height="60" as="geometry" />
           </mxCell>
         </object>
         <object id="16" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;渲染三份视图&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;build.py&lt;/div&gt;&lt;div style=&quot;color:#b45309;font-size:10px;font-weight:bold;&quot;&gt;5-30 秒&lt;/div&gt;" link="data:pageId=sub-a57cdf8c9149;⊞ 下钻">
           <mxCell style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
-            <mxGeometry x="300" y="2300" width="160" height="60" as="geometry" />
+            <mxGeometry x="280" y="2300" width="160" height="60" as="geometry" />
           </mxCell>
         </object>
         <mxCell id="16-sub" value="" style="rounded=1;arcSize=6;fillColor=none;strokeColor=#d79b00;strokeWidth=1;opacity=55;flowchartSkillSub=1;" vertex="1" parent="1">
-          <mxGeometry x="302" y="2302" width="156" height="56" as="geometry" />
+          <mxGeometry x="282" y="2302" width="156" height="56" as="geometry" />
         </mxCell>
         <object id="17" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;视觉自检通过？&lt;/div&gt;" link="data:pageId=sub-375d6e227ffd;⊞ 下钻">
           <mxCell style="rhombus;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;flowchartSkillNative=1;" vertex="1" parent="1">
-            <mxGeometry x="300" y="2390" width="160" height="80" as="geometry" />
+            <mxGeometry x="280" y="2390" width="160" height="80" as="geometry" />
           </mxCell>
         </object>
         <mxCell id="17-sub" value="" style="rhombus;fillColor=none;strokeColor=#82b366;strokeWidth=1;opacity=55;flowchartSkillSub=1;" vertex="1" parent="1">
-          <mxGeometry x="302" y="2392" width="156" height="76" as="geometry" />
+          <mxGeometry x="282" y="2392" width="156" height="76" as="geometry" />
         </mxCell>
         <object id="18" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;表被直改过吗？&lt;/div&gt;">
           <mxCell style="rhombus;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;flowchartSkillNative=1;" vertex="1" parent="1">
-            <mxGeometry x="300" y="2530" width="160" height="80" as="geometry" />
+            <mxGeometry x="280" y="2530" width="160" height="80" as="geometry" />
           </mxCell>
         </object>
         <object id="19" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;读回并分拣改动&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;sync.py&lt;/div&gt;&lt;div style=&quot;color:#b45309;font-size:10px;font-weight:bold;&quot;&gt;2-10 秒&lt;/div&gt;" link="data:pageId=sub-c2e1381e0696;⊞ 下钻">
           <mxCell style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
-            <mxGeometry x="300" y="2680" width="160" height="60" as="geometry" />
+            <mxGeometry x="280" y="2680" width="160" height="60" as="geometry" />
           </mxCell>
         </object>
         <mxCell id="19-sub" value="" style="rounded=1;arcSize=6;fillColor=none;strokeColor=#d79b00;strokeWidth=1;opacity=55;flowchartSkillSub=1;" vertex="1" parent="1">
-          <mxGeometry x="302" y="2682" width="156" height="56" as="geometry" />
+          <mxGeometry x="282" y="2682" width="156" height="56" as="geometry" />
         </mxCell>
         <object id="20" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;对账：漂移&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;drift.py&lt;/div&gt;&lt;div style=&quot;color:#b45309;font-size:10px;font-weight:bold;&quot;&gt;2-10 秒&lt;/div&gt;" link="data:pageId=sub-b1e71369350b;⊞ 下钻">
           <mxCell style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
-            <mxGeometry x="300" y="2820" width="160" height="60" as="geometry" />
+            <mxGeometry x="280" y="2820" width="160" height="60" as="geometry" />
           </mxCell>
         </object>
         <mxCell id="20-sub" value="" style="rounded=1;arcSize=6;fillColor=none;strokeColor=#d79b00;strokeWidth=1;opacity=55;flowchartSkillSub=1;" vertex="1" parent="1">
-          <mxGeometry x="302" y="2822" width="156" height="56" as="geometry" />
+          <mxGeometry x="282" y="2822" width="156" height="56" as="geometry" />
         </mxCell>
         <object id="21" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;收敛了吗？&lt;/div&gt;">
           <mxCell style="rhombus;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;flowchartSkillNative=1;" vertex="1" parent="1">
-            <mxGeometry x="300" y="2910" width="160" height="80" as="geometry" />
+            <mxGeometry x="280" y="2910" width="160" height="80" as="geometry" />
           </mxCell>
         </object>
         <object id="22" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;缺口在哪一头？&lt;/div&gt;">
           <mxCell style="rhombus;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;flowchartSkillNative=1;" vertex="1" parent="1">
-            <mxGeometry x="300" y="3050" width="160" height="80" as="geometry" />
+            <mxGeometry x="280" y="3050" width="160" height="80" as="geometry" />
           </mxCell>
         </object>
         <object id="23" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;攻坚：点名取子集再读&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;query.py · render_pages.py&lt;/div&gt;&lt;div style=&quot;color:#b45309;font-size:10px;font-weight:bold;&quot;&gt;1-5 秒&lt;/div&gt;">
           <mxCell style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
-            <mxGeometry x="300" y="3200" width="160" height="60" as="geometry" />
+            <mxGeometry x="280" y="3200" width="160" height="60" as="geometry" />
           </mxCell>
         </object>
         <object id="24" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;交付&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;用户&lt;/div&gt;">
           <mxCell style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
-            <mxGeometry x="300" y="3300" width="160" height="60" as="geometry" />
+            <mxGeometry x="280" y="3300" width="160" height="60" as="geometry" />
           </mxCell>
         </object>
         <object id="25" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;停下报出（仪器故障）&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;出错的那个脚本&lt;/div&gt;">
           <mxCell style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
-            <mxGeometry x="300" y="3400" width="160" height="60" as="geometry" />
+            <mxGeometry x="280" y="3400" width="160" height="60" as="geometry" />
           </mxCell>
         </object>
         <object id="26" label="&lt;div style=&quot;font-weight:bold;&quot;&gt;本次不出图&lt;/div&gt;&lt;div style=&quot;color:#555555;font-size:10px;&quot;&gt;AI&lt;/div&gt;">
           <mxCell style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;strokeWidth=2;fontFamily=Microsoft YaHei;verticalAlign=middle;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;flowchartSkillNative=1;" vertex="1" parent="1">
-            <mxGeometry x="300" y="3500" width="160" height="60" as="geometry" />
+            <mxGeometry x="280" y="3500" width="160" height="60" as="geometry" />
           </mxCell>
         </object>
         <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;" edge="1" parent="1" source="01" target="01a">
@@ -196,16 +196,16 @@
         <mxCell id="e4" value="否" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=1.0;entryY=0.5;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;" edge="1" parent="1" source="01b" target="02">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="500" y="390" />
-              <mxPoint x="500" y="630" />
+              <mxPoint x="480" y="390" />
+              <mxPoint x="480" y="630" />
             </Array>
           </mxGeometry>
         </mxCell>
         <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.0;exitY=0.5;entryX=0.0;entryY=0.5;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;" edge="1" parent="1" source="01c" target="06">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="260" y="530" />
-              <mxPoint x="260" y="1030" />
+              <mxPoint x="240" y="530" />
+              <mxPoint x="240" y="1030" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -230,8 +230,8 @@
         <mxCell id="e12" value="否" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=1.0;entryY=0.1667;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;" edge="1" parent="1" source="07" target="11">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="500" y="1130" />
-              <mxPoint x="500" y="1730" />
+              <mxPoint x="480" y="1130" />
+              <mxPoint x="480" y="1730" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -244,8 +244,8 @@
         <mxCell id="e15" value="改" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.0;exitY=0.5;entryX=0.0;entryY=0.5;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#adb5bd;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#adb5bd;dashed=1;" edge="1" parent="1" source="10" target="09">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="260" y="1470" />
-              <mxPoint x="260" y="1370" />
+              <mxPoint x="240" y="1470" />
+              <mxPoint x="240" y="1370" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -258,8 +258,8 @@
         <mxCell id="e18" value="没有" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.0;exitY=0.5;entryX=0.0;entryY=0.5;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;" edge="1" parent="1" source="10b" target="26">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="60" y="1610" />
-              <mxPoint x="60" y="3530" />
+              <mxPoint x="80" y="1610" />
+              <mxPoint x="80" y="3530" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -272,16 +272,16 @@
         <mxCell id="e21" value="不通&lt;br&gt;过" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.0;exitY=0.5;entryX=0.0;entryY=0.8333;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#adb5bd;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#adb5bd;dashed=1;" edge="1" parent="1" source="12" target="11">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="260" y="1850" />
-              <mxPoint x="260" y="1770" />
+              <mxPoint x="240" y="1850" />
+              <mxPoint x="240" y="1770" />
             </Array>
           </mxGeometry>
         </mxCell>
         <mxCell id="e22" value="仪器&lt;br&gt;故障" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=1.0;entryY=0.5;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;jumpStyle=gap;jumpSize=20;" edge="1" parent="1" source="12" target="25">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="600" y="1850" />
-              <mxPoint x="600" y="3430" />
+              <mxPoint x="560" y="1850" />
+              <mxPoint x="560" y="3430" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -294,16 +294,16 @@
         <mxCell id="e25" value="没有" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=1.0;entryY=0.5;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;jumpStyle=gap;jumpSize=20;" edge="1" parent="1" source="14" target="16">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="500" y="2090" />
-              <mxPoint x="500" y="2330" />
+              <mxPoint x="480" y="2090" />
+              <mxPoint x="480" y="2330" />
             </Array>
           </mxGeometry>
         </mxCell>
         <mxCell id="e26" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=1.0;entryY=0.5;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#adb5bd;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#adb5bd;dashed=1;jumpStyle=gap;jumpSize=20;" edge="1" parent="1" source="15" target="01">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="650" y="2230" />
-              <mxPoint x="650" y="190" />
+              <mxPoint x="600" y="2230" />
+              <mxPoint x="600" y="190" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -316,16 +316,16 @@
         <mxCell id="e29" value="有问&lt;br&gt;题" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.0;exitY=0.5;entryX=0.0;entryY=0.8333;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#adb5bd;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#adb5bd;dashed=1;" edge="1" parent="1" source="17" target="16">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="260" y="2430" />
-              <mxPoint x="260" y="2350" />
+              <mxPoint x="240" y="2430" />
+              <mxPoint x="240" y="2350" />
             </Array>
           </mxGeometry>
         </mxCell>
         <mxCell id="e30" value="有" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=1.0;entryY=0.8333;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#adb5bd;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#adb5bd;dashed=1;jumpStyle=gap;jumpSize=20;" edge="1" parent="1" source="18" target="11">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="550" y="2570" />
-              <mxPoint x="550" y="1770" />
+              <mxPoint x="520" y="2570" />
+              <mxPoint x="520" y="1770" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -346,8 +346,8 @@
         <mxCell id="e34" value="只动&lt;br&gt;几何" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.0;exitY=0.1667;entryX=0.0;entryY=0.5;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#adb5bd;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#adb5bd;dashed=1;" edge="1" parent="1" source="19" target="16">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="210" y="2690" />
-              <mxPoint x="210" y="2330" />
+              <mxPoint x="200" y="2690" />
+              <mxPoint x="200" y="2330" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -357,8 +357,8 @@
         <mxCell id="e36" value="收敛" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.75;exitY=0.75;entryX=1.0;entryY=0.5;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;jumpStyle=gap;jumpSize=20;" edge="1" parent="1" source="21" target="24">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="500" y="2970" />
-              <mxPoint x="500" y="3330" />
+              <mxPoint x="480" y="2970" />
+              <mxPoint x="480" y="3330" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -368,8 +368,8 @@
         <mxCell id="e38" value="仪器&lt;br&gt;故障" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=1.0;entryY=0.1667;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;jumpStyle=gap;jumpSize=20;" edge="1" parent="1" source="21" target="25">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="550" y="2950" />
-              <mxPoint x="550" y="3410" />
+              <mxPoint x="520" y="2950" />
+              <mxPoint x="520" y="3410" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -379,16 +379,16 @@
         <mxCell id="e40" value="表侧" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.0;exitY=0.5;entryX=0.0;entryY=0.1667;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#adb5bd;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#adb5bd;dashed=1;" edge="1" parent="1" source="22" target="11">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="110" y="3090" />
-              <mxPoint x="110" y="1730" />
+              <mxPoint x="120" y="3090" />
+              <mxPoint x="120" y="1730" />
             </Array>
           </mxGeometry>
         </mxCell>
         <mxCell id="e41" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=1.0;entryY=0.5;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#adb5bd;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#adb5bd;dashed=1;" edge="1" parent="1" source="23" target="05">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="700" y="3230" />
-              <mxPoint x="700" y="930" />
+              <mxPoint x="640" y="3230" />
+              <mxPoint x="640" y="930" />
             </Array>
           </mxGeometry>
         </mxCell>

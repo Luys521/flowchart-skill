@@ -8,8 +8,8 @@ meta:
 layout:
   col_x:
   - 400
-  width: 1440
-  origin_x: 20
+  width: 1220
+  origin_x: -20
 nodes:
 - id: '01'
   name: 开始
