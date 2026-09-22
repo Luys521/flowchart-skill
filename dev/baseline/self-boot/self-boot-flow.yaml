@@ -154,7 +154,7 @@ nodes:
   col: 0
   stage: 结构校验
   route: →13
-  desc: 35 个函数 · ⊞ flowtable_check/flowtable.md
+  desc: 36 个函数 · ⊞ flowtable_check/flowtable.md
 - id: '13'
   name: 模块 · flowtable_colors
   lines:

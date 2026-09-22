@@ -14,7 +14,7 @@ from flowtable import (Errors, build_edges, wrote_route, find_parent_table,
                        _has_backref, COLOR_KEY, COLUMNS,
                        header_cells, split_row_cells)
 from flowtable_layout import apply_swimlane, assign_slots
-from semantics import TYPE_ZH_EN, pending_kind
+from semantics import TYPE_ZH_EN, pending_kind, SUBFLOW_MARK, subflow_ref
 
 
 # ② 类型层的规则表：每种节点类型"自己必须满足什么"。加一条类型约束改这里，别在 check_by_type 里堆 if。
@@ -284,6 +284,33 @@ def _check_node_reach(i, typ, out_e, in_e, seen, by_id, errs):
         src = '、'.join(sorted({e['from'] for e in in_e[i]}))
         errs.warn(f'H8(软) 开始节点 {i} 有入边（来自 {src}）'
                   f'：回路回到起点属正常，可忽略；否则多半是编号写反了', subject=i)
+
+
+def _check_subflow_decl(nodes, errs):
+    """H9：`⊞` 声明的两条约束——一格至多一个、路径必须落在本表目录内（G76/G77）。
+
+    为什么单列这一条：这两条原先只有**规矩**、没有**仪器**——
+    ① 一格写两个 `⊞`：解析器只取第一个（`subflow_ref` 找的是第一个标记），第二个静默作废，
+       H1–H9 全绿。实测：`⊞ a/x.md ⊞ b/x.md` 校验通过、只内嵌一张、节点只跳第一个。
+    ② 路径越界（`../x.md`）：`subflow_ref` 返回 None，声明层同样一字不报；下游只报
+       「孤儿表 x」，把责任指向**被引用的那张表**，而写错路径的是引用方——人会去改错文件。
+    两条都属"规范宣称的判据没实现"（同 G35 的口径），所以报**硬错误**：留着只会让
+    "这个节点点不进去"变成一件查不出来的事。
+    """
+    for nd in nodes:
+        desc = nd.get('desc') or ''
+        marks = desc.count(SUBFLOW_MARK)
+        if marks > 1:
+            errs.err(f'H9 节点 {nd["id"]}: 一个节点写了 {marks} 个 `⊞`——'
+                     f'解析器只取第一个，其余静默作废（一个节点至多一张子表）',
+                     subject=nd['id'],
+                     fix='一步一张子表：其余动作上提成子表（见 flowtable-spec《「执行者」格的分隔符》），'
+                         '而不是在一格里叠两个 ⊞')
+        elif marks == 1 and subflow_ref(desc) is None:
+            errs.err(f'H9 节点 {nd["id"]}: `⊞` 后面的路径越出了本表所在目录，'
+                     f'或根本不成一条路径——这条声明会被静默忽略，节点长不出可下钻入口',
+                     subject=nd['id'],
+                     fix='写成相对本表目录、只往下走的路径（如 `parts/渲染/flowtable.md`）')
 
 
 def check_relations(nodes, edges, dangling, errs):
@@ -668,6 +695,7 @@ def run_checks(rows, mode='flow', errs=None, lane_order=None, notes=None):
     """
     errs = Errors() if errs is None else errs
     nodes = check_nodes(rows, errs)                  # ① 节点层
+    _check_subflow_decl(nodes, errs)                 # `⊞` 声明：一格一个、不许越界
     if mode == 'swimlane':
         apply_swimlane(nodes, lane_order)
     edges, dangling = build_edges(nodes, errs)       # 取边

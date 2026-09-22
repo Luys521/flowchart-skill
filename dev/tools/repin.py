@@ -45,6 +45,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]          # dev/tools/ → 仓库根（与 dev/_paths.py 同一口径）
 PY = sys.executable
 SKIP = ('.bak',)                                    # 点开头的备份不进基线（门⑥ 的整树口径也不含它们）
+#: 基线认的产物后缀（见 `_is_baseline_artifact`；名字来自 D-51 的 `<流程名>-flow.<ext>`）。
+PRODUCT_NAMES = ('-flow.yaml', '-flow.manifest.json', '-flow.html', '-flow.drawio', '-flow.svg')
 
 
 def _md5(p):
@@ -69,13 +71,28 @@ def _run(script, *args):
     return r.returncode, (out[-1] if out else '')
 
 
+def _is_baseline_artifact(rel):
+    """这条路名该不该进基线：**只放"这张表的产物"**（表本身 / `-index.md` / `-flow.<ext>`，命名见 D-51）。
+
+    为什么要有这一条（G80）：`_sync` 原先镜像 `src` 里的**一切**（只跳 `.bak`），而 `output/self-boot/`
+    是**工作目录**——人手跑一次 `shot.py` 就会在里面留下一张 `-flow.shot.png`，于是它被**钉进基线**。
+    而面③ 的重造（`selfboot_gen` + `build`）永远造不出截图 ⇒ 那条不变式**从此恒红**，
+    报的还是"少 1 …shot.png"：读起来像基线缺东西，其实是基线**多了**东西——一句话里两个方向都反了。
+    """
+    n = rel.rsplit('/', 1)[-1]
+    return n.endswith('.md') or n.endswith(PRODUCT_NAMES)
+
+
 def _sync(src, dst, prune):
     """`src` 里的产物 → `dst`（只拷变化的；`prune` 时删掉多出来的）→ 变更行清单。"""
     before = _snapshot(dst) if dst.is_dir() else {}
     now = _snapshot(src)
-    changed = []
+    changed, skipped = [], []
     for rel, digest in sorted(now.items()):
         if rel.endswith(SKIP):
+            continue
+        if not _is_baseline_artifact(rel):
+            skipped.append(rel)               # 报出来，不默默丢（见 `_is_baseline_artifact`）
             continue
         s, d = src / rel, dst / rel
         if before.get(rel) == digest:
@@ -83,6 +100,7 @@ def _sync(src, dst, prune):
         d.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(s, d)
         changed.append(('改' if rel in before else '新') + f' {rel}')
+    changed += [f'（不是产物，未镜像：{rel}）' for rel in skipped]
     extra = sorted(set(before) - set(now)) if prune else []
     for rel in extra:
         (dst / rel).unlink()

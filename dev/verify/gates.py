@@ -2496,7 +2496,10 @@ def _check_subflow_drill(c, tmp):
             '换个目录 build：drawio 字节相同（页 id 不依赖绝对路径）',
             '' if dw_a == dw_t else '副本产物不同')
 
-    # ⑧ 非法路径一律拒绝（不能给用户一个点到系统目录的链接）
+    # ⑧ 非法路径一律拒绝（不能给用户一个点到系统目录的链接）——**并且在声明层就报出来**。
+    # 原先这三条走的是"静默忽略"：越界的 ⊞ 在声明层一字不报，只有下游那句「孤儿表 x」，
+    # 而它把责任指向**被引用的那张表**（写错路径的却是引用方）⇒ 人会去改错文件。
+    # G77 之后 `_check_subflow_decl` 在声明层报硬错误，build 随之阻断、不产出任何可点入口。
     for k, (bad, why) in enumerate((('⊞ ../escape.md；越界', '../ 越界'),
                                     ('⊞ /etc/passwd', '绝对路径'),
                                     ('⊞ C:////win////x.md', '盘符路径'))):
@@ -2504,9 +2507,23 @@ def _check_subflow_drill(c, tmp):
         d.mkdir(parents=True, exist_ok=True)
         p = d / 'flowtable.md'
         p.write_text(main_rows(bad), encoding='utf-8')
-        rc3, _ = run('build.py', p)
-        hb = (prod(d, 'html')).read_text(encoding='utf-8')
-        c.check(rc3 == 0 and 'data-sub="' not in hb, f'非法子表路径被忽略：{why}', 'rc=%d' % rc3)
+        rc3, o3 = run('table_to_dsl.py', '--check', p)
+        c.check(rc3 != 0 and '越出' in o3, f'非法子表路径在**声明层**就报硬错误：{why}',
+                o3.strip()[-110:])
+        rc3b, _ = run('build.py', p)
+        c.check(rc3b != 0 and not prod(d, 'html').exists(),
+                f'非法子表路径：build 阻断、不产出任何可点入口：{why}', f'rc={rc3b}')
+
+    # ⑨ 一格两个 ⊞：解析器只取第一个 ⇒ 第二个静默作废（G76）。也升成硬错误，
+    # 理由同 ⑧：留着它，用户看到的是"这个节点点不进去"，而没有任何一句话说得出为什么。
+    for k, (bad, why) in enumerate((('⊞ parts/rendering.md ⊞ parts/rendering.md；叠两个', '两个 ⊞'),
+                                    ('⊞ /etc/x ⊞ parts/rendering.md', '一个合法一个越界'))):
+        d = sd / f'two{k}'
+        d.mkdir(parents=True, exist_ok=True)
+        p = d / 'flowtable.md'
+        p.write_text(main_rows(bad), encoding='utf-8')
+        rc5, o5 = run('table_to_dsl.py', '--check', p)
+        c.check(rc5 != 0 and '个 `⊞`' in o5, f'一格多个 ⊞ 报硬错误：{why}', o5.strip()[-110:])
 
     # ④ 无 ⊞ 的表：零副作用（既有产物字节不变的那条约束的用例化）
     d = sd / 'plain'

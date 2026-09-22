@@ -235,12 +235,27 @@ def run_face(tmp=None):
     # 上一条的正则要求带目录前缀，`见 XXX.md §4.1` 这种**裸文件名**漏过——实测漏过一次：
     # `DESIGN-lane-slot.md` 被引用 8 处却不在包里，槽位算法的落点直接悬空，代码里的"细则见某文档"
     # 也就无处可查。例外只有生成物名：仓库里不必有它们。
-    GENERATED = {'checklist.md'}
-    known = {q.name for q in SKILL.rglob('*.md')}
+    #
+    # **扫描必须剔掉非仓库内容**（G79）：原先这里直接 `SKILL.rglob('*.md')`，于是
+    # `.verify_tmp/`（验证现场）与 `.workbuddy/`（宿主会话记忆）里的残留全部算"在包里"——
+    # 实测吃过一次：上一次跑剩下的 `.verify_tmp/par/**/flowtable.md` 里带着 `recon.md`，
+    # 这条断言就绿；把现场清干净，它就红。**红绿由"上次跑剩了什么"决定**，不是由仓库内容决定。
+    # 同一个文件里别的扫描（`mds` / `docs_all`）本来就剔这些目录，只有这一条漏了。
+    # `dev/` **不在剔的名单里**：设计文档（`ARCHITECTURE.md` / `coding-spec.md`）住在那里，
+    # 而 references/ 会引用它们——剔掉 `dev` 这条断言就反过来把真文档报成悬空。
+    skip = {'.verify_tmp', '.accept_tmp', '.audit-tmp', '__pycache__', '.git', '.workbuddy', 'output', 'old'}
+    # 生成物名（材料链在仓库根的默认落盘名，`.gitignore` §⑧ 是它们的声明处）：仓库里不必有，
+    # 但**必须能对上**——所以不写成又一串自由文本，而是从 .gitignore 里读那几条根锚定项。
+    gi = SKILL / '.gitignore'
+    generated = {'checklist.md'} | {
+        ln[1:] for ln in (gi.read_text(encoding='utf-8').splitlines() if gi.exists() else [])
+        if ln.startswith('/') and ln.endswith('.md')}
+    known = {q.name for q in SKILL.rglob('*.md')
+             if not (set(q.relative_to(SKILL).parts) & skip)}
     dangling = []
     for p, t in mds.items():
         for m in re.findall(r'`([A-Za-z0-9_\-]+\.md)`', t):
-            if m not in known and m not in GENERATED:
+            if m not in known and m not in generated:
                 dangling.append(f'{p.name}:{m}')
     c.check(not dangling, '文档提到的 .md 都在包里', '；'.join(sorted(set(dangling))[:4]))
 
