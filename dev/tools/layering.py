@@ -50,6 +50,7 @@ PUBLIC = {
     'lane_router',        # 泳道布局布线（与 router 同接口两实现）
     'swimlane',           # 泳道网格（与 geometry.Grid 同接口两实现）
     'label',              # 边标签定位
+    'hops',               # 交叉打跳的方案层（D-149）：两个 SVG 渲染器共用，自身不碰编排
     'engine',             # 装配门面：把上面几件装成 L.*
     'manifest',           # 渲染契约：定义契约 + 按契约反查产物
     'xml_reader',         # drawio 读回与几何反解

@@ -227,7 +227,12 @@ def _html_nodes(t):
 
 
 def _html_edges(t):
-    """主视图的边 path → [{from, to, pts}]。"""
+    """主视图的边 path → [{from, to, pts}]。
+
+    **只认 `M`/`L`**：交叉打跳（D-149）画的是 `A` 半圆，而它的两个端点都落在原线段上
+    ——所以这里漏掉弧的终点，得到的仍是一条**共线折线**，几何、穿节点、离格三项判据一字不受影响。
+    反过来说：`hops.radius` 必须是细格的整数倍（弧的入口点由 `L` 带出，会进这个解析）。
+    """
     edges = []
     for m in re.finditer(r'<path class="edge" data-from="([^"]*)" data-to="([^"]*)" d="([^"]*)"', t):
         pts = [(float(x), float(y)) for x, y in re.findall(r'[ML]\s*(-?[\d.]+)[ ,]+(-?[\d.]+)', m.group(3))]

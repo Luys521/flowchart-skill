@@ -26,20 +26,20 @@ parent: ../flowtable.md
 | 模块级 | 12 | _html_shape | 任务 | — | — | — | 脚本 | selfboot | — | →31 | ★ 节点组内的形状元素 → (w, h, shape)。形状**从产物读**，不从字典反查类型再映射。 · L187 · 函数 |
 | 模块级 | 13 | _html_nodes | 任务 | — | — | — | 脚本 | selfboot | — | →12 | ★ 主视图的节点组 → {id: {rect, shape}}（属性顺序与个数都不假定）。 · L209 · 函数 |
 | 模块级 | 14 | _html_edges | 任务 | — | — | — | 脚本 | selfboot | — | →31 | ★ 主视图的边 path → [{from, to, pts}]。 · L229 · 函数 |
-| 模块级 | 15 | _html_canvas_bands | 任务 | — | — | — | 脚本 | selfboot | — | →31 | ★ 画布尺寸（viewBox，缺失则按节点外包盒）+ 里程碑带宽 + 泳道底色外包盒。 · L238 · 函数 |
-| 模块级 | 16 | geometry_from_html | 任务 | — | — | — | 脚本 | selfboot | — | 1→07｜2→13｜3→14｜4→15 | ★ 从 flow.html 反解几何：节点组（`translate` 中心 + 形状局部尺寸）+ 边的 `d` 折线。 · L259 · 函数 · 分支：1→_main_slice 2→_html_nodes 3→_html_edges 4→_html_canvas_bands |
-| 模块级 | 17 | read_svg | 任务 | — | — | — | 脚本 | selfboot | — | →08 | ★ 从 `<流程名>-flow.svg` 反解 (节点 id 列表, 边列表)。 · L272 · 函数 |
-| 模块级 | 18 | geometry_from_svg | 任务 | — | — | — | 脚本 | selfboot | — | →16 | ★ 从 `<流程名>-flow.svg` 反解几何。与 `geometry_from_html` 同源（元素约定相同）。 · L282 · 函数 |
-| 模块级 | 19 | geometry_from_drawio | 任务 | — | — | — | 脚本 | selfboot | — | →31 | ★ 从 `.drawio` 反解几何。与 `geometry_from_html` 并列——两者都是"产物 → 几何表"的… · L287 · 函数 · ⇢ 依赖 xml_reader.geometry、xml_reader.read |
-| 模块级 | 20 | artifact_geometry | 任务 | — | — | — | 脚本 | selfboot | — | 1→16｜2→19 | ★ 产物路径 → 几何表（按扩展名分流）。几何门禁的唯一入口。 · L297 · 函数 · 分支：1→geometry_from_html 2→geometry_from_drawio |
-| 模块级 | 21 | _external_refs | 任务 | — | — | — | 脚本 | selfboot | — | →31 | ★ 产物自包含硬检查（D-55，借鉴 byai 的 HAS_EXTERNAL）：单文件交付（D-52）承诺离线可开， · L318 · 函数 |
-| 模块级 | 22 | _stale_manifest_error | 任务 | — | — | — | 脚本 | selfboot | — | →03 | ★ 契约新鲜度：给了 yaml_path 就先验指纹，过期返回错误列表（否则空列表）。 · L335 · 函数 |
-| 模块级 | 23 | source_stale | 任务 | — | — | — | 脚本 | selfboot | — | →04 | ★ 《流程表》自上次渲染后是否被直改过 → `(state, 说明)`。 · L346 · 函数 |
-| 模块级 | 24 | _compare_ids_edges | 任务 | — | — | — | 脚本 | selfboot | — | →31 | ★ 一份产物的节点/边集合 vs 契约 → 错误列表。 · L368 · 函数 |
-| 模块级 | 25 | check | 任务 | — | — | — | 脚本 | selfboot | — | 1→07｜2→08｜3→10｜4→11｜5→21｜6→22｜7→24 | ★ 契约 vs 产物 → 错误列表（空 = 逐项一致）。 · L388 · 函数 · 分支：1→_main_slice 2→read_html 3→_compare_shapes 4→read_drawio 5→_external_refs 6→_stale_manifest_error 7→_compare_ids_edges |
-| 模块级 | 26 | summary | 任务 | — | — | — | 脚本 | selfboot | — | →31 | ★ 一行人可读的统计，供 build 打印。 · L425 · 函数 |
-| 模块级 | 27 | _manifest_parser | 任务 | — | — | — | 脚本 | selfboot | — | →31 | ★ manifest 的 argparse 定义（build / check 两个子命令）。 · L442 · 函数 |
-| 模块级 | 28 | _run_build | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→03｜3→06｜4→26 | ★ build 子命令：DSL → manifest.json。 · L457 · 函数 · 分支：1→manifest_path_for 2→dsl_fingerprint 3→build 4→summary · ⇢ 依赖 deps.hint |
-| 模块级 | 29 | _run_check | 任务 | — | — | — | 脚本 | selfboot | — | 1→25｜2→26 | ★ check 子命令：manifest.json vs 产物。 · L472 · 函数 · 分支：1→check 2→summary |
-| 模块级 | 30 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→27｜2→28｜3→29 | L499 · 函数 · 分支：1→_manifest_parser 2→_run_build 3→_run_check |
+| 模块级 | 15 | _html_canvas_bands | 任务 | — | — | — | 脚本 | selfboot | — | →31 | ★ 画布尺寸（viewBox，缺失则按节点外包盒）+ 里程碑带宽 + 泳道底色外包盒。 · L243 · 函数 |
+| 模块级 | 16 | geometry_from_html | 任务 | — | — | — | 脚本 | selfboot | — | 1→07｜2→13｜3→14｜4→15 | ★ 从 flow.html 反解几何：节点组（`translate` 中心 + 形状局部尺寸）+ 边的 `d` 折线。 · L264 · 函数 · 分支：1→_main_slice 2→_html_nodes 3→_html_edges 4→_html_canvas_bands |
+| 模块级 | 17 | read_svg | 任务 | — | — | — | 脚本 | selfboot | — | →08 | ★ 从 `<流程名>-flow.svg` 反解 (节点 id 列表, 边列表)。 · L277 · 函数 |
+| 模块级 | 18 | geometry_from_svg | 任务 | — | — | — | 脚本 | selfboot | — | →16 | ★ 从 `<流程名>-flow.svg` 反解几何。与 `geometry_from_html` 同源（元素约定相同）。 · L287 · 函数 |
+| 模块级 | 19 | geometry_from_drawio | 任务 | — | — | — | 脚本 | selfboot | — | →31 | ★ 从 `.drawio` 反解几何。与 `geometry_from_html` 并列——两者都是"产物 → 几何表"的… · L292 · 函数 · ⇢ 依赖 xml_reader.geometry、xml_reader.read |
+| 模块级 | 20 | artifact_geometry | 任务 | — | — | — | 脚本 | selfboot | — | 1→16｜2→19 | ★ 产物路径 → 几何表（按扩展名分流）。几何门禁的唯一入口。 · L302 · 函数 · 分支：1→geometry_from_html 2→geometry_from_drawio |
+| 模块级 | 21 | _external_refs | 任务 | — | — | — | 脚本 | selfboot | — | →31 | ★ 产物自包含硬检查（D-55，借鉴 byai 的 HAS_EXTERNAL）：单文件交付（D-52）承诺离线可开， · L323 · 函数 |
+| 模块级 | 22 | _stale_manifest_error | 任务 | — | — | — | 脚本 | selfboot | — | →03 | ★ 契约新鲜度：给了 yaml_path 就先验指纹，过期返回错误列表（否则空列表）。 · L340 · 函数 |
+| 模块级 | 23 | source_stale | 任务 | — | — | — | 脚本 | selfboot | — | →04 | ★ 《流程表》自上次渲染后是否被直改过 → `(state, 说明)`。 · L351 · 函数 |
+| 模块级 | 24 | _compare_ids_edges | 任务 | — | — | — | 脚本 | selfboot | — | →31 | ★ 一份产物的节点/边集合 vs 契约 → 错误列表。 · L373 · 函数 |
+| 模块级 | 25 | check | 任务 | — | — | — | 脚本 | selfboot | — | 1→07｜2→08｜3→10｜4→11｜5→21｜6→22｜7→24 | ★ 契约 vs 产物 → 错误列表（空 = 逐项一致）。 · L393 · 函数 · 分支：1→_main_slice 2→read_html 3→_compare_shapes 4→read_drawio 5→_external_refs 6→_stale_manifest_error 7→_compare_ids_edges |
+| 模块级 | 26 | summary | 任务 | — | — | — | 脚本 | selfboot | — | →31 | ★ 一行人可读的统计，供 build 打印。 · L430 · 函数 |
+| 模块级 | 27 | _manifest_parser | 任务 | — | — | — | 脚本 | selfboot | — | →31 | ★ manifest 的 argparse 定义（build / check 两个子命令）。 · L447 · 函数 |
+| 模块级 | 28 | _run_build | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→03｜3→06｜4→26 | ★ build 子命令：DSL → manifest.json。 · L462 · 函数 · 分支：1→manifest_path_for 2→dsl_fingerprint 3→build 4→summary · ⇢ 依赖 deps.hint |
+| 模块级 | 29 | _run_check | 任务 | — | — | — | 脚本 | selfboot | — | 1→25｜2→26 | ★ check 子命令：manifest.json vs 产物。 · L477 · 函数 · 分支：1→check 2→summary |
+| 模块级 | 30 | main | 任务 | — | — | — | 脚本 | selfboot | — | 1→27｜2→28｜3→29 | L504 · 函数 · 分支：1→_manifest_parser 2→_run_build 3→_run_check |
 | 出口 | 31 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |

@@ -73,7 +73,7 @@
 
 ```text
 SKILL.md              主入口：触发方式、标准处理流程、输出契约
-scripts/              渲染与校验脚本（47 模块 = 30 个带 CLI 的入口 + 17 个纯库）
+scripts/              渲染与校验脚本（48 模块 = 30 个带 CLI 的入口 + 18 个纯库）
   dictionary.yaml     布局/配色/文字的数值字典
 references/           出图时按需读的规范（7 份）
 templates/            3 份模板（其中 2 份由 init.py 拷进 output/<名称>/：流程表骨架 + 自检清单；

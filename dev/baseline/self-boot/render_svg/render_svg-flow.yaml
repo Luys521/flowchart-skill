@@ -34,7 +34,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →13
-  desc: L51 · 函数
+  desc: L52 · 函数
 - id: '03'
   name: _defs
   lines:
@@ -46,7 +46,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →13
-  desc: ★ 本产物的 `<defs>`：只有箭头 marker（没有 html 那份流光模糊——这份产物不带动画）。 · L55 · 函数 · ⇢ 依赖 semantics.arrow_markers
+  desc: ★ 本产物的 `<defs>`：只有箭头 marker（没有 html 那份流光模糊——这份产物不带动画）。 · L56 · 函数 · ⇢ 依赖 semantics.arrow_markers
 - id: '04'
   name: _esc
   lines:
@@ -58,7 +58,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →13
-  desc: L64 · 函数
+  desc: L65 · 函数
 - id: '05'
   name: _shape_xml
   lines:
@@ -70,7 +70,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →02
-  desc: ★ 形状画在**局部坐标**（以节点中心为 0,0）——`manifest._html_shape` 就是这么读的。 · L69 · 函数 · ⇢
+  desc: ★ 形状画在**局部坐标**（以节点中心为 0,0）——`manifest._html_shape` 就是这么读的。 · L70 · 函数 · ⇢
     依赖 geometry.arc_px
 - id: '06'
   name: _drillable
@@ -83,7 +83,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →13
-  desc: ★ 声明了 `▣` 且**子表产物真的存在**的节点 → {节点id}。 · L90 · 函数 · ⇢ 依赖 artifact.artifact_rel、semantics.subflow_target
+  desc: ★ 声明了 `▣` 且**子表产物真的存在**的节点 → {节点id}。 · L91 · 函数 · ⇢ 依赖 artifact.artifact_rel、semantics.subflow_target
 - id: '07'
   name: _emit_node
   lines:
@@ -95,7 +95,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→04｜3→05
-  desc: L110 · 函数 · 分支：1→_fmt 2→_esc 3→_shape_xml · ⇢ 依赖 engine.Engine.node_lines、engine.Engine.rect、semantics.pending_style
+  desc: L111 · 函数 · 分支：1→_fmt 2→_esc 3→_shape_xml · ⇢ 依赖 engine.Engine.node_lines、engine.Engine.rect、semantics.pending_style
 - id: 08
   name: _emit_edge
   lines:
@@ -107,7 +107,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→04｜3→09
-  desc: L150 · 函数 · 分支：1→_fmt 2→_esc 3→_emit_label · ⇢ 依赖 engine.Engine.path、engine.Engine.polarity
+  desc: L151 · 函数 · 分支：1→_fmt 2→_esc 3→_emit_label · ⇢ 依赖 engine.Engine.path、engine.Engine.polarity、geometry.with_hops、hops.plan
 - id: 09
   name: _emit_label
   lines:
@@ -119,7 +119,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→04
-  desc: ★ 边标签（判断节点的分支条件）——与 `render_html.svg_label` **同元素约定**： · L166 · 函数 · 分支：1→_fmt
+  desc: ★ 边标签（判断节点的分支条件）——与 `render_html.svg_label` **同元素约定**： · L173 · 函数 · 分支：1→_fmt
     2→_esc · ⇢ 依赖 engine.Engine.label_box
 - id: '10'
   name: _emit_lanes
@@ -132,7 +132,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→04
-  desc: ★ 泳道底色：左走廊 + 部门列底色/表头 + 左侧里程碑带。 · L185 · 函数 · 分支：1→_fmt 2→_esc
+  desc: ★ 泳道底色：左走廊 + 部门列底色/表头 + 左侧里程碑带。 · L192 · 函数 · 分支：1→_fmt 2→_esc
 - id: '11'
   name: render
   lines:
@@ -144,7 +144,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→03｜3→04｜4→06｜5→07｜6→08｜7→10
-  desc: ★ DSL → 独立 `.svg`。成功返回 0（统一契约；`ctx` 本渲染器暂不用任何键）。 · L217 · 函数 · 分支：1→_fmt 2→_defs
+  desc: ★ DSL → 独立 `.svg`。成功返回 0（统一契约；`ctx` 本渲染器暂不用任何键）。 · L224 · 函数 · 分支：1→_fmt 2→_defs
     3→_esc 4→_drillable 5→_emit_node 6→_emit_edge 7→_emit_lanes · ⇢ 依赖 engine.Engine.head_band、engine.Engine.height、engine.Engine.lanes、engine.load
 - id: '12'
   name: main
@@ -157,7 +157,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: L241 · 函数
+  desc: L248 · 函数
 - id: '13'
   name: 结束
   lines:

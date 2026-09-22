@@ -72,22 +72,22 @@ parts/<子流程名>/<子流程名>-flow.{yaml,manifest.json}     × 7
 
 ## 四、脚本接口面（机器提取）
 
-**47 个模块 = 30 个带 CLI 的入口 + 17 个纯库。**
+**48 个模块 = 30 个带 CLI 的入口 + 18 个纯库。**
 
 | 类型 | 模块 |
 |---|---|
 | 入口命令（有 `__main__`） | `init` `table_to_dsl` `build` `validate` `shot` `sync` `xml_reader` `clarify` `layer_index` `manifest` `render_html` `render_drawio` `render_svg` `writeback` `probe` `parse` `recon` `parse_ooxml` `parse_pdf` `parse_legacy` `parse_text` `render_pages` `intake` `ledger` `drift` `query` `import_table` `plan` `cells` `capability` |
-| 纯库（无 CLI，只被 import） | `artifact` `console` `deps` `engine` `flowtable` `flowtable_check` `flowtable_colors` `flowtable_layout` `geometry` `label` `lane_router` `pptx_text` `router` `semantics` `swimlane` `textquality` `thresholds` |
+| 纯库（无 CLI，只被 import） | `artifact` `console` `deps` `engine` `flowtable` `flowtable_check` `flowtable_colors` `flowtable_layout` `geometry` `hops` `label` `lane_router` `pptx_text` `router` `semantics` `swimlane` `textquality` `thresholds` |
 
 **分层（2026-09-14 定，由 `dev/tools/layering.py` 守住）**：
 
 | 层 | 模块 | 规则 |
 |---|---|---|
-| **公共层**（22） | `semantics` `geometry` `artifact` `cells` `capability` `thresholds` `deps` `console` `textquality` `pptx_text` `flowtable_layout` `flowtable` `flowtable_check` `flowtable_colors` `router` `lane_router` `swimlane` `label` `engine` `manifest` `xml_reader` `writeback` | 被多方复用的纯能力；**可以互相引用**，但**不许依赖上层** |
+| **公共层**（23） | `semantics` `geometry` `artifact` `cells` `capability` `thresholds` `deps` `console` `textquality` `pptx_text` `flowtable_layout` `flowtable` `flowtable_check` `flowtable_colors` `router` `lane_router` `swimlane` `label` `hops` `engine` `manifest` `xml_reader` `writeback` | 被多方复用的纯能力；**可以互相引用**，但**不许依赖上层** |
 | **模块层**（22） | `init` `clarify` `table_to_dsl` `layer_index` `render_html` `render_drawio` `render_svg` `validate` `shot` `probe` `recon` `parse_ooxml` `parse_pdf` `parse_legacy` `parse_text` `render_pages` `import_table` `intake` `plan` `ledger` `drift` `query` | 各有产物；**只许依赖公共层**；彼此之间**没有代码依赖**——协作走产物 |
 | **编排层**（3） | `build` `sync` `parse` | 流水线驱动者，允许依赖上面两层（`parse` 按固定顺序跑各解析适配器，判据不在它那里）。**没有批量/并行出图**：起草过一版最小形态，2026-09-19 裁决撤销（`PIPELINE-SPEC` §7 / D-126），多条流程就一条一条跑 `build.py` |
 
-实测（47 模块 / 121 条依赖边）：`module→public` 66 条 · `orch→module` 9 条 · `orch→orch` 1 条 ·
+实测（48 模块 / 124 条依赖边）：`module→public` 68 条 · `orch→module` 9 条 · `orch→orch` 1 条 ·
 `orch→public` 14 条 · `public→public` 31 条 · **违规 0 条**（数字随代码增长，现跑现取：`python dev/tools/layering.py`）。
 **这一行曾经悄悄漂过**：`public→public` 在 D-123 拆掉公共层那个环时从 30 掉到 29，而这里一直写着 30 / 120
 （2026-09-19 用 `git show <旧提交>:scripts/` 现算对出来的）——**面① 只核模块数与三层名册，不核依赖边数**

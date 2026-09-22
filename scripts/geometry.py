@@ -437,6 +437,88 @@ def ortho_cross(p1, p2, q1, q2, eps=0.6):
     return xlo + eps < vx < xhi - eps and ylo + eps < hy < yhi - eps
 
 
+# ---------------------------------------------------------------- 交叉打跳（D-149）
+# 正交交叉是**允许**的（`validate` 只禁"边重叠"）：Visio 的做法不是消灭交叉，而是给交叉**打跳**——
+# 让一条线在交点处画个小半圆、从另一条线上方跨过去，读者一眼看出"这两条线不相接"。
+# 谁跳：`policy='vertical'` ⇒ **竖段跳、横段直行**。本仓库的长横线都是长跳的横走段，反复打跳
+# 会变成虚线感；而竖道只被少数几条横线穿过，跳几次正好读成"立交桥"。
+HOP_EPS = 0.6                   # 与 `ortho_cross` 同一口径
+
+
+def hop_plan(paths, policy='vertical'):
+    """`[(key, [点…])…]` → `{key: [(x, y, axis)…]}`：每个正交交叉点上由**哪条边**打跳。
+
+    `axis` 是打跳那一段的走向（`'v'` 竖段 / `'h'` 横段），渲染器据此在跳点两侧各 `radius` 处
+    连一条半圆。判据直接用 `ortho_cross`（端点相接、共线重叠都不算交叉），不另写一套。
+    `key` 由调用方给（边是 dict、不可哈希，调用方一般传 `id(边)`）——只在一次渲染内使用。
+    """
+    segs = [(key, a, b) for key, pts in paths for a, b in zip(pts, pts[1:])]
+    plan = {}
+    for i, (k1, a1, b1) in enumerate(segs):
+        for k2, a2, b2 in segs[i + 1:]:
+            if k1 == k2 or not ortho_cross(a1, b1, a2, b2, HOP_EPS):
+                continue
+            v1 = abs(a1[0] - b1[0]) <= HOP_EPS
+            v2 = abs(a2[0] - b2[0]) <= HOP_EPS
+            if v1 == v2:                    # `ortho_cross` 已保证一横一竖；这里只是不赌
+                continue
+            hop_v = v1 if policy == 'vertical' else not v1
+            hk, h1 = (k1, a1) if hop_v else (k2, a2)      # 打跳的那条
+            ok, o1 = (k2, a2) if hop_v else (k1, a1)      # 直行的那条
+            x, y = (h1[0], o1[1]) if hop_v else (o1[0], h1[1])
+            plan.setdefault(hk, []).append((x, y, 'v' if hop_v else 'h'))
+    # 去重：同一个交点可能被多对线段报到，按"点 + 走向"只留一次
+    for k, hs in plan.items():
+        seen, out = set(), []
+        for h in hs:
+            t = (round(h[0], 1), round(h[1], 1), h[2])
+            if t not in seen:
+                seen.add(t)
+                out.append(h)
+        plan[k] = out
+    return plan
+
+
+def with_hops(pts, hops, radius):
+    """折线 + 该边要打的跳 → `[(x, y, via_arc)…]`：`via_arc=True` 表示"与上一点之间用半圆连"。
+
+    跳点落在哪一段就拆哪一段：段内按**行进方向**取「跳点 ∓ radius」两点，中间那段交给渲染器画弧。
+    **半圆的两个端点都落在原线段上** ⇒ 反解产物的一方（`manifest.py` 只认 `M`/`L`）看到的仍是
+    一条共线折线，几何一字不变——所以打跳是**纯视觉**的，不动任何判据。
+    两个跳点靠得比 `2×radius` 还近时只保留前一个：宁可少跳一次，也不画出互相咬住的弧。
+    """
+    if not hops or radius <= 0:
+        return [(x, y, False) for x, y in pts]
+    out = [(pts[0][0], pts[0][1], False)]
+    for p1, p2 in zip(pts, pts[1:]):
+        vertical = abs(p1[0] - p2[0]) <= HOP_EPS
+        axis = 'v' if vertical else 'h'
+        t1, t2 = (p1[1], p2[1]) if vertical else (p1[0], p2[0])
+        d = 1.0 if t2 >= t1 else -1.0
+        cand = []
+        for x, y, ax in hops:
+            if ax != axis:
+                continue
+            off = (x - p1[0]) if vertical else (y - p1[1])
+            if abs(off) > HOP_EPS:
+                continue
+            t = y if vertical else x
+            if min(t1, t2) + HOP_EPS < t < max(t1, t2) - HOP_EPS:
+                cand.append(t)
+        last = t1
+        for t in sorted(cand, key=lambda v: d * v):
+            a, b = t - radius * d, t + radius * d
+            if d * (a - last) <= HOP_EPS or d * (b - t2) > 0:
+                continue                    # 与上一个跳咬住 / 弧伸到段外
+            pa = (p1[0], a) if vertical else (a, p1[1])
+            pb = (p1[0], b) if vertical else (b, p1[1])
+            out.append((pa[0], pa[1], False))
+            out.append((pb[0], pb[1], True))
+            last = b
+        out.append((p2[0], p2[1], False))
+    return out
+
+
 def point_seg_dist(p, a, b):
     """点到线段的最短距离。"""
     ax, ay = a

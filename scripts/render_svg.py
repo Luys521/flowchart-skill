@@ -39,7 +39,8 @@ from pathlib import Path
 
 from artifact import artifact_rel
 from engine import load
-from geometry import arc_px
+from geometry import arc_px, with_hops
+import hops
 from semantics import arrow_markers, pending_style, subflow_target, SUB_INSET
 
 # 可下钻节点的记号：**框内一道内衬线**（同形状内缩 `SUB_INSET`，见 D-78）。
@@ -148,8 +149,14 @@ def _emit_node(L, n, drillable=()):
 
 
 def _emit_edge(L, e):
-    pts = L.path(e)
-    d = 'M ' + ' L '.join(f'{_fmt(px)} {_fmt(py)}' for px, py in pts)
+    # 交叉打跳（D-149）：口径与 html 版逐字相同，各自拼串（N3）。
+    hp, hr = hops.plan(L)
+    pts = with_hops(L.path(e), hp.get(id(e), []), hr)
+    parts = [f'M {_fmt(pts[0][0])} {_fmt(pts[0][1])}']
+    for px, py, arc in pts[1:]:
+        parts.append(f'A {_fmt(hr)} {_fmt(hr)} 0 0 1 {_fmt(px)} {_fmt(py)}' if arc
+                     else f'L {_fmt(px)} {_fmt(py)}')
+    d = ' '.join(parts)
     ed = L.cfg['edges'][L.polarity(e)]
     dash = ' stroke-dasharray="5 4"' if ed['dashed'] else ''
     # **属性必须连续且按此序**：`manifest._html_edges` 的正则就是

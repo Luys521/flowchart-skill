@@ -16,7 +16,8 @@ import sys
 from pathlib import Path
 
 from engine import load
-from geometry import arc_px
+from geometry import arc_px, with_hops
+import hops
 from semantics import arrow_markers, pending_style, subflow_target, SUB_INSET
 from artifact import artifact_name, artifact_stem
 from manifest import MAIN_VIEW
@@ -300,8 +301,15 @@ def _node_row(L, nid):
 def svg_edge(L, e):
     pol = L.polarity(e)
     ed = L.cfg['edges'][pol]
-    pts = L.path(e)
-    d = 'M ' + ' L '.join(f'{fmt(x)} {fmt(y)}' for x, y in pts)
+    # 交叉打跳（D-149）：方案由 `hops.plan` 出（每张图缓存一次），拼串留在这里（N3）。
+    # 半圆两端落在原线段上 ⇒ `manifest.py` 只认 `M`/`L` 的反解得到的仍是共线折线。
+    hp, hr = hops.plan(L)
+    pts = with_hops(L.path(e), hp.get(id(e), []), hr)
+    parts = [f'M {fmt(pts[0][0])} {fmt(pts[0][1])}']
+    for px, py, arc in pts[1:]:
+        parts.append(f'A {fmt(hr)} {fmt(hr)} 0 0 1 {fmt(px)} {fmt(py)}' if arc
+                     else f'L {fmt(px)} {fmt(py)}')
+    d = ' '.join(parts)
     dash = ' stroke-dasharray="5 4"' if ed['dashed'] else ''
     # 箭头按**极性**取（`semantics.arrow_markers` 给每条极性一枚同色的 marker）。
     # 早先按"实线/虚线"取 `ar-solid`/`ar-dash`：那两支的色值是写死的，与字典的边色重复陈述，

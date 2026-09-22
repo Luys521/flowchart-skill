@@ -600,10 +600,26 @@ def make_base(args):
     if Path(dest).exists():
         shutil.rmtree(dest)
     Path(dest).mkdir(parents=True)
+    # **先证明底本本身在**：`rev-parse --verify` 失败才是"tag 取不到"（真故障）。
+    # 这一步不能省——不然下面"`git show` 失败"就有两种截然不同的原因，混着报，读者会去查 tag，
+    # 而真正的毛病是那个文件在底本里不存在（新增文件，见 G82）。
+    try:
+        git(root, 'rev-parse', '--verify', f'{args.rev}^{{commit}}')
+    except RuntimeError as e:
+        print(f'✗ 底本 {args.rev} 取不到（没 git / tag 不存在 / 工作树读不了）：{e}', file=sys.stderr)
+        return 2
     try:
         copied = copy_entries(root, dest, args.copy)
+        added = []
         for rel in files:
-            blob = git(root, 'show', f'{args.rev}:{rel}')
+            try:
+                blob = git(root, 'show', f'{args.rev}:{rel}')
+            except RuntimeError:
+                # 该文件在底本里**不存在** ⇒ 它是工作树新增的，底本也不该有它（那才是"改动前"）：
+                # 删掉刚从工作树复制过来的那份即可，并记进 `added` 让报告说清楚。
+                (Path(dest) / rel).unlink(missing_ok=True)
+                added.append(rel)
+                continue
             target = Path(dest) / rel
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(blob)
@@ -613,12 +629,14 @@ def make_base(args):
     head = git(root, 'rev-parse', '--short', 'HEAD').decode().strip()
     dirty = bool(git(root, 'status', '--porcelain').strip())
     manifest = {'tool': 'dev/tools/equiv.py', 'rev': args.rev, 'files': files,
-                'copied': copied, 'root': root, 'head': head, 'dirty': dirty,
+                'added': added, 'copied': copied, 'root': root, 'head': head, 'dirty': dirty,
                 'all_scripts': bool(args.all_scripts)}
     (Path(dest) / '.equiv-manifest.json').write_text(
         json.dumps(manifest, ensure_ascii=False, indent=1) + '\n', encoding='utf-8')
     print(f'✓ 隔离底本: {dest}')
-    print(f'  回退到 {args.rev} 的文件 {len(files)} 个: ' + '、'.join(files))
+    print(f'  回退到 {args.rev} 的文件 {len(files) - len(added)} 个: ' + '、'.join(files))
+    if added:
+        print(f'  工作树新增、底本里删掉 {len(added)} 个: ' + '、'.join(added))
     print(f'  整体复制的条目: ' + '、'.join(copied))
     print(f'  工作树 HEAD={head}{"（脏）" if dirty else "（干净）"}')
     print('  注意：底本里的其他文件仍是工作树现状——所以两份的差异只可能来自上面这些文件。')

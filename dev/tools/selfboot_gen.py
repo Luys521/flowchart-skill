@@ -203,7 +203,7 @@ PIPELINE_STAGES = (
     ('结构校验', ('flowtable_check',)),
     ('布局与配色', ('flowtable_layout', 'flowtable_colors')),
     ('DSL 装配', ('table_to_dsl',)),
-    ('渲染', ('engine', 'geometry', 'swimlane', 'router', 'lane_router', 'label',
+    ('渲染', ('engine', 'geometry', 'swimlane', 'router', 'lane_router', 'label', 'hops',
               'render_html', 'render_drawio', 'render_svg')),
     ('产物审核', ('manifest', 'validate')),
     ('层级索引', ('layer_index',)),
