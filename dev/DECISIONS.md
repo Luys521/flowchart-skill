@@ -2133,7 +2133,7 @@ H1「真表里已经有引用错误」· H2「真表干净，但缺机器核，�
 
 **纯视觉**（最关键）：半圆两端落在「交叉点 ∓ 半径」上、**都还在原线段上** ⇒ `manifest.py` 只认 `M`/`L` 的反解得到的仍是共线折线，几何 / 穿节点 / 离格三项判据一字不动。反过来**半径必须是细格的整数倍**（弧的入口点由 `L` 带出、会进那个解析：半径 5 实测被"网格对齐"门禁逮到 6 处离格），`_hops_of` 在构造期把半径 `snap` 到细格。
 
-**射程**：**只 html / svg 画**——drawio 的边样式没有"跳线"这一项。这是唯一一处三份产物**装饰**不同（几何与语义仍完全一致），已在 `visual-spec` §1 写明；`hops.radius: 0` 可整件事关掉。
+**射程**：**三份产物都画**。html / svg 走我们自己的半圆（`geometry.with_hops`）；drawio **也有线跳**——官方边样式表里的 `jumpStyle`（`arc`/`gap`/`sharp`）与 `jumpSize`，`render_drawio` 给"确实要跳的边"加上这两个键（mxGraph 的线跳是 drawio 分支实现的，上游 mxGraph 没有；只给该跳的边加，是为了不与另两份的观感相反）。**drawio 那一侧的确切观感待人工确认**：本机没有 drawio 渲染器，`jumpSize` 的口径（总宽 / 半宽）与"两条边都带样式时谁跳"验不了。`hops.radius: 0` 可整件事关掉。
 
 **影响**：`scripts/geometry.py`（`hop_plan` / `with_hops`，判据复用 `ortho_cross`）· `scripts/hops.py`（方案层；**拼串留在两个渲染器**，N3）· `render_html` / `render_svg` · `dictionary.yaml` · `references/visual-spec.md` · `REPO-MAP.md` / `layering.py` / `selfboot_gen.PIPELINE_STAGES`（新模块要登记）· 两棵基线重钉。
 

@@ -14,6 +14,7 @@ from engine import load
 from semantics import (ARROW_END_SIZE, pending_style, subflow_target, SUB_INSET,
                        SUBFLOW_MARK, NATIVE_MARK, BG_MARK, SUB_MARK)
 from artifact import artifact_rel
+import hops
 
 FONT = 'Microsoft YaHei'
 
@@ -124,6 +125,16 @@ def edge_style(L, e):
          f'labelBackgroundColor=#ffffff;labelBorderColor={ed["color"]};')
     if ed['dashed']:
         s += 'dashed=1;'
+    # 交叉打跳（D-149）：**drawio 自己就有线跳**——官方边样式表里的 `jumpStyle`
+    # （`arc` / `gap` / `sharp`）与 `jumpSize`（交叉处的跳线宽度）。所以三份产物**都能画**：
+    # html/svg 走我们自己的半圆（几何在 `geometry.with_hops`），drawio 走这两个键。
+    # 只给"在 html/svg 里确实要跳的边"加：mxGraph 是按**每条边自己的样式**决定跳不跳的，
+    # 全加会让交叉的两条线同时起跳（四向跳），与另两份产物的观感不一致。
+    # ⚠ `jumpSize` 的口径（总宽还是半宽）与"两条边都带样式时谁跳"我没法在本机验证——
+    # 没有 drawio 渲染器；这一处观感**要人打开 .drawio 看一眼**（写在 D-149 里）。
+    hp, hr = hops.plan(L)
+    if hr > 0 and id(e) in hp:
+        s += f'jumpStyle=arc;jumpSize={int(2 * hr)};'
     return s
 
 
