@@ -342,11 +342,14 @@ def svg_label(L, e, ed):
     if not e.get('label'):
         return ''
     x, y, w, h = L.label_box(e)
+    cx, cy = x + w / 2, y + h / 2
+    # 竖排（标签压在竖段上）：只转文字不转盒子——盒子已按转过来的宽高算（`label.py`）。
+    rot = f' transform="rotate(-90 {fmt(cx)} {fmt(cy)})"' if L.label_vertical(e) else ''
     c = ed['color']
     # class="elab" 只是"这是边标签"的语义钩子（几何自检与产物审核都不认它，认的是 `path.edge`）。
     return (f'<g class="elab"><rect class="lab-r" x="{fmt(x)}" y="{fmt(y)}" '
             f'width="{fmt(w)}" height="{fmt(h)}" rx="4" stroke="{c}"/>'
-            f'<text class="lab" x="{fmt(x + w / 2)}" y="{fmt(y + h / 2 + 4)}" fill="{c}">{esc(e["label"])}</text></g>')
+            f'<text class="lab" x="{fmt(cx)}" y="{fmt(cy + 4)}" fill="{c}"{rot}>{esc(e["label"])}</text></g>')
 
 
 def svg_lanes(ln):

@@ -8,7 +8,7 @@ meta:
 layout:
   col_x:
   - 400
-  width: 1820
+  width: 1440
   origin_x: 0
 nodes:
 - id: '01'

@@ -20,8 +20,8 @@ parent: ../flowtable.md
 | 模块级 | 06 | _drillable | 任务 | — | — | — | 脚本 | selfboot | — | →13 | ★ 声明了 `▣` 且**子表产物真的存在**的节点 → {节点id}。 · L91 · 函数 · ⇢ 依赖 artifact.artifact_rel、semantics.subflow_target |
 | 模块级 | 07 | _emit_node | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→04｜3→05 | L111 · 函数 · 分支：1→_fmt 2→_esc 3→_shape_xml · ⇢ 依赖 engine.Engine.node_lines、engine.Engine.rect、semantics.pending_style |
 | 模块级 | 08 | _emit_edge | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→04｜3→09 | L151 · 函数 · 分支：1→_fmt 2→_esc 3→_emit_label · ⇢ 依赖 engine.Engine.path、engine.Engine.polarity、geometry.with_hops、hops.plan |
-| 模块级 | 09 | _emit_label | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→04 | ★ 边标签（判断节点的分支条件）——与 `render_html.svg_label` **同元素约定**： · L177 · 函数 · 分支：1→_fmt 2→_esc · ⇢ 依赖 engine.Engine.label_box |
-| 模块级 | 10 | _emit_lanes | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→04 | ★ 泳道底色：左走廊 + 部门列底色/表头 + 左侧里程碑带。 · L196 · 函数 · 分支：1→_fmt 2→_esc |
-| 模块级 | 11 | render | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→03｜3→04｜4→06｜5→07｜6→08｜7→10 | ★ DSL → 独立 `.svg`。成功返回 0（统一契约；`ctx` 本渲染器暂不用任何键）。 · L228 · 函数 · 分支：1→_fmt 2→_defs 3→_esc 4→_drillable 5→_emit_node 6→_emit_edge 7→_emit_lanes · ⇢ 依赖 engine.Engine.head_band、engine.Engine.height、engine.Engine.lanes、engine.load |
-| 模块级 | 12 | main | 任务 | — | — | — | 脚本 | selfboot | — | →11 | L252 · 函数 |
+| 模块级 | 09 | _emit_label | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→04 | ★ 边标签（判断节点的分支条件）——与 `render_html.svg_label` **同元素约定**： · L177 · 函数 · 分支：1→_fmt 2→_esc · ⇢ 依赖 engine.Engine.label_box、engine.Engine.label_vertical |
+| 模块级 | 10 | _emit_lanes | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→04 | ★ 泳道底色：左走廊 + 部门列底色/表头 + 左侧里程碑带。 · L200 · 函数 · 分支：1→_fmt 2→_esc |
+| 模块级 | 11 | render | 任务 | — | — | — | 脚本 | selfboot | — | 1→02｜2→03｜3→04｜4→06｜5→07｜6→08｜7→10 | ★ DSL → 独立 `.svg`。成功返回 0（统一契约；`ctx` 本渲染器暂不用任何键）。 · L232 · 函数 · 分支：1→_fmt 2→_defs 3→_esc 4→_drillable 5→_emit_node 6→_emit_edge 7→_emit_lanes · ⇢ 依赖 engine.Engine.head_band、engine.Engine.height、engine.Engine.lanes、engine.load |
+| 模块级 | 12 | main | 任务 | — | — | — | 脚本 | selfboot | — | →11 | L256 · 函数 |
 | 出口 | 13 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |

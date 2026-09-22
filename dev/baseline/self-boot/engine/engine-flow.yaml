@@ -8,7 +8,7 @@ meta:
 layout:
   col_x:
   - 400
-  width: 1640
+  width: 1460
   origin_x: 0
 nodes:
 - id: '01'
@@ -21,11 +21,11 @@ nodes:
   row: 0
   col: 0
   stage: 入口
-  route: 1→02｜2→03｜3→13｜4→14｜5→15｜6→16｜7→17｜8→18｜9→19｜10→20｜11→21｜12→22｜13→23｜14→24｜15→25｜16→26
+  route: 1→02｜2→03｜3→13｜4→14｜5→15｜6→16｜7→17｜8→18｜9→19｜10→20｜11→21｜12→22｜13→23｜14→24｜15→25｜16→26｜17→27
   desc: 流程起点（结构性节点，不是函数） · 入口：1→Model.__init__ 2→Engine.__init__ 3→Engine.width 4→Engine.rect
-    5→Engine.path 6→Engine.polarity 7→Engine.ports 8→Engine.label_box 9→Engine.node_lines
-    10→Engine.route_text 11→Engine.legend_rect 12→Engine.legend_width 13→Engine.lanes
-    14→Engine.head_band 15→Engine.height 16→load
+    5→Engine.path 6→Engine.polarity 7→Engine.ports 8→Engine.label_box 9→Engine.label_vertical
+    10→Engine.node_lines 11→Engine.route_text 12→Engine.legend_rect 13→Engine.legend_width
+    14→Engine.lanes 15→Engine.head_band 16→Engine.height 17→load
 - id: '02'
   name: Model.__init__
   lines:
@@ -36,7 +36,7 @@ nodes:
   row: 1
   col: 0
   stage: Model
-  route: →27
+  route: →28
   desc: L22 · 方法
 - id: '03'
   name: Engine.__init__
@@ -61,7 +61,7 @@ nodes:
   row: 3
   col: 0
   stage: Engine
-  route: →28
+  route: →29
   desc: ★ 直接暴露旧 Layout 的属性接口。 · L44 · 方法
 - id: '05'
   name: Engine._build_layout
@@ -86,7 +86,7 @@ nodes:
   row: 7
   col: 0
   stage: Engine
-  route: →28
+  route: →29
   desc: ★ 把上一趟写进边对象的几何改写还回去，这一趟才是干净重解。 · L60 · 方法 · ⇢ 依赖 lane_router.LaneRouter.release
 - id: '07'
   name: Engine._make_grid_router
@@ -98,7 +98,7 @@ nodes:
   row: 8
   col: 0
   stage: Engine
-  route: →28
+  route: →29
   desc: ★ 按布局造栅格与布线器（泳道专属参数只在泳道模式下用）。 · L66 · 方法
 - id: 08
   name: Engine._expose_grid_metrics
@@ -110,7 +110,7 @@ nodes:
   row: 9
   col: 0
   stage: Engine
-  route: →28
+  route: →29
   desc: ★ 建标签器，并把吸附后的尺寸与列中心转发给渲染器。 · L75 · 方法
 - id: 09
   name: Engine._build
@@ -135,7 +135,7 @@ nodes:
   row: 10
   col: 0
   stage: Engine
-  route: →28
+  route: →29
   desc: ★ 数出探布时**真落进里程碑带**的边；结构已坏（列号越界 / 类型未知）时返回 None。 · L90 · 方法
 - id: '11'
   name: Engine._reserve_left_corridor
@@ -160,7 +160,7 @@ nodes:
   row: 12
   col: 0
   stage: Engine
-  route: →28
+  route: →29
   desc: ★ 量出所有折线 x 的最大值；结构已坏（如列号越界 / 节点类型未知）时返回 None。 · L117 · 方法
 - id: '13'
   name: Engine.width
@@ -184,7 +184,7 @@ nodes:
   row: 13
   col: 0
   stage: Engine
-  route: →28
+  route: →29
   desc: L144 · 方法
 - id: '15'
   name: Engine.path
@@ -196,7 +196,7 @@ nodes:
   row: 14
   col: 0
   stage: Engine
-  route: →28
+  route: →29
   desc: L147 · 方法
 - id: '16'
   name: Engine.polarity
@@ -208,7 +208,7 @@ nodes:
   row: 15
   col: 0
   stage: Engine
-  route: →28
+  route: →29
   desc: L150 · 方法
 - id: '17'
   name: Engine.ports
@@ -220,7 +220,7 @@ nodes:
   row: 16
   col: 0
   stage: Engine
-  route: →28
+  route: →29
   desc: L153 · 方法
 - id: '18'
   name: Engine.label_box
@@ -232,108 +232,108 @@ nodes:
   row: 17
   col: 0
   stage: Engine
-  route: →28
+  route: →29
   desc: L156 · 方法 · ⇢ 依赖 label.Labeler.label_box
 - id: '19'
-  name: Engine.node_lines
+  name: Engine.label_vertical
   lines:
-  - Engine.node_lines
+  - Engine.label_vertical
   type: task
   subject: 脚本
   executor: selfboot
   row: 18
   col: 0
   stage: Engine
-  route: →28
-  desc: L159 · 方法 · ⇢ 依赖 semantics.Syntax.node_lines
+  route: →29
+  desc: ★ 边标签是否竖排（跟着竖线走）。取向是 `label_box` 选位时定的，见 `label.py`。 · L159 · 方法 · ⇢ 依赖 label.Labeler.label_vertical
 - id: '20'
-  name: Engine.route_text
+  name: Engine.node_lines
   lines:
-  - Engine.route_text
+  - Engine.node_lines
   type: task
   subject: 脚本
   executor: selfboot
   row: 19
   col: 0
   stage: Engine
-  route: →28
-  desc: L162 · 方法 · ⇢ 依赖 semantics.Syntax.route_text
+  route: →29
+  desc: L163 · 方法 · ⇢ 依赖 semantics.Syntax.node_lines
 - id: '21'
-  name: Engine.legend_rect
+  name: Engine.route_text
   lines:
-  - Engine.legend_rect
+  - Engine.route_text
   type: task
   subject: 脚本
   executor: selfboot
   row: 20
   col: 0
   stage: Engine
-  route: →28
-  desc: L165 · 方法
+  route: →29
+  desc: L166 · 方法 · ⇢ 依赖 semantics.Syntax.route_text
 - id: '22'
-  name: Engine.legend_width
+  name: Engine.legend_rect
   lines:
-  - Engine.legend_width
+  - Engine.legend_rect
   type: task
   subject: 脚本
   executor: selfboot
   row: 21
   col: 0
   stage: Engine
-  route: →28
-  desc: ★ 标题/图例块的**宽**（画布顶部居中那块，默认 600）。 · L168 · 方法
+  route: →29
+  desc: L169 · 方法
 - id: '23'
-  name: Engine.lanes
+  name: Engine.legend_width
   lines:
-  - Engine.lanes
+  - Engine.legend_width
   type: task
   subject: 脚本
   executor: selfboot
   row: 22
   col: 0
   stage: Engine
-  route: →28
-  desc: ★ 泳道背景信息；流程布局返回 None（渲染器据此决定画不画泳道带）。 · L176 · 方法 · ⇢ 依赖 swimlane.SwimGrid.lanes
+  route: →29
+  desc: ★ 标题/图例块的**宽**（画布顶部居中那块，默认 600）。 · L172 · 方法
 - id: '24'
-  name: Engine.head_band
+  name: Engine.lanes
   lines:
-  - Engine.head_band
+  - Engine.lanes
   type: task
   subject: 脚本
   executor: selfboot
   row: 23
   col: 0
   stage: Engine
-  route: →28
-  desc: ★ 画布顶部是否预留标题带（HTML 版标题在画布外，故不预留）。 · L181 · 方法 · ⇢ 依赖 geometry.RectCache.invalidate
+  route: →29
+  desc: ★ 泳道背景信息；流程布局返回 None（渲染器据此决定画不画泳道带）。 · L180 · 方法 · ⇢ 依赖 swimlane.SwimGrid.lanes
 - id: '25'
-  name: Engine.height
+  name: Engine.head_band
   lines:
-  - Engine.height
+  - Engine.head_band
   type: task
   subject: 脚本
   executor: selfboot
   row: 24
   col: 0
   stage: Engine
-  route: →28
-  desc: L195 · 方法
+  route: →29
+  desc: ★ 画布顶部是否预留标题带（HTML 版标题在画布外，故不预留）。 · L185 · 方法 · ⇢ 依赖 geometry.RectCache.invalidate
 - id: '26'
-  name: load
+  name: Engine.height
   lines:
-  - load
+  - Engine.height
   type: task
   subject: 脚本
   executor: selfboot
   row: 25
   col: 0
-  stage: 模块级
-  route: →27
-  desc: ★ 加载 DSL(yaml) + 默认字典 → Engine。 · L199 · 函数
+  stage: Engine
+  route: →29
+  desc: L199 · 方法
 - id: '27'
-  name: _load_yaml
+  name: load
   lines:
-  - _load_yaml
+  - load
   type: task
   subject: 脚本
   executor: selfboot
@@ -341,15 +341,27 @@ nodes:
   col: 0
   stage: 模块级
   route: →28
-  desc: L224 · 函数
+  desc: ★ 加载 DSL(yaml) + 默认字典 → Engine。 · L203 · 函数
 - id: '28'
+  name: _load_yaml
+  lines:
+  - _load_yaml
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 27
+  col: 0
+  stage: 模块级
+  route: →29
+  desc: L228 · 函数
+- id: '29'
   name: 结束
   lines:
   - 结束
   type: end
   subject: 脚本
   executor: selfboot
-  row: 27
+  row: 28
   col: 0
   stage: 出口
   route: —
@@ -435,8 +447,13 @@ edges:
   kind: jumpR
   polarity: main
   label: '16'
-- from: '02'
+- from: '01'
   to: '27'
+  kind: jumpR
+  polarity: main
+  label: '17'
+- from: '02'
+  to: '28'
   kind: jumpR
   polarity: main
 - from: '03'
@@ -450,7 +467,7 @@ edges:
   polarity: main
   label: '2'
 - from: '04'
-  to: '28'
+  to: '29'
   kind: jumpR
   polarity: main
 - from: '05'
@@ -464,15 +481,15 @@ edges:
   polarity: main
   label: '2'
 - from: '06'
-  to: '28'
+  to: '29'
   kind: jumpR
   polarity: main
 - from: '07'
-  to: '28'
+  to: '29'
   kind: jumpR
   polarity: main
 - from: 08
-  to: '28'
+  to: '29'
   kind: jumpR
   polarity: main
 - from: 09
@@ -491,7 +508,7 @@ edges:
   polarity: main
   label: '3'
 - from: '10'
-  to: '28'
+  to: '29'
   kind: jumpR
   polarity: main
 - from: '11'
@@ -505,7 +522,7 @@ edges:
   polarity: main
   label: '2'
 - from: '12'
-  to: '28'
+  to: '29'
   kind: jumpR
   polarity: main
 - from: '13'
@@ -513,58 +530,62 @@ edges:
   kind: spine
   polarity: main
 - from: '14'
-  to: '28'
+  to: '29'
   kind: jumpR
   polarity: main
 - from: '15'
-  to: '28'
+  to: '29'
   kind: jumpR
   polarity: main
 - from: '16'
-  to: '28'
+  to: '29'
   kind: jumpR
   polarity: main
 - from: '17'
-  to: '28'
+  to: '29'
   kind: jumpR
   polarity: main
 - from: '18'
-  to: '28'
+  to: '29'
   kind: jumpR
   polarity: main
 - from: '19'
-  to: '28'
+  to: '29'
   kind: jumpR
   polarity: main
 - from: '20'
-  to: '28'
+  to: '29'
   kind: jumpR
   polarity: main
 - from: '21'
-  to: '28'
+  to: '29'
   kind: jumpR
   polarity: main
 - from: '22'
-  to: '28'
+  to: '29'
   kind: jumpR
   polarity: main
 - from: '23'
-  to: '28'
+  to: '29'
   kind: jumpR
   polarity: main
 - from: '24'
-  to: '28'
+  to: '29'
   kind: jumpR
   polarity: main
 - from: '25'
-  to: '28'
+  to: '29'
   kind: jumpR
   polarity: main
 - from: '26'
-  to: '27'
-  kind: spine
+  to: '29'
+  kind: jumpR
   polarity: main
 - from: '27'
   to: '28'
+  kind: spine
+  polarity: main
+- from: '28'
+  to: '29'
   kind: spine
   polarity: main

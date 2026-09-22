@@ -8,7 +8,7 @@ meta:
 layout:
   col_x:
   - 400
-  width: 1460
+  width: 1160
   origin_x: 0
 nodes:
 - id: '01'
@@ -21,7 +21,7 @@ nodes:
   row: 0
   col: 0
   stage: 入口
-  route: 1→02｜2→04｜3→29
+  route: 1→02｜2→04｜3→30
   desc: 流程起点（结构性节点，不是函数） · 入口：1→Router.__init__ 2→Router.polarity 3→Router._assign_group_dyes._rank
 - id: '02'
   name: Router.__init__
@@ -33,7 +33,7 @@ nodes:
   row: 1
   col: 0
   stage: Router
-  route: →32
+  route: →33
   desc: L15 · 方法
 - id: '03'
   name: Router.ports
@@ -42,10 +42,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 30
+  row: 31
   col: 0
   stage: Router
-  route: →32
+  route: →33
   desc: L21 · 方法
 - id: '04'
   name: Router.polarity
@@ -57,7 +57,7 @@ nodes:
   row: 2
   col: 0
   stage: Router
-  route: →32
+  route: →33
   desc: L25 · 方法
 - id: '05'
   name: Router._dedup
@@ -69,7 +69,7 @@ nodes:
   row: 12
   col: 0
   stage: Router
-  route: →32
+  route: →33
   desc: ★ 去掉连续重复的退化折点（L 形候选的通道值=锚点 x 时首/尾会出现）。 · L30 · 方法
 - id: '06'
   name: Router.path
@@ -81,7 +81,7 @@ nodes:
   row: 4
   col: 0
   stage: Router
-  route: 1→03｜2→05｜3→07｜4→27
+  route: 1→03｜2→05｜3→07｜4→28
   desc: L38 · 方法 · 分支：1→Router.ports 2→Router._dedup 3→Router._resolve_channel_x 4→Router._ensure_gutters
     · ⇢ 依赖 geometry.snap
 - id: '07'
@@ -94,7 +94,7 @@ nodes:
   row: 13
   col: 0
   stage: Router
-  route: →32
+  route: →33
   desc: ★ 定这条边要走的横向专用通道 x（已吸细格）；没有专用通道时返回 None。 · L57 · 方法 · ⇢ 依赖 geometry.snap
 - id: 08
   name: Router._hs
@@ -103,7 +103,7 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 23
+  row: 25
   col: 0
   stage: Router
   route: →03
@@ -118,7 +118,7 @@ nodes:
   row: 10
   col: 0
   stage: Router
-  route: →32
+  route: →33
   desc: L78 · 方法
 - id: '10'
   name: Router._col_gap
@@ -142,7 +142,7 @@ nodes:
   row: 14
   col: 0
   stage: Router
-  route: →32
+  route: →33
   desc: ★ 是否需要走相邻列之间的空隙：同行直线(horiz)除外。 · L87 · 方法
 - id: '12'
   name: Router._anchor_taken
@@ -154,7 +154,7 @@ nodes:
   row: 16
   col: 0
   stage: Router
-  route: →32
+  route: →33
   desc: ★ nid 的 side 端口（切向偏移 off）是否会被**其他边**占用——按显式字段或 kind 默认端口推。 · L95 · 方法
 - id: '13'
   name: Router._alt_xs
@@ -166,7 +166,7 @@ nodes:
   row: 11
   col: 0
   stage: Router
-  route: →32
+  route: →33
   desc: ★ 以 start 为中心左右交替展开的候选 x（窄空隙里也能榨出多条通道）。 · L113 · 方法
 - id: '14'
   name: Router._clean_l_cands
@@ -203,7 +203,7 @@ nodes:
   row: 21
   col: 0
   stage: Router
-  route: →32
+  route: →33
   desc: ★ 第 col 列的**最外沿** → `(左沿, 右沿)`。没有节点时退回该列的配置中心。 · L145 · 方法
 - id: '17'
   name: Router._right_family_cands
@@ -253,7 +253,7 @@ nodes:
   row: 24
   col: 0
   stage: Router
-  route: →32
+  route: →33
   desc: ★ 轴向线段是否穿过某节点矩形。矩形**外扩** m 像素：通道与节点边沿至少留 m 的间隙。 · L233 · 方法 · ⇢ 依赖 geometry.RectCache._all_rects、geometry.seg_rect_hit
 - id: '21'
   name: Router._hsegs
@@ -262,10 +262,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 25
+  row: 26
   col: 0
   stage: Router
-  route: →32
+  route: →33
   desc: L243 · 方法
 - id: '22'
   name: Router._seg_crosses_own
@@ -274,13 +274,26 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 26
+  row: 27
   col: 0
   stage: Router
-  route: →32
+  route: →33
   desc: ★ 折线是否横穿自身源/目标节点的**内部**（矩形内缩 m）。判据见 visual-spec 第 4 项。 · L247 · 方法 · ⇢ 依赖
     geometry.seg_rect_hit
 - id: '23'
+  name: Router._path_rejects
+  lines:
+  - Router._path_rejects
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 23
+  col: 0
+  stage: Router
+  route: 1→20｜2→22
+  desc: ★ 这一档通道算出来的三段路，踩没踩**硬**规矩：(d1) 任一段穿节点或横穿自身端点； · L254 · 方法 · 分支：1→Router._seg_hits_rects
+    2→Router._seg_crosses_own
+- id: '24'
   name: Router._chan_conflict
   lines:
   - Router._chan_conflict
@@ -290,10 +303,10 @@ nodes:
   row: 22
   col: 0
   stage: Router
-  route: 1→08｜2→20｜3→21｜4→22
-  desc: ★ 通道 ch 是否可用。四类约束，缺一条就出叠线或穿节点： · L254 · 方法 · 分支：1→Router._hs 2→Router._seg_hits_rects
-    3→Router._hsegs 4→Router._seg_crosses_own · ⇢ 依赖 geometry.Grid.anchor
-- id: '24'
+  route: 1→08｜2→21｜3→23
+  desc: ★ 通道 ch 是否可用。四类约束，缺一条就出叠线或穿节点： · L280 · 方法 · 分支：1→Router._hs 2→Router._hsegs
+    3→Router._path_rejects · ⇢ 依赖 geometry.Grid.anchor
+- id: '25'
   name: Router._replay_gutter_hints
   lines:
   - Router._replay_gutter_hints
@@ -303,9 +316,9 @@ nodes:
   row: 19
   col: 0
   stage: Router
-  route: →23
-  desc: ★ 把已落盘的通道提示（gapx/gutter/channel）用同一套冲突规则复检，过期的丢掉重规划。 · L284 · 方法 · ⇢ 依赖 geometry.snap
-- id: '25'
+  route: →24
+  desc: ★ 把已落盘的通道提示（gapx/gutter/channel）用同一套冲突规则复检，过期的丢掉重规划。 · L304 · 方法 · ⇢ 依赖 geometry.snap
+- id: '26'
   name: Router._fallback_channel
   lines:
   - Router._fallback_channel
@@ -315,10 +328,10 @@ nodes:
   row: 20
   col: 0
   stage: Router
-  route: 1→16｜2→23
-  desc: ★ 候选全冲突时的兜底：从本边局部右基准最后一档向外找不冲突通道；再失败只避已占通道。 · L320 · 方法 · 分支：1→Router._col_edge
-    2→Router._chan_conflict · ⇢ 依赖 geometry.snap
-- id: '26'
+  route: 1→16｜2→23｜3→24
+  desc: ★ 候选全冲突时的兜底：从本边局部右基准最后一档向外找不冲突通道；再失败只避已占通道。 · L340 · 方法 · 分支：1→Router._col_edge
+    2→Router._path_rejects 3→Router._chan_conflict · ⇢ 依赖 geometry.snap
+- id: '27'
   name: Router._route_pending_edges
   lines:
   - Router._route_pending_edges
@@ -328,10 +341,10 @@ nodes:
   row: 6
   col: 0
   stage: Router
-  route: 1→08｜2→19｜3→23｜4→25
-  desc: ★ 给还没通道的 loop/jumpR 边按候选优先级择优分配通道，全冲突时向外兜底。 · L342 · 方法 · 分支：1→Router._hs
+  route: 1→08｜2→19｜3→24｜4→26
+  desc: ★ 给还没通道的 loop/jumpR 边按候选优先级择优分配通道，全冲突时向外兜底。 · L372 · 方法 · 分支：1→Router._hs
     2→Router._candidates 3→Router._chan_conflict 4→Router._fallback_channel
-- id: '27'
+- id: '28'
   name: Router._ensure_gutters
   lines:
   - Router._ensure_gutters
@@ -341,23 +354,23 @@ nodes:
   row: 5
   col: 0
   stage: Router
-  route: 1→24｜2→26｜3→31
-  desc: ★ 一次性通道分配：跨相邻列走列间通道、单列回路走左、长跳走右；**跨度小的先排**（占内道）。 · L365 · 方法 · 分支：1→Router._replay_gutter_hints
+  route: 1→25｜2→27｜3→32
+  desc: ★ 一次性通道分配：跨相邻列走列间通道、单列回路走左、长跳走右；**跨度小的先排**（占内道）。 · L395 · 方法 · 分支：1→Router._replay_gutter_hints
     2→Router._route_pending_edges 3→Router._stagger_target_dyes · ⇢ 依赖 geometry.stagger_source_anchors
-- id: '28'
+- id: '29'
   name: Router._assign_group_dyes
   lines:
   - Router._assign_group_dyes
   type: task
   subject: 脚本
   executor: selfboot
-  row: 28
+  row: 29
   col: 0
   stage: Router
-  route: 1→03｜2→30
-  desc: ★ 给同一目标同一入口的一批入边在 ±avail 内错开入场 dye：近源先拿靠源一侧的槽位。 · L391 · 方法 · 分支：1→Router.ports
+  route: 1→03｜2→31
+  desc: ★ 给同一目标同一入口的一批入边在 ±avail 内错开入场 dye：近源先拿靠源一侧的槽位。 · L421 · 方法 · 分支：1→Router.ports
     2→Router._side_used_slots · ⇢ 依赖 geometry.Grid.anchor、geometry.snap
-- id: '29'
+- id: '30'
   name: Router._assign_group_dyes._rank
   lines:
   - Router._assign_group_dyes._rank
@@ -368,40 +381,40 @@ nodes:
   col: 0
   stage: Router
   route: →06
-  desc: L423 · 函数
-- id: '30'
+  desc: L453 · 函数
+- id: '31'
   name: Router._side_used_slots
   lines:
   - Router._side_used_slots
   type: task
   subject: 脚本
   executor: selfboot
-  row: 29
+  row: 30
   col: 0
   stage: Router
   route: →03
-  desc: ★ 该侧**出边**已占的锚点槽位（自动与手填都算）——入边错峰必须整片避开（见 `_assign_group_dyes`… · L442 · 方法
-- id: '31'
+  desc: ★ 该侧**出边**已占的锚点槽位（自动与手填都算）——入边错峰必须整片避开（见 `_assign_group_dyes`… · L472 · 方法
+- id: '32'
   name: Router._stagger_target_dyes
   lines:
   - Router._stagger_target_dyes
   type: task
   subject: 脚本
   executor: selfboot
-  row: 27
+  row: 28
   col: 0
   stage: Router
-  route: 1→03｜2→28
-  desc: ★ 同一目标**同一入口**的入边：在 ±avail 内错开入场 dye，否则尾段会重合纠缠。 · L452 · 方法 · 分支：1→Router.ports
+  route: 1→03｜2→29
+  desc: ★ 同一目标**同一入口**的入边：在 ±avail 内错开入场 dye，否则尾段会重合纠缠。 · L482 · 方法 · 分支：1→Router.ports
     2→Router._assign_group_dyes · ⇢ 依赖 geometry.snap
-- id: '32'
+- id: '33'
   name: 结束
   lines:
   - 结束
   type: end
   subject: 脚本
   executor: selfboot
-  row: 31
+  row: 32
   col: 0
   stage: 出口
   route: —
@@ -418,24 +431,24 @@ edges:
   polarity: main
   label: '2'
 - from: '01'
-  to: '29'
+  to: '30'
   kind: jumpR
   polarity: main
   label: '3'
 - from: '02'
-  to: '32'
+  to: '33'
   kind: jumpR
   polarity: main
 - from: '03'
-  to: '32'
+  to: '33'
   kind: spine
   polarity: main
 - from: '04'
-  to: '32'
+  to: '33'
   kind: jumpR
   polarity: main
 - from: '05'
-  to: '32'
+  to: '33'
   kind: jumpR
   polarity: main
 - from: '06'
@@ -454,12 +467,12 @@ edges:
   polarity: main
   label: '3'
 - from: '06'
-  to: '27'
+  to: '28'
   kind: spine
   polarity: main
   label: '4'
 - from: '07'
-  to: '32'
+  to: '33'
   kind: jumpR
   polarity: main
 - from: 08
@@ -467,7 +480,7 @@ edges:
   kind: jumpR
   polarity: main
 - from: 09
-  to: '32'
+  to: '33'
   kind: jumpR
   polarity: main
 - from: '10'
@@ -475,15 +488,15 @@ edges:
   kind: spine
   polarity: main
 - from: '11'
-  to: '32'
+  to: '33'
   kind: jumpR
   polarity: main
 - from: '12'
-  to: '32'
+  to: '33'
   kind: jumpR
   polarity: main
 - from: '13'
-  to: '32'
+  to: '33'
   kind: jumpR
   polarity: main
 - from: '14'
@@ -501,7 +514,7 @@ edges:
   polarity: main
   label: '2'
 - from: '16'
-  to: '32'
+  to: '33'
   kind: jumpR
   polarity: main
 - from: '17'
@@ -543,111 +556,121 @@ edges:
   polarity: main
   label: '6'
 - from: '20'
-  to: '32'
+  to: '33'
   kind: jumpR
   polarity: main
 - from: '21'
-  to: '32'
+  to: '33'
   kind: jumpR
   polarity: main
 - from: '22'
-  to: '32'
+  to: '33'
   kind: jumpR
   polarity: main
 - from: '23'
-  to: 08
+  to: '20'
   kind: spine
   polarity: main
   label: '1'
-- from: '23'
-  to: '20'
-  kind: jumpR
-  polarity: main
-  label: '2'
-- from: '23'
-  to: '21'
-  kind: jumpR
-  polarity: main
-  label: '3'
 - from: '23'
   to: '22'
   kind: jumpR
   polarity: main
-  label: '4'
-- from: '24'
-  to: '23'
-  kind: jumpR
-  polarity: main
-- from: '25'
-  to: '16'
-  kind: spine
-  polarity: main
-  label: '1'
-- from: '25'
-  to: '23'
-  kind: jumpR
-  polarity: main
   label: '2'
-- from: '26'
+- from: '24'
   to: 08
   kind: jumpR
   polarity: main
   label: '1'
-- from: '26'
-  to: '19'
-  kind: spine
+- from: '24'
+  to: '21'
+  kind: jumpR
   polarity: main
   label: '2'
+- from: '24'
+  to: '23'
+  kind: spine
+  polarity: main
+  label: '3'
+- from: '25'
+  to: '24'
+  kind: jumpR
+  polarity: main
+- from: '26'
+  to: '16'
+  kind: spine
+  polarity: main
+  label: '1'
 - from: '26'
   to: '23'
   kind: jumpR
   polarity: main
-  label: '3'
+  label: '2'
 - from: '26'
-  to: '25'
+  to: '24'
   kind: jumpR
   polarity: main
-  label: '4'
+  label: '3'
+- from: '27'
+  to: 08
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '27'
+  to: '19'
+  kind: spine
+  polarity: main
+  label: '2'
 - from: '27'
   to: '24'
   kind: jumpR
   polarity: main
-  label: '1'
+  label: '3'
 - from: '27'
   to: '26'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '28'
+  to: '25'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '28'
+  to: '27'
   kind: spine
   polarity: main
   label: '2'
-- from: '27'
-  to: '31'
+- from: '28'
+  to: '32'
   kind: jumpR
   polarity: main
   label: '3'
-- from: '28'
+- from: '29'
   to: '03'
   kind: jumpR
   polarity: main
   label: '1'
-- from: '28'
-  to: '30'
+- from: '29'
+  to: '31'
   kind: spine
   polarity: main
   label: '2'
-- from: '29'
+- from: '30'
   to: '06'
   kind: spine
   polarity: main
-- from: '30'
+- from: '31'
   to: '03'
   kind: spine
   polarity: main
-- from: '31'
+- from: '32'
   to: '03'
   kind: jumpR
   polarity: main
   label: '1'
-- from: '31'
-  to: '28'
+- from: '32'
+  to: '29'
   kind: spine
   polarity: main
   label: '2'

@@ -20,7 +20,7 @@ level: L0
 | 接管与解析 | 07 | 模块 · console | 任务 | — | — | — | 脚本 | selfboot | — | →08 | 1 个函数 · ⊞ console/flowtable.md |
 | 接管与解析 | 08 | 模块 · deps | 任务 | — | — | — | 脚本 | selfboot | — | →09 | 2 个函数 · ⊞ deps/flowtable.md |
 | 循环与漂移 | 09 | 模块 · drift | 任务 | — | — | — | 脚本 | selfboot | — | →10 | 27 个函数 · ⊞ drift/flowtable.md |
-| 渲染 | 10 | 模块 · engine | 任务 | — | — | — | 脚本 | selfboot | — | →11 | 26 个函数 · ⊞ engine/flowtable.md |
+| 渲染 | 10 | 模块 · engine | 任务 | — | — | — | 脚本 | selfboot | — | →11 | 27 个函数 · ⊞ engine/flowtable.md |
 | 接管与解析 | 11 | 模块 · flowtable | 任务 | — | — | — | 脚本 | selfboot | — | →12 | 27 个函数 · ⊞ flowtable/flowtable.md |
 | 结构校验 | 12 | 模块 · flowtable_check | 任务 | — | — | — | 脚本 | selfboot | — | →13 | 36 个函数 · ⊞ flowtable_check/flowtable.md |
 | 布局与配色 | 13 | 模块 · flowtable_colors | 任务 | — | — | — | 脚本 | selfboot | — | →14 | 8 个函数 · ⊞ flowtable_colors/flowtable.md |
@@ -30,7 +30,7 @@ level: L0
 | 接管与解析 | 17 | 模块 · import_table | 任务 | — | — | — | 脚本 | selfboot | — | →18 | 13 个函数 · ⊞ import_table/flowtable.md |
 | 编排入口 | 18 | 模块 · init | 任务 | — | — | — | 脚本 | selfboot | — | →19 | 4 个函数 · ⊞ init/flowtable.md |
 | 接管与解析 | 19 | 模块 · intake | 任务 | — | — | — | 脚本 | selfboot | — | →20 | 9 个函数 · ⊞ intake/flowtable.md |
-| 渲染 | 20 | 模块 · label | 任务 | — | — | — | 脚本 | selfboot | — | →21 | 9 个函数 · ⊞ label/flowtable.md |
+| 渲染 | 20 | 模块 · label | 任务 | — | — | — | 脚本 | selfboot | — | →21 | 12 个函数 · ⊞ label/flowtable.md |
 | 渲染 | 21 | 模块 · lane_router | 任务 | — | — | — | 脚本 | selfboot | — | →22 | 35 个函数 · ⊞ lane_router/flowtable.md |
 | 层级索引 | 22 | 模块 · layer_index | 任务 | — | — | — | 脚本 | selfboot | — | →23 | 9 个函数 · ⊞ layer_index/flowtable.md |
 | 接管与解析 | 23 | 模块 · ledger | 任务 | — | — | — | 脚本 | selfboot | — | →24 | 9 个函数 · ⊞ ledger/flowtable.md |
@@ -49,7 +49,7 @@ level: L0
 | 渲染 | 36 | 模块 · render_html | 任务 | — | — | — | 脚本 | selfboot | — | →37 | 23 个函数 · ⊞ render_html/flowtable.md |
 | 接管与解析 | 37 | 模块 · render_pages | 任务 | — | — | — | 脚本 | selfboot | — | →38 | 12 个函数 · ⊞ render_pages/flowtable.md |
 | 渲染 | 38 | 模块 · render_svg | 任务 | — | — | — | 脚本 | selfboot | — | →39 | 11 个函数 · ⊞ render_svg/flowtable.md |
-| 渲染 | 39 | 模块 · router | 任务 | — | — | — | 脚本 | selfboot | — | →40 | 30 个函数 · ⊞ router/flowtable.md |
+| 渲染 | 39 | 模块 · router | 任务 | — | — | — | 脚本 | selfboot | — | →40 | 31 个函数 · ⊞ router/flowtable.md |
 | 接管与解析 | 40 | 模块 · semantics | 任务 | — | — | — | 脚本 | selfboot | — | →41 | 18 个函数 · ⊞ semantics/flowtable.md |
 | 编排入口 | 41 | 模块 · shot | 任务 | — | — | — | 脚本 | selfboot | — | →42 | 8 个函数 · ⊞ shot/flowtable.md |
 | 渲染 | 42 | 模块 · swimlane | 任务 | — | — | — | 脚本 | selfboot | — | →43 | 20 个函数 · ⊞ swimlane/flowtable.md |

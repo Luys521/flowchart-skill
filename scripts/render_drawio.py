@@ -125,6 +125,10 @@ def edge_style(L, e):
          f'labelBackgroundColor=#ffffff;labelBorderColor={ed["color"]};')
     if ed['dashed']:
         s += 'dashed=1;'
+    # 标签跟线走（G85）：`horizontal=0` 就是 drawio 把边标签转 90° 的那个键（右键→"垂直"）。
+    # 判据与 html/svg 同一个：`L.label_vertical(e)`（取向在 `label.py` 选位时定，不在这里重算）。
+    if e.get('label') and L.label_vertical(e):
+        s += 'horizontal=0;'
     # 交叉打跳（D-149）：**drawio 自己就有线跳**——官方边样式表里的 `jumpStyle`
     # （`arc` / `gap` / `sharp`）与 `jumpSize`（交叉处的跳线宽度）。所以三份产物**都能画**：
     # html/svg 走我们自己的半圆（几何在 `geometry.with_hops`），drawio 走这两个键。

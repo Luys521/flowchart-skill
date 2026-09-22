@@ -157,7 +157,7 @@ class Router(RectCache):
     def _right_family_cands(self, lay, col_from, col_to, limit, GL):
         """右族长跳候选：以本边涉及列中更靠右列的**右沿**为局部基准，只向外展开（D-91）。"""
         # ③ 右族（局部基准，只向外展开）
-        step_r = snap(lay.get('right_channel_step', 50), GL)
+        step_r = snap(lay.get('right_channel_step', 40), GL)
         off_r = snap(lay.get('right_channel_offset', 40), GL)
         local_rg = snap(self._col_edge(max(col_from, col_to))[1] + off_r, GL)
         return [('right', 'right', local_rg + step_r * i) for i in range(limit)]
@@ -174,7 +174,7 @@ class Router(RectCache):
         的名字里带"右"，但左族**刻意同口径**——两侧束距与贴列距离必须一致，否则同一张图左右
         不对称，而 `dictionary.yaml` 里只有这两个数。命名是历史（D-92 先做右族），不是"只对右边生效"。
         """
-        step_l = snap(lay.get('right_channel_step', 50), GL)
+        step_l = snap(lay.get('right_channel_step', 40), GL)
         off_l = snap(lay.get('right_channel_offset', 40), GL)
         local_lg = snap(self._col_edge(min(col_from, col_to))[0] - off_l, GL)
         return [('left', 'left', local_lg - step_l * i) for i in range(limit)]
@@ -251,20 +251,40 @@ class Router(RectCache):
                 return True
         return False
 
-    def _chan_conflict(self, e, ch, ex, en, assigned):
-        """通道 ch 是否可用。四类约束，缺一条就出叠线或穿节点：
-        a) 同通道上无竖直跨度重叠的边  b) 本边水平段不穿更内侧已占通道的竖直段
-        c) 已占边的水平段不穿本边竖直段  d) 本边任一段不穿节点（第一道保证，validate 只做复检）"""
-        sx, sy = self.grid.anchor(e['from'], ex, e.get('sdye', 0))   # 手填 sdye 也算进锚点，否则 y 失真
-        tx, ty = self.grid.anchor(e['to'], en, e.get('dye', 0))
+    def _path_rejects(self, e, ch, ex, en):
+        """这一档通道算出来的三段路，踩没踩**硬**规矩：(d1) 任一段穿节点或横穿自身端点；
+        (d2) 任一段短于一格粗格（产物自检会报"转角挤在箭头上"）。
+
+        为什么单列出来（G84/D-152）：两条都是**产物几何自检直接红**的，候选筛选**和**兜底都不许
+        放宽。此前这段判断只写在 `_chan_conflict` 里，而 `_fallback_channel` 的"最后一招"
+        （只避开已占通道）**绕过**了它——于是单列的自举树漏出 0px 短段（`18→11` 就是这么来的），
+        多列的表漏出穿节点的折线。
+        """
+        g = self.grid
+        sx, sy = g.anchor(e['from'], ex, e.get('sdye', 0))
+        tx, ty = g.anchor(e['to'], en, e.get('dye', 0))
         ign = (e['from'], e['to'])
+        floor = g.node_grid        # 最短段 = 一格粗格（与 `validate._artifact_short_segment_errors` 同口径）
         for p1, p2 in ((sx, sy), (ch, sy)), ((ch, sy), (ch, ty)), ((ch, ty), (tx, ty)):
-            if abs(p1[0] - p2[0]) < 0.5 and abs(p1[1] - p2[1]) < 0.5:
-                continue                      # 退化零长段（L 形候选的通道值=锚点 x 时出现）
+            d = max(abs(p1[0] - p2[0]), abs(p1[1] - p2[1]))
+            if d < 0.5:
+                continue                      # 完全退化的零长段（L 形候选的通道值=锚点 x 时出现）
+            if d < floor:
+                return True
             if self._seg_hits_rects(p1, p2, ign):
                 return True
             if self._seg_crosses_own(p1, p2, e['from'], e['to']):
                 return True
+        return False
+
+    def _chan_conflict(self, e, ch, ex, en, assigned):
+        """通道 ch 是否可用。四类约束，缺一条就出叠线或穿节点：
+        a) 同通道上无竖直跨度重叠的边  b) 本边水平段不穿更内侧已占通道的竖直段
+        c) 已占边的水平段不穿本边竖直段  d) 本边任一段不穿节点、不短于一格粗格（见 `_path_rejects`）"""
+        sx, sy = self.grid.anchor(e['from'], ex, e.get('sdye', 0))   # 手填 sdye 也算进锚点，否则 y 失真
+        tx, ty = self.grid.anchor(e['to'], en, e.get('dye', 0))
+        if self._path_rejects(e, ch, ex, en):
+            return True
         lo, hi = min(sy, ty), max(sy, ty)
         myh = self._hsegs(ex, sx, tx, ch, sy, ty)
         for (o, och, oex, oen) in assigned:
@@ -322,7 +342,7 @@ class Router(RectCache):
         # 兜底：从本边局部右基准的最后一档再往外找一条不冲突的通道。
         # 绝不能回落到已占通道——落回去等于主动制造共线重叠
         # （这正是决策树那类多汇合图失败的成因）。
-        sr = snap(lay.get('right_channel_step', 50), self.grid.lattice)
+        sr = snap(lay.get('right_channel_step', 40), self.grid.lattice)
         off_r = snap(lay.get('right_channel_offset', 40), self.grid.lattice)
         col_f = self.M.nodes[e['from']]['col']
         col_t = self.M.nodes[e['to']]['col']
@@ -332,9 +352,19 @@ class Router(RectCache):
             if not self._chan_conflict(e, x, 'right', 'right', assigned):
                 return ('right', 'right', x)
             x += sr
-        # 全部失败：退回「只避开已占通道」的旧兜底，剩余冲突由 validate 事后拦截。
-        x = base + sr * (limit - 1)
+        # 全部失败：**从最内侧的通道往外扫**，取第一条"没人占、又不踩硬规矩"的（G84/D-152）。
+        # 为什么起点要挪到最内侧：旧写法从 `base + sr*(limit-1)`（最后一档）起步，等于**默认挑最外**，
+        # 于是梯级上留下一串空洞——自举 workflow 实测右侧通道 540/600/960/1020/1080，中间空四档，
+        # 看起来毫无刻度（作者 2026-09-19 的"右侧出线刻度不守规矩"就是这个）。内→外扫则自然填满。
+        # 仍然只放宽"与别人共道"这一条（旧兜底的本意），节点与最短段照旧否决：往图外走总有空位。
         used = {round(och) for _, och, _, _ in assigned}
+        x = base
+        for _ in range(FALLBACK_CHANNEL_TRIES * 8):
+            if round(x) not in used and not self._path_rejects(e, x, 'right', 'right'):
+                return ('right', 'right', x)
+            x += sr
+        # 极端情况（图外也没有空位）保持旧行为：回到最后一档往外挪，剩余冲突由 validate 报出。
+        x = base + sr * (limit - 1)
         while round(x) in used:
             x += sr
         return ('right', 'right', x)

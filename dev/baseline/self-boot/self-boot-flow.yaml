@@ -130,7 +130,7 @@ nodes:
   col: 0
   stage: 渲染
   route: →11
-  desc: 26 个函数 · ⊞ engine/flowtable.md
+  desc: 27 个函数 · ⊞ engine/flowtable.md
 - id: '11'
   name: 模块 · flowtable
   lines:
@@ -250,7 +250,7 @@ nodes:
   col: 0
   stage: 渲染
   route: →21
-  desc: 9 个函数 · ⊞ label/flowtable.md
+  desc: 12 个函数 · ⊞ label/flowtable.md
 - id: '21'
   name: 模块 · lane_router
   lines:
@@ -478,7 +478,7 @@ nodes:
   col: 0
   stage: 渲染
   route: →40
-  desc: 30 个函数 · ⊞ router/flowtable.md
+  desc: 31 个函数 · ⊞ router/flowtable.md
 - id: '40'
   name: 模块 · semantics
   lines:
