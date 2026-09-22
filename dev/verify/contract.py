@@ -340,19 +340,11 @@ def run_face(tmp=None):
         m = re.search(pat, rd)
         got = tuple(int(x) for x in m.groups()) if m else ()
         c.check(got == want, f'{label}与现算一致', f'文档 {got} ← 现算 {want}')
-    # 自举那条：**从基线现算**（它进库、确定性有保证）：节点 / 边 / 内嵌模块子图 / drawio 页
-    sb_dir = SKILL / 'dev' / 'baseline' / 'self-boot'
-    if (sb_dir / 'flowtable.md').is_file():
-        from flowtable import COLUMNS, parse_table          # 表解析器只有一份，别在这儿另写一个
-        _t, _m, rows = parse_table((sb_dir / 'flowtable.md').read_text(encoding='utf-8'))
-        want = (len(rows),
-                sum(str(r[COLUMNS.index('下个节点')]).count('→') for r in rows),
-                len(list(sb_dir.glob('*/flowtable.md'))),
-                (sb_dir / 'self-boot-flow.drawio').read_text(encoding='utf-8').count('<diagram '))
-        m2 = re.search(r'(\d+) 节点 / (\d+) 边，\*\*内嵌 (\d+) 张模块子图\*\*[^、]*、drawio (\d+) 页', rd)
-        got = tuple(int(x) for x in m2.groups()) if m2 else ()
-        c.check(got == want, 'README 的自举规模与现算一致（节点 / 边 / 内嵌 / drawio 页）',
-                f'文档 {got} ← 现算 {want}')
+    # **曾经还有一条**：README 里那句"自举规模（节点 / 边 / 内嵌 / drawio 页）"与现算比对。
+    # 2026-09-22 撤掉（D-148）：作者把 README 收敛成**使用者视角**，删掉了「两套完整渲染成果」
+    # 那一节（连同它宣称的那四个数）。**宣称没了，守着它的断言就没有对象**——留着只会让套件永远红。
+    # 那条事实本身没失去守卫：面③「自举树重造结果与基线逐字节相同」是更强的口径
+    # （它比的是整棵树，不是一个句子里的四个数）。
     # `dev/tools/` 的名册也在这里核一次（**单向**：每个脚本都要在地图里被点名）。
     # 为什么单向：README 是**人看的**，它引用产品脚本（`build.py` / `recon.py`…）是正常的指路；
     # 但**自己家新增一件工具却没写进地图**，就是"清单的唯一出处"失信——实测漏过 `selfboot_gen.py`。
