@@ -203,8 +203,17 @@ def _assemble_dsl(nodes, edges, mode, lane_order, colors, title, hint):
     if lane_order:
         # 声明列序 = 采纳槽位模式：渲染层据此把左侧阶段带按「连续同阶段」合并（见 swimlane.SwimGrid）
         meta['lane_order'] = lane_order
+    # **提示里人写的布局参数要跟着走**（G90/D-158）：提示除了 `col_x`，还可能带着人在
+    # `<流程名>-flow.yaml` 里手写/手调过的布局键（见 `_HINT_LAYOUT_KEYS`）。不搬的话每次 build
+    # 都会把它们清掉——而 `dictionary.yaml` 的开头就写着"默认配置，DSL 可按图覆盖"，
+    # 路由器的注释与 D-155/D-156 也拿这句立论。**派生量与几何量不搬**（`width`/`origin_x`/
+    # `channel_step` 每次重算，`col_x` 上面已单列）。
+    layout = {'col_x': col_x}
+    if hint:
+        hlay = hint.get('layout') or {}
+        layout.update({k: hlay[k] for k in _HINT_LAYOUT_KEYS if k in hlay})
     return {'meta': meta,
-            'layout': {'col_x': col_x},
+            'layout': layout,
             'nodes': dsl_nodes, 'edges': dsl_edges}
 
 
@@ -261,11 +270,15 @@ def _run_fresh(p):
     return 1
 
 
-#: `label_badge` / `layout` 两段里本脚本要用的字段的**内置默认**。
-#: `thresholds.load(section, defaults)` 的口径就是"默认 + 字典覆盖"，而面① 会断言这两份默认与
-#: `dictionary.yaml` 同值——所以这里只列本函数真读的字段，不抄整段。
-_BADGE_DEFAULTS = {'full_width': 12, 'half_width': 7, 'padding': 16}
-_LAYOUT_DEFAULTS = {'right_channel_step': 40, 'right_channel_step_max': 80}
+#: `label_badge` / `layout` 两段里本脚本要用的字段的**内置默认**（字典缺键时兜底；面① 会核
+#: 这几处 `.get(键, 默认)` 与 `dictionary.yaml` 同值）。
+#: 复用旧几何时**要跟着搬**的 layout 键（G90/D-158）：全是"人可能手调的路由参数"。
+#: 派生量（`width` / `origin_x` / `channel_step`）与几何量（`col_x`）**不在列**——前者每次重算，
+#: 后者单独处理。少搬一个 ⇒ 人调的值被静默清掉；多搬一个 ⇒ 派生量被冻在旧值上。
+_HINT_LAYOUT_KEYS = ('right_channel_offset', 'right_channel_step', 'right_channel_step_max',
+                     'channel_margin', 'max_channels', 'gutter_inner', 'gutter_step',
+                     'col_gap_step', 'col_pitch', 'full_gap', 'shrink_gap', 'origin_y',
+                     'legend_band', 'legend_width')
 
 
 def _derive_channel_step(dsl, mode):
@@ -275,20 +288,30 @@ def _derive_channel_step(dsl, mode):
       · 40：自举树（最长标签 2 字、徽章 40px）紧凑，可 workflow 那张表最长的标签 4 字（徽章 64px）
         就得**折两排**，于是同一张图里折的与不折的混在一起（作者 2026-09-22 看到的"处理不一致"）；
       · 80：全都不折，但把自举树的绕行抬到门槛外（门⑨ 实测均值 49% / 最坏 83%）。
-    所以档距按图算：最宽徽章吸到粗格，夹在 `[right_channel_step, right_channel_step_max]` 之间。
-    上限之外还有更长的标签才折排（G85）——折排从此是**兜底**，不是常态。
+    所以档距按图算：最宽徽章吸到粗格，夹在 `[right_channel_step, right_channel_step_max]` 之间，
+    写进 **`layout.channel_step`（派生键）**。上限之外还有更长的标签才折排（G85）——折排从此是
+    **兜底**，不是常态。
+
+    ⚠ **派生值单列一个键、不回写 `right_channel_step`**（G88/D-156）：那个键是**人写的下界**
+    （字典默认 + `flow.yaml` 可按图覆盖，见 `_HINT_LAYOUT_KEYS`）。共用一个键时每次 build 都会把
+    人写的值覆盖掉——"DSL 可按图覆盖"这句契约当场失效（实测：yaml 里写 200，重跑一次变回 80）。
+    所以下界与上限**从本图的 `layout` 读**（人写的值也参与），派生结果写另一个键，两者都活。
+
+    泳道图**也派生**：D-155 的口径是"所有图"，早先这里跟着下方 `_center_canvas` 一起跳过泳道，
+    结果泳道图里 4 字标签会折、流程布局里不折——正是本决策要消灭的那种"同一版里两种排法"，
+    只是搬到了泳道这一类。
     """
-    if mode == 'swimlane':
-        return
-    b = thresholds.load('label_badge', _BADGE_DEFAULTS)
-    lay_cfg = thresholds.load('layout', _LAYOUT_DEFAULTS)
+    b = thresholds.load('label_badge', {})       # 默认值就地写在下面的 `.get(键, 默认)` 里（面① 会核）
+    lay_cfg = dict(thresholds.load('layout', {}))
+    lay_cfg.update(dsl.get('layout') or {})      # 本图（含复用旧几何的提示）覆盖字典
     GN = DEFAULT_GRID['node']
     step = int(lay_cfg.get('right_channel_step', 40))
-    cap = int(lay_cfg.get('right_channel_step_max', 80))
-    pad, full, half = b['padding'], b.get('full_width', 12), b.get('half_width', 7)
+    cap = max(int(lay_cfg.get('right_channel_step_max', 80)), step)  # 人写的下界高过上限时，下界说话
+    pad = b.get('padding', 16)
+    full, half = b.get('full_width', 12), b.get('half_width', 7)
     widest = max([text_width(e.get('label') or '', full, half) + pad
                   for e in (dsl.get('edges') or [])] or [0])
-    dsl['layout']['right_channel_step'] = min(max(ceil_to(widest, GN), step), cap)
+    dsl['layout']['channel_step'] = min(max(ceil_to(widest, GN), step), cap)
 
 
 def _center_canvas(dsl, mode):

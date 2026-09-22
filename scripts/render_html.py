@@ -23,8 +23,12 @@ from artifact import artifact_name, artifact_stem
 from manifest import MAIN_VIEW
 
 # 悬浮框认的**有限 markdown**（见 `_md_html`）：只有粗体与行内代码两种，别的记号一律当普通字符。
+# 行内代码**先认双反引号**：仓库自己的表里就有 ``` `` `M02` 甲.md `` ``` 这种写法（反引号里套
+# 反引号），只认单反引号会把两对之间的分隔空格也当成代码内容——用户在悬浮框里看到一串
+# 空格底色的碎片（审查实测：真实数据里有 2 条）。
 _MD_BOLD = re.compile(r'\*\*(.+?)\*\*', re.S)
-_MD_CODE = re.compile(r'`([^`]+)`')
+_MD_CODE2 = re.compile(r'``\s*(.+?)\s*``', re.S)
+_MD_CODE = re.compile(r'`([^`\n]+)`')
 
 # 可下钻节点的记号：**框内一道内衬线**，同形状向内缩 `SUB_INSET` 这么多像素（见 D-78）。
 # 规格另有两条同样要紧：描边 1px、同色 55% 透明——节点高 60 而文字两到三行时，
@@ -203,11 +207,14 @@ def _md_html(text):
 
     **先转义、后替换**：描述是数据不是标记语言，直接放行任意 HTML 就是注入面（而且 `_serialize_tips`
     还要把 `<`/`>` 转成 `\\u003c` 才能安全内联进 `<script>`，顺序反了这两件事会互相破坏）。
+    **顺序也定死了**：粗体 → 双反引号代码 → 单反引号代码。双反引号必须抢在单反引号前面，
+    否则 ``` `` `M02` 甲.md `` ``` 会被单反引号切成三截、多出一只只含空格的 `<code>`。
     """
     if not text:
         return text
     s = esc(text)                                   # 先转义：数据里的 `&`/`<` 不再有标记含义
     s = _MD_BOLD.sub(r'<b>\1</b>', s)
+    s = _MD_CODE2.sub(lambda m: '<code>' + m.group(1).replace('`', '') + '</code>', s)
     return _MD_CODE.sub(r'<code>\1</code>', s)
 
 
@@ -325,7 +332,7 @@ def svg_edge(L, e):
     # 交叉打跳（D-149）：方案由 `hops.plan` 出（每张图缓存一次），拼串留在这里（N3）。
     # 半圆两端落在原线段上 ⇒ `manifest.py` 只认 `M`/`L` 的反解得到的仍是共线折线。
     hp, hr, hs = hops.plan(L)
-    pts = with_hops(L.path(e), hp.get(id(e), []), hr, hs)
+    pts = with_hops(L.path(e), hp.get(id(e), []), hr, hs, L.grid.node_grid)
     parts = [f'M {fmt(pts[0][0])} {fmt(pts[0][1])}']
     for px, py, kind in pts[1:]:
         if kind == 'arc':
@@ -363,8 +370,7 @@ def svg_label(L, e, ed):
     if not e.get('label'):
         return ''
     x, y, w, h = L.label_box(e)
-    rows = L.label_rows(e)          # 一行放不下时折两排（见 `label.py`）
-    # 竖排（标签压在竖段上）：只转文字不转盒子——盒子已按转过来的宽高算（`label.py`）。
+    rows = L.label_rows(e)          # 一行放不下时折两排（见 `label.py`）；标签一律横排
     c = ed['color']
     texts = ''.join(f'<text class="lab" x="{fmt(x + w / 2)}" y="{fmt(y + (i + 0.5) * h / len(rows) + 4)}"'
                     f' fill="{c}">{esc(t)}</text>' for i, t in enumerate(rows))
@@ -602,7 +608,7 @@ def _view_svg(L, base, key, keys):
             'subject': _md_html(n['subject']), 'executor': _md_html(n['executor']),
             'input': _md_html(n.get('input')), 'basis': _md_html(n.get('basis')),
             'output': _md_html(n.get('output')),
-            'up': '、'.join(up.get(n['id'], [])) or None,
+            'up': _md_html('、'.join(up.get(n['id'], [])) or None),
             'time': _md_html(n.get('time')), 'route': _md_html(L.route_text(n['id'])),
             'desc': _md_html(_display_desc(n.get('desc') or '')),
             'pend': _md_html((pending_style(L.cfg, n.get('desc')) or {}).get('note')),

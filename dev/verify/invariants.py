@@ -26,14 +26,27 @@ import subprocess
 import sys
 from pathlib import Path
 
+import yaml
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _lib import BASE, EXAMPLES, HEAD, PY, SCRIPTS, SKILL, Case, md5, prod, row, run  # noqa: E402
 
 import validate                                      # noqa: E402  （_lib 已把 scripts/ 挂上 sys.path）
 from engine import load                              # noqa: E402
+from semantics import text_width                     # noqa: E402
 
 # 样例**动态发现**：examples/ 下有哪些就跑哪些，增删样例不必改测试
 SAMPLES = tuple(sorted(q.parent.name for q in EXAMPLES.glob('*/flowtable.md')))
+
+
+def _folded_too_short(val, step):
+    """折排的那只标签，去掉 `<br>` 之后的徽章宽**够不够**折（不够就是错折）。
+
+    `&lt;br&gt;` 是 drawio 属性里的转义形态；宽按 `label_badge` 的口径估（全角 12 / padding 16）。
+    """
+    import html as _html
+    text = _html.unescape(val).replace('<br>', '')
+    return text_width(text, 12, 7) + 16 <= (step or 40)
 
 
 def _art(sample, ext):
@@ -243,6 +256,47 @@ def run_face(tmp):
         if L.sizes is not L.grid.sizes:
             bad.append(p.parent.name)
     c.check(not bad, '每个样例的 sizes 都是 grid.sizes 本体', '；'.join(bad))
+
+    c.section('通道档距的两级来源：派生值优先，人写的下界次之（G88/D-156）')
+    # 为什么要有这条仪器：档距现在是**派生量**（按这张图最宽的标签算，见 D-155），而它同时又是
+    # 用户能手写覆盖的参数。两者共用一个键时，每次 build 都会把人写的值覆盖掉——"DSL 可按图覆盖"
+    # 这句契约当场失效（实测：yaml 里写 200，重跑一次变回 80）。判据落在 `geometry.lane_step`：
+    # `channel_step`（派生）优先 → `right_channel_step`（人写）次之 → 内置下界 40。
+    _lane_demo = load(str(_art(first, 'yaml')))
+    lay_probe: list = []
+    for keys in ({'channel_step': 60, 'right_channel_step': 120}, {'right_channel_step': 120}, {}):
+        d2 = dict(_lane_demo.dsl.get('layout') or {})
+        d2.pop('channel_step', None)
+        d2.pop('right_channel_step', None)
+        d2.update(keys)
+        cands = _lane_demo.router._right_family_cands(d2, 0, 0, 3, _lane_demo.grid.lattice)
+        lay_probe.append(round(cands[1][2] - cands[0][2]))
+    c.check(lay_probe == [60, 120, 40],
+            '两级来源与内置下界各就各位（派生 60 / 人写 120 / 兜底 40）', str(lay_probe))
+
+    c.section('边标签：一律横排、只有超上限的长标签才折排（G85/G87 的仪器）')
+    # 这两条此前只有"读数"没有断言（审查指出：`grep label_rows|rotate(-90|horizontal=0 dev/verify`
+    # = 0 处）——规矩没有仪器就只是愿心。判据直接读产物与派生量，改回去就红。
+    rot, fold_bad, step_bad = [], [], []
+    for q in EXAMPLES.glob('*/flowtable.md'):
+        n = q.parent.name
+        html = _art(n, 'html').read_text(encoding='utf-8')
+        dw = _art(n, 'drawio').read_text(encoding='utf-8')
+        if 'rotate(-90' in html or 'horizontal=0' in dw:
+            rot.append(n)
+        y = yaml.safe_load(_art(n, 'yaml').read_text(encoding='utf-8'))
+        step = (y.get('layout') or {}).get('channel_step')
+        labels = [e.get('label') for e in y.get('edges') or [] if e.get('label')]
+        widest = max([text_width(t, 12, 7) + 16 for t in labels] or [0])
+        if not isinstance(step, int) or step % 20 or step < 40 or step > 80:
+            step_bad.append(f'{n}:{step}')
+        # 折排只允许出现在"徽章宽 > 这张图的档距"的边上（即长到上限之外的那些）
+        folded = re.findall(r'value="([^"]*&lt;br&gt;[^"]*)"', dw)
+        if any(_folded_too_short(t, step) for t in folded):
+            fold_bad.append(n)
+    c.check(not rot, '三份产物里没有竖排标签（rotate(-90) / horizontal=0 皆 0）', '；'.join(rot))
+    c.check(not step_bad, '派生的 channel_step 是 20 的倍数且夹在 [40, 80]', '；'.join(step_bad))
+    c.check(not fold_bad, '折排只出现在超过档距的标签上', '；'.join(fold_bad))
 
     c.section('自举树基线：改错了也要红（D-67）')
     # 上面的样例是从 `examples/*/flowtable.md` **发现**的，而 examples/ 下只有 workflow 一个

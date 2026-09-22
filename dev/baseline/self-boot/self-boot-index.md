@@ -19,12 +19,12 @@
   - **L1 子流程** `flowtable_check/flowtable.md`——《flowtable_check.py 函数流程表》（id: selfboot-flowtable_check）（38 节点）
   - **L1 子流程** `flowtable_colors/flowtable.md`——《flowtable_colors.py 函数流程表》（id: selfboot-flowtable_colors）（10 节点）
   - **L1 子流程** `flowtable_layout/flowtable.md`——《flowtable_layout.py 函数流程表》（id: selfboot-flowtable_layout）（23 节点）
-  - **L1 子流程** `geometry/flowtable.md`——《geometry.py 函数流程表》（id: selfboot-geometry）（37 节点）
+  - **L1 子流程** `geometry/flowtable.md`——《geometry.py 函数流程表》（id: selfboot-geometry）（38 节点）
   - **L1 子流程** `hops/flowtable.md`——《hops.py 函数流程表》（id: selfboot-hops）（3 节点）
   - **L1 子流程** `import_table/flowtable.md`——《import_table.py 函数流程表》（id: selfboot-import_table）（15 节点）
   - **L1 子流程** `init/flowtable.md`——《init.py 函数流程表》（id: selfboot-init）（6 节点）
   - **L1 子流程** `intake/flowtable.md`——《intake.py 函数流程表》（id: selfboot-intake）（11 节点）
-  - **L1 子流程** `label/flowtable.md`——《label.py 函数流程表》（id: selfboot-label）（18 节点）
+  - **L1 子流程** `label/flowtable.md`——《label.py 函数流程表》（id: selfboot-label）（19 节点）
   - **L1 子流程** `lane_router/flowtable.md`——《lane_router.py 函数流程表》（id: selfboot-lane_router）（37 节点）
   - **L1 子流程** `layer_index/flowtable.md`——《layer_index.py 函数流程表》（id: selfboot-layer_index）（13 节点）
   - **L1 子流程** `ledger/flowtable.md`——《ledger.py 函数流程表》（id: selfboot-ledger）（11 节点）
@@ -53,7 +53,7 @@
   - **L1 子流程** `thresholds/flowtable.md`——《thresholds.py 函数流程表》（id: selfboot-thresholds）（3 节点）
   - **L1 子流程** `validate/flowtable.md`——《validate.py 函数流程表》（id: selfboot-validate）（41 节点）
   - **L1 子流程** `writeback/flowtable.md`——《writeback.py 函数流程表》（id: selfboot-writeback）（25 节点）
-  - **L1 子流程** `xml_reader/flowtable.md`——《xml_reader.py 函数流程表》（id: selfboot-xml_reader）（43 节点）
+  - **L1 子流程** `xml_reader/flowtable.md`——《xml_reader.py 函数流程表》（id: selfboot-xml_reader）（42 节点）
 
 ## 构建顺序（自底向上）
 

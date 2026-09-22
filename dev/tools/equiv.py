@@ -562,8 +562,16 @@ def run_sequence(ctx, setup, cases, report):
 
 # ----------------------------------------------------------------make-base
 def git(root, *args):
-    """在 root 下跑 git 并返回原始字节 stdout；失败抛 RuntimeError（带上 stderr）。"""
-    p = subprocess.run(['git'] + list(args), cwd=root, capture_output=True)
+    """在 root 下跑 git 并返回原始字节 stdout；失败抛 RuntimeError（带上 stderr）。
+
+    **git 不存在**也要抛 RuntimeError（G91）：`subprocess.run(['git', ...])` 在没有 git 的机器上抛
+    `FileNotFoundError`，而调用方按话术接的是 `RuntimeError` ⇒ 那句"（没 git / tag 不存在 / 工作树
+    读不了）"里"没 git"这一半不成立，会从 main 逃出去变成裸栈。收成同一类异常，话术才与射程一致。
+    """
+    try:
+        p = subprocess.run(['git'] + list(args), cwd=root, capture_output=True)
+    except OSError as e:                     # 没装 git / 路径不对：与 rc≠0 同一类"跑不了"
+        raise RuntimeError(f'git 起不来（{type(e).__name__}: {e}）——本机装了 git 吗？') from e
     if p.returncode != 0:
         raise RuntimeError(f'git {" ".join(args)} 失败: {p.stderr.decode("utf-8", "replace").strip()}')
     return p.stdout
@@ -634,7 +642,10 @@ def make_base(args):
     (Path(dest) / '.equiv-manifest.json').write_text(
         json.dumps(manifest, ensure_ascii=False, indent=1) + '\n', encoding='utf-8')
     print(f'✓ 隔离底本: {dest}')
-    print(f'  回退到 {args.rev} 的文件 {len(files) - len(added)} 个: ' + '、'.join(files))
+    # 名单要与数字**同一口径**（G91）：`files` 含新增的那批，而它们并不"回退到 {rev}"——
+    # 数字减掉了、名单不减，读的人会以为工作树里有而底本没有的文件也回退过。
+    rolled = [f for f in files if f not in set(added)]
+    print(f'  回退到 {args.rev} 的文件 {len(rolled)} 个: ' + '、'.join(rolled))
     if added:
         print(f'  工作树新增、底本里删掉 {len(added)} 个: ' + '、'.join(added))
     print(f'  整体复制的条目: ' + '、'.join(copied))

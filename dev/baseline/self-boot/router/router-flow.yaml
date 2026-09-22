@@ -8,7 +8,7 @@ meta:
 layout:
   col_x:
   - 400
-  right_channel_step: 40
+  channel_step: 40
   width: 1160
   origin_x: 0
 nodes:
@@ -217,7 +217,7 @@ nodes:
   col: 0
   stage: Router
   route: →16
-  desc: ★ 右族长跳候选：以本边涉及列中更靠右列的**右沿**为局部基准，只向外展开（D-91）。 · L157 · 方法 · ⇢ 依赖 geometry.snap
+  desc: ★ 右族长跳候选：以本边涉及列中更靠右列的**右沿**为局部基准，只向外展开（D-91）。 · L157 · 方法 · ⇢ 依赖 geometry.lane_step、geometry.snap
 - id: '18'
   name: Router._mirror_left_cands
   lines:
@@ -229,7 +229,7 @@ nodes:
   col: 0
   stage: Router
   route: →16
-  desc: ★ 左族：以本边涉及列的**左沿**为局部基准向左展开（D-92「臂」的另一半）。 · L165 · 方法 · ⇢ 依赖 geometry.snap
+  desc: ★ 左族：以本边涉及列的**左沿**为局部基准向左展开（D-92「臂」的另一半）。 · L165 · 方法 · ⇢ 依赖 geometry.lane_step、geometry.snap
 - id: '19'
   name: Router._candidates
   lines:
@@ -331,7 +331,7 @@ nodes:
   stage: Router
   route: 1→16｜2→23｜3→24
   desc: ★ 候选全冲突时的兜底：从本边局部右基准最后一档向外找不冲突通道；再失败只避已占通道。 · L340 · 方法 · 分支：1→Router._col_edge
-    2→Router._path_rejects 3→Router._chan_conflict · ⇢ 依赖 geometry.snap
+    2→Router._path_rejects 3→Router._chan_conflict · ⇢ 依赖 geometry.lane_step、geometry.snap
 - id: '27'
   name: Router._route_pending_edges
   lines:
@@ -343,7 +343,7 @@ nodes:
   col: 0
   stage: Router
   route: 1→08｜2→19｜3→24｜4→26
-  desc: ★ 给还没通道的 loop/jumpR 边按候选优先级择优分配通道，全冲突时向外兜底。 · L372 · 方法 · 分支：1→Router._hs
+  desc: ★ 给还没通道的 loop/jumpR 边按候选优先级择优分配通道，全冲突时向外兜底。 · L374 · 方法 · 分支：1→Router._hs
     2→Router._candidates 3→Router._chan_conflict 4→Router._fallback_channel
 - id: '28'
   name: Router._ensure_gutters
@@ -356,7 +356,7 @@ nodes:
   col: 0
   stage: Router
   route: 1→25｜2→27｜3→32
-  desc: ★ 一次性通道分配：跨相邻列走列间通道、单列回路走左、长跳走右；**跨度小的先排**（占内道）。 · L395 · 方法 · 分支：1→Router._replay_gutter_hints
+  desc: ★ 一次性通道分配：跨相邻列走列间通道、单列回路走左、长跳走右；**跨度小的先排**（占内道）。 · L397 · 方法 · 分支：1→Router._replay_gutter_hints
     2→Router._route_pending_edges 3→Router._stagger_target_dyes · ⇢ 依赖 geometry.stagger_source_anchors
 - id: '29'
   name: Router._assign_group_dyes
@@ -369,7 +369,7 @@ nodes:
   col: 0
   stage: Router
   route: 1→03｜2→31
-  desc: ★ 给同一目标同一入口的一批入边在 ±avail 内错开入场 dye：近源先拿靠源一侧的槽位。 · L425 · 方法 · 分支：1→Router.ports
+  desc: ★ 给同一目标同一入口的一批入边在 ±avail 内错开入场 dye：近源先拿靠源一侧的槽位。 · L427 · 方法 · 分支：1→Router.ports
     2→Router._side_used_slots · ⇢ 依赖 geometry.Grid.anchor、geometry.snap
 - id: '30'
   name: Router._assign_group_dyes._rank
@@ -382,7 +382,7 @@ nodes:
   col: 0
   stage: Router
   route: →06
-  desc: L457 · 函数
+  desc: L459 · 函数
 - id: '31'
   name: Router._side_used_slots
   lines:
@@ -394,7 +394,7 @@ nodes:
   col: 0
   stage: Router
   route: →03
-  desc: ★ 该侧**出边**已占的锚点槽位（自动与手填都算）——入边错峰必须整片避开（见 `_assign_group_dyes`… · L476 · 方法
+  desc: ★ 该侧**出边**已占的锚点槽位（自动与手填都算）——入边错峰必须整片避开（见 `_assign_group_dyes`… · L478 · 方法
 - id: '32'
   name: Router._stagger_target_dyes
   lines:
@@ -406,7 +406,7 @@ nodes:
   col: 0
   stage: Router
   route: 1→03｜2→29
-  desc: ★ 同一目标**同一入口**的入边：在 ±avail 内错开入场 dye，否则尾段会重合纠缠。 · L486 · 方法 · 分支：1→Router.ports
+  desc: ★ 同一目标**同一入口**的入边：在 ±avail 内错开入场 dye，否则尾段会重合纠缠。 · L488 · 方法 · 分支：1→Router.ports
     2→Router._assign_group_dyes · ⇢ 依赖 geometry.snap
 - id: '33'
   name: 结束

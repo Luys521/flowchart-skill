@@ -445,6 +445,25 @@ def ortho_cross(p1, p2, q1, q2, eps=0.6):
 HOP_EPS = 0.6                   # 与 `ortho_cross` 同一口径
 
 
+def lane_step(lay, lattice=10):
+    """本图实际的**通道档距**：派生值优先 → 人写的下界 → 内置下界。
+
+    三个来源各自的角色（G88/D-156）：
+      · `channel_step` —— **派生量**（`table_to_dsl._derive_channel_step` 按这张图最宽的标签算出来，
+        与 `width` / `origin_x` 同一路数，每次 build 重算）；
+      · `right_channel_step` —— **人写的下界**（字典默认，`flow.yaml` 可按图覆盖）；
+      · 都没有则内置下界 40。
+    为什么派生值**不共用人写那个键**：共用一个键时每次 build 都会把人写的值覆盖掉——"DSL 可按图覆盖"
+    这句契约当场失效（G88 实测：yaml 里写 200，重跑一次变回 80）。分开之后人写的下界仍然生效，
+    而且它天然表达"这张图的档距不许比它更密"。
+    """
+    for k in ('channel_step', 'right_channel_step'):
+        v = lay.get(k)
+        if isinstance(v, (int, float)) and not isinstance(v, bool):
+            return snap(v, lattice)
+    return snap(40, lattice)
+
+
 def hop_plan(paths, policy='vertical'):
     """`[(key, [点…])…]` → `{key: [(x, y, axis)…]}`：每个正交交叉点上由**哪条边**让开。
 
@@ -486,7 +505,7 @@ def hop_plan(paths, policy='vertical'):
     return plan
 
 
-def with_hops(pts, hops, radius, style='gap'):
+def with_hops(pts, hops, radius, style='gap', min_stub=DEFAULT_GRID['node']):
     """折线 + 该边要打的跳 → `[(x, y, kind)…]`；`kind` 是**渲染器要画的东西**：
 
       `''`    普通折点（`L`）
@@ -500,6 +519,9 @@ def with_hops(pts, hops, radius, style='gap'):
     **两端都落在原线段上** ⇒ 反解产物的一方（`manifest.py` 只认 `M`/`L`）看到的仍是共线折线，
     几何一字不变——所以打跳是**纯视觉**的，不动任何判据。
     两个跳点靠得比 `2×radius` 还近时只保留前一个：宁可少跳一次，也不画出互相咬住的记号。
+    **离转角也要留 `min_stub`**（G92）：入口点或出口点贴着转角时，会剪出一段比一格粗格还短的
+    残段，而"每段不短于一格粗格"是**产物几何自检**的硬判据；打跳发生在布线之后，
+    `router._path_rejects` 管不到这里。宁可少跳一次，也不留碎段。
     """
     if not hops or radius <= 0:
         return [(x, y, '') for x, y in pts]
@@ -522,8 +544,8 @@ def with_hops(pts, hops, radius, style='gap'):
         last = t1
         for t in sorted(cand, key=lambda v: d * v):
             a, b = t - radius * d, t + radius * d
-            if d * (a - last) <= HOP_EPS or d * (b - t2) > 0:
-                continue                    # 与上一个跳咬住 / 记号伸到段外
+            if d * (a - last) < min_stub or d * (b - t2) > 0 or d * (t2 - b) < min_stub:
+                continue        # 与上一个跳咬住 / 记号伸到段外 / 入口或出口贴着转角（G92）
             pa = (p1[0], a) if vertical else (a, p1[1])
             pb = (p1[0], b) if vertical else (b, p1[1])
             out.append((pa[0], pa[1], ''))

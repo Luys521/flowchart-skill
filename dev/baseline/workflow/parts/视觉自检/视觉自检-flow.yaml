@@ -13,7 +13,7 @@ meta:
   layout: flow
 layout:
   col_x: []
-  right_channel_step: 40
+  channel_step: 40
   width: 1160
   origin_x: -280
 nodes:

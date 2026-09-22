@@ -8,8 +8,8 @@ meta:
 layout:
   col_x:
   - 400
-  right_channel_step: 40
-  width: 1800
+  channel_step: 40
+  width: 1880
   origin_x: -40
 nodes:
 - id: '01'
@@ -22,11 +22,11 @@ nodes:
   row: 0
   col: 0
   stage: 入口
-  route: 1→02｜2→11｜3→12｜4→13｜5→14｜6→16｜7→17｜8→18｜9→19｜10→20｜11→21｜12→29｜13→30｜14→32｜15→33｜16→36
+  route: 1→02｜2→11｜3→12｜4→13｜5→14｜6→16｜7→17｜8→18｜9→19｜10→20｜11→21｜12→22｜13→30｜14→31｜15→33｜16→34｜17→37
   desc: 流程起点（结构性节点，不是函数） · 入口：1→arc_px 2→stagger_source_anchors 3→rects_overlap 4→seg_rect_hit
-    5→seg_overlap 6→hop_plan 7→with_hops 8→point_seg_dist 9→RectCache._all_rects 10→RectCache.invalidate
-    11→Grid.__init__ 12→Grid.set_head_band 13→Grid.Y 14→Grid.height 15→Grid.legend_rect
-    16→Grid.port_frac
+    5→seg_overlap 6→lane_step 7→hop_plan 8→with_hops 9→point_seg_dist 10→RectCache._all_rects
+    11→RectCache.invalidate 12→Grid.__init__ 13→Grid.set_head_band 14→Grid.Y 15→Grid.height
+    16→Grid.legend_rect 17→Grid.port_frac
 - id: '02'
   name: arc_px
   lines:
@@ -37,7 +37,7 @@ nodes:
   row: 3
   col: 0
   stage: 模块级
-  route: →37
+  route: →38
   desc: ★ 圆角半径（像素）：字典 `shapes.*.arc` 是 **drawio 口径的 `arcSize` 百分比**（见… · L12 · 函数
 - id: '03'
   name: snap
@@ -46,10 +46,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 35
+  row: 36
   col: 0
   stage: 模块级
-  route: →37
+  route: →38
   desc: ★ 就近吸附到 unit 的倍数（.5 一律进位，避免 Python 银行家舍入造成来回抖动）。 · L31 · 函数
 - id: '04'
   name: ceil_to
@@ -58,10 +58,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 29
+  row: 30
   col: 0
   stage: 模块级
-  route: →37
+  route: →38
   desc: ★ 向上吸附到 unit 的倍数（宁可大不可小，避免越吸附越挤）。 · L36 · 函数
 - id: '05'
   name: _fit_one
@@ -70,10 +70,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 21
+  row: 22
   col: 0
   stage: 模块级
-  route: →37
+  route: →38
   desc: ★ 吸附到「≡ residue (mod cycle)」且 ≥ v 的最小值。 · L41 · 函数
 - id: '06'
   name: fit_size
@@ -82,7 +82,7 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 20
+  row: 21
   col: 0
   stage: 模块级
   route: →05
@@ -94,10 +94,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 22
+  row: 23
   col: 0
   stage: 模块级
-  route: →37
+  route: →38
   desc: ★ 行基线高吸附到 20 mod 40 → 中线落在 20k+10 上。 · L57 · 函数
 - id: 08
   name: _group_outs_by_side
@@ -109,7 +109,7 @@ nodes:
   row: 5
   col: 0
   stage: 模块级
-  route: →37
+  route: →38
   desc: '★ 把一组出边按**出边所在的侧**分组 → `{侧: [出边, …]}`。 · L265 · 函数'
 - id: 09
   name: _place_offset
@@ -121,7 +121,7 @@ nodes:
   row: 6
   col: 0
   stage: 模块级
-  route: →37
+  route: →38
   desc: ★ 给一条出边挑一个不被占用的错峰量写进 `sdye`，并登记到 `taken` / `touched`。 · L278 · 函数
 - id: '10'
   name: _first_leg
@@ -133,7 +133,7 @@ nodes:
   row: 7
   col: 0
   stage: 模块级
-  route: →37
+  route: →38
   desc: ★ 一条出边的**首段长度**：锚点 → 通道折点的那一段（没有折点则 0）。 · L321 · 函数
 - id: '11'
   name: stagger_source_anchors
@@ -158,7 +158,7 @@ nodes:
   row: 8
   col: 0
   stage: 模块级
-  route: →37
+  route: →38
   desc: ★ 两个矩形是否相交（边贴边不算）。 · L382 · 函数
 - id: '13'
   name: seg_rect_hit
@@ -170,7 +170,7 @@ nodes:
   row: 9
   col: 0
   stage: 模块级
-  route: →37
+  route: →38
   desc: ★ 线段与矩形是否相交。`grow>0` 外扩（留安全间隙）、`grow<0` 内缩（判"穿进内部"）。 · L388 · 函数
 - id: '14'
   name: seg_overlap
@@ -182,7 +182,7 @@ nodes:
   row: 10
   col: 0
   stage: 模块级
-  route: →37
+  route: →38
   desc: ★ 两条轴对齐线段是否**共线重叠**（只认重叠，不认正交穿越）。 · L405 · 函数
 - id: '15'
   name: ortho_cross
@@ -191,72 +191,84 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 12
+  row: 13
   col: 0
   stage: 模块级
-  route: →37
+  route: →38
   desc: ★ 两条轴对齐线段是否**正交交叉**（一横一竖、且交点在两者内部）。 · L421 · 函数
 - id: '16'
-  name: hop_plan
+  name: lane_step
   lines:
-  - hop_plan
+  - lane_step
   type: task
   subject: 脚本
   executor: selfboot
   row: 11
   col: 0
   stage: 模块级
-  route: →15
-  desc: '★ `[(key, [点…])…]` → `{key: [(x, y, axis)…]}`：每个正交交叉点上由**哪条边*… · L448 · 函数'
+  route: →03
+  desc: ★ 本图实际的**通道档距**：派生值优先 → 人写的下界 → 内置下界。 · L448 · 函数
 - id: '17'
+  name: hop_plan
+  lines:
+  - hop_plan
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 12
+  col: 0
+  stage: 模块级
+  route: →15
+  desc: '★ `[(key, [点…])…]` → `{key: [(x, y, axis)…]}`：每个正交交叉点上由**哪条边*… · L467 · 函数'
+- id: '18'
   name: with_hops
   lines:
   - with_hops
   type: task
   subject: 脚本
   executor: selfboot
-  row: 13
+  row: 14
   col: 0
   stage: 模块级
-  route: →37
-  desc: ★ 折线 + 该边要打的跳 → `[(x, y, kind)…]`；`kind` 是**渲染器要画的东西**： · L489 · 函数
-- id: '18'
+  route: →38
+  desc: ★ 折线 + 该边要打的跳 → `[(x, y, kind)…]`；`kind` 是**渲染器要画的东西**： · L508 · 函数
+- id: '19'
   name: point_seg_dist
   lines:
   - point_seg_dist
   type: task
   subject: 脚本
   executor: selfboot
-  row: 14
+  row: 15
   col: 0
   stage: 模块级
-  route: →37
-  desc: ★ 点到线段的最短距离。 · L536 · 函数
-- id: '19'
+  route: →38
+  desc: ★ 点到线段的最短距离。 · L558 · 函数
+- id: '20'
   name: RectCache._all_rects
   lines:
   - RectCache._all_rects
   type: task
   subject: 脚本
   executor: selfboot
-  row: 15
+  row: 16
   col: 0
   stage: RectCache
-  route: →37
+  route: →38
   desc: L70 · 方法
-- id: '20'
+- id: '21'
   name: RectCache.invalidate
   lines:
   - RectCache.invalidate
   type: task
   subject: 脚本
   executor: selfboot
-  row: 16
+  row: 17
   col: 0
   stage: RectCache
-  route: →37
+  route: →38
   desc: L75 · 方法
-- id: '21'
+- id: '22'
   name: Grid.__init__
   lines:
   - Grid.__init__
@@ -266,11 +278,11 @@ nodes:
   row: 1
   col: 0
   stage: Grid
-  route: 1→22｜2→23｜3→24｜4→25｜5→26｜6→27
+  route: 1→23｜2→24｜3→25｜4→26｜5→27｜6→28
   desc: ★ 建流程栅格：读网格与画布配置 → 解列中心 → 解原点与行距 → 吸附尺寸 → 定右通道 → 推行 y。 · L80 · 方法 · 分支：1→Grid._read_base_config
     2→Grid._solve_columns 3→Grid._solve_origin_and_gaps 4→Grid._fit_sizes 5→Grid._solve_right_channel
     6→Grid._solve_rows
-- id: '22'
+- id: '23'
   name: Grid._read_base_config
   lines:
   - Grid._read_base_config
@@ -282,22 +294,10 @@ nodes:
   stage: Grid
   route: 1→03｜2→04
   desc: ★ 读网格刻度与画布宽（未声明则走字典默认），建出最基础的字段与自检提示载体。 · L90 · 方法 · 分支：1→snap 2→ceil_to
-- id: '23'
+- id: '24'
   name: Grid._solve_columns
   lines:
   - Grid._solve_columns
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 17
-  col: 0
-  stage: Grid
-  route: →03
-  desc: ★ 定各列中心 x（声明 col_x 则照用、否则按 col_pitch 展开）并记录吸附提示。 · L106 · 方法
-- id: '24'
-  name: Grid._solve_origin_and_gaps
-  lines:
-  - Grid._solve_origin_and_gaps
   type: task
   subject: 脚本
   executor: selfboot
@@ -305,161 +305,173 @@ nodes:
   col: 0
   stage: Grid
   route: →03
-  desc: ★ 定原点 y、标题带高与满/缩两档行间距（全部吸附）。 · L124 · 方法
+  desc: ★ 定各列中心 x（声明 col_x 则照用、否则按 col_pitch 展开）并记录吸附提示。 · L106 · 方法
 - id: '25'
-  name: Grid._fit_sizes
+  name: Grid._solve_origin_and_gaps
   lines:
-  - Grid._fit_sizes
+  - Grid._solve_origin_and_gaps
   type: task
   subject: 脚本
   executor: selfboot
   row: 19
   col: 0
   stage: Grid
+  route: →03
+  desc: ★ 定原点 y、标题带高与满/缩两档行间距（全部吸附）。 · L124 · 方法
+- id: '26'
+  name: Grid._fit_sizes
+  lines:
+  - Grid._fit_sizes
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 20
+  col: 0
+  stage: Grid
   route: 1→06｜2→07
   desc: ★ 先算中线/列心余数，再把每个形状的宽高吸附到「四边都落格」的合法值。 · L140 · 方法 · 分支：1→fit_size 2→fit_base_height
-- id: '26'
+- id: '27'
   name: Grid._solve_right_channel
   lines:
   - Grid._solve_right_channel
   type: task
   subject: 脚本
   executor: selfboot
-  row: 23
+  row: 24
   col: 0
   stage: Grid
   route: →03
   desc: ★ 定右通道 x：声明则照用，否则取最右列中心 + 右通道偏移。 · L159 · 方法
-- id: '27'
+- id: '28'
   name: Grid._solve_rows
   lines:
   - Grid._solve_rows
   type: task
   subject: 脚本
   executor: selfboot
-  row: 24
+  row: 25
   col: 0
   stage: Grid
-  route: →37
+  route: →38
   desc: ★ 推行顶边 y 与满间距行集合：相邻行主干带标签则走满间距。 · L169 · 方法
-- id: '28'
+- id: '29'
   name: Grid._build_rows
   lines:
   - Grid._build_rows
   type: task
   subject: 脚本
   executor: selfboot
-  row: 26
+  row: 27
   col: 0
   stage: Grid
-  route: →37
+  route: →38
   desc: ★ 按 origin_y 与逐行间距重算各行顶边 y（切换标题带后调用）。 · L187 · 方法
-- id: '29'
+- id: '30'
   name: Grid.set_head_band
   lines:
   - Grid.set_head_band
   type: task
   subject: 脚本
   executor: selfboot
-  row: 25
+  row: 26
   col: 0
   stage: Grid
-  route: 1→03｜2→28
+  route: 1→03｜2→29
   desc: ★ 开关画布顶部的标题带（HTML 版标题在画布外故不预留，drawio 版留在画布内）。 · L194 · 方法 · 分支：1→snap 2→Grid._build_rows
-- id: '30'
+- id: '31'
   name: Grid.Y
   lines:
   - Grid.Y
   type: task
   subject: 脚本
   executor: selfboot
-  row: 27
+  row: 28
   col: 0
   stage: Grid
-  route: →37
+  route: →38
   desc: L203 · 方法
-- id: '31'
+- id: '32'
   name: Grid.MID
   lines:
   - Grid.MID
   type: task
   subject: 脚本
   executor: selfboot
-  row: 34
+  row: 35
   col: 0
   stage: Grid
-  route: →37
+  route: →38
   desc: ★ 行中线（所有节点共用一条，落在 20k+10 上——网格规范见 visual-spec §0）。 · L206 · 方法
-- id: '32'
+- id: '33'
   name: Grid.height
   lines:
   - Grid.height
   type: task
   subject: 脚本
   executor: selfboot
-  row: 28
+  row: 29
   col: 0
   stage: Grid
-  route: 1→04｜2→31
+  route: 1→04｜2→32
   desc: L210 · 方法 · 分支：1→ceil_to 2→Grid.MID
-- id: '33'
+- id: '34'
   name: Grid.legend_rect
   lines:
   - Grid.legend_rect
   type: task
   subject: 脚本
   executor: selfboot
-  row: 30
+  row: 31
   col: 0
   stage: Grid
-  route: →37
+  route: →38
   desc: ★ 图例带：画布顶部 (0, 0, width, legend_h)，legend_h=0 表示关闭。 · L213 · 方法
-- id: '34'
+- id: '35'
   name: Grid.rect
   lines:
   - Grid.rect
   type: task
   subject: 脚本
   executor: selfboot
-  row: 33
+  row: 34
   col: 0
   stage: Grid
-  route: →31
+  route: →32
   desc: L219 · 方法
-- id: '35'
+- id: '36'
   name: Grid.anchor
   lines:
   - Grid.anchor
   type: task
   subject: 脚本
   executor: selfboot
-  row: 32
+  row: 33
   col: 0
   stage: Grid
-  route: 1→03｜2→34
+  route: 1→03｜2→35
   desc: ★ 端口锚点。`off` 是**沿这条边的切向**错位量（见 DECISIONS.md D-15/D-17）： · L224 · 方法 · 分支：1→snap
     2→Grid.rect
-- id: '36'
+- id: '37'
   name: Grid.port_frac
   lines:
   - Grid.port_frac
   type: task
   subject: 脚本
   executor: selfboot
-  row: 31
+  row: 32
   col: 0
   stage: Grid
-  route: 1→34｜2→35
+  route: 1→35｜2→36
   desc: ★ 端口的 (fractionX, fractionY)——drawio 用**外接矩形的比例**表示端口位置。 · L254 · 方法 · 分支：1→Grid.rect
     2→Grid.anchor
-- id: '37'
+- id: '38'
   name: 结束
   lines:
   - 结束
   type: end
   subject: 脚本
   executor: selfboot
-  row: 36
+  row: 37
   col: 0
   stage: 出口
   route: —
@@ -517,12 +529,12 @@ edges:
   label: '10'
 - from: '01'
   to: '21'
-  kind: spine
+  kind: jumpR
   polarity: main
   label: '11'
 - from: '01'
-  to: '29'
-  kind: jumpR
+  to: '22'
+  kind: spine
   polarity: main
   label: '12'
 - from: '01'
@@ -531,7 +543,7 @@ edges:
   polarity: main
   label: '13'
 - from: '01'
-  to: '32'
+  to: '31'
   kind: jumpR
   polarity: main
   label: '14'
@@ -541,24 +553,29 @@ edges:
   polarity: main
   label: '15'
 - from: '01'
-  to: '36'
+  to: '34'
   kind: jumpR
   polarity: main
   label: '16'
-- from: '02'
+- from: '01'
   to: '37'
+  kind: jumpR
+  polarity: main
+  label: '17'
+- from: '02'
+  to: '38'
   kind: jumpR
   polarity: main
 - from: '03'
-  to: '37'
+  to: '38'
   kind: spine
   polarity: main
 - from: '04'
-  to: '37'
+  to: '38'
   kind: jumpR
   polarity: main
 - from: '05'
-  to: '37'
+  to: '38'
   kind: jumpR
   polarity: main
 - from: '06'
@@ -566,19 +583,19 @@ edges:
   kind: spine
   polarity: main
 - from: '07'
-  to: '37'
+  to: '38'
   kind: jumpR
   polarity: main
 - from: 08
-  to: '37'
+  to: '38'
   kind: jumpR
   polarity: main
 - from: 09
-  to: '37'
+  to: '38'
   kind: jumpR
   polarity: main
 - from: '10'
-  to: '37'
+  to: '38'
   kind: jumpR
   polarity: main
 - from: '11'
@@ -597,164 +614,168 @@ edges:
   polarity: main
   label: '3'
 - from: '12'
-  to: '37'
+  to: '38'
   kind: jumpR
   polarity: main
 - from: '13'
-  to: '37'
+  to: '38'
   kind: jumpR
   polarity: main
 - from: '14'
-  to: '37'
+  to: '38'
   kind: jumpR
   polarity: main
 - from: '15'
-  to: '37'
+  to: '38'
   kind: jumpR
   polarity: main
 - from: '16'
-  to: '15'
-  kind: spine
-  polarity: main
-- from: '17'
-  to: '37'
-  kind: jumpR
-  polarity: main
-- from: '18'
-  to: '37'
-  kind: jumpR
-  polarity: main
-- from: '19'
-  to: '37'
-  kind: jumpR
-  polarity: main
-- from: '20'
-  to: '37'
-  kind: jumpR
-  polarity: main
-- from: '21'
-  to: '22'
-  kind: spine
-  polarity: main
-  label: '1'
-- from: '21'
-  to: '23'
-  kind: jumpR
-  polarity: main
-  label: '2'
-- from: '21'
-  to: '24'
-  kind: jumpR
-  polarity: main
-  label: '3'
-- from: '21'
-  to: '25'
-  kind: jumpR
-  polarity: main
-  label: '4'
-- from: '21'
-  to: '26'
-  kind: jumpR
-  polarity: main
-  label: '5'
-- from: '21'
-  to: '27'
-  kind: jumpR
-  polarity: main
-  label: '6'
-- from: '22'
   to: '03'
   kind: jumpR
   polarity: main
+- from: '17'
+  to: '15'
+  kind: spine
+  polarity: main
+- from: '18'
+  to: '38'
+  kind: jumpR
+  polarity: main
+- from: '19'
+  to: '38'
+  kind: jumpR
+  polarity: main
+- from: '20'
+  to: '38'
+  kind: jumpR
+  polarity: main
+- from: '21'
+  to: '38'
+  kind: jumpR
+  polarity: main
+- from: '22'
+  to: '23'
+  kind: spine
+  polarity: main
   label: '1'
 - from: '22'
-  to: '04'
+  to: '24'
   kind: jumpR
   polarity: main
   label: '2'
+- from: '22'
+  to: '25'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '22'
+  to: '26'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '22'
+  to: '27'
+  kind: jumpR
+  polarity: main
+  label: '5'
+- from: '22'
+  to: '28'
+  kind: jumpR
+  polarity: main
+  label: '6'
 - from: '23'
   to: '03'
   kind: jumpR
   polarity: main
+  label: '1'
+- from: '23'
+  to: '04'
+  kind: jumpR
+  polarity: main
+  label: '2'
 - from: '24'
   to: '03'
   kind: jumpR
   polarity: main
 - from: '25'
+  to: '03'
+  kind: jumpR
+  polarity: main
+- from: '26'
   to: '06'
   kind: spine
   polarity: main
   label: '1'
-- from: '25'
+- from: '26'
   to: '07'
   kind: jumpR
   polarity: main
   label: '2'
-- from: '26'
+- from: '27'
   to: '03'
   kind: jumpR
   polarity: main
-- from: '27'
-  to: '37'
-  kind: jumpR
-  polarity: main
 - from: '28'
-  to: '37'
+  to: '38'
   kind: jumpR
   polarity: main
 - from: '29'
+  to: '38'
+  kind: jumpR
+  polarity: main
+- from: '30'
   to: '03'
   kind: jumpR
   polarity: main
   label: '1'
-- from: '29'
-  to: '28'
+- from: '30'
+  to: '29'
   kind: spine
   polarity: main
   label: '2'
-- from: '30'
-  to: '37'
-  kind: jumpR
-  polarity: main
 - from: '31'
-  to: '37'
+  to: '38'
   kind: jumpR
   polarity: main
 - from: '32'
+  to: '38'
+  kind: jumpR
+  polarity: main
+- from: '33'
   to: '04'
   kind: spine
   polarity: main
   label: '1'
-- from: '32'
-  to: '31'
-  kind: jumpR
-  polarity: main
-  label: '2'
 - from: '33'
-  to: '37'
+  to: '32'
   kind: jumpR
-  polarity: main
-- from: '34'
-  to: '31'
-  kind: spine
-  polarity: main
-- from: '35'
-  to: '03'
-  kind: jumpR
-  polarity: main
-  label: '1'
-- from: '35'
-  to: '34'
-  kind: spine
   polarity: main
   label: '2'
+- from: '34'
+  to: '38'
+  kind: jumpR
+  polarity: main
+- from: '35'
+  to: '32'
+  kind: spine
+  polarity: main
 - from: '36'
-  to: '34'
+  to: '03'
   kind: jumpR
   polarity: main
   label: '1'
 - from: '36'
   to: '35'
+  kind: spine
+  polarity: main
+  label: '2'
+- from: '37'
+  to: '35'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '37'
+  to: '36'
   kind: spine
   polarity: main
   label: '2'

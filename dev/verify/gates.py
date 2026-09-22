@@ -1497,7 +1497,11 @@ def _check_apply_guard(c, tmp):
 def _check_html_robustness(c, tmp):
     c.section('HTML 健壮性：描述含 </script 不许破坏页面')
     b1, ft2, _rc0, _out0 = _wb_project(tmp, 'b1')
-    assert _set_cell(ft2, '01', 12, ' 含 </script> 的描述 ')   # 节点描述：列下标 11（split 偏移 +1）
+    # 描述里同时放**粗体**与 `</script>`：前者让 `_md_html` 产出一只 `<b>`，而 `<` 必须由
+    # `_serialize_tips` 转成 `\u003c` 才能安全内联进 `<script>`。只放 `</script>` 的话，
+    # `_md_html` 先 `esc()` 成 `&lt;` ⇒ js 里再也不出现 `\u003c`，"序列化器那一层转义"就没人守了
+    # （审查反例：删掉 `render_html` 的 `.replace('<','\\u003c')`，同段三条断言全绿）。
+    assert _set_cell(ft2, '01', 12, ' **粗体** 含 </script> 的描述 ')   # 节点描述：列下标 11（split +1）
     rc_b, out_b = run('build.py', ft2)
     c.check(rc_b == 0, '含 </script> 的描述：build 成功', out_b.strip()[-90:] if rc_b else '')
     html = (prod(b1, 'html')).read_text(encoding='utf-8') if rc_b == 0 else ''
@@ -1505,10 +1509,7 @@ def _check_html_robustness(c, tmp):
     js = m.group(1) if m else ''
     c.check(m is not None and '</script' not in js and '<script' not in js,
             'TIPS 块内无裸 script 标签')
-    # `<` 现在由 `render_html._md_html` **先 `esc()` 成 `&lt;`**（G86：悬浮框改认有限 markdown ⇒
-    # 注入点在服务端一处），所以这里认两种"已被中和"的形态。要紧的是上面那条"裸 script 一个都
-    # 不许有"与下面那条"JSON 仍能解析"——它们才是安全性的判据，这一条只钉"确实被中和了"。
-    c.check('\\u003c' in js or '&lt;' in js, '< 已被中和（\\u003c 或 &lt;）')
+    c.check('\\u003c' in js, '< 已被序列化器转义为 \\u003c')
     import json as _json
     try:
         _json.loads(js.replace('\\u003c', '<').replace('\\u003e', '>'))
@@ -1525,18 +1526,18 @@ def _check_writeback_labels(c, tmp):
     ft = t / 'flowtable.md'
     ft.write_text(HEAD + ''.join([OK[0],
                                   row('受理', '02', '资料齐全？', '判断', '甲方', '受理员', '—',
-                                      '齐全→03 ｜ 不齐全→回 01 补件', '★'),
+                                      '齐全→03 ｜ 材料只读、永不修改→回 01 补件', '★'),
                                   OK[2], OK[3]]), encoding='utf-8')
     rc_w, _ = run('table_to_dsl.py', '--write', ft, '-o', prod(t, 'yaml'))
     rc_h, _ = run('render_html.py', prod(t, 'yaml'), '-o', prod(t, 'html'))
     rc_r, _ = run('render_drawio.py', prod(t, 'yaml'), '-o', prod(t, 'drawio'))
     d = prod(t, 'drawio')
     if rc_r == 0:
-        # 折排形态（G85）与单行形态都要改得到：折排写进 drawio 的是**属性里的** `不齐&lt;br&gt;全`
-        # （XML 转义后的样子，见 `render_drawio.attr`），所以这里匹配的是转义串。
+        # 这只标签**必然折排**（`材料只读、永不修改` 徽章 124 > 上限 80），且折点落在全角顿号上
+        # （G89 那个"按相邻字符猜并法"会猜错的位置）。写进 drawio 属性的是转义形态 `材料只读、&lt;br&gt;永不修改`。
         d.write_text(d.read_text(encoding='utf-8')
-                     .replace('value="不齐&lt;br&gt;全"', 'value="否"')
-                     .replace('value="不齐全"', 'value="否"'), encoding='utf-8')
+                     .replace('value="材料只读、&lt;br&gt;永不修改"', 'value="否"')
+                     .replace('value="材料只读、永不修改"', 'value="否"'), encoding='utf-8')
     rc_s, _ = run('sync.py', d, ft)
     c.check(rc_w == 0 and rc_h == 0 and rc_r == 0 and rc_s == 0, '前置：写 DSL → 双渲染 → sync 成功')
     out_ft = t / 'flowtable.sync.md'

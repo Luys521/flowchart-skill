@@ -36,7 +36,7 @@ parent: ../flowtable.md
 | Engine | 22 | Engine.legend_rect | 任务 | — | — | — | 脚本 | selfboot | — | →29 | L169 · 方法 |
 | Engine | 23 | Engine.legend_width | 任务 | — | — | — | 脚本 | selfboot | — | →29 | ★ 标题/图例块的**宽**（画布顶部居中那块，默认 600）。 · L172 · 方法 |
 | Engine | 24 | Engine.lanes | 任务 | — | — | — | 脚本 | selfboot | — | →29 | ★ 泳道背景信息；流程布局返回 None（渲染器据此决定画不画泳道带）。 · L180 · 方法 · ⇢ 依赖 swimlane.SwimGrid.lanes |
-| Engine | 25 | Engine.head_band | 任务 | — | — | — | 脚本 | selfboot | — | →29 | ★ 画布顶部是否预留标题带（HTML 版标题在画布外，故不预留）。 · L185 · 方法 · ⇢ 依赖 geometry.RectCache.invalidate |
+| Engine | 25 | Engine.head_band | 任务 | — | — | — | 脚本 | selfboot | — | →29 | ★ 画布顶部是否预留标题带（HTML 版标题在画布外，故不预留）。 · L185 · 方法 · ⇢ 依赖 label.Labeler.invalidate |
 | Engine | 26 | Engine.height | 任务 | — | — | — | 脚本 | selfboot | — | →29 | L199 · 方法 |
 | 模块级 | 27 | load | 任务 | — | — | — | 脚本 | selfboot | — | →28 | ★ 加载 DSL(yaml) + 默认字典 → Engine。 · L203 · 函数 |
 | 模块级 | 28 | _load_yaml | 任务 | — | — | — | 脚本 | selfboot | — | →29 | L228 · 函数 |

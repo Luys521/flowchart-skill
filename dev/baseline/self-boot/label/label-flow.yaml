@@ -8,9 +8,9 @@ meta:
 layout:
   col_x:
   - 400
-  right_channel_step: 40
-  width: 860
-  origin_x: -120
+  channel_step: 40
+  width: 900
+  origin_x: -80
 nodes:
 - id: '01'
   name: 开始
@@ -22,8 +22,8 @@ nodes:
   row: 0
   col: 0
   stage: 入口
-  route: 1→02｜2→17
-  desc: 流程起点（结构性节点，不是函数） · 入口：1→Labeler.__init__ 2→Labeler.label_rows
+  route: 1→02｜2→17｜3→18
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→Labeler.__init__ 2→Labeler.invalidate 3→Labeler.label_rows
 - id: '02'
   name: Labeler.__init__
   lines:
@@ -34,7 +34,7 @@ nodes:
   row: 1
   col: 0
   stage: Labeler
-  route: →18
+  route: →19
   desc: L16 · 方法
 - id: '03'
   name: Labeler._node_rects
@@ -43,10 +43,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 6
+  row: 7
   col: 0
   stage: Labeler
-  route: →18
+  route: →19
   desc: ★ 徽章命中判定只要矩形列表（不带节点 id）。 · L24 · 方法 · ⇢ 依赖 geometry.RectCache._all_rects
 - id: '04'
   name: Labeler._point_at
@@ -55,10 +55,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 16
+  row: 17
   col: 0
   stage: Labeler
-  route: →18
+  route: →19
   desc: ★ 按弧长比例 t∈[0,1] 取折线上的点，并返回所在线段下标。 · L30 · 方法
 - id: '05'
   name: Labeler._padding
@@ -67,10 +67,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 10
+  row: 11
   col: 0
   stage: Labeler
-  route: →18
+  route: →19
   desc: L47 · 方法
 - id: '06'
   name: Labeler._text_w
@@ -79,10 +79,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 9
+  row: 10
   col: 0
   stage: Labeler
-  route: →18
+  route: →19
   desc: L50 · 方法 · ⇢ 依赖 semantics.text_width
 - id: '07'
   name: Labeler._badge_w
@@ -91,7 +91,7 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 5
+  row: 6
   col: 0
   stage: Labeler
   route: 1→05｜2→06
@@ -104,10 +104,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 11
+  row: 12
   col: 0
   stage: Labeler
-  route: →18
+  route: →19
   desc: L58 · 方法 · ⇢ 依赖 geometry.ceil_to
 - id: 09
   name: Labeler._pitch
@@ -116,11 +116,11 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 7
+  row: 8
   col: 0
   stage: Labeler
-  route: →18
-  desc: ★ 竖线左右能给标签让出的横向预算 = **本图实际的通道档距**。 · L62 · 方法 · ⇢ 依赖 geometry.snap
+  route: →19
+  desc: ★ 竖线左右能给标签让出的横向预算 = **本图实际的通道档距**。 · L62 · 方法 · ⇢ 依赖 geometry.lane_step
 - id: '10'
   name: Labeler._rows_for
   lines:
@@ -128,7 +128,7 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 4
+  row: 5
   col: 0
   stage: Labeler
   route: 1→06｜2→07｜3→09
@@ -141,7 +141,7 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 8
+  row: 9
   col: 0
   stage: Labeler
   route: 1→05｜2→06｜3→08
@@ -154,7 +154,7 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 12
+  row: 13
   col: 0
   stage: Labeler
   route: →04
@@ -166,10 +166,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 13
+  row: 14
   col: 0
   stage: Labeler
-  route: →18
+  route: →19
   desc: L113 · 方法
 - id: '14'
   name: Labeler._candidate_ts
@@ -178,10 +178,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 14
+  row: 15
   col: 0
   stage: Labeler
-  route: →18
+  route: →19
   desc: ★ 候选弧长比例：中点优先，之后向两侧交替扩散。 · L120 · 方法
 - id: '15'
   name: Labeler.label_box
@@ -190,7 +190,7 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 3
+  row: 4
   col: 0
   stage: Labeler
   route: 1→03｜2→10｜3→11｜4→12｜5→13｜6→14｜7→16
@@ -204,31 +204,43 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 15
+  row: 16
   col: 0
   stage: Labeler
   route: →04
   desc: ★ 弧长比例 t 落在哪一段上 → `(a, b)` 两个端点。 · L149 · 方法
 - id: '17'
-  name: Labeler.label_rows
+  name: Labeler.invalidate
   lines:
-  - Labeler.label_rows
+  - Labeler.invalidate
   type: task
   subject: 脚本
   executor: selfboot
   row: 2
   col: 0
   stage: Labeler
-  route: →15
-  desc: ★ 这条边的徽章分几行、每行是什么（渲染器照它画）。没算过就先算一次盒。 · L154 · 方法
+  route: →19
+  desc: ★ 缓存全清：整流平（`head_band`）之后，**行数**和矩形一样会失效。 · L154 · 方法
 - id: '18'
+  name: Labeler.label_rows
+  lines:
+  - Labeler.label_rows
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: Labeler
+  route: →15
+  desc: ★ 这条边的徽章分几行、每行是什么（渲染器照它画）。没算过就先算一次盒。 · L165 · 方法
+- id: '19'
   name: 结束
   lines:
   - 结束
   type: end
   subject: 脚本
   executor: selfboot
-  row: 17
+  row: 18
   col: 0
   stage: 出口
   route: —
@@ -244,24 +256,29 @@ edges:
   kind: jumpR
   polarity: main
   label: '2'
-- from: '02'
+- from: '01'
   to: '18'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '02'
+  to: '19'
   kind: jumpR
   polarity: main
 - from: '03'
-  to: '18'
+  to: '19'
   kind: jumpR
   polarity: main
 - from: '04'
-  to: '18'
+  to: '19'
   kind: spine
   polarity: main
 - from: '05'
-  to: '18'
+  to: '19'
   kind: jumpR
   polarity: main
 - from: '06'
-  to: '18'
+  to: '19'
   kind: jumpR
   polarity: main
 - from: '07'
@@ -275,11 +292,11 @@ edges:
   polarity: main
   label: '2'
 - from: 08
-  to: '18'
+  to: '19'
   kind: jumpR
   polarity: main
 - from: 09
-  to: '18'
+  to: '19'
   kind: jumpR
   polarity: main
 - from: '10'
@@ -317,11 +334,11 @@ edges:
   kind: jumpR
   polarity: main
 - from: '13'
-  to: '18'
+  to: '19'
   kind: jumpR
   polarity: main
 - from: '14'
-  to: '18'
+  to: '19'
   kind: jumpR
   polarity: main
 - from: '15'
@@ -364,6 +381,10 @@ edges:
   kind: spine
   polarity: main
 - from: '17'
+  to: '19'
+  kind: jumpR
+  polarity: main
+- from: '18'
   to: '15'
   kind: spine
   polarity: main

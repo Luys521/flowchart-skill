@@ -8,7 +8,7 @@ meta:
 layout:
   col_x:
   - 400
-  right_channel_step: 40
+  channel_step: 40
   width: 1180
   origin_x: -80
 nodes:
@@ -35,7 +35,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →26
-  desc: ★ 整篇文档共用的资源：箭头 marker + 流光模糊。**必须放在所有视图之外**（见 D-90）。 · L67 · 函数 · ⇢ 依赖 semantics.arrow_markers
+  desc: ★ 整篇文档共用的资源：箭头 marker + 流光模糊。**必须放在所有视图之外**（见 D-90）。 · L71 · 函数 · ⇢ 依赖 semantics.arrow_markers
 - id: '03'
   name: esc
   lines:
@@ -47,7 +47,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →26
-  desc: L188 · 函数
+  desc: L192 · 函数
 - id: '04'
   name: fmt
   lines:
@@ -59,7 +59,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →26
-  desc: L193 · 函数
+  desc: L197 · 函数
 - id: '05'
   name: _md_html
   lines:
@@ -71,7 +71,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →03
-  desc: ★ 悬浮框里的**有限 markdown** → HTML：`**粗体**` 与 `` `行内代码` ``。 · L197 · 函数
+  desc: ★ 悬浮框里的**有限 markdown** → HTML：`**粗体**` 与 `` `行内代码` ``。 · L201 · 函数
 - id: '06'
   name: _display_desc
   lines:
@@ -83,7 +83,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →26
-  desc: ★ 悬浮框里显示的「节点描述」：剥掉行首的标记语法本身（`⚠…` / `▣ 路径；…`）。 · L214 · 函数
+  desc: ★ 悬浮框里显示的「节点描述」：剥掉行首的标记语法本身（`⚠…` / `▣ 路径；…`）。 · L221 · 函数
 - id: '07'
   name: _sub_ring
   lines:
@@ -95,7 +95,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →04
-  desc: ★ 可下钻节点的**内衬线**（见 D-78）：同形状、向内缩 `SUB_INSET` 的一圈细线。 · L230 · 函数 · ⇢ 依赖 geometry.arc_px
+  desc: ★ 可下钻节点的**内衬线**（见 D-78）：同形状、向内缩 `SUB_INSET` 的一圈细线。 · L237 · 函数 · ⇢ 依赖 geometry.arc_px
 - id: 08
   name: svg_node
   lines:
@@ -107,7 +107,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→03｜2→04｜3→07
-  desc: L252 · 函数 · 分支：1→esc 2→fmt 3→_sub_ring · ⇢ 依赖 engine.Engine.node_lines、engine.Engine.rect、geometry.arc_px、semantics.pending_style
+  desc: L259 · 函数 · 分支：1→esc 2→fmt 3→_sub_ring · ⇢ 依赖 engine.Engine.node_lines、engine.Engine.rect、geometry.arc_px、semantics.pending_style
 - id: 09
   name: _node_row
   lines:
@@ -119,7 +119,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →26
-  desc: ★ 节点所在行 —— 用作流光的错峰序号（光顺着流程一段段亮过去）。 · L311 · 函数
+  desc: ★ 节点所在行 —— 用作流光的错峰序号（光顺着流程一段段亮过去）。 · L318 · 函数
 - id: '10'
   name: svg_edge
   lines:
@@ -131,7 +131,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→03｜2→04｜3→09｜4→11
-  desc: L322 · 函数 · 分支：1→esc 2→fmt 3→_node_row 4→svg_label · ⇢ 依赖 engine.Engine.path、engine.Engine.polarity、geometry.with_hops、hops.plan
+  desc: L329 · 函数 · 分支：1→esc 2→fmt 3→_node_row 4→svg_label · ⇢ 依赖 engine.Engine.path、engine.Engine.polarity、geometry.with_hops、hops.plan
 - id: '11'
   name: svg_label
   lines:
@@ -143,7 +143,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→03｜2→04
-  desc: L362 · 函数 · 分支：1→esc 2→fmt · ⇢ 依赖 engine.Engine.label_box、engine.Engine.label_rows
+  desc: L369 · 函数 · 分支：1→esc 2→fmt · ⇢ 依赖 engine.Engine.label_box、engine.Engine.label_rows
 - id: '12'
   name: svg_lanes
   lines:
@@ -155,7 +155,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→03｜2→04
-  desc: ★ 泳道背景：顶部部门带 + 左侧阶段带 + 部门列底色（画在边与节点之前，规则见 swimlane-spec §6）。 · L377 · 函数 ·
+  desc: ★ 泳道背景：顶部部门带 + 左侧阶段带 + 部门列底色（画在边与节点之前，规则见 swimlane-spec §6）。 · L383 · 函数 ·
     分支：1→esc 2→fmt
 - id: '13'
   name: html_head
@@ -168,7 +168,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →03
-  desc: '★ 标题模块：标题 + 图例色块合成一个 `position: fixed` 的条（滚动不离视窗）。 · L406 · 函数'
+  desc: '★ 标题模块：标题 + 图例色块合成一个 `position: fixed` 的条（滚动不离视窗）。 · L412 · 函数'
 - id: '14'
   name: collect_views
   lines:
@@ -180,7 +180,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →26
-  desc: ★ 主 DSL → 内嵌视图计划（BFS，按**表**去重，防环）。见 D-52。 · L426 · 函数 · ⇢ 依赖 artifact.artifact_name、artifact.artifact_stem、engine.load、semantics.subflow_target
+  desc: ★ 主 DSL → 内嵌视图计划（BFS，按**表**去重，防环）。见 D-52。 · L432 · 函数 · ⇢ 依赖 artifact.artifact_name、artifact.artifact_stem、engine.load、semantics.subflow_target
 - id: '15'
   name: _union_subjects
   lines:
@@ -192,7 +192,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →26
-  desc: ★ 跨层配色并集：[(来源, 配色表)…] → (并集表, [冲突…])。见 D-52 / D-49。 · L540 · 函数
+  desc: ★ 跨层配色并集：[(来源, 配色表)…] → (并集表, [冲突…])。见 D-52 / D-49。 · L546 · 函数
 - id: '16'
   name: _view_svg
   lines:
@@ -204,7 +204,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→05｜2→06｜3→08｜4→10｜5→12
-  desc: ★ 一张图 → (svg 字符串, tips 字典, 画布高)。 · L564 · 函数 · 分支：1→_md_html 2→_display_desc
+  desc: ★ 一张图 → (svg 字符串, tips 字典, 画布高)。 · L570 · 函数 · 分支：1→_md_html 2→_display_desc
     3→svg_node 4→svg_edge 5→svg_lanes · ⇢ 依赖 engine.Engine.height、engine.Engine.lanes、engine.Engine.route_text、semantics.pending_style、semantics.subflow_target
 - id: '17'
   name: render
@@ -217,7 +217,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→13｜2→18｜3→19｜4→20｜5→21｜6→22｜7→23｜8→24
-  desc: ★ DSL → 独立 HTML。按阶段装配：上下文 → 视图块 → 页头/正文 → 整页 → 落盘。 · L614 · 函数 · 分支：1→html_head
+  desc: ★ DSL → 独立 HTML。按阶段装配：上下文 → 视图块 → 页头/正文 → 整页 → 落盘。 · L620 · 函数 · 分支：1→html_head
     2→_load_render_context 3→_assemble_view_blocks 4→_serialize_tips 5→_build_crumbs
     6→_build_page_body 7→_build_html_document 8→_write_html_output
 - id: '18'
@@ -231,7 +231,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→14｜2→16
-  desc: ★ 加载主 DSL、收集内嵌视图计划并渲染主视图，返回渲染上下文 dict。 · L644 · 函数 · 分支：1→collect_views 2→_view_svg
+  desc: ★ 加载主 DSL、收集内嵌视图计划并渲染主视图，返回渲染上下文 dict。 · L650 · 函数 · 分支：1→collect_views 2→_view_svg
     · ⇢ 依赖 engine.Engine.head_band、engine.Engine.height、engine.load
 - id: '19'
   name: _assemble_view_blocks
@@ -244,7 +244,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→15｜2→16
-  desc: ★ 装配主视图与各内嵌子视图的 (key, 标题, svg, 宽, 高) 块，并归并跨层图例。 · L661 · 函数 · 分支：1→_union_subjects
+  desc: ★ 装配主视图与各内嵌子视图的 (key, 标题, svg, 宽, 高) 块，并归并跨层图例。 · L667 · 函数 · 分支：1→_union_subjects
     2→_view_svg · ⇢ 依赖 engine.Engine.head_band、engine.load
 - id: '20'
   name: _serialize_tips
@@ -257,7 +257,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →26
-  desc: ★ 把悬浮提示表序列化成可安全内联进 <script> 的 JS JSON 字面量。 · L688 · 函数
+  desc: ★ 把悬浮提示表序列化成可安全内联进 <script> 的 JS JSON 字面量。 · L694 · 函数
 - id: '21'
   name: _build_crumbs
   lines:
@@ -269,7 +269,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →03
-  desc: ★ 生成面包屑 HTML 与标题模块附加类；顶层主图无回程路时两者皆空。 · L699 · 函数
+  desc: ★ 生成面包屑 HTML 与标题模块附加类；顶层主图无回程路时两者皆空。 · L705 · 函数
 - id: '22'
   name: _build_page_body
   lines:
@@ -281,7 +281,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →03
-  desc: ★ 生成 body 内的视图容器：多视图每个视图一块 `.chart-container`，单视图只有主图。 · L721 · 函数
+  desc: ★ 生成 body 内的视图容器：多视图每个视图一块 `.chart-container`，单视图只有主图。 · L727 · 函数
 - id: '23'
   name: _build_html_document
   lines:
@@ -293,7 +293,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→03
-  desc: ★ 把标题/视图/提示数据套进整页 HTML 模板，并注入多视图 CSS/JS 与点击行为。 · L733 · 函数 · 分支：1→_defs_block
+  desc: ★ 把标题/视图/提示数据套进整页 HTML 模板，并注入多视图 CSS/JS 与点击行为。 · L739 · 函数 · 分支：1→_defs_block
     2→esc
 - id: '24'
   name: _write_html_output
@@ -306,7 +306,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →26
-  desc: ★ 落盘 HTML 并打印一行摘要，返回退出码 0。 · L984 · 函数
+  desc: ★ 落盘 HTML 并打印一行摘要，返回退出码 0。 · L990 · 函数
 - id: '25'
   name: main
   lines:
@@ -318,7 +318,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →17
-  desc: L996 · 函数
+  desc: L1002 · 函数
 - id: '26'
   name: 结束
   lines:

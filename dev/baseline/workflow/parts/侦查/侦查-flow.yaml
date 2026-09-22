@@ -14,7 +14,7 @@ meta:
 layout:
   col_x:
   - 400
-  right_channel_step: 60
+  channel_step: 60
   width: 680
   origin_x: -100
 nodes:

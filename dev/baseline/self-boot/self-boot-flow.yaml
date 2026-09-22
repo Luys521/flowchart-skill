@@ -8,7 +8,7 @@ meta:
 layout:
   col_x:
   - 400
-  right_channel_step: 40
+  channel_step: 40
   width: 680
   origin_x: -60
 nodes:
@@ -191,7 +191,7 @@ nodes:
   col: 0
   stage: 渲染
   route: →16
-  desc: 35 个函数 · ⊞ geometry/flowtable.md
+  desc: 36 个函数 · ⊞ geometry/flowtable.md
 - id: '16'
   name: 模块 · hops
   lines:
@@ -251,7 +251,7 @@ nodes:
   col: 0
   stage: 渲染
   route: →21
-  desc: 16 个函数 · ⊞ label/flowtable.md
+  desc: 17 个函数 · ⊞ label/flowtable.md
 - id: '21'
   name: 模块 · lane_router
   lines:
@@ -599,7 +599,7 @@ nodes:
   col: 0
   stage: 同步闭环
   route: →50
-  desc: 41 个函数 · ⊞ xml_reader/flowtable.md
+  desc: 40 个函数 · ⊞ xml_reader/flowtable.md
 - id: '50'
   name: 结束
   lines:

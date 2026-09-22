@@ -8,7 +8,7 @@ meta:
 layout:
   col_x:
   - 400
-  right_channel_step: 40
+  channel_step: 40
   width: 900
   origin_x: -100
 nodes:
@@ -131,7 +131,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →17
-  desc: ★ 落盘 DSL 并打印下一步提示，返回 DSL 路径。 · L211 · 函数 · ⇢ 依赖 artifact.artifact_name、artifact.artifact_stem
+  desc: ★ 落盘 DSL 并打印下一步提示，返回 DSL 路径。 · L220 · 函数 · ⇢ 依赖 artifact.artifact_name、artifact.artifact_stem
 - id: '11'
   name: _emit_manifest
   lines:
@@ -143,7 +143,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →17
-  desc: ★ 与 DSL 同刻产出渲染契约（供下游渲染后反查产物，见 DECISIONS.md D-11）。 · L224 · 函数 · ⇢ 依赖 manifest.build、manifest.dsl_fingerprint、manifest.manifest_path_for、manifest.source_fingerprint、manifest.summary
+  desc: ★ 与 DSL 同刻产出渲染契约（供下游渲染后反查产物，见 DECISIONS.md D-11）。 · L233 · 函数 · ⇢ 依赖 manifest.build、manifest.dsl_fingerprint、manifest.manifest_path_for、manifest.source_fingerprint、manifest.summary
 - id: '12'
   name: _run_fresh
   lines:
@@ -155,7 +155,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →17
-  desc: ★ `--fresh`：只答一句"这张表自上次渲染后有没有被直改过"，不校验、不产出。 · L240 · 函数 · ⇢ 依赖 artifact.artifact_name、artifact.artifact_stem、manifest.manifest_path_for、manifest.source_fingerprint、manifest.source_stale
+  desc: ★ `--fresh`：只答一句"这张表自上次渲染后有没有被直改过"，不校验、不产出。 · L249 · 函数 · ⇢ 依赖 artifact.artifact_name、artifact.artifact_stem、manifest.manifest_path_for、manifest.source_fingerprint、manifest.source_stale
 - id: '13'
   name: _derive_channel_step
   lines:
@@ -167,7 +167,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →17
-  desc: ★ 按**这张图最宽的标签**定通道档距，写进 `layout`（派生量，与 `width` / `origin_x` 同… · L271 · 函数
+  desc: ★ 按**这张图最宽的标签**定通道档距，写进 `layout`（派生量，与 `width` / `origin_x` 同… · L284 · 函数
     · ⇢ 依赖 geometry.ceil_to、semantics.text_width、thresholds.load
 - id: '14'
   name: _center_canvas
@@ -180,7 +180,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →13
-  desc: ★ 流程布局：把画布**贴合内容**、并让内容横向居中（泳道布局不动——它的宽度本来就由列宽算出）。 · L294 · 函数 · ⇢ 依赖 engine.Engine.label_box、engine.Engine.legend_width、engine.Engine.path、engine.Engine.rect、engine.load、geometry.ceil_to、geometry.snap
+  desc: ★ 流程布局：把画布**贴合内容**、并让内容横向居中（泳道布局不动——它的宽度本来就由列宽算出）。 · L317 · 函数 · ⇢ 依赖 engine.Engine.label_box、engine.Engine.legend_width、engine.Engine.path、engine.Engine.rect、engine.load、geometry.ceil_to、geometry.snap
 - id: '15'
   name: _write_dsl
   lines:
@@ -192,7 +192,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→08｜2→09｜3→10｜4→11｜5→14
-  desc: ★ --write 路径：读布局提示 → 组装 DSL → 量一次并居中画布 → 落盘 DSL 与渲染契约；返回退出码。 · L338 · 函数 ·
+  desc: ★ --write 路径：读布局提示 → 组装 DSL → 量一次并居中画布 → 落盘 DSL 与渲染契约；返回退出码。 · L361 · 函数 ·
     分支：1→_load_hint 2→_assemble_dsl 3→_emit_dsl 4→_emit_manifest 5→_center_canvas
 - id: '16'
   name: main
@@ -205,7 +205,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→03｜2→04｜3→05｜4→06｜5→07｜6→12｜7→15
-  desc: L356 · 函数 · 分支：1→_parse_args 2→_load_flowtable 3→_run_checks 4→_report_checks
+  desc: L379 · 函数 · 分支：1→_parse_args 2→_load_flowtable 3→_run_checks 4→_report_checks
     5→_enforce_showcase 6→_run_fresh 7→_write_dsl
 - id: '17'
   name: 结束

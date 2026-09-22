@@ -8,7 +8,7 @@
 横排徽章骑在竖线上，比档距还宽就会压到相邻通道的线（作者原话"阻挡线条"）。折排把宽度减半，
 而不是把字转 90°：竖排试过，作者 2026-09-22 改口径为横排 + 折排。
 """
-from geometry import RectCache, ceil_to, snap
+from geometry import RectCache, ceil_to, lane_step, snap
 from semantics import text_width
 
 
@@ -69,7 +69,7 @@ class Labeler(RectCache):
         """
         lay = dict(self.cfg.get('layout') or {})
         lay.update(self.M.dsl.get('layout') or {})
-        return snap(lay.get('right_channel_step', 40), self.grid.lattice)
+        return lane_step(lay, self.grid.lattice)
 
     def _rows_for(self, text, seg):
         """这条边的标签排成哪几行：默认一行；**竖段上**且一行宽度超档距 ⇒ 折两排。
@@ -151,8 +151,25 @@ class Labeler(RectCache):
         _x, _y, i = self._point_at(pts, t)
         return pts[i], pts[min(i + 1, len(pts) - 1)]
 
+    def invalidate(self):
+        """缓存全清：整流平（`head_band`）之后，**行数**和矩形一样会失效。
+
+        为什么要在这里明说（G92）：`_rows` 以 `id(边)` 为键，而基类的 `invalidate()` 只清 `_rects`
+        ——"先 `label_box`、再 `head_band`、再 `label_rows`"这条顺序会拿到**平移前**定下的行数，
+        且不报错（当前三个渲染器都是"先 box 后 rows"，所以是潜伏）。缓存有几个就清几个，
+        别指望调用点的顺序永远不变。
+        """
+        super().invalidate()
+        self._rows.clear()
+
     def label_rows(self, e):
-        """这条边的徽章分几行、每行是什么（渲染器照它画）。没算过就先算一次盒。"""
+        """这条边的徽章分几行、每行是什么（渲染器照它画）。没算过就先算一次盒。
+
+        **无标签边自己挡**：调用点现在都有 `e.get('label')` 守卫，但方法不该依赖调用点自证——
+        没标签就返回空表，渲染器一行 `<text>` 都不画。
+        """
+        if not e.get('label'):
+            return []
         if id(e) not in self._rows:
             self.label_box(e)
         return self._rows.get(id(e)) or [e['label']]

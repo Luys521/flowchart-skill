@@ -151,7 +151,7 @@ def _emit_node(L, n, drillable=()):
 def _emit_edge(L, e):
     # 交叉打跳（D-149）：口径与 html 版逐字相同，各自拼串（N3）。
     hp, hr, hs = hops.plan(L)
-    pts = with_hops(L.path(e), hp.get(id(e), []), hr, hs)
+    pts = with_hops(L.path(e), hp.get(id(e), []), hr, hs, L.grid.node_grid)
     parts = [f'M {_fmt(pts[0][0])} {_fmt(pts[0][1])}']
     for px, py, kind in pts[1:]:
         if kind == 'arc':

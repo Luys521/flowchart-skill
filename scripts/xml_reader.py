@@ -43,24 +43,21 @@ def _strip_html(s):
     return re.sub(r'<[^>]+>', '', s).strip()
 
 
-def _label_text(val):
-    """节点/边标签 → 纯文本：`<br>` 按语境并回去，再剥标签，最后压空白。
+def _label_text(val, native=False):
+    """节点/边标签 → 纯文本：`<br>` 换行按来源并回去，再剥标签，最后压空白。
 
-    **`<br>` 为什么分两种并法**（G85）：自有产物把放不下的边标签**折两排**，drawio 那边写的就是
-    `value="不齐<br>全"`——反向读回来**必须还原成 `不齐全`**，否则 sync 会把每一只折排标签都报成
-    "表与图不一致"（实测：端到端里"恰好 2 处差异"变成 3 对，把 --apply 的断言一起带红）。
-    而**外部**图里的 `<br>` 是画图的人自己断的行（`Yes<br>No`），并成一个词会把两个词粘住
-    ⇒ 拉丁文之间补 ` / `，CJK 直接相接（中文本来就不靠空格分词，相接才是它断行前的样子）。
+    **`<br>` 的两种并法**（G85/G89）：
+      · **自家产物**（`native=True`，判据是 style 里的 `NATIVE_MARK`，D-85）：边标签里的 `<br>` 只可能
+        来自我们自己的**折两排**（放不下时的排版），反向读回来**必须一字不差地还原**——所以直接相接；
+      · **外部图**：`<br>` 是画图的人自己断的行（`Yes<br>No`），并成一个词会把两个词粘住 ⇒ 补 ` / `。
+
+    为什么不能按"相邻字符是不是汉字"猜（第一版就是这么写的，G89）：折点落在标点或 ASCII 上时猜错——
+    `材料只读、永不修改` 折成 `材料只读、<br>永不修改`，顿号 `、`(U+3001) 不在汉字区间，回读就变成
+    `材料只读、 / 永不修改`；`重启docker服务` 折在 `doc|ker` 之间同理。后果不是"读得别扭"：sync 会把
+    每只这类折排边报成"表与图不一致"，`--apply` 还会把这个带 ` / ` 的串**写回《流程表》**。
     """
     s = _text(val)
-
-    def _join(m):
-        before = m.string[m.start() - 1] if m.start() else ''
-        after = m.string[m.end()] if m.end() < len(m.string) else ''
-        cjk = '\u3400' <= before <= '\u9fff' and '\u3400' <= after <= '\u9fff'
-        return '' if cjk else ' / '
-
-    s = re.sub(r'<br\s*/?>', _join, s, flags=re.I)
+    s = re.sub(r'<br\s*/?>', '' if native else ' / ', s, flags=re.I)
     s = _strip_html(s)
     return re.sub(r'\s+', ' ', s).strip()
 
@@ -271,10 +268,11 @@ def _band_width(root_el):
     return band
 
 
-def _parse_edges(root_el):
+def _parse_edges(root_el, native=False):
     edges = []
     # 边有两种挂法：直挂 <mxCell edge="1">（自家产物）与 <object> 包裹（外部图/手改图里
     # 给边加过自定义属性后的 drawio 写法）。包裹时标签在 object 的 label 上，mxCell 多半没有 value。
+    # `native` 由文件级判据传进来（见 `_file_is_native`）：它决定 `<br>` 怎么并回去（`_label_text`）。
     sources = [(c, c.get('value')) for c in root_el.findall('mxCell')]
     for obj in root_el.findall('object'):
         cell = obj.find('mxCell')
@@ -293,7 +291,7 @@ def _parse_edges(root_el):
             pts.append((_num(pt, 'x'), _num(pt, 'y')))
         ex, ey = _frac(style, 'exitX'), _frac(style, 'exitY')
         nx, ny = _frac(style, 'entryX'), _frac(style, 'entryY')
-        edges.append({'from': s, 'to': t, 'label': _label_text(label),
+        edges.append({'from': s, 'to': t, 'label': _label_text(label, native),
                       'dashed': 'dashed=1' in style, 'pts': pts,
                       'exit': (ex, ey) if None not in (ex, ey) else None,
                       'entry': (nx, ny) if None not in (nx, ny) else None})
@@ -419,14 +417,15 @@ def read(xml_content: str) -> dict:
     """解析 drawio XML → {title, nodes, edges, source, grid, pages}。解析不了抛 ValueError（带原因）。"""
     model, root_el, pages = _root_model(xml_content)
     nodes = _parse_nodes(root_el)
-    edges = _parse_edges(root_el)
+    # 它必须在读边**之前**定：`_parse_edges` 要用它决定边标签里的 `<br>` 怎么并回去（G85/G89）。
+    native = bool(nodes) and any(n['native'] for n in nodes)
+    edges = _parse_edges(root_el, native)
     _finalize_types(nodes, edges)
     # **只要有一个原生节点就按原生处理**（G43）：原先用 `all()`，于是用户在 drawio 里手画一个
     # 节点（调色板画出来的是裸 `<mxCell>`、不带 NATIVE_MARK）之后，整份自产文件被判 external ⇒
     # ① 节点序从"cell 序"翻成几何排序，**没动过的行被重排**；② `brief` 打"N 个节点都没有语义"
     # 的误导告警（其实绝大多数节点在表里都有语义）。而 SKILL.md 明说"插节点、连新关系、改文字、
     # 拖位置都行"——这是高频路径。几何排序只留给**全外部**文件（一个原生标记都没有）。
-    native = bool(nodes) and any(n['native'] for n in nodes)
     grid = assign_grid(nodes)
     nodes, edges = _order_nodes_and_edges(nodes, edges, native)
     return {'title': '', 'nodes': nodes, 'edges': edges,

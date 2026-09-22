@@ -8,7 +8,7 @@ meta:
 layout:
   col_x:
   - 400
-  right_channel_step: 40
+  channel_step: 40
   width: 1460
   origin_x: 0
 nodes:
@@ -318,7 +318,7 @@ nodes:
   col: 0
   stage: Engine
   route: →29
-  desc: ★ 画布顶部是否预留标题带（HTML 版标题在画布外，故不预留）。 · L185 · 方法 · ⇢ 依赖 geometry.RectCache.invalidate
+  desc: ★ 画布顶部是否预留标题带（HTML 版标题在画布外，故不预留）。 · L185 · 方法 · ⇢ 依赖 label.Labeler.invalidate
 - id: '26'
   name: Engine.height
   lines:

@@ -458,6 +458,16 @@ def run_face(tmp=None):
             ok = all(nums[i] == str(resolved[i][0]) for i in range(len(nums)))
         else:
             ok = sorted(nums) == sorted(flat)
+        # **词值也要核**（G91）：`hops.style: gap` / `hops.policy: vertical` 这类开关的值是字符串，
+        # 上面只比数字 ⇒ 文档把 `gap` 写成 `arc` 也照样绿（审查实测过：改文档的面① 仍报"25 行一致"）。
+        # 判据收窄到"文档那一格是**一个 ASCII 词**"：`pending.stroke` 那种写"醒目橙"的描述格、
+        # `default_ports.*` 那种"spine 下→上、horiz 右→左"的复合格都不算词值（第一版没排除中文，
+        # 当场把三行描述格判成不一致——"窄"是必须的，不是保守）。
+        word = cells[1].strip().strip('`')
+        if re.fullmatch(r'[A-Za-z][A-Za-z0-9_.\-]*', word) and len(resolved) == 1 and len(resolved[0]) == 1:
+            v = resolved[0][0]
+            if isinstance(v, str) and v != word:
+                mism.append(f'{cells[0]}：文档 {word!r} ≠ 字典 {v!r}')
         if not ok:
             mism.append(f'{cells[0]}：文档 {nums} ≠ 字典 {flat}')
     c.check(not mism, f'参数表 {len(rows)} 行与字典一致', '；'.join(mism[:3]))

@@ -5,7 +5,7 @@
 自动规划的通道 x 与 dye 都吸附细格（通道落在节点夹缝，10px 刻度够用），节点盒的粗格由 geometry 保证；
 折点全部由「粗格锚点 + 细格通道」推出。
 """
-from geometry import RectCache, seg_rect_hit, snap, stagger_source_anchors
+from geometry import RectCache, lane_step, seg_rect_hit, snap, stagger_source_anchors
 
 NODE_CLEARANCE = 6         # 通道/折线与节点边沿的最小间隙（px）
 FALLBACK_CHANNEL_TRIES = 16   # 兜底通道最多右移步数（防死循环；全失败退回旧兜底由 validate 拦截）
@@ -157,7 +157,7 @@ class Router(RectCache):
     def _right_family_cands(self, lay, col_from, col_to, limit, GL):
         """右族长跳候选：以本边涉及列中更靠右列的**右沿**为局部基准，只向外展开（D-91）。"""
         # ③ 右族（局部基准，只向外展开）
-        step_r = snap(lay.get('right_channel_step', 40), GL)
+        step_r = lane_step(lay, GL)
         off_r = snap(lay.get('right_channel_offset', 40), GL)
         local_rg = snap(self._col_edge(max(col_from, col_to))[1] + off_r, GL)
         return [('right', 'right', local_rg + step_r * i) for i in range(limit)]
@@ -174,7 +174,7 @@ class Router(RectCache):
         的名字里带"右"，但左族**刻意同口径**——两侧束距与贴列距离必须一致，否则同一张图左右
         不对称，而 `dictionary.yaml` 里只有这两个数。命名是历史（D-92 先做右族），不是"只对右边生效"。
         """
-        step_l = snap(lay.get('right_channel_step', 40), GL)
+        step_l = lane_step(lay, GL)
         off_l = snap(lay.get('right_channel_offset', 40), GL)
         local_lg = snap(self._col_edge(min(col_from, col_to))[0] - off_l, GL)
         return [('left', 'left', local_lg - step_l * i) for i in range(limit)]
@@ -342,7 +342,7 @@ class Router(RectCache):
         # 兜底：从本边局部右基准的最后一档再往外找一条不冲突的通道。
         # 绝不能回落到已占通道——落回去等于主动制造共线重叠
         # （这正是决策树那类多汇合图失败的成因）。
-        sr = snap(lay.get('right_channel_step', 40), self.grid.lattice)
+        sr = lane_step(lay, self.grid.lattice)
         off_r = snap(lay.get('right_channel_offset', 40), self.grid.lattice)
         col_f = self.M.nodes[e['from']]['col']
         col_t = self.M.nodes[e['to']]['col']
@@ -356,7 +356,9 @@ class Router(RectCache):
         # 为什么起点要挪到最内侧：旧写法从 `base + sr*(limit-1)`（最后一档）起步，等于**默认挑最外**，
         # 于是梯级上留下一串空洞——自举 workflow 实测右侧通道 540/600/960/1020/1080，中间空四档，
         # 看起来毫无刻度（作者 2026-09-19 的"右侧出线刻度不守规矩"就是这个）。内→外扫则自然填满。
-        # 仍然只放宽"与别人共道"这一条（旧兜底的本意），节点与最短段照旧否决：往图外走总有空位。
+        # 放宽的是**冲突判定整体**：这一路只查"没人占这条道"与 `_path_rejects`（穿节点 / 短段），
+        # (b)(c) 两条"水平段穿竖段"照旧不查——与旧兜底同口径（旧写法也一样不查），共线叠线由
+        # validate 事后拦。往图外走总有空位，所以循环有解。
         used = {round(och) for _, och, _, _ in assigned}
         x = base
         for _ in range(FALLBACK_CHANNEL_TRIES * 8):
@@ -397,7 +399,7 @@ class Router(RectCache):
 
         ⚠ 排序方向是**升序**（短边先占内道），而且这是**实测选出来的**：`_route_pending_edges`
         的 `pend.sort` 自 1ce7e46（2026-09-17）起就是升序，A/B 一比，升序远好于降序——
-        自举 48 张表平均绕行 **41% vs 242%**、单张 `build` **102% vs 655%**、画布 2380 vs 3080（G75）。
+        自举 49 张表平均绕行 **41% vs 242%**、单张 `build` **102% vs 655%**、画布 2380 vs 3080（G75）。
         机理：同一条梯级只有"竖直跨度不重叠"的边能共用，短边彼此跨度不相交 ⇒ 能叠着坐内道；
         长边先占会把内道全锁死，逼着每一条短边各占一条外道，梯级总数反而变多、横走跟着变长。
         **别按"长边最受约束所以先占"去改成降序**——那个方向试过，烂 6 倍（D-143）。

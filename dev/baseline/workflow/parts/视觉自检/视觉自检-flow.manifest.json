@@ -2,7 +2,7 @@
  "title": "视觉自检：质量门禁只管几何，好不好看必须看图",
  "layout": "flow",
  "source": "flowtable.md",
- "dsl_sha256": "b632264920c196e3",
+ "dsl_sha256": "427ee26accded018",
  "source_sha256": "385bd48eab931b4f",
  "counts": {
   "nodes": 9,
