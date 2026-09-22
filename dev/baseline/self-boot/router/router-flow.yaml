@@ -8,6 +8,7 @@ meta:
 layout:
   col_x:
   - 400
+  right_channel_step: 40
   width: 1160
   origin_x: 0
 nodes:
@@ -368,7 +369,7 @@ nodes:
   col: 0
   stage: Router
   route: 1→03｜2→31
-  desc: ★ 给同一目标同一入口的一批入边在 ±avail 内错开入场 dye：近源先拿靠源一侧的槽位。 · L421 · 方法 · 分支：1→Router.ports
+  desc: ★ 给同一目标同一入口的一批入边在 ±avail 内错开入场 dye：近源先拿靠源一侧的槽位。 · L425 · 方法 · 分支：1→Router.ports
     2→Router._side_used_slots · ⇢ 依赖 geometry.Grid.anchor、geometry.snap
 - id: '30'
   name: Router._assign_group_dyes._rank
@@ -381,7 +382,7 @@ nodes:
   col: 0
   stage: Router
   route: →06
-  desc: L453 · 函数
+  desc: L457 · 函数
 - id: '31'
   name: Router._side_used_slots
   lines:
@@ -393,7 +394,7 @@ nodes:
   col: 0
   stage: Router
   route: →03
-  desc: ★ 该侧**出边**已占的锚点槽位（自动与手填都算）——入边错峰必须整片避开（见 `_assign_group_dyes`… · L472 · 方法
+  desc: ★ 该侧**出边**已占的锚点槽位（自动与手填都算）——入边错峰必须整片避开（见 `_assign_group_dyes`… · L476 · 方法
 - id: '32'
   name: Router._stagger_target_dyes
   lines:
@@ -405,7 +406,7 @@ nodes:
   col: 0
   stage: Router
   route: 1→03｜2→29
-  desc: ★ 同一目标**同一入口**的入边：在 ±avail 内错开入场 dye，否则尾段会重合纠缠。 · L482 · 方法 · 分支：1→Router.ports
+  desc: ★ 同一目标**同一入口**的入边：在 ±avail 内错开入场 dye，否则尾段会重合纠缠。 · L486 · 方法 · 分支：1→Router.ports
     2→Router._assign_group_dyes · ⇢ 依赖 geometry.snap
 - id: '33'
   name: 结束

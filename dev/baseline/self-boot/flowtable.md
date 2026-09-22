@@ -54,7 +54,7 @@ level: L0
 | 编排入口 | 41 | 模块 · shot | 任务 | — | — | — | 脚本 | selfboot | — | →42 | 8 个函数 · ⊞ shot/flowtable.md |
 | 渲染 | 42 | 模块 · swimlane | 任务 | — | — | — | 脚本 | selfboot | — | →43 | 20 个函数 · ⊞ swimlane/flowtable.md |
 | 同步闭环 | 43 | 模块 · sync | 任务 | — | — | — | 脚本 | selfboot | — | →44 | 10 个函数 · ⊞ sync/flowtable.md |
-| DSL 装配 | 44 | 模块 · table_to_dsl | 任务 | — | — | — | 脚本 | selfboot | — | →45 | 14 个函数 · ⊞ table_to_dsl/flowtable.md |
+| DSL 装配 | 44 | 模块 · table_to_dsl | 任务 | — | — | — | 脚本 | selfboot | — | →45 | 15 个函数 · ⊞ table_to_dsl/flowtable.md |
 | 接管与解析 | 45 | 模块 · textquality | 任务 | — | — | — | 脚本 | selfboot | — | →46 | 9 个函数 · ⊞ textquality/flowtable.md |
 | 接管与解析 | 46 | 模块 · thresholds | 任务 | — | — | — | 脚本 | selfboot | — | →47 | 1 个函数 · ⊞ thresholds/flowtable.md |
 | 产物审核 | 47 | 模块 · validate | 任务 | — | — | — | 脚本 | selfboot | — | →48 | 39 个函数 · ⊞ validate/flowtable.md |

@@ -20,7 +20,8 @@ from flowtable_check import run_checks, check_header, check_evidence
 from flowtable_colors import resolve_colors, subject_map
 from flowtable_layout import (parse_lane_order, auto_layout,
                               reuse_hint, merge_parallel_branches)
-from semantics import findings_receipt
+from semantics import findings_receipt, text_width
+import thresholds
 from flowtable import BLANK
 import deps
 
@@ -260,6 +261,36 @@ def _run_fresh(p):
     return 1
 
 
+#: `label_badge` / `layout` 两段里本脚本要用的字段的**内置默认**。
+#: `thresholds.load(section, defaults)` 的口径就是"默认 + 字典覆盖"，而面① 会断言这两份默认与
+#: `dictionary.yaml` 同值——所以这里只列本函数真读的字段，不抄整段。
+_BADGE_DEFAULTS = {'full_width': 12, 'half_width': 7, 'padding': 16}
+_LAYOUT_DEFAULTS = {'right_channel_step': 40, 'right_channel_step_max': 80}
+
+
+def _derive_channel_step(dsl, mode):
+    """按**这张图最宽的标签**定通道档距，写进 `layout`（派生量，与 `width` / `origin_x` 同一路数）。
+
+    为什么要派生（G87/D-155）：档距有两条约束，而"一个数管所有表"两头都不合适——
+      · 40：自举树（最长标签 2 字、徽章 40px）紧凑，可 workflow 那张表最长的标签 4 字（徽章 64px）
+        就得**折两排**，于是同一张图里折的与不折的混在一起（作者 2026-09-22 看到的"处理不一致"）；
+      · 80：全都不折，但把自举树的绕行抬到门槛外（门⑨ 实测均值 49% / 最坏 83%）。
+    所以档距按图算：最宽徽章吸到粗格，夹在 `[right_channel_step, right_channel_step_max]` 之间。
+    上限之外还有更长的标签才折排（G85）——折排从此是**兜底**，不是常态。
+    """
+    if mode == 'swimlane':
+        return
+    b = thresholds.load('label_badge', _BADGE_DEFAULTS)
+    lay_cfg = thresholds.load('layout', _LAYOUT_DEFAULTS)
+    GN = DEFAULT_GRID['node']
+    step = int(lay_cfg.get('right_channel_step', 40))
+    cap = int(lay_cfg.get('right_channel_step_max', 80))
+    pad, full, half = b['padding'], b.get('full_width', 12), b.get('half_width', 7)
+    widest = max([text_width(e.get('label') or '', full, half) + pad
+                  for e in (dsl.get('edges') or [])] or [0])
+    dsl['layout']['right_channel_step'] = min(max(ceil_to(widest, GN), step), cap)
+
+
 def _center_canvas(dsl, mode):
     """流程布局：把画布**贴合内容**、并让内容横向居中（泳道布局不动——它的宽度本来就由列宽算出）。
 
@@ -277,6 +308,7 @@ def _center_canvas(dsl, mode):
     """
     if mode == 'swimlane':
         return
+    _derive_channel_step(dsl, mode)      # 必须在落临时 yaml **之前**：它会影响通道位置，也就影响居中量
     import tempfile
     from engine import load as _load
     with tempfile.TemporaryDirectory() as td:

@@ -40,8 +40,8 @@ parent: ../flowtable.md
 | Router | 26 | Router._fallback_channel | 任务 | — | — | — | 脚本 | selfboot | — | 1→16｜2→23｜3→24 | ★ 候选全冲突时的兜底：从本边局部右基准最后一档向外找不冲突通道；再失败只避已占通道。 · L340 · 方法 · 分支：1→Router._col_edge 2→Router._path_rejects 3→Router._chan_conflict · ⇢ 依赖 geometry.snap |
 | Router | 27 | Router._route_pending_edges | 任务 | — | — | — | 脚本 | selfboot | — | 1→08｜2→19｜3→24｜4→26 | ★ 给还没通道的 loop/jumpR 边按候选优先级择优分配通道，全冲突时向外兜底。 · L372 · 方法 · 分支：1→Router._hs 2→Router._candidates 3→Router._chan_conflict 4→Router._fallback_channel |
 | Router | 28 | Router._ensure_gutters | 任务 | — | — | — | 脚本 | selfboot | — | 1→25｜2→27｜3→32 | ★ 一次性通道分配：跨相邻列走列间通道、单列回路走左、长跳走右；**跨度小的先排**（占内道）。 · L395 · 方法 · 分支：1→Router._replay_gutter_hints 2→Router._route_pending_edges 3→Router._stagger_target_dyes · ⇢ 依赖 geometry.stagger_source_anchors |
-| Router | 29 | Router._assign_group_dyes | 任务 | — | — | — | 脚本 | selfboot | — | 1→03｜2→31 | ★ 给同一目标同一入口的一批入边在 ±avail 内错开入场 dye：近源先拿靠源一侧的槽位。 · L421 · 方法 · 分支：1→Router.ports 2→Router._side_used_slots · ⇢ 依赖 geometry.Grid.anchor、geometry.snap |
-| Router | 30 | Router._assign_group_dyes._rank | 任务 | — | — | — | 脚本 | selfboot | — | →06 | L453 · 函数 |
-| Router | 31 | Router._side_used_slots | 任务 | — | — | — | 脚本 | selfboot | — | →03 | ★ 该侧**出边**已占的锚点槽位（自动与手填都算）——入边错峰必须整片避开（见 `_assign_group_dyes`… · L472 · 方法 |
-| Router | 32 | Router._stagger_target_dyes | 任务 | — | — | — | 脚本 | selfboot | — | 1→03｜2→29 | ★ 同一目标**同一入口**的入边：在 ±avail 内错开入场 dye，否则尾段会重合纠缠。 · L482 · 方法 · 分支：1→Router.ports 2→Router._assign_group_dyes · ⇢ 依赖 geometry.snap |
+| Router | 29 | Router._assign_group_dyes | 任务 | — | — | — | 脚本 | selfboot | — | 1→03｜2→31 | ★ 给同一目标同一入口的一批入边在 ±avail 内错开入场 dye：近源先拿靠源一侧的槽位。 · L425 · 方法 · 分支：1→Router.ports 2→Router._side_used_slots · ⇢ 依赖 geometry.Grid.anchor、geometry.snap |
+| Router | 30 | Router._assign_group_dyes._rank | 任务 | — | — | — | 脚本 | selfboot | — | →06 | L457 · 函数 |
+| Router | 31 | Router._side_used_slots | 任务 | — | — | — | 脚本 | selfboot | — | →03 | ★ 该侧**出边**已占的锚点槽位（自动与手填都算）——入边错峰必须整片避开（见 `_assign_group_dyes`… · L476 · 方法 |
+| Router | 32 | Router._stagger_target_dyes | 任务 | — | — | — | 脚本 | selfboot | — | 1→03｜2→29 | ★ 同一目标**同一入口**的入边：在 ±avail 内错开入场 dye，否则尾段会重合纠缠。 · L486 · 方法 · 分支：1→Router.ports 2→Router._assign_group_dyes · ⇢ 依赖 geometry.snap |
 | 出口 | 33 | 结束 | 结束 | — | — | — | 脚本 | selfboot | — | — | 流程终点（结构性节点，不是函数） |

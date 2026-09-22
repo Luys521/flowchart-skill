@@ -406,7 +406,11 @@ class Router(RectCache):
         if self._gutter_done:
             return
         self._gutter_done = True
-        lay = self.M.cfg.get('layout', {})
+        # **参数来源 = 字典 + 本图的 `layout` 覆盖**（字典文件头那句就是这个契约："默认配置，DSL 可按图覆盖"）。
+        # 派生量也住这里——`right_channel_step` 是按**这张图最宽的标签**算出来的档距（table_to_dsl），
+        # 不叠这一层的话路由器会按字典下界 40 布线、而标签按 80 排，徽章当场压到邻道的线上（G87/D-155）。
+        lay = dict(self.M.cfg.get('layout', {}))
+        lay.update(self.M.dsl.get('layout') or {})
         assigned = []
         self._replay_gutter_hints(assigned)
         self._route_pending_edges(lay, assigned)

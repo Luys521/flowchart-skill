@@ -14,8 +14,9 @@ meta:
 layout:
   col_x:
   - 400
+  right_channel_step: 60
   width: 680
-  origin_x: -80
+  origin_x: -100
 nodes:
 - id: 04a
   name: 读材料层
