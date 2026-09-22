@@ -28,8 +28,8 @@ parent: ../flowtable.md
 | 模块级 | 14 | seg_overlap | 任务 | — | — | — | 脚本 | selfboot | — | →37 | ★ 两条轴对齐线段是否**共线重叠**（只认重叠，不认正交穿越）。 · L405 · 函数 |
 | 模块级 | 15 | ortho_cross | 任务 | — | — | — | 脚本 | selfboot | — | →37 | ★ 两条轴对齐线段是否**正交交叉**（一横一竖、且交点在两者内部）。 · L421 · 函数 |
 | 模块级 | 16 | hop_plan | 任务 | — | — | — | 脚本 | selfboot | — | →15 | ★ `[(key, [点…])…]` → `{key: [(x, y, axis)…]}`：每个正交交叉点上由**哪条边*… · L448 · 函数 |
-| 模块级 | 17 | with_hops | 任务 | — | — | — | 脚本 | selfboot | — | →37 | ★ 折线 + 该边要打的跳 → `[(x, y, via_arc)…]`：`via_arc=True` 表示"与上一点之间… · L482 · 函数 |
-| 模块级 | 18 | point_seg_dist | 任务 | — | — | — | 脚本 | selfboot | — | →37 | ★ 点到线段的最短距离。 · L522 · 函数 |
+| 模块级 | 17 | with_hops | 任务 | — | — | — | 脚本 | selfboot | — | →37 | ★ 折线 + 该边要打的跳 → `[(x, y, kind)…]`；`kind` 是**渲染器要画的东西**： · L489 · 函数 |
+| 模块级 | 18 | point_seg_dist | 任务 | — | — | — | 脚本 | selfboot | — | →37 | ★ 点到线段的最短距离。 · L536 · 函数 |
 | RectCache | 19 | RectCache._all_rects | 任务 | — | — | — | 脚本 | selfboot | — | →37 | L70 · 方法 |
 | RectCache | 20 | RectCache.invalidate | 任务 | — | — | — | 脚本 | selfboot | — | →37 | L75 · 方法 |
 | Grid | 21 | Grid.__init__ | 任务 | — | — | — | 脚本 | selfboot | — | 1→22｜2→23｜3→24｜4→25｜5→26｜6→27 | ★ 建流程栅格：读网格与画布配置 → 解列中心 → 解原点与行距 → 吸附尺寸 → 定右通道 → 推行 y。 · L80 · 方法 · 分支：1→Grid._read_base_config 2→Grid._solve_columns 3→Grid._solve_origin_and_gaps 4→Grid._fit_sizes 5→Grid._solve_right_channel 6→Grid._solve_rows |

@@ -132,9 +132,9 @@ def edge_style(L, e):
     # 全加会让交叉的两条线同时起跳（四向跳），与另两份产物的观感不一致。
     # ⚠ `jumpSize` 的口径（总宽还是半宽）与"两条边都带样式时谁跳"我没法在本机验证——
     # 没有 drawio 渲染器；这一处观感**要人打开 .drawio 看一眼**（写在 D-149 里）。
-    hp, hr = hops.plan(L)
+    hp, hr, hs = hops.plan(L)
     if hr > 0 and id(e) in hp:
-        s += f'jumpStyle=arc;jumpSize={int(2 * hr)};'
+        s += f'jumpStyle={hs if hs in ("arc", "gap", "sharp") else "gap"};jumpSize={int(2 * hr)};'
     return s
 
 

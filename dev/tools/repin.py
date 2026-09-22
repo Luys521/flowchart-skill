@@ -110,6 +110,22 @@ def _sync(src, dst, prune):
     return changed
 
 
+def _rmtree_or_fail(d):
+    """删一棵树；**删不掉就当场报错，不许吞**（G83）。
+
+    为什么：`shutil.rmtree(d, ignore_errors=True)` 会把"删不掉"（Windows 上常见：文件被占用、
+    杀软正在扫）静默咽下去，紧接着的 `copytree` 撞 `FileExistsError` ——那一步才报，
+    而**报的时候要被覆盖的那棵树已经被删空了**：实测 `dev/baseline/workflow/` 剩 0 个文件，
+    面③ 与门① 一起红，只能从 git 恢复。删不干净就停手，此时还没动任何东西。
+    """
+    if not d.exists():
+        return
+    shutil.rmtree(d, ignore_errors=True)        # 先试一次（ignore 只是不在这里抛）
+    if d.exists():                              # 真删不掉 ⇒ 说话（下一步 copytree 必撞）
+        raise RuntimeError(f'删不掉 {d}——多半有程序占着它。先关掉那个程序再重钉；'
+                           f'此刻基线还没被改动，不用修现场')
+
+
 def _rebuild_workflow(baseline, dry):
     """workflow 基线**重建**：`examples/workflow` 铺底 → build → 只留产物（D-66 的布局）。
 
@@ -120,11 +136,17 @@ def _rebuild_workflow(baseline, dry):
     before = _snapshot(baseline) if baseline.is_dir() else {}
     if dry:
         tmp = ROOT / '.repin_tmp' / 'workflow'
-        shutil.rmtree(ROOT / '.repin_tmp', ignore_errors=True)
+        try:
+            _rmtree_or_fail(ROOT / '.repin_tmp')
+        except RuntimeError as e:
+            return 2, str(e), [], 0
         shutil.copytree(src, tmp)
         work = tmp
     else:
-        shutil.rmtree(baseline, ignore_errors=True)
+        try:
+            _rmtree_or_fail(baseline)
+        except RuntimeError as e:
+            return 2, str(e), [], 0
         shutil.copytree(src, baseline)
         work = baseline
     rc, tail = _run('scripts/build.py', work / 'flowtable.md')

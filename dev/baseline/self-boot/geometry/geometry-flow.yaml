@@ -218,7 +218,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →37
-  desc: ★ 折线 + 该边要打的跳 → `[(x, y, via_arc)…]`：`via_arc=True` 表示"与上一点之间… · L482 · 函数
+  desc: ★ 折线 + 该边要打的跳 → `[(x, y, kind)…]`；`kind` 是**渲染器要画的东西**： · L489 · 函数
 - id: '18'
   name: point_seg_dist
   lines:
@@ -230,7 +230,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →37
-  desc: ★ 点到线段的最短距离。 · L522 · 函数
+  desc: ★ 点到线段的最短距离。 · L536 · 函数
 - id: '19'
   name: RectCache._all_rects
   lines:

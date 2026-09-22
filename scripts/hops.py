@@ -14,16 +14,18 @@ from geometry import hop_plan, snap
 
 
 def plan(L):
-    """这张图的打跳方案 → `(plan, radius)`；**每张图算一次**，缓存在 `L` 上。
+    """这张图的打跳方案 → `(plan, radius, style)`；**每张图算一次**，缓存在 `L` 上。
 
     缓存而不是加参数：调用方是渲染循环里的逐边绘制，而交叉检测要看**全图的边**。
-    `radius` 在构造期 `snap` 到细格——弧的入口点由 `L` 命令带出，会被产物侧的"网格对齐"
+    `radius` 在构造期 `snap` 到细格——记号的入口点由 `L` 命令带出，会被产物侧的"网格对齐"
     门禁读到（不是格上值就报离格）。`radius` 为 0 ⇒ 整件事关掉，产物与此前逐字节相同。
+    `style` 是记号长什么样（`gap` 断开 / `arc` 半圆），见 `geometry.with_hops`。
     """
     if '_hop_plan' not in L.__dict__:
         h = L.cfg.get('hops') or {}
         r = snap(h.get('radius', 10) or 0, L.grid.lattice)
         L._hop_radius = r
+        L._hop_style = str(h.get('style', 'gap'))
         L._hop_plan = (hop_plan([(id(e), L.path(e)) for e in L.edges], h.get('policy', 'vertical'))
                        if r > 0 else {})
-    return L._hop_plan, L._hop_radius
+    return L._hop_plan, L._hop_radius, L._hop_style

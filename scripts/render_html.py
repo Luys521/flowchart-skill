@@ -303,12 +303,16 @@ def svg_edge(L, e):
     ed = L.cfg['edges'][pol]
     # 交叉打跳（D-149）：方案由 `hops.plan` 出（每张图缓存一次），拼串留在这里（N3）。
     # 半圆两端落在原线段上 ⇒ `manifest.py` 只认 `M`/`L` 的反解得到的仍是共线折线。
-    hp, hr = hops.plan(L)
-    pts = with_hops(L.path(e), hp.get(id(e), []), hr)
+    hp, hr, hs = hops.plan(L)
+    pts = with_hops(L.path(e), hp.get(id(e), []), hr, hs)
     parts = [f'M {fmt(pts[0][0])} {fmt(pts[0][1])}']
-    for px, py, arc in pts[1:]:
-        parts.append(f'A {fmt(hr)} {fmt(hr)} 0 0 1 {fmt(px)} {fmt(py)}' if arc
-                     else f'L {fmt(px)} {fmt(py)}')
+    for px, py, kind in pts[1:]:
+        if kind == 'arc':
+            parts.append(f'A {fmt(hr)} {fmt(hr)} 0 0 1 {fmt(px)} {fmt(py)}')
+        elif kind == 'gap':                     # 断开：交叉处留空（`M` 起新子路径）
+            parts.append(f'M {fmt(px)} {fmt(py)}')
+        else:
+            parts.append(f'L {fmt(px)} {fmt(py)}')
     d = ' '.join(parts)
     dash = ' stroke-dasharray="5 4"' if ed['dashed'] else ''
     # 箭头按**极性**取（`semantics.arrow_markers` 给每条极性一枚同色的 marker）。

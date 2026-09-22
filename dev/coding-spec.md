@@ -165,6 +165,8 @@
 
 | G82 | **门⑩ 等价** `dev/tools/equiv.py` `make_base`：`git show {rev}:{rel}` 失败时一律报「底本 tag 取不到（没 git / tag 不存在 / 工作树读不了）」——而最常见的失败其实是**那个文件在底本里不存在**（工作树新增的模块）。实测：加一个 `hops.py`，门⑩ 当场判"仪器故障"，报错把人往"去查 tag"引（tag 明明在，`git rev-parse` 好端端的） | 无——`git show` 的两类失败（tag 不在 / 文件不在）共用一句，判据没分开 | **已收口（2026-09-22，D-150）**：先 `rev-parse --verify` 单独证"底本在"（那一步失败才报原话），再逐文件区分"底本里没有 ⇒ 该文件是新增的 ⇒ 底本把它删掉"，并把 `added` 写进报告与 `.equiv-manifest.json`；两个方向都单测过（新增文件造底本 rc=0 / 假 tag rc=2 报对原因） |
 
+| G83 | **重钉工具** `dev/tools/repin.py` `_rebuild_workflow`：`shutil.rmtree(baseline, ignore_errors=True)` 把"删不掉"（Windows 上文件被占用 / 杀软在扫）**静默咽下去**，紧接着 `copytree` 撞 `FileExistsError` —— 那一步才报，而**报的时候要被覆盖的那棵树已经被删空了**。实测 `dev/baseline/workflow/` 剩 0 个文件，面③ 与门① 一起红，只能 `git checkout` 恢复 | 无——`rmtree` 与 `copytree` 之间的"删干净了没有"没人问 | **已收口（2026-09-22，D-151）**：新增 `_rmtree_or_fail`（删完再确认一次，还在就报"多半有程序占着它，此刻基线还没被改动"并退 2），`--dry-run` 与真重钉两条路都接上；三条路单测过（正常删 / 不存在 / 用独占句柄造出真·占用 ⇒ 报错） |
+
 ## 四、怎么用这张表
 
 - **审代码**：从上往下逐行问"规则在不在、仪器在不在"。发现"规则在、仪器没了"＝**回归**，比新缺陷更该先修。

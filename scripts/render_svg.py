@@ -150,12 +150,16 @@ def _emit_node(L, n, drillable=()):
 
 def _emit_edge(L, e):
     # 交叉打跳（D-149）：口径与 html 版逐字相同，各自拼串（N3）。
-    hp, hr = hops.plan(L)
-    pts = with_hops(L.path(e), hp.get(id(e), []), hr)
+    hp, hr, hs = hops.plan(L)
+    pts = with_hops(L.path(e), hp.get(id(e), []), hr, hs)
     parts = [f'M {_fmt(pts[0][0])} {_fmt(pts[0][1])}']
-    for px, py, arc in pts[1:]:
-        parts.append(f'A {_fmt(hr)} {_fmt(hr)} 0 0 1 {_fmt(px)} {_fmt(py)}' if arc
-                     else f'L {_fmt(px)} {_fmt(py)}')
+    for px, py, kind in pts[1:]:
+        if kind == 'arc':
+            parts.append(f'A {_fmt(hr)} {_fmt(hr)} 0 0 1 {_fmt(px)} {_fmt(py)}')
+        elif kind == 'gap':
+            parts.append(f'M {_fmt(px)} {_fmt(py)}')
+        else:
+            parts.append(f'L {_fmt(px)} {_fmt(py)}')
     d = ' '.join(parts)
     ed = L.cfg['edges'][L.polarity(e)]
     dash = ' stroke-dasharray="5 4"' if ed['dashed'] else ''

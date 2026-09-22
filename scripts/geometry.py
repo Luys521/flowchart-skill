@@ -438,22 +438,29 @@ def ortho_cross(p1, p2, q1, q2, eps=0.6):
 
 
 # ---------------------------------------------------------------- 交叉打跳（D-149）
-# 正交交叉是**允许**的（`validate` 只禁"边重叠"）：Visio 的做法不是消灭交叉，而是给交叉**打跳**——
-# 让一条线在交点处画个小半圆、从另一条线上方跨过去，读者一眼看出"这两条线不相接"。
-# 谁跳：`policy='vertical'` ⇒ **竖段跳、横段直行**。本仓库的长横线都是长跳的横走段，反复打跳
-# 会变成虚线感；而竖道只被少数几条横线穿过，跳几次正好读成"立交桥"。
+# 正交交叉是**允许**的（`validate` 只禁"边重叠"）：给交叉一笔记号（断开或半圆），
+# 读者一眼看出"这两条线不相接"。**谁让开**：`policy='vertical'` ⇒ **竖段让开、横段直行**——
+# 本仓库的长横线都是长跳的横走段，反复断开/起弧会变成虚线感；竖道只被少数横线穿过，
+# 让开几次正好读成"立交桥"。
 HOP_EPS = 0.6                   # 与 `ortho_cross` 同一口径
 
 
 def hop_plan(paths, policy='vertical'):
-    """`[(key, [点…])…]` → `{key: [(x, y, axis)…]}`：每个正交交叉点上由**哪条边**打跳。
+    """`[(key, [点…])…]` → `{key: [(x, y, axis)…]}`：每个正交交叉点上由**哪条边**让开。
 
-    `axis` 是打跳那一段的走向（`'v'` 竖段 / `'h'` 横段），渲染器据此在跳点两侧各 `radius` 处
-    连一条半圆。判据直接用 `ortho_cross`（端点相接、共线重叠都不算交叉），不另写一套。
+    `axis` 是让开那一段的走向（`'v'` 竖段 / `'h'` 横段）——**它就是 policy 要选的那一侧**，
+    渲染器据此在交叉点两侧各 `radius` 处剪断（`gap`）或连一条半圆（`arc`）。
+    判据直接用 `ortho_cross`（端点相接、共线重叠都不算交叉），不另写一套。
     `key` 由调用方给（边是 dict、不可哈希，调用方一般传 `id(边)`）——只在一次渲染内使用。
+
+    ⚠ 第一版这里写成 `hop_v = v1 if policy=='vertical' else not v1`——**当第 1 段是横段时，
+    它会把横段标成"让开"**（把"哪条是竖的"和"该谁让开"混成了一个变量）。实测漏掉一条边、
+    且那一条的记号落到了错误的走向上（`18→11`）。现在把两者分开：`want_v` 是策略要的走向，
+    `v1 == want_v` 才说明第 1 段是让开的那条。
     """
     segs = [(key, a, b) for key, pts in paths for a, b in zip(pts, pts[1:])]
     plan = {}
+    want_v = (policy != 'horizontal')
     for i, (k1, a1, b1) in enumerate(segs):
         for k2, a2, b2 in segs[i + 1:]:
             if k1 == k2 or not ortho_cross(a1, b1, a2, b2, HOP_EPS):
@@ -462,11 +469,11 @@ def hop_plan(paths, policy='vertical'):
             v2 = abs(a2[0] - b2[0]) <= HOP_EPS
             if v1 == v2:                    # `ortho_cross` 已保证一横一竖；这里只是不赌
                 continue
-            hop_v = v1 if policy == 'vertical' else not v1
-            hk, h1 = (k1, a1) if hop_v else (k2, a2)      # 打跳的那条
-            ok, o1 = (k2, a2) if hop_v else (k1, a1)      # 直行的那条
-            x, y = (h1[0], o1[1]) if hop_v else (o1[0], h1[1])
-            plan.setdefault(hk, []).append((x, y, 'v' if hop_v else 'h'))
+            first_gives = (v1 == want_v)    # 第 1 段正是"要让开的那种走向"
+            hk, h1 = (k1, a1) if first_gives else (k2, a2)    # 让开的那条
+            ok, o1 = (k2, a2) if first_gives else (k1, a1)    # 直行的那条
+            x, y = (h1[0], o1[1]) if want_v else (o1[0], h1[1])
+            plan.setdefault(hk, []).append((x, y, 'v' if want_v else 'h'))
     # 去重：同一个交点可能被多对线段报到，按"点 + 走向"只留一次
     for k, hs in plan.items():
         seen, out = set(), []
@@ -479,17 +486,24 @@ def hop_plan(paths, policy='vertical'):
     return plan
 
 
-def with_hops(pts, hops, radius):
-    """折线 + 该边要打的跳 → `[(x, y, via_arc)…]`：`via_arc=True` 表示"与上一点之间用半圆连"。
+def with_hops(pts, hops, radius, style='gap'):
+    """折线 + 该边要打的跳 → `[(x, y, kind)…]`；`kind` 是**渲染器要画的东西**：
 
-    跳点落在哪一段就拆哪一段：段内按**行进方向**取「跳点 ∓ radius」两点，中间那段交给渲染器画弧。
-    **半圆的两个端点都落在原线段上** ⇒ 反解产物的一方（`manifest.py` 只认 `M`/`L`）看到的仍是
-    一条共线折线，几何一字不变——所以打跳是**纯视觉**的，不动任何判据。
-    两个跳点靠得比 `2×radius` 还近时只保留前一个：宁可少跳一次，也不画出互相咬住的弧。
+      `''`    普通折点（`L`）
+      `'gap'` 坐标是下一段的起点：与上一点之间**断开**（`M`），交叉处留空
+      `'arc'` 与上一点之间画半圆（`A`）——Visio 那种圆角跳线
+
+    默认 `gap`（作者口径："我不喜欢 visio 那种圆角的交叉"）：断开的记号不引入任何形状，
+    只把被穿过的线让开一小段；想换回圆角就改字典 `hops.style` 一个词。
+
+    跳点落在哪一段就拆哪一段：段内按**行进方向**取「跳点 ∓ radius」两点。
+    **两端都落在原线段上** ⇒ 反解产物的一方（`manifest.py` 只认 `M`/`L`）看到的仍是共线折线，
+    几何一字不变——所以打跳是**纯视觉**的，不动任何判据。
+    两个跳点靠得比 `2×radius` 还近时只保留前一个：宁可少跳一次，也不画出互相咬住的记号。
     """
     if not hops or radius <= 0:
-        return [(x, y, False) for x, y in pts]
-    out = [(pts[0][0], pts[0][1], False)]
+        return [(x, y, '') for x, y in pts]
+    out = [(pts[0][0], pts[0][1], '')]
     for p1, p2 in zip(pts, pts[1:]):
         vertical = abs(p1[0] - p2[0]) <= HOP_EPS
         axis = 'v' if vertical else 'h'
@@ -509,13 +523,13 @@ def with_hops(pts, hops, radius):
         for t in sorted(cand, key=lambda v: d * v):
             a, b = t - radius * d, t + radius * d
             if d * (a - last) <= HOP_EPS or d * (b - t2) > 0:
-                continue                    # 与上一个跳咬住 / 弧伸到段外
+                continue                    # 与上一个跳咬住 / 记号伸到段外
             pa = (p1[0], a) if vertical else (a, p1[1])
             pb = (p1[0], b) if vertical else (b, p1[1])
-            out.append((pa[0], pa[1], False))
-            out.append((pb[0], pb[1], True))
+            out.append((pa[0], pa[1], ''))
+            out.append((pb[0], pb[1], 'arc' if style == 'arc' else 'gap'))
             last = b
-        out.append((p2[0], p2[1], False))
+        out.append((p2[0], p2[1], ''))
     return out
 
 

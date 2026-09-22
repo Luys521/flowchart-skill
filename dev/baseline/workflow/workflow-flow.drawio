@@ -277,7 +277,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e22" value="仪器故障" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=1.0;entryY=0.5;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;jumpStyle=arc;jumpSize=20;" edge="1" parent="1" source="12" target="25">
+        <mxCell id="e22" value="仪器故障" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=1.0;entryY=0.5;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;jumpStyle=gap;jumpSize=20;" edge="1" parent="1" source="12" target="25">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="850" y="1850" />
@@ -291,7 +291,7 @@
         <mxCell id="e24" value="有" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;" edge="1" parent="1" source="14" target="15">
           <mxGeometry relative="1" as="geometry"></mxGeometry>
         </mxCell>
-        <mxCell id="e25" value="没有" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=1.0;entryY=0.5;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;jumpStyle=arc;jumpSize=20;" edge="1" parent="1" source="14" target="16">
+        <mxCell id="e25" value="没有" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=1.0;entryY=0.5;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;jumpStyle=gap;jumpSize=20;" edge="1" parent="1" source="14" target="16">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="500" y="2090" />
@@ -299,7 +299,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e26" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=1.0;entryY=0.5;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#adb5bd;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#adb5bd;dashed=1;jumpStyle=arc;jumpSize=20;" edge="1" parent="1" source="15" target="01">
+        <mxCell id="e26" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=1.0;entryY=0.5;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#adb5bd;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#adb5bd;dashed=1;jumpStyle=gap;jumpSize=20;" edge="1" parent="1" source="15" target="01">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="900" y="2230" />
@@ -321,7 +321,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e30" value="有" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=1.0;entryY=0.8333;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#adb5bd;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#adb5bd;dashed=1;jumpStyle=arc;jumpSize=20;" edge="1" parent="1" source="18" target="11">
+        <mxCell id="e30" value="有" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=1.0;entryY=0.8333;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#adb5bd;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#adb5bd;dashed=1;jumpStyle=gap;jumpSize=20;" edge="1" parent="1" source="18" target="11">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="550" y="2570" />
@@ -354,7 +354,7 @@
         <mxCell id="e35" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;" edge="1" parent="1" source="20" target="21">
           <mxGeometry relative="1" as="geometry"></mxGeometry>
         </mxCell>
-        <mxCell id="e36" value="收敛" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.75;exitY=0.75;entryX=1.0;entryY=0.5;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;jumpStyle=arc;jumpSize=20;" edge="1" parent="1" source="21" target="24">
+        <mxCell id="e36" value="收敛" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.75;exitY=0.75;entryX=1.0;entryY=0.5;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;jumpStyle=gap;jumpSize=20;" edge="1" parent="1" source="21" target="24">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="500" y="2970" />
@@ -365,7 +365,7 @@
         <mxCell id="e37" value="没收敛" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;" edge="1" parent="1" source="21" target="22">
           <mxGeometry relative="1" as="geometry"></mxGeometry>
         </mxCell>
-        <mxCell id="e38" value="仪器故障" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=1.0;entryY=0.1667;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;jumpStyle=arc;jumpSize=20;" edge="1" parent="1" source="21" target="25">
+        <mxCell id="e38" value="仪器故障" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=1.0;entryY=0.1667;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#666666;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#666666;jumpStyle=gap;jumpSize=20;" edge="1" parent="1" source="21" target="25">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="550" y="2950" />
@@ -767,7 +767,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e8" value="有" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.25;exitY=0.25;entryX=0.0;entryY=0.5;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#adb5bd;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#adb5bd;dashed=1;jumpStyle=arc;jumpSize=20;" edge="1" parent="1" source="13f" target="13b">
+        <mxCell id="e8" value="有" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.25;exitY=0.25;entryX=0.0;entryY=0.5;endArrow=block;endFill=1;endSize=8;strokeWidth=2;strokeColor=#adb5bd;fontSize=11;fontStyle=1;fontFamily=Microsoft YaHei;labelBackgroundColor=#ffffff;labelBorderColor=#adb5bd;dashed=1;jumpStyle=gap;jumpSize=20;" edge="1" parent="1" source="13f" target="13b">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="460" y="510" />
