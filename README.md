@@ -7,7 +7,10 @@
 
 > 🚀 当你整理思路时，AI 肯定给你生成过 Mermaid 流程图。但受 Agent 工具所限，渲染效果往往不佳，也缺少与 AI 的微操交互。这时，语言描述是匮乏的，你需要亲自动手，让 AI 知道你是常凯申，喜欢把机枪左移 20 米，把瞄准的节点从 A 切换到 B。此刻，你需要一个中间画板。用 drawio 看起来很美，但 AI 每次生成的风格都不统一，五花八门、随心所欲。因此，你需要这样一个工具：帮你整理思路，并且每个节点都要能补充备注信息；同时它还能生成一个 HTML 给老板看，且不依赖系统环境。
 
-![渲染出来的流程](assets/readme-flow.png)
+![flowchart-skill 的主流程（整张，未裁）](assets/readme-flow.png)
+
+> 上图不是示意图，是这套工具画出来的**实际产物**——`flowchart-skill` 自己的主流程，一张没裁。
+> 想看成规模的，`dev/baseline/` 里还有两套完整的自举成果（含代码地图），克隆下来双击 html 就能看。
 
 ---
 
@@ -82,7 +85,7 @@ dev/                  **维护分区**——只有改仓库的人进来，出图
   dev/verify/             四个面自检（契约一致 / 门禁拦截 / 不变式 / 端到端）
   dev/tools/              七件仪器 + 一件清场工具（清单见 dev/tools/README.md：fn_graph / coverage / api_audit / equiv / layering / hygiene / aesthetic）
   baseline/           examples 的同构镜像：机器生成的产物（进库，安全网的基准）
-  DECISIONS.md  ARCHITECTURE.md  REPO-MAP.md  PROVENANCE.md   设计文档与仓库来历
+  DECISIONS.md  ARCHITECTURE.md  REPO-MAP.md   设计文档
   coding-spec.md      代码质量自检对照表（行业原则 → 本仓库规则 → 拦它的仪器）
   _paths.py           全仓唯一的路径解析点
 ```
