@@ -14,7 +14,7 @@
 | 门面表 | **25 节点 / 34 边 / 9 张子表 / 69 行** | `python scripts/table_to_dsl.py --check examples/workflow/flowtable.md` |
 | 样板与模板 | **逐字一致**（`contract.py` 断言「模板示例与 workflow 逐字一致」） | `python dev/verify/contract.py` |
 | 基线 | `dev/baseline/workflow` **24 文件** · `dev/baseline/self-boot` **44 张表** | 目录数 |
-| 已修 | 第一档 12 条（`ae50b21` / `4261bd2` / `dba89f7`） | `git log` |
+| 已修 | 第一档 12 条（`e0332ca` / `e543309` / `f110a05`） | `git log` |
 | 未修 | 第二档 6 条 + 第三档 5 条（`coding-spec` G22） | `dev/NODE-AUDIT.md` §十三 |
 | 现场 | `.accept_tmp` **11994 文件**（其中 ~100 个 `build-*` 是历次验收的临时目录）· `output/` **281 文件** | 见 §4 清场清单 |
 
