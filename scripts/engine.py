@@ -156,9 +156,9 @@ class Engine:
     def label_box(self, e):
         return self.labeler.label_box(e)
 
-    def label_vertical(self, e):
-        """边标签是否竖排（跟着竖线走）。取向是 `label_box` 选位时定的，见 `label.py`。"""
-        return self.labeler.label_vertical(e)
+    def label_rows(self, e):
+        """边标签分几行、每行是什么（一行放不下时折两排，见 `label.py`）。"""
+        return self.labeler.label_rows(e)
 
     def node_lines(self, nid):
         return self.syntax.node_lines(nid)

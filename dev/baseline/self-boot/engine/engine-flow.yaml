@@ -8,7 +8,7 @@ meta:
 layout:
   col_x:
   - 400
-  width: 1460
+  width: 1740
   origin_x: 0
 nodes:
 - id: '01'
@@ -23,7 +23,7 @@ nodes:
   stage: 入口
   route: 1→02｜2→03｜3→13｜4→14｜5→15｜6→16｜7→17｜8→18｜9→19｜10→20｜11→21｜12→22｜13→23｜14→24｜15→25｜16→26｜17→27
   desc: 流程起点（结构性节点，不是函数） · 入口：1→Model.__init__ 2→Engine.__init__ 3→Engine.width 4→Engine.rect
-    5→Engine.path 6→Engine.polarity 7→Engine.ports 8→Engine.label_box 9→Engine.label_vertical
+    5→Engine.path 6→Engine.polarity 7→Engine.ports 8→Engine.label_box 9→Engine.label_rows
     10→Engine.node_lines 11→Engine.route_text 12→Engine.legend_rect 13→Engine.legend_width
     14→Engine.lanes 15→Engine.head_band 16→Engine.height 17→load
 - id: '02'
@@ -235,9 +235,9 @@ nodes:
   route: →29
   desc: L156 · 方法 · ⇢ 依赖 label.Labeler.label_box
 - id: '19'
-  name: Engine.label_vertical
+  name: Engine.label_rows
   lines:
-  - Engine.label_vertical
+  - Engine.label_rows
   type: task
   subject: 脚本
   executor: selfboot
@@ -245,7 +245,7 @@ nodes:
   col: 0
   stage: Engine
   route: →29
-  desc: ★ 边标签是否竖排（跟着竖线走）。取向是 `label_box` 选位时定的，见 `label.py`。 · L159 · 方法 · ⇢ 依赖 label.Labeler.label_vertical
+  desc: ★ 边标签分几行、每行是什么（一行放不下时折两排，见 `label.py`）。 · L159 · 方法 · ⇢ 依赖 label.Labeler.label_rows
 - id: '20'
   name: Engine.node_lines
   lines:

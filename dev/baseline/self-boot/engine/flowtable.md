@@ -12,7 +12,7 @@ parent: ../flowtable.md
 
 | 项目运作阶段 | 节点编号 | 节点名称 | 节点类型 | 输入 | 依据 | 输出 | 执行主体 | 执行者 | 行动所需时间 | 下个节点 | 节点描述 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 入口 | 01 | 开始 | 开始 | — | — | — | 脚本 | selfboot | — | 1→02｜2→03｜3→13｜4→14｜5→15｜6→16｜7→17｜8→18｜9→19｜10→20｜11→21｜12→22｜13→23｜14→24｜15→25｜16→26｜17→27 | 流程起点（结构性节点，不是函数） · 入口：1→Model.__init__ 2→Engine.__init__ 3→Engine.width 4→Engine.rect 5→Engine.path 6→Engine.polarity 7→Engine.ports 8→Engine.label_box 9→Engine.label_vertical 10→Engine.node_lines 11→Engine.route_text 12→Engine.legend_rect 13→Engine.legend_width 14→Engine.lanes 15→Engine.head_band 16→Engine.height 17→load |
+| 入口 | 01 | 开始 | 开始 | — | — | — | 脚本 | selfboot | — | 1→02｜2→03｜3→13｜4→14｜5→15｜6→16｜7→17｜8→18｜9→19｜10→20｜11→21｜12→22｜13→23｜14→24｜15→25｜16→26｜17→27 | 流程起点（结构性节点，不是函数） · 入口：1→Model.__init__ 2→Engine.__init__ 3→Engine.width 4→Engine.rect 5→Engine.path 6→Engine.polarity 7→Engine.ports 8→Engine.label_box 9→Engine.label_rows 10→Engine.node_lines 11→Engine.route_text 12→Engine.legend_rect 13→Engine.legend_width 14→Engine.lanes 15→Engine.head_band 16→Engine.height 17→load |
 | Model | 02 | Model.__init__ | 任务 | — | — | — | 脚本 | selfboot | — | →28 | L22 · 方法 |
 | Engine | 03 | Engine.__init__ | 任务 | — | — | — | 脚本 | selfboot | — | 1→04｜2→05 | ★ 组装引擎：建模型与语法 → 暴露旧 Layout 属性接口 → 按布局建栅格与布线器。 · L36 · 方法 · 分支：1→Engine._expose_attrs 2→Engine._build_layout |
 | Engine | 04 | Engine._expose_attrs | 任务 | — | — | — | 脚本 | selfboot | — | →29 | ★ 直接暴露旧 Layout 的属性接口。 · L44 · 方法 |
@@ -30,7 +30,7 @@ parent: ../flowtable.md
 | Engine | 16 | Engine.polarity | 任务 | — | — | — | 脚本 | selfboot | — | →29 | L150 · 方法 |
 | Engine | 17 | Engine.ports | 任务 | — | — | — | 脚本 | selfboot | — | →29 | L153 · 方法 |
 | Engine | 18 | Engine.label_box | 任务 | — | — | — | 脚本 | selfboot | — | →29 | L156 · 方法 · ⇢ 依赖 label.Labeler.label_box |
-| Engine | 19 | Engine.label_vertical | 任务 | — | — | — | 脚本 | selfboot | — | →29 | ★ 边标签是否竖排（跟着竖线走）。取向是 `label_box` 选位时定的，见 `label.py`。 · L159 · 方法 · ⇢ 依赖 label.Labeler.label_vertical |
+| Engine | 19 | Engine.label_rows | 任务 | — | — | — | 脚本 | selfboot | — | →29 | ★ 边标签分几行、每行是什么（一行放不下时折两排，见 `label.py`）。 · L159 · 方法 · ⇢ 依赖 label.Labeler.label_rows |
 | Engine | 20 | Engine.node_lines | 任务 | — | — | — | 脚本 | selfboot | — | →29 | L163 · 方法 · ⇢ 依赖 semantics.Syntax.node_lines |
 | Engine | 21 | Engine.route_text | 任务 | — | — | — | 脚本 | selfboot | — | →29 | L166 · 方法 · ⇢ 依赖 semantics.Syntax.route_text |
 | Engine | 22 | Engine.legend_rect | 任务 | — | — | — | 脚本 | selfboot | — | →29 | L169 · 方法 |

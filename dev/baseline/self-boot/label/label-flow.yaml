@@ -8,8 +8,8 @@ meta:
 layout:
   col_x:
   - 400
-  width: 680
-  origin_x: -100
+  width: 1000
+  origin_x: -80
 nodes:
 - id: '01'
   name: 开始
@@ -21,8 +21,8 @@ nodes:
   row: 0
   col: 0
   stage: 入口
-  route: 1→02｜2→13
-  desc: 流程起点（结构性节点，不是函数） · 入口：1→Labeler.__init__ 2→Labeler.label_vertical
+  route: 1→02｜2→17
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→Labeler.__init__ 2→Labeler.label_rows
 - id: '02'
   name: Labeler.__init__
   lines:
@@ -33,7 +33,7 @@ nodes:
   row: 1
   col: 0
   stage: Labeler
-  route: →14
+  route: →18
   desc: L16 · 方法
 - id: '03'
   name: Labeler._node_rects
@@ -42,10 +42,10 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
-  row: 4
+  row: 6
   col: 0
   stage: Labeler
-  route: →14
+  route: →18
   desc: ★ 徽章命中判定只要矩形列表（不带节点 id）。 · L24 · 方法 · ⇢ 依赖 geometry.RectCache._all_rects
 - id: '04'
   name: Labeler._point_at
@@ -54,39 +54,39 @@ nodes:
   type: task
   subject: 脚本
   executor: selfboot
+  row: 16
+  col: 0
+  stage: Labeler
+  route: →18
+  desc: ★ 按弧长比例 t∈[0,1] 取折线上的点，并返回所在线段下标。 · L30 · 方法
+- id: '05'
+  name: Labeler._padding
+  lines:
+  - Labeler._padding
+  type: task
+  subject: 脚本
+  executor: selfboot
   row: 10
   col: 0
   stage: Labeler
-  route: →14
-  desc: ★ 按弧长比例 t∈[0,1] 取折线上的点，并返回所在线段下标。 · L30 · 方法
-- id: '05'
+  route: →18
+  desc: L47 · 方法
+- id: '06'
+  name: Labeler._text_w
+  lines:
+  - Labeler._text_w
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 9
+  col: 0
+  stage: Labeler
+  route: →18
+  desc: L50 · 方法 · ⇢ 依赖 semantics.text_width
+- id: '07'
   name: Labeler._badge_w
   lines:
   - Labeler._badge_w
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 8
-  col: 0
-  stage: Labeler
-  route: →14
-  desc: L46 · 方法 · ⇢ 依赖 geometry.ceil_to、semantics.text_width
-- id: '06'
-  name: Labeler._badge_h
-  lines:
-  - Labeler._badge_h
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 6
-  col: 0
-  stage: Labeler
-  route: →14
-  desc: L51 · 方法 · ⇢ 依赖 geometry.ceil_to
-- id: '07'
-  name: Labeler._size
-  lines:
-  - Labeler._size
   type: task
   subject: 脚本
   executor: selfboot
@@ -94,58 +94,96 @@ nodes:
   col: 0
   stage: Labeler
   route: 1→05｜2→06
-  desc: ★ 徽章盒的 (宽, 高)：竖排时宽高互换（文字转了 90°，沿线的"长"变成盒子的高）。 · L55 · 方法 · 分支：1→Labeler._badge_w
-    2→Labeler._badge_h
+  desc: ★ 一行文字时的徽章宽（向上吸 2×细格）。 · L54 · 方法 · 分支：1→Labeler._padding 2→Labeler._text_w
+    · ⇢ 依赖 geometry.ceil_to
 - id: 08
-  name: Labeler._vert_at
+  name: Labeler._badge_h
   lines:
-  - Labeler._vert_at
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 7
-  col: 0
-  stage: Labeler
-  route: 1→04｜2→05
-  desc: ★ 弧长比例 t 处的徽章要不要竖排：所在段是**竖段**，且段长容得下转过来的徽章。 · L60 · 方法 · 分支：1→Labeler._point_at
-    2→Labeler._badge_w
-- id: 09
-  name: Labeler._box_at
-  lines:
-  - Labeler._box_at
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 9
-  col: 0
-  stage: Labeler
-  route: →04
-  desc: ★ 取弧长比例 t 处的徽章盒（左上角 x,y,w,h），并沿自由轴吸到细格。 · L75 · 方法 · ⇢ 依赖 geometry.snap
-- id: '10'
-  name: Labeler._hits
-  lines:
-  - Labeler._hits
+  - Labeler._badge_h
   type: task
   subject: 脚本
   executor: selfboot
   row: 11
   col: 0
   stage: Labeler
-  route: →14
-  desc: L89 · 方法
-- id: '11'
-  name: Labeler._candidate_ts
+  route: →18
+  desc: L58 · 方法 · ⇢ 依赖 geometry.ceil_to
+- id: 09
+  name: Labeler._pitch
   lines:
-  - Labeler._candidate_ts
+  - Labeler._pitch
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 7
+  col: 0
+  stage: Labeler
+  route: →18
+  desc: ★ 竖线左右能给标签让出的横向预算 = **通道档距**（`layout.right_channel_step`）。 · L62 · 方法 · ⇢
+    依赖 geometry.snap
+- id: '10'
+  name: Labeler._rows_for
+  lines:
+  - Labeler._rows_for
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 4
+  col: 0
+  stage: Labeler
+  route: 1→06｜2→07｜3→09
+  desc: ★ 这条边的标签排成哪几行：默认一行；**竖段上**且一行宽度超档距 ⇒ 折两排。 · L70 · 方法 · 分支：1→Labeler._text_w
+    2→Labeler._badge_w 3→Labeler._pitch
+- id: '11'
+  name: Labeler._size
+  lines:
+  - Labeler._size
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 8
+  col: 0
+  stage: Labeler
+  route: 1→05｜2→06｜3→08
+  desc: ★ 徽章盒的 (宽, 高)：宽取最长那一行，高 = 行数 × 行高。 · L90 · 方法 · 分支：1→Labeler._padding 2→Labeler._text_w
+    3→Labeler._badge_h · ⇢ 依赖 geometry.ceil_to
+- id: '12'
+  name: Labeler._box_at
+  lines:
+  - Labeler._box_at
   type: task
   subject: 脚本
   executor: selfboot
   row: 12
   col: 0
   stage: Labeler
-  route: →14
-  desc: ★ 候选弧长比例：中点优先，之后向两侧交替扩散。 · L96 · 方法
-- id: '12'
+  route: →04
+  desc: ★ 取弧长比例 t 处的徽章盒（左上角 x,y,w,h），并沿自由轴吸到细格。 · L95 · 方法 · ⇢ 依赖 geometry.snap
+- id: '13'
+  name: Labeler._hits
+  lines:
+  - Labeler._hits
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 13
+  col: 0
+  stage: Labeler
+  route: →18
+  desc: L109 · 方法
+- id: '14'
+  name: Labeler._candidate_ts
+  lines:
+  - Labeler._candidate_ts
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 14
+  col: 0
+  stage: Labeler
+  route: →18
+  desc: ★ 候选弧长比例：中点优先，之后向两侧交替扩散。 · L116 · 方法
+- id: '15'
   name: Labeler.label_box
   lines:
   - Labeler.label_box
@@ -155,29 +193,42 @@ nodes:
   row: 3
   col: 0
   stage: Labeler
-  route: 1→03｜2→07｜3→08｜4→09｜5→10｜6→11
-  desc: ★ 徽章盒（左上角 x,y,w,h）：沿折线取第一个不压节点的候选比例，全压则回退中点。 · L104 · 方法 · 分支：1→Labeler._node_rects
-    2→Labeler._size 3→Labeler._vert_at 4→Labeler._box_at 5→Labeler._hits 6→Labeler._candidate_ts
-- id: '13'
-  name: Labeler.label_vertical
+  route: 1→03｜2→10｜3→11｜4→12｜5→13｜6→14｜7→16
+  desc: ★ 徽章盒（左上角 x,y,w,h）：沿折线取第一个不压节点的候选比例，全压则回退中点。 · L124 · 方法 · 分支：1→Labeler._node_rects
+    2→Labeler._rows_for 3→Labeler._size 4→Labeler._box_at 5→Labeler._hits 6→Labeler._candidate_ts
+    7→Labeler._seg_at
+- id: '16'
+  name: Labeler._seg_at
   lines:
-  - Labeler.label_vertical
+  - Labeler._seg_at
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 15
+  col: 0
+  stage: Labeler
+  route: →04
+  desc: ★ 弧长比例 t 落在哪一段上 → `(a, b)` 两个端点。 · L145 · 方法
+- id: '17'
+  name: Labeler.label_rows
+  lines:
+  - Labeler.label_rows
   type: task
   subject: 脚本
   executor: selfboot
   row: 2
   col: 0
   stage: Labeler
-  route: →12
-  desc: ★ 这条边的徽章是不是跟竖线竖排（渲染器照它决定转不转文字）。没算过就先算一次盒。 · L125 · 方法
-- id: '14'
+  route: →15
+  desc: ★ 这条边的徽章分几行、每行是什么（渲染器照它画）。没算过就先算一次盒。 · L150 · 方法
+- id: '18'
   name: 结束
   lines:
   - 结束
   type: end
   subject: 脚本
   executor: selfboot
-  row: 13
+  row: 17
   col: 0
   stage: 出口
   route: —
@@ -189,28 +240,28 @@ edges:
   polarity: main
   label: '1'
 - from: '01'
-  to: '13'
+  to: '17'
   kind: jumpR
   polarity: main
   label: '2'
 - from: '02'
-  to: '14'
+  to: '18'
   kind: jumpR
   polarity: main
 - from: '03'
-  to: '14'
+  to: '18'
   kind: jumpR
   polarity: main
 - from: '04'
-  to: '14'
-  kind: jumpR
+  to: '18'
+  kind: spine
   polarity: main
 - from: '05'
-  to: '14'
+  to: '18'
   kind: jumpR
   polarity: main
 - from: '06'
-  to: '14'
+  to: '18'
   kind: jumpR
   polarity: main
 - from: '07'
@@ -220,62 +271,99 @@ edges:
   label: '1'
 - from: '07'
   to: '06'
-  kind: spine
-  polarity: main
-  label: '2'
-- from: 08
-  to: '04'
   kind: jumpR
   polarity: main
-  label: '1'
-- from: 08
-  to: '05'
-  kind: spine
-  polarity: main
   label: '2'
+- from: 08
+  to: '18'
+  kind: jumpR
+  polarity: main
 - from: 09
-  to: '04'
-  kind: spine
+  to: '18'
+  kind: jumpR
   polarity: main
 - from: '10'
-  to: '14'
+  to: '06'
   kind: jumpR
-  polarity: main
-- from: '11'
-  to: '14'
-  kind: spine
-  polarity: main
-- from: '12'
-  to: '03'
-  kind: spine
   polarity: main
   label: '1'
-- from: '12'
+- from: '10'
   to: '07'
-  kind: jumpR
+  kind: spine
   polarity: main
   label: '2'
-- from: '12'
+- from: '10'
+  to: 09
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '11'
+  to: '05'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '11'
+  to: '06'
+  kind: spine
+  polarity: main
+  label: '2'
+- from: '11'
   to: 08
   kind: jumpR
   polarity: main
   label: '3'
 - from: '12'
-  to: 09
+  to: '04'
   kind: jumpR
   polarity: main
-  label: '4'
-- from: '12'
+- from: '13'
+  to: '18'
+  kind: jumpR
+  polarity: main
+- from: '14'
+  to: '18'
+  kind: jumpR
+  polarity: main
+- from: '15'
+  to: '03'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '15'
   to: '10'
-  kind: jumpR
+  kind: spine
   polarity: main
-  label: '5'
-- from: '12'
+  label: '2'
+- from: '15'
   to: '11'
   kind: jumpR
   polarity: main
-  label: '6'
-- from: '13'
+  label: '3'
+- from: '15'
   to: '12'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '15'
+  to: '13'
+  kind: jumpR
+  polarity: main
+  label: '5'
+- from: '15'
+  to: '14'
+  kind: jumpR
+  polarity: main
+  label: '6'
+- from: '15'
+  to: '16'
+  kind: jumpR
+  polarity: main
+  label: '7'
+- from: '16'
+  to: '04'
+  kind: spine
+  polarity: main
+- from: '17'
+  to: '15'
   kind: spine
   polarity: main

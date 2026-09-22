@@ -4,9 +4,9 @@
 优先弧长中点；压到节点就向两侧滑动取最近的不压节点的比例；全压则回退中点（由 validate 报出）。
 网格：徽章盒宽高向上吸 2×细格；落点只吸所在线段的"自由轴"，被约束的那一轴保持线位不动。
 
-**徽章跟线走**（G85/D-153）：落在**竖段**上时文字转 90°、盒子宽高互换——这样长跳的标签是"竖着写在
-竖线上"，而不是横着压一条竖线（`visual-spec` §1）。只在**该段容得下转过来的徽章**时才转：
-否则盒子会探出拐角、压到相邻节点，而"不压节点"是硬判据。
+**标签一律横排**；一行放不下时**折两排**（G85/D-153）：判据是"一行的宽度超不超过**通道档距**"——
+横排徽章骑在竖线上，比档距还宽就会压到相邻通道的线（作者原话"阻挡线条"）。折排把宽度减半，
+而不是把字转 90°：竖排试过，作者 2026-09-22 改口径为横排 + 折排。
 """
 from geometry import RectCache, ceil_to, snap
 from semantics import text_width
@@ -18,7 +18,7 @@ class Labeler(RectCache):
         self.M = router.M
         self.cfg = cfg
         self.grid = grid if grid is not None else router.grid
-        self._orient = {}          # id(边) → 是不是竖排（`label_box` 选位时定下来，渲染器照它画）
+        self._rows = {}            # id(边) → 徽章的文字行（`label_box` 选位时定下来，渲染器照它画）
 
     # ---------- 节点矩形（懒加载，缓存本体在 geometry.RectCache） ----------
     def _node_rects(self):
@@ -43,34 +43,54 @@ class Labeler(RectCache):
             rem -= l
         return pts[-1][0], pts[-1][1], len(segs) - 1
 
-    def _badge_w(self, e):
+    # ---------- 徽章尺寸 ----------
+    def _padding(self):
+        return self.cfg.get('label_badge', {})['padding']
+
+    def _text_w(self, text):
         b = self.cfg.get('label_badge', {})
-        return ceil_to(text_width(e['label'], b.get('full_width', 12), b.get('half_width', 7))
-                       + b['padding'], 2 * self.grid.lattice)
+        return text_width(text, b.get('full_width', 12), b.get('half_width', 7))
 
-    def _badge_h(self):
+    def _badge_w(self, text):
+        """一行文字时的徽章宽（向上吸 2×细格）。"""
+        return ceil_to(self._text_w(text) + self._padding(), 2 * self.grid.lattice)
+
+    def _badge_h(self, rows=1):
         b = self.cfg.get('label_badge', {})
-        return ceil_to(b.get('height', 20), 2 * self.grid.lattice)
+        return ceil_to(b.get('height', 20), 2 * self.grid.lattice) * rows
 
-    def _size(self, e, vert):
-        """徽章盒的 (宽, 高)：竖排时宽高互换（文字转了 90°，沿线的"长"变成盒子的高）。"""
-        w, h = self._badge_w(e), self._badge_h()
-        return (h, w) if vert else (w, h)
+    def _pitch(self):
+        """竖线左右能给标签让出的横向预算 = **通道档距**（`layout.right_channel_step`）。
 
-    def _vert_at(self, pts, t, e):
-        """弧长比例 t 处的徽章要不要竖排：所在段是**竖段**，且段长容得下转过来的徽章。
-
-        为什么要求段长 ≥ 转过来的高（= 原徽章宽）：竖排盒子的中心在中点上，盒子沿 y 探出
-        `宽/2 + padding`。段不够长时盒子会越过拐角压到相邻节点，而"不压节点"是硬判据
-        （`check_labels`）——所以宁可横排，横排是这套几何一直以来的行为。
+        为什么是它：平行通道之间的**设计最小间距**就是这个数。横排徽章比它还宽，就会压到相邻
+        通道的线——那正是"阻挡线条"的判据；比它窄就谁也压不着。数值只有一个家（字典）。
         """
-        x, y, i = self._point_at(pts, t)
-        a, b = pts[i], pts[min(i + 1, len(pts) - 1)]
-        if abs(a[0] - b[0]) > 0.5:                 # 横段（自由轴是 x）→ 横排
-            return False
-        if abs(a[1] - b[1]) <= 0.5:                # 退化零长段
-            return False
-        return abs(b[1] - a[1]) >= self._badge_w(e)
+        return snap((self.cfg.get('layout') or {}).get('right_channel_step', 50), self.grid.lattice)
+
+    def _rows_for(self, text, seg):
+        """这条边的标签排成哪几行：默认一行；**竖段上**且一行宽度超档距 ⇒ 折两排。
+
+        只折两排（作者口径）。折法按字宽累计到一半处断开——不引入第二套排版规则。
+        横段不折：徽章顺着线躺，横向预算管不着它。
+        """
+        if self._badge_w(text) <= self._pitch():
+            return [text]
+        a, b = seg
+        if abs(a[0] - b[0]) > 0.5 or len(text) < 2:
+            return [text]
+        half, acc, cut = self._text_w(text) / 2, 0.0, 1
+        for i, ch in enumerate(text, 1):
+            acc += self._text_w(ch)
+            if acc >= half:
+                cut = i
+                break
+        cut = min(max(cut, 1), len(text) - 1)          # 两行都非空
+        return [text[:cut], text[cut:]]
+
+    def _size(self, rows):
+        """徽章盒的 (宽, 高)：宽取最长那一行，高 = 行数 × 行高。"""
+        return ceil_to(max(self._text_w(t) for t in rows) + self._padding(),
+                       2 * self.grid.lattice), self._badge_h(len(rows))
 
     def _box_at(self, pts, t, w, h):
         """取弧长比例 t 处的徽章盒（左上角 x,y,w,h），并沿自由轴吸到细格。"""
@@ -104,26 +124,31 @@ class Labeler(RectCache):
     def label_box(self, e):
         """徽章盒（左上角 x,y,w,h）：沿折线取第一个不压节点的候选比例，全压则回退中点。
 
-        竖排/横排**在这个循环里一起定**：每个候选位置知道自己落在哪一段上，取向跟着那段走
-        （见 `_vert_at`）——取向定完再算盒、再判"压不压节点"，判据用的就是最终那个盒。
+        排几行**在这个循环里一起定**：每个候选位置知道自己落在哪一段上，折排只看那一段
+        （见 `_rows_for`）——折完再算盒、再判"压不压节点"，判据用的就是最终那个盒。
         """
         pts = self.router.path(e)
         rects = self._node_rects()
         for t in self._candidate_ts():
-            vert = self._vert_at(pts, t, e)
-            w, h = self._size(e, vert)
+            rows = self._rows_for(e['label'], self._seg_at(pts, t))
+            w, h = self._size(rows)
             bx, by = self._box_at(pts, t, w, h)   # 命中判定用吸附后的盒，避免吸附后再压节点
             if not self._hits(bx, by, w, h, rects):
-                self._orient[id(e)] = vert
+                self._rows[id(e)] = rows
                 return bx, by, w, h
-        vert = self._vert_at(pts, 0.5, e)
-        w, h = self._size(e, vert)
+        rows = self._rows_for(e['label'], self._seg_at(pts, 0.5))
+        w, h = self._size(rows)
         bx, by = self._box_at(pts, 0.5, w, h)
-        self._orient[id(e)] = vert
+        self._rows[id(e)] = rows
         return bx, by, w, h
 
-    def label_vertical(self, e):
-        """这条边的徽章是不是跟竖线竖排（渲染器照它决定转不转文字）。没算过就先算一次盒。"""
-        if id(e) not in self._orient:
+    def _seg_at(self, pts, t):
+        """弧长比例 t 落在哪一段上 → `(a, b)` 两个端点。"""
+        _x, _y, i = self._point_at(pts, t)
+        return pts[i], pts[min(i + 1, len(pts) - 1)]
+
+    def label_rows(self, e):
+        """这条边的徽章分几行、每行是什么（渲染器照它画）。没算过就先算一次盒。"""
+        if id(e) not in self._rows:
             self.label_box(e)
-        return bool(self._orient.get(id(e)))
+        return self._rows.get(id(e)) or [e['label']]

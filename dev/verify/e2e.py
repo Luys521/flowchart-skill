@@ -70,7 +70,11 @@ def run_face(tmp):
     c.section('注入一处真实改动 → sync 预览')
     before = ft.read_bytes()
     d = prod(e2e, 'drawio')
-    s = d.read_text(encoding='utf-8').replace('&gt;归档&lt;', '&gt;资料归档&lt;').replace('value="不齐全"', 'value="否"')
+    # 标签可能被**折两排**（G85：一行宽度超过通道档距就折）⇒ drawio 属性里是 `不齐&lt;br&gt;全`
+    # （XML 转义后的样子，见 `render_drawio.attr`）。两种形态都要改得到，否则这一改落空，
+    # "恰好 2 处差异"会变成 1 对（假红，且看不出为什么）。
+    s = (d.read_text(encoding='utf-8').replace('&gt;归档&lt;', '&gt;资料归档&lt;')
+         .replace('value="不齐&lt;br&gt;全"', 'value="否"').replace('value="不齐全"', 'value="否"'))
     d.write_text(s, encoding='utf-8')
     rc, out = run('sync.py', d, ft)
     lines = [l for l in out.splitlines() if l.startswith(('    -|', '    +|'))]

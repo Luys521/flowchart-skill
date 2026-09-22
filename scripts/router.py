@@ -157,7 +157,7 @@ class Router(RectCache):
     def _right_family_cands(self, lay, col_from, col_to, limit, GL):
         """右族长跳候选：以本边涉及列中更靠右列的**右沿**为局部基准，只向外展开（D-91）。"""
         # ③ 右族（局部基准，只向外展开）
-        step_r = snap(lay.get('right_channel_step', 40), GL)
+        step_r = snap(lay.get('right_channel_step', 50), GL)
         off_r = snap(lay.get('right_channel_offset', 40), GL)
         local_rg = snap(self._col_edge(max(col_from, col_to))[1] + off_r, GL)
         return [('right', 'right', local_rg + step_r * i) for i in range(limit)]
@@ -174,7 +174,7 @@ class Router(RectCache):
         的名字里带"右"，但左族**刻意同口径**——两侧束距与贴列距离必须一致，否则同一张图左右
         不对称，而 `dictionary.yaml` 里只有这两个数。命名是历史（D-92 先做右族），不是"只对右边生效"。
         """
-        step_l = snap(lay.get('right_channel_step', 40), GL)
+        step_l = snap(lay.get('right_channel_step', 50), GL)
         off_l = snap(lay.get('right_channel_offset', 40), GL)
         local_lg = snap(self._col_edge(min(col_from, col_to))[0] - off_l, GL)
         return [('left', 'left', local_lg - step_l * i) for i in range(limit)]
@@ -342,7 +342,7 @@ class Router(RectCache):
         # 兜底：从本边局部右基准的最后一档再往外找一条不冲突的通道。
         # 绝不能回落到已占通道——落回去等于主动制造共线重叠
         # （这正是决策树那类多汇合图失败的成因）。
-        sr = snap(lay.get('right_channel_step', 40), self.grid.lattice)
+        sr = snap(lay.get('right_channel_step', 50), self.grid.lattice)
         off_r = snap(lay.get('right_channel_offset', 40), self.grid.lattice)
         col_f = self.M.nodes[e['from']]['col']
         col_t = self.M.nodes[e['to']]['col']

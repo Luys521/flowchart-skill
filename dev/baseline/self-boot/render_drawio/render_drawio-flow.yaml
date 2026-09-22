@@ -8,8 +8,8 @@ meta:
 layout:
   col_x:
   - 400
-  width: 1140
-  origin_x: -120
+  width: 1340
+  origin_x: -80
 nodes:
 - id: '01'
   name: 开始
@@ -132,7 +132,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: L109 · 函数 · ⇢ 依赖 engine.Engine.label_vertical、engine.Engine.polarity、engine.Engine.ports、hops.plan
+  desc: L109 · 函数 · ⇢ 依赖 engine.Engine.polarity、engine.Engine.ports、hops.plan
 - id: '11'
   name: node_xml
   lines:
@@ -144,7 +144,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→03｜3→04｜4→07｜5→09
-  desc: ★ 节点 → `<object>`（可下钻时**前面再压一张背面卡**，见 D-75）。`sub_pages` 是 {ni… · L145 · 函数
+  desc: ★ 节点 → `<object>`（可下钻时**前面再压一张背面卡**，见 D-75）。`sub_pages` 是 {ni… · L141 · 函数
     · 分支：1→esc 2→attr 3→label_html 4→node_style 5→sub_ring_xml · ⇢ 依赖 engine.Engine.rect
 - id: '12'
   name: edge_xml
@@ -157,7 +157,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→03｜3→10
-  desc: L175 · 函数 · 分支：1→esc 2→attr 3→edge_style · ⇢ 依赖 engine.Engine.path
+  desc: L171 · 函数 · 分支：1→esc 2→attr 3→edge_style · ⇢ 依赖 engine.Engine.label_rows、engine.Engine.path
 - id: '13'
   name: lane_cells
   lines:
@@ -169,7 +169,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →03
-  desc: ★ 泳道背景：顶部部门表头 + 角标 + 左侧阶段带 + 部门列底色。 · L196 · 函数 · ⇢ 依赖 engine.Engine.height
+  desc: ★ 泳道背景：顶部部门表头 + 角标 + 左侧阶段带 + 部门列底色。 · L197 · 函数 · ⇢ 依赖 engine.Engine.height
 - id: '14'
   name: render
   lines:
@@ -181,7 +181,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →15
-  desc: ★ DSL → `.drawio`。`ctx['pages']` 是 [(page_id, page_name, dsl_… · L247 · 函数
+  desc: ★ DSL → `.drawio`。`ctx['pages']` 是 [(page_id, page_name, dsl_… · L248 · 函数
 - id: '15'
   name: _page_xml
   lines:
@@ -193,7 +193,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→13｜2→16｜3→17｜4→18｜5→19｜6→20｜7→22
-  desc: ★ 渲染**一页**（含它自己的子页），返回 (xml 全文, 节点数, 边数, 画布宽, 画布高)。 · L272 · 函数 · 分支：1→lane_cells
+  desc: ★ 渲染**一页**（含它自己的子页），返回 (xml 全文, 节点数, 边数, 画布宽, 画布高)。 · L273 · 函数 · 分支：1→lane_cells
     2→_build_title_cell 3→_collect_node_cells 4→_collect_edge_cells 5→_wrap_diagram
     6→_collect_sub_diagrams 7→_sub_pages · ⇢ 依赖 engine.Engine.height、engine.Engine.lanes、engine.load
 - id: '16'
@@ -207,7 +207,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→03
-  desc: ★ 装配「标题 + 图例说明」cell（合成一个，拖动时标题与图例不会互相错位）。 · L310 · 函数 · 分支：1→esc 2→attr ·
+  desc: ★ 装配「标题 + 图例说明」cell（合成一个，拖动时标题与图例不会互相错位）。 · L311 · 函数 · 分支：1→esc 2→attr ·
     ⇢ 依赖 engine.Engine.legend_rect、engine.Engine.legend_width
 - id: '17'
   name: _collect_node_cells
@@ -220,7 +220,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: ★ 按 DSL 节点顺序生成每个节点的 `<object>` cell。 · L335 · 函数
+  desc: ★ 按 DSL 节点顺序生成每个节点的 `<object>` cell。 · L336 · 函数
 - id: '18'
   name: _collect_edge_cells
   lines:
@@ -232,7 +232,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →12
-  desc: ★ 生成每条边的 cell；边 id 与节点/结构 id 共用命名空间，撞名则加后缀避让。 · L340 · 函数
+  desc: ★ 生成每条边的 cell；边 id 与节点/结构 id 共用命名空间，撞名则加后缀避让。 · L341 · 函数
 - id: '19'
   name: _wrap_diagram
   lines:
@@ -244,7 +244,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→03
-  desc: ★ 把 cells 包进 `<diagram>` / `<mxGraphModel>` / `<root>` 外壳。 · L358 · 函数 · 分支：1→esc
+  desc: ★ 把 cells 包进 `<diagram>` / `<mxGraphModel>` / `<root>` 外壳。 · L359 · 函数 · 分支：1→esc
     2→attr
 - id: '20'
   name: _collect_sub_diagrams
@@ -257,7 +257,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →21
-  desc: ★ 递归渲染并拼接各子页的 `<diagram>` 段（本页之后，保持 pages 顺序）。 · L368 · 函数
+  desc: ★ 递归渲染并拼接各子页的 `<diagram>` 段（本页之后，保持 pages 顺序）。 · L369 · 函数
 - id: '21'
   name: 再入？
   lines:
@@ -282,7 +282,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: '★ 本页里可下钻的节点 → {nid: page_id}。键是 **dsl 路径**（`discover_pages` 产… · L382 · 函数
+  desc: '★ 本页里可下钻的节点 → {nid: page_id}。键是 **dsl 路径**（`discover_pages` 产… · L383 · 函数
     · ⇢ 依赖 artifact.artifact_rel、semantics.subflow_target'
 - id: '23'
   name: page_id_for
@@ -295,7 +295,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: ★ 子表 dsl 的**相对路径** → 稳定的页 id（内容无关的固定规则，父子两侧算得一样）。 · L405 · 函数
+  desc: ★ 子表 dsl 的**相对路径** → 稳定的页 id（内容无关的固定规则，父子两侧算得一样）。 · L406 · 函数
 - id: '24'
   name: _rel_to
   lines:
@@ -307,7 +307,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: ★ target 相对 base 的 posix 路径；算不出（跨盘/越界）就退回绝对路径。 · L418 · 函数
+  desc: ★ target 相对 base 的 posix 路径；算不出（跨盘/越界）就退回绝对路径。 · L419 · 函数
 - id: '25'
   name: discover_pages
   lines:
@@ -319,7 +319,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→23｜2→24
-  desc: ★ 从本表出发，顺着 `▣` 找出**直接子表** → [(page_id, 页名, 子表 dsl 路径), …]。 · L432 · 函数 · 分支：1→page_id_for
+  desc: ★ 从本表出发，顺着 `▣` 找出**直接子表** → [(page_id, 页名, 子表 dsl 路径), …]。 · L433 · 函数 · 分支：1→page_id_for
     2→_rel_to · ⇢ 依赖 artifact.artifact_rel、engine.load、semantics.subflow_target
 - id: '26'
   name: main
@@ -332,7 +332,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→14｜2→25
-  desc: L479 · 函数 · 分支：1→render 2→discover_pages
+  desc: L480 · 函数 · 分支：1→render 2→discover_pages
 - id: '27'
   name: 结束
   lines:

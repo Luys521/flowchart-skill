@@ -2,7 +2,7 @@
  "title": "flowchart-skill 自举：一条流程从材料到交付",
  "layout": "flow",
  "source": "flowtable.md",
- "dsl_sha256": "e7cbd115deae3823",
+ "dsl_sha256": "3ff40476d463b12a",
  "source_sha256": "22ed4056820fd6ef",
  "counts": {
   "nodes": 30,

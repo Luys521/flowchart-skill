@@ -8,7 +8,7 @@ meta:
 layout:
   col_x:
   - 400
-  width: 860
+  width: 980
   origin_x: 0
 nodes:
 - id: '01'
@@ -120,7 +120,7 @@ nodes:
   stage: 模块级
   route: 1→02｜2→04
   desc: ★ 边标签（判断节点的分支条件）——与 `render_html.svg_label` **同元素约定**： · L177 · 函数 · 分支：1→_fmt
-    2→_esc · ⇢ 依赖 engine.Engine.label_box、engine.Engine.label_vertical
+    2→_esc · ⇢ 依赖 engine.Engine.label_box、engine.Engine.label_rows
 - id: '10'
   name: _emit_lanes
   lines:
@@ -132,7 +132,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→04
-  desc: ★ 泳道底色：左走廊 + 部门列底色/表头 + 左侧里程碑带。 · L200 · 函数 · 分支：1→_fmt 2→_esc
+  desc: ★ 泳道底色：左走廊 + 部门列底色/表头 + 左侧里程碑带。 · L201 · 函数 · 分支：1→_fmt 2→_esc
 - id: '11'
   name: render
   lines:
@@ -144,7 +144,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→02｜2→03｜3→04｜4→06｜5→07｜6→08｜7→10
-  desc: ★ DSL → 独立 `.svg`。成功返回 0（统一契约；`ctx` 本渲染器暂不用任何键）。 · L232 · 函数 · 分支：1→_fmt 2→_defs
+  desc: ★ DSL → 独立 `.svg`。成功返回 0（统一契约；`ctx` 本渲染器暂不用任何键）。 · L233 · 函数 · 分支：1→_fmt 2→_defs
     3→_esc 4→_drillable 5→_emit_node 6→_emit_edge 7→_emit_lanes · ⇢ 依赖 engine.Engine.head_band、engine.Engine.height、engine.Engine.lanes、engine.load
 - id: '12'
   name: main
@@ -157,7 +157,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →11
-  desc: L256 · 函数
+  desc: L257 · 函数
 - id: '13'
   name: 结束
   lines:

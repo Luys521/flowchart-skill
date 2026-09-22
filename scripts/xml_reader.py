@@ -44,9 +44,23 @@ def _strip_html(s):
 
 
 def _label_text(val):
-    """节点/边标签 → 纯文本：<br> 先换空格，再剥标签，最后压空白"""
+    """节点/边标签 → 纯文本：`<br>` 按语境并回去，再剥标签，最后压空白。
+
+    **`<br>` 为什么分两种并法**（G85）：自有产物把放不下的边标签**折两排**，drawio 那边写的就是
+    `value="不齐<br>全"`——反向读回来**必须还原成 `不齐全`**，否则 sync 会把每一只折排标签都报成
+    "表与图不一致"（实测：端到端里"恰好 2 处差异"变成 3 对，把 --apply 的断言一起带红）。
+    而**外部**图里的 `<br>` 是画图的人自己断的行（`Yes<br>No`），并成一个词会把两个词粘住
+    ⇒ 拉丁文之间补 ` / `，CJK 直接相接（中文本来就不靠空格分词，相接才是它断行前的样子）。
+    """
     s = _text(val)
-    s = re.sub(r'<br\s*/?>', ' / ', s, flags=re.I)
+
+    def _join(m):
+        before = m.string[m.start() - 1] if m.start() else ''
+        after = m.string[m.end()] if m.end() < len(m.string) else ''
+        cjk = '\u3400' <= before <= '\u9fff' and '\u3400' <= after <= '\u9fff'
+        return '' if cjk else ' / '
+
+    s = re.sub(r'<br\s*/?>', _join, s, flags=re.I)
     s = _strip_html(s)
     return re.sub(r'\s+', ' ', s).strip()
 

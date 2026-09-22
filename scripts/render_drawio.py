@@ -125,10 +125,6 @@ def edge_style(L, e):
          f'labelBackgroundColor=#ffffff;labelBorderColor={ed["color"]};')
     if ed['dashed']:
         s += 'dashed=1;'
-    # 标签跟线走（G85）：`horizontal=0` 就是 drawio 把边标签转 90° 的那个键（右键→"垂直"）。
-    # 判据与 html/svg 同一个：`L.label_vertical(e)`（取向在 `label.py` 选位时定，不在这里重算）。
-    if e.get('label') and L.label_vertical(e):
-        s += 'horizontal=0;'
     # 交叉打跳（D-149）：**drawio 自己就有线跳**——官方边样式表里的 `jumpStyle`
     # （`arc` / `gap` / `sharp`）与 `jumpSize`（交叉处的跳线宽度）。所以三份产物**都能画**：
     # html/svg 走我们自己的半圆（几何在 `geometry.with_hops`），drawio 走这两个键。
@@ -186,7 +182,12 @@ def edge_xml(L, e, eid):
         arr = ('\n            <Array as="points">\n'
                + '\n'.join(f'              <mxPoint x="{round(x)}" y="{round(y)}" />' for x, y in pts)
                + '\n            </Array>\n          ')
-    val = f'value="{attr(e["label"])}" ' if e.get('label') else ''
+    # 标签折排（G85）：mxGraph 的边标签是 HTML（`html=1` 已在 style 里），换行就写 `<br>`——
+    # 交给 `attr()` 转义成 `&lt;br&gt;`，XML 解析器再还原成真标签（与节点标签 `label_html` 同一路数）。
+    # 只折不转：不写 `horizontal=0`（作者 2026-09-22 改口径：竖排撤掉，横排 + 折两排）。
+    val = ''
+    if e.get('label'):
+        val = f'value="{attr("<br>".join(L.label_rows(e)))}"' + ' '
     return (f'        <mxCell id="{eid}" {val}style="{edge_style(L, e)}" edge="1" parent="1" '
             f'source="{esc(e["from"])}" target="{esc(e["to"])}">\n'
             f'          <mxGeometry relative="1" as="geometry">{arr}</mxGeometry>\n'

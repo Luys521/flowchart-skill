@@ -22,6 +22,10 @@ from semantics import arrow_markers, pending_style, subflow_target, SUB_INSET
 from artifact import artifact_name, artifact_stem
 from manifest import MAIN_VIEW
 
+# 悬浮框认的**有限 markdown**（见 `_md_html`）：只有粗体与行内代码两种，别的记号一律当普通字符。
+_MD_BOLD = re.compile(r'\*\*(.+?)\*\*', re.S)
+_MD_CODE = re.compile(r'`([^`]+)`')
+
 # 可下钻节点的记号：**框内一道内衬线**，同形状向内缩 `SUB_INSET` 这么多像素（见 D-78）。
 # 规格另有两条同样要紧：描边 1px、同色 55% 透明——节点高 60 而文字两到三行时，
 # 内圈离文字只剩几像素，只有退成"里衬"才不跟文字抢。
@@ -190,6 +194,23 @@ def fmt(v):
     return f'{v:.1f}'.rstrip('0').rstrip('.')
 
 
+def _md_html(text):
+    """悬浮框里的**有限 markdown** → HTML：`**粗体**` 与 `` `行内代码` ``。
+
+    为什么只认这两样：表里的描述是 AI 写的，用到的记号实测就只有这两种（自举根表：粗体 30 处、
+    行内代码 61 处）。此前悬浮框用 `innerText` 注入，用户看到的是原样的 `**` 和反引号——
+    "加粗看不出来"就是这个（作者 2026-09-22 提的第三条）。
+
+    **先转义、后替换**：描述是数据不是标记语言，直接放行任意 HTML 就是注入面（而且 `_serialize_tips`
+    还要把 `<`/`>` 转成 `\\u003c` 才能安全内联进 `<script>`，顺序反了这两件事会互相破坏）。
+    """
+    if not text:
+        return text
+    s = esc(text)                                   # 先转义：数据里的 `&`/`<` 不再有标记含义
+    s = _MD_BOLD.sub(r'<b>\1</b>', s)
+    return _MD_CODE.sub(r'<code>\1</code>', s)
+
+
 def _display_desc(desc):
     """悬浮框里显示的「节点描述」：剥掉行首的标记语法本身（`⚠…` / `⊞ 路径；…`）。
 
@@ -342,14 +363,15 @@ def svg_label(L, e, ed):
     if not e.get('label'):
         return ''
     x, y, w, h = L.label_box(e)
-    cx, cy = x + w / 2, y + h / 2
+    rows = L.label_rows(e)          # 一行放不下时折两排（见 `label.py`）
     # 竖排（标签压在竖段上）：只转文字不转盒子——盒子已按转过来的宽高算（`label.py`）。
-    rot = f' transform="rotate(-90 {fmt(cx)} {fmt(cy)})"' if L.label_vertical(e) else ''
     c = ed['color']
+    texts = ''.join(f'<text class="lab" x="{fmt(x + w / 2)}" y="{fmt(y + (i + 0.5) * h / len(rows) + 4)}"'
+                    f' fill="{c}">{esc(t)}</text>' for i, t in enumerate(rows))
     # class="elab" 只是"这是边标签"的语义钩子（几何自检与产物审核都不认它，认的是 `path.edge`）。
     return (f'<g class="elab"><rect class="lab-r" x="{fmt(x)}" y="{fmt(y)}" '
             f'width="{fmt(w)}" height="{fmt(h)}" rx="4" stroke="{c}"/>'
-            f'<text class="lab" x="{fmt(cx)}" y="{fmt(cy + 4)}" fill="{c}"{rot}>{esc(e["label"])}</text></g>')
+            f'{texts}</g>')
 
 
 def svg_lanes(ln):
@@ -577,12 +599,13 @@ def _view_svg(L, base, key, keys):
         # 描述的 `⚠` 前缀是给人看的标记，悬浮框里换成固定说明句，不重复显示（否则两个 ⚠ 叠在一起）
         tips[pre + n['id']] = {
             'title': f"{n['id']} {n['name']}",
-            'subject': n['subject'], 'executor': n['executor'],
-            'input': n.get('input'), 'basis': n.get('basis'), 'output': n.get('output'),
+            'subject': _md_html(n['subject']), 'executor': _md_html(n['executor']),
+            'input': _md_html(n.get('input')), 'basis': _md_html(n.get('basis')),
+            'output': _md_html(n.get('output')),
             'up': '、'.join(up.get(n['id'], [])) or None,
-            'time': n.get('time'), 'route': L.route_text(n['id']),
-            'desc': _display_desc(n.get('desc') or ''),
-            'pend': (pending_style(L.cfg, n.get('desc')) or {}).get('note'),
+            'time': _md_html(n.get('time')), 'route': _md_html(L.route_text(n['id'])),
+            'desc': _md_html(_display_desc(n.get('desc') or '')),
+            'pend': _md_html((pending_style(L.cfg, n.get('desc')) or {}).get('note')),
             'sub': subs.get(n['id']),
         }
     return '\n'.join(svg), tips, H
@@ -728,6 +751,10 @@ body {{ font-family:"Microsoft YaHei","Segoe UI",sans-serif; background:#f0f2f5;
    在此处说一句最省事，也最不会跟节点内那几行语义文字抢地方。灰字、比名称小一号。 */
 .node-tooltip .tt-sub {{ font-weight:normal; font-size:11px; color:#999999; margin-left:8px; }}
 .node-tooltip .tt-content {{ color:#444; white-space:pre-line; }}
+/* 悬浮框里的有限 markdown（见 `_md_html`）：粗体照常加粗，行内代码给浅底 + 等宽字。 */
+.node-tooltip .tt-content b {{ font-weight:bold; color:#222; }}
+.node-tooltip .tt-content code {{ font-family:Consolas,'Courier New',monospace; font-size:12px;
+  background:#f2f2f2; border:1px solid #e0e0e0; border-radius:3px; padding:0 3px; }}
 svg {{ display:block; }}
 .t1 {{ font-size:{t['name']['size']}px; font-weight:bold; fill:{t['name']['color']}; text-anchor:middle; }}
 .tm {{ font-size:{t['executor']['size']}px; fill:{t['executor']['color']}; text-anchor:middle; }}
@@ -889,7 +916,10 @@ document.querySelectorAll('.ndg').forEach(function(g) {{
     parts.push('下个节点：' + (d.route.indexOf('\\n') >= 0 ? '\\n' + d.route : d.route));
     parts.push('节点描述：' + d.desc);
     if (d.sub) parts.push('Ctrl/⌘+点击：在新窗口打开（保留主图上下文便于对照）');
-    ttContent.innerText = parts.join('\\n');
+    // 内容用 innerHTML（标题/副标题仍用 innerText）：描述里认**有限的 markdown**（`**粗体**`、
+    // `` `行内代码` ``），由 `_md_html` 在服务端**先转义再替换**成 <b>/<code>——客户端不再做任何
+    // 文本→标记的转换，注入面留在服务端一处。`.tt-content` 的 `white-space:pre-line` 照旧管换行。
+    ttContent.innerHTML = parts.join('\\n');
     tooltip.style.display = 'block';
     positionTip(g);
   }});

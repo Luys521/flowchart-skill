@@ -1505,7 +1505,10 @@ def _check_html_robustness(c, tmp):
     js = m.group(1) if m else ''
     c.check(m is not None and '</script' not in js and '<script' not in js,
             'TIPS 块内无裸 script 标签')
-    c.check('\\u003c' in js, '< 已转义为 \\u003c')
+    # `<` 现在由 `render_html._md_html` **先 `esc()` 成 `&lt;`**（G86：悬浮框改认有限 markdown ⇒
+    # 注入点在服务端一处），所以这里认两种"已被中和"的形态。要紧的是上面那条"裸 script 一个都
+    # 不许有"与下面那条"JSON 仍能解析"——它们才是安全性的判据，这一条只钉"确实被中和了"。
+    c.check('\\u003c' in js or '&lt;' in js, '< 已被中和（\\u003c 或 &lt;）')
     import json as _json
     try:
         _json.loads(js.replace('\\u003c', '<').replace('\\u003e', '>'))
@@ -1529,7 +1532,11 @@ def _check_writeback_labels(c, tmp):
     rc_r, _ = run('render_drawio.py', prod(t, 'yaml'), '-o', prod(t, 'drawio'))
     d = prod(t, 'drawio')
     if rc_r == 0:
-        d.write_text(d.read_text(encoding='utf-8').replace('value="不齐全"', 'value="否"'), encoding='utf-8')
+        # 折排形态（G85）与单行形态都要改得到：折排写进 drawio 的是**属性里的** `不齐&lt;br&gt;全`
+        # （XML 转义后的样子，见 `render_drawio.attr`），所以这里匹配的是转义串。
+        d.write_text(d.read_text(encoding='utf-8')
+                     .replace('value="不齐&lt;br&gt;全"', 'value="否"')
+                     .replace('value="不齐全"', 'value="否"'), encoding='utf-8')
     rc_s, _ = run('sync.py', d, ft)
     c.check(rc_w == 0 and rc_h == 0 and rc_r == 0 and rc_s == 0, '前置：写 DSL → 双渲染 → sync 成功')
     out_ft = t / 'flowtable.sync.md'

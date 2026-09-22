@@ -250,7 +250,7 @@ nodes:
   col: 0
   stage: 渲染
   route: →21
-  desc: 12 个函数 · ⊞ label/flowtable.md
+  desc: 16 个函数 · ⊞ label/flowtable.md
 - id: '21'
   name: 模块 · lane_router
   lines:
@@ -442,7 +442,7 @@ nodes:
   col: 0
   stage: 渲染
   route: →37
-  desc: 23 个函数 · ⊞ render_html/flowtable.md
+  desc: 24 个函数 · ⊞ render_html/flowtable.md
 - id: '37'
   name: 模块 · render_pages
   lines:
@@ -598,7 +598,7 @@ nodes:
   col: 0
   stage: 同步闭环
   route: →50
-  desc: 40 个函数 · ⊞ xml_reader/flowtable.md
+  desc: 41 个函数 · ⊞ xml_reader/flowtable.md
 - id: '50'
   name: 结束
   lines:

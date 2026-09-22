@@ -181,20 +181,21 @@ def _emit_label(L, e, ed):
     这份产物此前**不画标签**：判断节点分出"是 / 否"两支时，svg 里两支长得一模一样——
     分支条件只写在《流程表》里，单独发出去的 svg 读不出走哪条（D-86）。
     几何复用 `L.label_box(e)`（与 html/drawio 同源），不为它另算一处位置。
-    **竖排**（标签落在竖段上、`L.label_vertical(e)` 为真）时给文字加 `rotate(-90 中心)`：
-    盒子不用转——它本来就是按转过来的宽高算的（见 `label.py`），转的只有文字。
+    排几行由 `L.label_rows(e)` 给（一行放不下时折两排，见 `label.py`）：一行一只 `<text>`，
+    行高 = 盒高 / 行数，逐行往下排。
     """
     if not e.get('label'):
         return ''
     x, y, w, h = L.label_box(e)
-    cx, cy = x + w / 2, y + h / 2
-    rot = f' transform="rotate(-90 {_fmt(cx)} {_fmt(cy)})"' if L.label_vertical(e) else ''
+    rows = L.label_rows(e)
     c = ed['color']
+    sz = L.cfg["text"]["label"]["size"]
+    texts = ''.join(f'<text class="lab" x="{_fmt(x + w / 2)}" y="{_fmt(y + (i + 0.5) * h / len(rows) + 4)}"'
+                    f' text-anchor="middle" fill="{c}" font-size="{sz}" font-weight="bold">'
+                    f'{_esc(t)}</text>' for i, t in enumerate(rows))
     return (f'<g class="elab"><rect class="lab-r" x="{_fmt(x)}" y="{_fmt(y)}" '
             f'width="{_fmt(w)}" height="{_fmt(h)}" rx="4" fill="#ffffff" stroke="{c}"/>'
-            f'<text class="lab" x="{_fmt(cx)}" y="{_fmt(cy + 4)}" text-anchor="middle"{rot}'
-            f' fill="{c}" font-size="{L.cfg["text"]["label"]["size"]}" font-weight="bold">'
-            f'{_esc(e["label"])}</text></g>')
+            f'{texts}</g>')
 
 
 def _emit_lanes(ln):
