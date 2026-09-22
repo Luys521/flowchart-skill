@@ -255,9 +255,16 @@ def run_face(tmp):
     # 于是"重建"与基线全不可比（本检查的第一版就是这么假红的：54 个文件里全是 row/kind 差异）。
     # 所以：生成器重造表 → build 出图 → 与基线**整树逐字节**比。目录名必须是 `self-boot`（D-51）。
     sb = BASE / 'self-boot'
+    # **快照不在版本库里**（`.gitignore` ④：它是 `fn_graph.py` 的产物、换机器后本来就不存在）。
+    # 原先这里直接 `read_text`，缺了就抛裸的 `FileNotFoundError` —— 新克隆的人第一眼看到的是一段
+    # traceback，而不是"先跑哪条命令"（G81）。所以先判存在、把命令给出来，并跳过下面每一节
+    # （自举基线、公共层无环都要读它，缺了它们也无从算起）。
+    snap = SKILL / 'dev' / 'tools' / 'fn-graph.json'
+    if not c.check(snap.exists(), '依赖图快照在（生成物、不进版本库；新克隆先重跑生成器）',
+                   '缺 dev/tools/fn-graph.json ⇒ 先跑：python dev/tools/fn_graph.py'):
+        return c
     # 张数**从依赖图现取**（一个模块一张表 + 1 根表）：手写死数在加模块时必漂（G7 抓到过五处）。
-    n_mod = len(json.loads((SKILL / 'dev' / 'tools' / 'fn-graph.json').read_text(encoding='utf-8'))
-                .get('files') or {})
+    n_mod = len(json.loads(snap.read_text(encoding='utf-8')).get('files') or {})
     n_tab = len(list(sb.rglob('flowtable.md')))
     c.check(n_tab == n_mod + 1, f'自举树基线含 {n_mod + 1} 张表（1 根表 + {n_mod} 模块表）', f'{n_tab} 张')
     work = tmp / 'self-boot'
