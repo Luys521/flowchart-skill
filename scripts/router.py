@@ -119,16 +119,35 @@ class Router(RectCache):
         return xs
 
     def _clean_l_cands(self, e, fx, tx, row_from, row_to, col_from, col_to, g):
-        """前向对角的干净 L 候选（右下=右出顶入、左下=底出右入）；端口被别的边占了就跳过。"""
+        """前向对角的干净 L 候选（右下=右出顶入、左下=左出顶入，两侧镜像）；端口被占了就跳过。"""
         cands = []
-        # ① 前向对角的干净 L：折点 x 就记在 gapx 里（右下=目标中心，左下=源中心）。
+        # ① 前向对角的干净 L：折点 x 就记在 gapx 里，**两侧都取目标列中心**——取源列中心只有右向
+        #    才碰巧退化成 L，左向会变成"底出竖落再横插"。
         #    端口被别的边占了就跳过（叠锚点的重叠段过不了 validate 的共享端点豁免）。
         if row_from < row_to and col_from != col_to:
             if col_from < col_to:
                 if (not self._anchor_taken(e, tx, 'top', e.get('dye', 0), True)
                         and not self._anchor_taken(e, fx, 'right', e.get('sdye', 0), False)):
                     cands.append(('right', 'top', g.col_x[col_to]))
+                # 右向的次选（D-162）：目标的**顶**端口被别的边占了时，退到「底出 + 侧入」的 L。
+                # 占掉它的通常就是同槽位的主干入边（`bottom`→`top` 的 spine）——实测 `13d→13f`
+                # 因此落到 Z 形，而它正下方明明是空的。折点取**源列中心**（首段零长，被 `_dedup`
+                # 吃掉，得 [(sx,sy),(sx,ty),(tx,ty)]）；"源正下方没有别的节点"由 `_path_rejects`
+                # 的穿节点检查隐式保证，不必另写判据。别删——它兜的正是右出/顶入两路都被占的那一半。
+                if (not self._anchor_taken(e, tx, 'left', e.get('dye', 0), True)
+                        and not self._anchor_taken(e, fx, 'bottom', e.get('sdye', 0), False)):
+                    cands.append(('bottom', 'left', g.col_x[col_from]))
             else:
+                # **左向必须镜像右向**（D-161）：原先只有 (`bottom`,`right`)——源出**底边**、目标进
+                # **右侧**。它与右向的 (`right`,`top`) 不是镜像，于是"A 居中分叉到左右两侧"时，
+                # A 的两条出边一条走底边、一条走侧沿（实测 (bottom,right) × (right,top)）。
+                if (not self._anchor_taken(e, tx, 'top', e.get('dye', 0), True)
+                        and not self._anchor_taken(e, fx, 'left', e.get('sdye', 0), False)):
+                    cands.append(('left', 'top', g.col_x[col_to]))
+                # 旧走法降为**次选**，不是删掉：左端口被别的边占了（`_anchor_taken` 挡），或左出
+                # 首段撞上同行的并行节点（`_chan_conflict` → `_seg_hits_rects` 挡）时，
+                # 这条边仍有一条 L 可走，不至于退到 Z 形绕行甚至画布外缘。
+                # 别按"更对称"把这段也删了——它兜的正是左出被挡的那一半。
                 if (not self._anchor_taken(e, tx, 'right', e.get('dye', 0), True)
                         and not self._anchor_taken(e, fx, 'bottom', e.get('sdye', 0), False)):
                     cands.append(('bottom', 'right', g.col_x[col_from]))
@@ -182,9 +201,9 @@ class Router(RectCache):
     def _candidates(self, e, lay):
         """按优先级返回候选 (exit, entry, x)：干净 L（前向对角）→ 列间通道 → 左通道（单列回路）→ 右通道（长跳）。
 
-        **前向对角先走干净 L**（D-28）：右下=右出顶入、左下=底出右入——两段都沿端口法线、
-        只有一个折点，且不占节点的左右端口；列间通道的 Z 形会把出入口挤在节点同一侧
-        （如 02→03b 左口进、03b→04 左口出），两条 Z 还在同一空隙里镜像交错。
+        **前向对角先走干净 L**（D-28 / D-161）：右下=右出顶入、左下=左出顶入，两侧镜像——
+        两段都沿端口法线、只有一个折点，源出侧沿、目标从顶进；列间通道的 Z 形会把出入口挤在
+        节点同一侧（如 02→03b 左口进、03b→04 左口出），两条 Z 还在同一空隙里镜像交错。
         **右通道的刻度管制**：起点 = 本边涉及列的**最右外沿** + right_channel_offset（局部基准，D-91），
         只向外展开——用全图最右列做基准，会把 c0 内部的长跳推到最右列之外
         （08→09 曾落在 1000，而本列节点右沿只有 480）；撞上更右列的节点由逐候选的节点检查拦下。

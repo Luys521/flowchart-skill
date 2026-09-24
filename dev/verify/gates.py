@@ -1235,6 +1235,58 @@ def _check_flow_parallel_branches(c, tmp):
     c.check(rc2 == 0 and '全部通过' in out2, '并排后的图八项门禁全过', out2.strip()[-80:] if rc2 else '')
 
 
+def _check_clean_l_mirror(c, tmp):
+    c.section('流程布线：前向对角的干净 L 必须四档齐全（侧出顶入 ×2、底出侧入 ×2，D-161/D-162）')
+    # 夹具：主轴 01→02→03→06，02 另分两支到左右两侧的 04/05、再汇回 06。
+    # `merge_parallel_branches` 把 03/04/05 并到一行相邻列，`balance_arms`（需 ≥3 列才动手）
+    # 再把主轴摆回中轴 —— 于是 02 的左右两侧各挂一条跨列下游，正是"左中右三轴"的形态。
+    # 它一次覆盖四种前向对角：02→左右（源在中间、顶端口空）走**侧出顶入**；
+    # 04/05→06（源在两侧、06 的顶已被主干 03→06 占掉）走**底出侧入**。
+    p = tmp / 'lmirror.md'
+    p.write_text(HEAD + ''.join([
+        row('阶段', '01', '发起', '开始', '甲', '甲', '—', '→02'),
+        row('阶段', '02', '分流？', '判断', '甲', '甲', '—', '左→03 ｜ 中→04 ｜ 右→05'),
+        row('阶段', '03', '主干', '任务', '乙', '乙', '—', '→06'),
+        row('阶段', '04', '左支', '任务', '乙', '乙', '—', '→06'),
+        row('阶段', '05', '右支', '任务', '丙', '丙', '—', '→06'),
+        row('阶段', '06', '收尾', '结束', '甲', '甲', '—', '—'),
+    ]), encoding='utf-8')
+    y = tmp / 'lmirror.yaml'
+    rc, out = run('table_to_dsl.py', '--write', p, '-o', y)
+    c.check(rc == 0, '前置：三条分支的分流表转 DSL 通过', out.strip()[-80:])
+    L = load(str(y))
+    fork = [e for e in L.edges if e['from'] == '02']
+    for e in fork:
+        L.path(e)          # **必须先算路径**：`exit`/`entry` 是路由过程中才写进边对象的
+    mid = L.nodes['02']['col']
+    lf = [e for e in fork if L.nodes[e['to']]['col'] < mid]
+    rt = [e for e in fork if L.nodes[e['to']]['col'] > mid]
+    # 回流的两条：06 的**顶**端口已被主干入边 03→06（spine，`bottom`→`top`）占住，
+    # 它们只能各走一侧的「底出 + 侧入」L —— 这正是 D-162 补的那一档。
+    lb = next((e for e in L.edges if e['to'] == '06' and L.nodes[e['from']]['col'] < mid), None)
+    rb = next((e for e in L.edges if e['to'] == '06' and L.nodes[e['from']]['col'] > mid), None)
+    c.check(len(lf) == 1 and len(rt) == 1,
+            '夹具有效：02 的左右两侧各挂一条跨列下游（`balance_arms` 真的分了侧）',
+            f"左={[e['to'] for e in lf]} 右={[e['to'] for e in rt]}")
+    if len(lf) == 1 and len(rt) == 1:
+        c.check(L.ports(lf[0]) == ('left', 'top'), '左向走「左出 + 顶入」，不是「底出 + 右入」',
+                f"02→{lf[0]['to']} ports={L.ports(lf[0])} path={L.path(lf[0])}")
+        c.check(L.ports(rt[0]) == ('right', 'top'), '右向走「右出 + 顶入」，与左向镜像',
+                f"02→{rt[0]['to']} ports={L.ports(rt[0])}")
+        c.check(all(len(L.path(e)) == 3 for e in (lf[0], rt[0])),
+                '两条都是三点 L 形（一个折点，没退化成绕行）',
+                f"{L.path(lf[0])} / {L.path(rt[0])}")
+    # 反向控制：顶端口被占之后**必须各走一侧的底出 L**，而不是落到 Z 形绕行。
+    # 少了这两条，`_anchor_taken` 那对守卫和 (`bottom`,`left`) 那一档删掉都不会有人发现。
+    for e, want, who in ((lb, ('bottom', 'left'), '左侧回流'), (rb, ('bottom', 'right'), '右侧回流')):
+        c.check(e is not None and L.ports(e) == want and len(L.path(e)) == 3,
+                f'反向控制：{who}在顶端口被占后走「底出 + 侧入」的三点 L',
+                (f"{e['from']}→{e['to']} ports={L.ports(e)} path={L.path(e)}"
+                 if e is not None else '夹具里找不到这条回流边'))
+    rc, out = run('validate.py', y)
+    c.check(rc == 0, '八项门禁全过', out.strip().splitlines()[-1][:90])
+
+
 def _check_stagger_slots(c, tmp):
     c.section('同侧多出边的错峰：槽位用尽也不许落回入边锚点（D-61）')
     # 错峰候选 `[0] + [s·k·2×细格]` 被 `lim = 半边长 − 细格` 裁到只剩两个槽位，而 `taken` 同时装着
@@ -3258,6 +3310,7 @@ def run_face(tmp):
     _check_registry_scales(c, tmp)
     _check_degrade(c, tmp)
     _check_flow_parallel_branches(c, tmp)
+    _check_clean_l_mirror(c, tmp)
     _check_stagger_slots(c, tmp)
     _check_writeback_semantics(c, tmp)
     _check_writeback_next_conflict(c, tmp)

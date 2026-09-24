@@ -180,7 +180,7 @@ nodes:
   col: 0
   stage: Router
   route: →12
-  desc: ★ 前向对角的干净 L 候选（右下=右出顶入、左下=底出右入）；端口被别的边占了就跳过。 · L121 · 方法
+  desc: ★ 前向对角的干净 L 候选（右下=右出顶入、左下=左出顶入，两侧镜像）；端口被占了就跳过。 · L121 · 方法
 - id: '15'
   name: Router._cross_gap_cands
   lines:
