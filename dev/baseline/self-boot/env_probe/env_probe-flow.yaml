@@ -1,0 +1,153 @@
+meta:
+  title: env_probe.py 函数流程表
+  subjects:
+    脚本:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  channel_step: 40
+  width: 680
+  origin_x: -40
+nodes:
+- id: '01'
+  name: 开始
+  lines:
+  - 开始
+  type: start
+  subject: 脚本
+  executor: selfboot
+  row: 0
+  col: 0
+  stage: 入口
+  route: 1→07
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→main
+- id: '02'
+  name: _feishu_cfg
+  lines:
+  - _feishu_cfg
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 5
+  col: 0
+  stage: 模块级
+  route: →08
+  desc: L54 · 函数 · ⇢ 依赖 config.plugin_config
+- id: '03'
+  name: _app_id_source
+  lines:
+  - _app_id_source
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: 模块级
+  route: →02
+  desc: ★ 返回 (来源标签, 值)；都没有则 (None, None)。**只报来源，不回显敏感值**。 · L58 · 函数
+- id: '04'
+  name: _secret_present
+  lines:
+  - _secret_present
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 4
+  col: 0
+  stage: 模块级
+  route: →02
+  desc: L71 · 函数
+- id: '05'
+  name: probe
+  lines:
+  - probe
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: 模块级
+  route: 1→03｜2→04
+  desc: ★ 探测并返回结构化结论。`verbose` 让插件发现打印它自己的那几行。 · L77 · 函数 · 分支：1→_app_id_source 2→_secret_present
+    · ⇢ 依赖 config.plugin_enabled、plugin.discover
+- id: '06'
+  name: _render
+  lines:
+  - _render
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 6
+  col: 0
+  stage: 模块级
+  route: →08
+  desc: ★ 人读版：LLM 可以直接照念，所以**一句话说清"我是谁、能做什么、该怎么交付"**。 · L134 · 函数
+- id: '07'
+  name: main
+  lines:
+  - main
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 1
+  col: 0
+  stage: 模块级
+  route: 1→05｜2→06
+  desc: L151 · 函数 · 分支：1→probe 2→_render
+- id: 08
+  name: 结束
+  lines:
+  - 结束
+  type: end
+  subject: 脚本
+  executor: selfboot
+  row: 7
+  col: 0
+  stage: 出口
+  route: —
+  desc: 流程终点（结构性节点，不是函数）
+edges:
+- from: '01'
+  to: '07'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '02'
+  to: 08
+  kind: jumpR
+  polarity: main
+- from: '03'
+  to: '02'
+  kind: jumpR
+  polarity: main
+- from: '04'
+  to: '02'
+  kind: spine
+  polarity: main
+- from: '05'
+  to: '03'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '05'
+  to: '04'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '06'
+  to: 08
+  kind: spine
+  polarity: main
+- from: '07'
+  to: '05'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '07'
+  to: '06'
+  kind: jumpR
+  polarity: main
+  label: '2'

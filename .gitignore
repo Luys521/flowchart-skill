@@ -60,3 +60,8 @@ old/
 /intake.md
 /plan.md
 /drift.md
+
+# ⑨ 插件私有配置与令牌缓存：config.yaml 可能含敏感设置，.token-cache.json 含访问/刷新令牌，
+#    一律不进库（模板用 config.example.yaml）。
+integrations/*/config.yaml
+integrations/*/.token-cache.json

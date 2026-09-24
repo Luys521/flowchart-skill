@@ -1,0 +1,21 @@
+# plugin.yaml — 飞书插件清单（由核心 scripts/plugin.py discover() 读取）
+name: feishu
+
+# 入口模块（加载本目录下 plugin.py，调用其 register）
+entry: plugin
+
+# 依赖自检：加载前 find_spec，缺失则跳过并提示安装。
+# 本插件只用标准库 + 核心已有的 PyYAML；长连接 SDK（lark-oapi）在阶段 3 服务化时再加入。
+requirements:
+  - {import: yaml, pip: pyyaml}
+
+# 自述（文档/自检用途）：本插件提供的扩展实现
+provides:
+  sources:
+    - feishu_doc_export      # 云文档导出（用户身份）
+    - feishu_approval        # 审批实例拉取（应用身份）
+  publishers:
+    - feishu                 # 云盘 + IM 发布（应用身份）
+    - feishu_doc             # 云文档 + 可编辑画板发布（应用身份）
+  commands:
+    - feishu_login           # 用户 OAuth 授权登录

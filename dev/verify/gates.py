@@ -1101,7 +1101,8 @@ def _check_registry_scales(c, tmp):
 
     # ① 注册表里每个名字都要能解析到——名字写错要**当场**报，而不是跑到一半 KeyError
     missing = sorted({nm for meta in _b.RENDERERS.values()
-                      for nm in (meta['fn'], meta['ids'], meta['geom'])
+                      for nm in (meta['fn'], meta['ids'],
+                                 *(() if 'geom' not in meta else (meta['geom'],)))
                       if nm not in vars(_b)})
     c.check(not missing, '注册表里的渲染器与反解器名字都能解析到', str(missing))
 

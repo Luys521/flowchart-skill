@@ -1,0 +1,306 @@
+meta:
+  title: plugin.py 函数流程表
+  subjects:
+    脚本:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  channel_step: 40
+  width: 880
+  origin_x: -180
+nodes:
+- id: '01'
+  name: 开始
+  lines:
+  - 开始
+  type: start
+  subject: 脚本
+  executor: selfboot
+  row: 0
+  col: 0
+  stage: 入口
+  route: 1→02｜2→03｜3→05｜4→06｜5→07｜6→08｜7→09｜8→10｜9→14
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→Registry.__init__ 2→Registry.register 3→Registry.get
+    4→Registry.meta 5→Registry.has 6→Registry.all 7→Registry.names 8→Registry.snapshot
+    9→discover
+- id: '02'
+  name: Registry.__init__
+  lines:
+  - Registry.__init__
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: Registry
+  route: →15
+  desc: L39 · 方法
+- id: '03'
+  name: Registry.register
+  lines:
+  - Registry.register
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 4
+  col: 0
+  stage: Registry
+  route: →15
+  desc: ★ 注册一个扩展实现。重复注册以最后一次为准（允许插件覆盖）。 · L42 · 方法
+- id: '04'
+  name: Registry._resolve
+  lines:
+  - Registry._resolve
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 9
+  col: 0
+  stage: Registry
+  route: →15
+  desc: L49 · 方法
+- id: '05'
+  name: Registry.get
+  lines:
+  - Registry.get
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 5
+  col: 0
+  stage: Registry
+  route: →04
+  desc: ★ 取一个扩展 callable；不存在抛 KeyError。 · L56 · 方法
+- id: '06'
+  name: Registry.meta
+  lines:
+  - Registry.meta
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 6
+  col: 0
+  stage: Registry
+  route: →15
+  desc: L60 · 方法
+- id: '07'
+  name: Registry.has
+  lines:
+  - Registry.has
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 7
+  col: 0
+  stage: Registry
+  route: →15
+  desc: L63 · 方法
+- id: 08
+  name: Registry.all
+  lines:
+  - Registry.all
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 8
+  col: 0
+  stage: Registry
+  route: →04
+  desc: '★ 返回 {name: callable}（已解析）。 · L66 · 方法'
+- id: 09
+  name: Registry.names
+  lines:
+  - Registry.names
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 10
+  col: 0
+  stage: Registry
+  route: →15
+  desc: L70 · 方法
+- id: '10'
+  name: Registry.snapshot
+  lines:
+  - Registry.snapshot
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 11
+  col: 0
+  stage: Registry
+  route: →15
+  desc: '★ {point: [names]}，用于打印与自检。 · L73 · 方法'
+- id: '11'
+  name: _read_manifest
+  lines:
+  - _read_manifest
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: 模块级
+  route: →15
+  desc: ★ 读插件清单 plugin.yaml → dict（PyYAML 已为核心依赖）。 · L78 · 函数
+- id: '12'
+  name: _check_requirements
+  lines:
+  - _check_requirements
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 12
+  col: 0
+  stage: 模块级
+  route: →15
+  desc: ★ 自检插件依赖。返回缺失项列表 [{import, pip}]；全部满足返回 []。 · L87 · 函数
+- id: '13'
+  name: _load_entry
+  lines:
+  - _load_entry
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 13
+  col: 0
+  stage: 模块级
+  route: →15
+  desc: ★ 加载插件入口并调用 register()。 · L98 · 函数
+- id: '14'
+  name: discover
+  lines:
+  - discover
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 1
+  col: 0
+  stage: 模块级
+  route: 1→11｜2→12｜3→13
+  desc: ★ 扫描 integrations/ 加载已启用插件。 · L125 · 函数 · 分支：1→_read_manifest 2→_check_requirements
+    3→_load_entry · ⇢ 依赖 config.plugin_config、config.plugin_enabled、console.warn
+- id: '15'
+  name: 结束
+  lines:
+  - 结束
+  type: end
+  subject: 脚本
+  executor: selfboot
+  row: 14
+  col: 0
+  stage: 出口
+  route: —
+  desc: 流程终点（结构性节点，不是函数）
+edges:
+- from: '01'
+  to: '02'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '01'
+  to: '03'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '01'
+  to: '05'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '01'
+  to: '06'
+  kind: jumpR
+  polarity: main
+  label: '4'
+- from: '01'
+  to: '07'
+  kind: jumpR
+  polarity: main
+  label: '5'
+- from: '01'
+  to: 08
+  kind: jumpR
+  polarity: main
+  label: '6'
+- from: '01'
+  to: 09
+  kind: jumpR
+  polarity: main
+  label: '7'
+- from: '01'
+  to: '10'
+  kind: jumpR
+  polarity: main
+  label: '8'
+- from: '01'
+  to: '14'
+  kind: spine
+  polarity: main
+  label: '9'
+- from: '02'
+  to: '15'
+  kind: jumpR
+  polarity: main
+- from: '03'
+  to: '15'
+  kind: jumpR
+  polarity: main
+- from: '04'
+  to: '15'
+  kind: jumpR
+  polarity: main
+- from: '05'
+  to: '04'
+  kind: jumpR
+  polarity: main
+- from: '06'
+  to: '15'
+  kind: jumpR
+  polarity: main
+- from: '07'
+  to: '15'
+  kind: jumpR
+  polarity: main
+- from: 08
+  to: '04'
+  kind: spine
+  polarity: main
+- from: 09
+  to: '15'
+  kind: jumpR
+  polarity: main
+- from: '10'
+  to: '15'
+  kind: jumpR
+  polarity: main
+- from: '11'
+  to: '15'
+  kind: jumpR
+  polarity: main
+- from: '12'
+  to: '15'
+  kind: jumpR
+  polarity: main
+- from: '13'
+  to: '15'
+  kind: spine
+  polarity: main
+- from: '14'
+  to: '11'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '14'
+  to: '12'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '14'
+  to: '13'
+  kind: jumpR
+  polarity: main
+  label: '3'

@@ -113,6 +113,7 @@ description: 用户要把流程、SOP、审批链路、合同或白板整理成�
 ### 读材料（01–06）
 
 ```bash
+python scripts/env_probe.py                               # 01 开工第一件：我在哪、有哪几只手（见下）
 python scripts/clarify.py "<成果根>/<名称>/flowtable.md"   # 02：已有流程表时读回现状（只读、不写文件）
 python scripts/init.py <流程名> -d <成果根>                # 01a：建 <成果根>/<流程名>/ 并放入两份模板
 python scripts/probe.py <材料根> --json > <成果根>/materials.json
@@ -120,6 +121,12 @@ python scripts/recon.py build --materials <成果根>/materials.json -o <成果�
 python scripts/parse.py --materials <成果根>/materials.json -o <成果根>/elements.json --notes <成果根>/notes.json --ledger <成果根>/evidence.json --task <任务名>
 python scripts/cells.py fill <成果根>/recon.md <答案>.json      # AI 填那四列
 ```
+
+**开工先跑 `env_probe`——它回答"我站在哪、有哪几只手"**：同一份技能在**飞书托管**（云函数 / 应用引擎）
+与**办公电脑本地**两种环境里跑，**能力不同**（托管能把产物发回群，本地只能落文件），而 SKILL 其余部分
+**都不回答这个问题**——`plugin_enabled` 说的是"**用户开没开**"（意图），不是"**环境支不支持**"（事实）；
+`serve.py` 的 `ping` 走网关，本地根本不会调它。**不区分环境的后果是 LLM 说假话**：在本地声称
+"已发送到您的飞书群"，而它没有那只手。它**恒退 0**（"本地"是有效结论，不是失败），输出一句话可直接照念。
 
 **图片 / 扫描件（T3）走视觉路**——文本链**不认领**它（`evidence.json` 里会记成 `skipped` + "T3 需视觉取证"，并指回这一节）：
 
@@ -185,6 +192,16 @@ python scripts/plan.py check <成果根>/plan.md --intake <成果根>/intake.md 
 
 ### 落表（11）
 
+> **动手前先读 `references/material-to-nodes.md`。** 它管**「该不该有节点」**，`flowtable-spec.md` 管
+> **「那个节点怎么写」**——**两问先后有别，跳过前者不会报错**。
+>
+> **跳过它的代价是实测过的**（2026-09-24，一份真实的《合作框架协议》）：落出 **14 节点 / 19 边**，
+> H1–H8 全绿、八项几何全过、图也画出来了 —— 但用那把尺子重审，**5 个节点该砍**（协议生效是"状态"不是动作；
+> 违约赔偿、不可抗力通知属该文 §3「**答不出位置**」的义务/罚则条款）。**正确节点数是 9，内容一条没丢**
+> （全进了相邻节点的描述）。
+>
+> **这类错误没有任何机器拦得住** —— 它过的正是所有门禁。**能拦它的只有那把尺子，而它得你去读。**
+
 `init.py` 已经把 **`templates/flowtable-skeleton.md`（空骨架）** 与 `checklist-template.md` 拷进来了：照着骨架填 `<成果根>/<名称>/flowtable.md`。列含义见 `references/flowtable-spec.md`；**格式基准是 `examples/workflow/`**（30 节点那张自举表），拿不准怎么写时对照它——`templates/flowtable-template.md` 是它的逐字副本，**别拿它当自己的表**（里面是示例自己的内容）。
 
 - **判断节点**：每个可能结果都要有一条出口，且每条出口都带标签（≤4 字）。**要"选一条走"只能用判断**；
@@ -228,7 +245,10 @@ python scripts/clarify.py "<成果根>/<名称>/flowtable.md"          # frontie
 python scripts/clarify.py "<成果根>/<名称>/flowtable.md" --json   # 机器可读，供组提问
 ```
 
-按 `templates/checklist-template.md` 自查，产出 `<成果根>/<名称>/checklist.md`。标注写进「节点描述」，两类：
+按 `templates/checklist-template.md` 自查，产出 `<成果根>/<名称>/checklist.md`。
+**模板里那两张表必须逐条填**（`material-to-nodes.md` §7 的四问 + **分支完整性**）——它们是**唯一**能拦住
+「材料里有的步骤没进表」与「判断节点漏了一条走向」的地方，**没有任何机器能替它**（机器不知道材料里
+本该有几条路）。标注写进「节点描述」，两类：
 
 | 标记 | 含义 | 渲染 |
 |---|---|---|

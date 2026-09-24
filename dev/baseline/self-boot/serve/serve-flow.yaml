@@ -1,0 +1,275 @@
+meta:
+  title: serve.py 函数流程表
+  subjects:
+    脚本:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  channel_step: 40
+  width: 680
+  origin_x: -60
+nodes:
+- id: '01'
+  name: 开始
+  lines:
+  - 开始
+  type: start
+  subject: 脚本
+  executor: selfboot
+  row: 0
+  col: 0
+  stage: 入口
+  route: 1→11｜2→12｜3→13
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→main 2→_http.health 3→_http.invoke
+- id: '02'
+  name: _jsonable
+  lines:
+  - _jsonable
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 10
+  col: 0
+  stage: 模块级
+  route: →03
+  desc: ★ 把 Path / 嵌套容器转成可 JSON 序列化的普通值。 · L38 · 函数
+- id: '03'
+  name: 递归边界？
+  lines:
+  - 递归边界？
+  type: decision
+  subject: 脚本
+  executor: selfboot
+  row: 11
+  col: 0
+  stage: 拆环
+  route: 是→14｜否→02
+  desc: 结构性判断（拆环）：_jsonable 直接递归自己。是 → 收尾（结束）；否 → 走下一跳（_jsonable）。
+- id: '04'
+  name: load_registry
+  lines:
+  - load_registry
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 4
+  col: 0
+  stage: 模块级
+  route: →14
+  desc: ★ 加载插件：--plugin 指定时只加载并强制启用这些插件；否则按配置/环境（默认全关）。 · L49 · 函数 · ⇢ 依赖 plugin.discover
+- id: '05'
+  name: _act_source
+  lines:
+  - _act_source
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 8
+  col: 0
+  stage: 模块级
+  route: →02
+  desc: L59 · 函数
+- id: '06'
+  name: _act_publish
+  lines:
+  - _act_publish
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 9
+  col: 0
+  stage: 模块级
+  route: →02
+  desc: L68 · 函数
+- id: '07'
+  name: _act_build
+  lines:
+  - _act_build
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 12
+  col: 0
+  stage: 模块级
+  route: →14
+  desc: L77 · 函数
+- id: 08
+  name: run_request
+  lines:
+  - run_request
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 7
+  col: 0
+  stage: 模块级
+  route: 1→05｜2→06｜3→07
+  desc: L97 · 函数 · 分支：1→_act_source 2→_act_publish 3→_act_build
+- id: 09
+  name: _single
+  lines:
+  - _single
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: 模块级
+  route: 1→04｜2→08
+  desc: L111 · 函数 · 分支：1→load_registry 2→run_request
+- id: '10'
+  name: _http
+  lines:
+  - _http
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: 模块级
+  route: →04
+  desc: L125 · 函数
+- id: '11'
+  name: main
+  lines:
+  - main
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 1
+  col: 0
+  stage: 模块级
+  route: 1→09｜2→10
+  desc: L158 · 函数 · 分支：1→_single 2→_http
+- id: '12'
+  name: _http.health
+  lines:
+  - _http.health
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 5
+  col: 0
+  stage: _http
+  route: →14
+  desc: L139 · 嵌套函数
+- id: '13'
+  name: _http.invoke
+  lines:
+  - _http.invoke
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 6
+  col: 0
+  stage: _http
+  route: →08
+  desc: L143 · 嵌套函数
+- id: '14'
+  name: 结束
+  lines:
+  - 结束
+  type: end
+  subject: 脚本
+  executor: selfboot
+  row: 13
+  col: 0
+  stage: 出口
+  route: —
+  desc: 流程终点（结构性节点，不是函数）
+edges:
+- from: '01'
+  to: '11'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '01'
+  to: '12'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '01'
+  to: '13'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: '02'
+  to: '03'
+  kind: spine
+  polarity: main
+- from: '03'
+  to: '14'
+  kind: jumpR
+  polarity: main
+  label: 是
+- from: '03'
+  to: '02'
+  kind: loop
+  polarity: negative
+  label: 否
+- from: '04'
+  to: '14'
+  kind: jumpR
+  polarity: main
+- from: '05'
+  to: '02'
+  kind: jumpR
+  polarity: main
+- from: '06'
+  to: '02'
+  kind: spine
+  polarity: main
+- from: '07'
+  to: '14'
+  kind: spine
+  polarity: main
+- from: 08
+  to: '05'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: 08
+  to: '06'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: 08
+  to: '07'
+  kind: jumpR
+  polarity: main
+  label: '3'
+- from: 09
+  to: '04'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: 09
+  to: 08
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '10'
+  to: '04'
+  kind: spine
+  polarity: main
+- from: '11'
+  to: 09
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '11'
+  to: '10'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '12'
+  to: '14'
+  kind: jumpR
+  polarity: main
+- from: '13'
+  to: 08
+  kind: spine
+  polarity: main

@@ -59,6 +59,8 @@ PUBLIC = {
     'thresholds',         # 数值字典的读取口径（默认 + 分段覆盖）：被 6 个模块复用；出度 0（只依赖 semantics）
     'deps',               # 可选依赖的读入与安装提示：被 6 个模块复用；出度 0
     'console',            # **公共层唯一的留痕出口**（降级 / 兜底 / 缺段的告警）：出度 0（只依赖 sys）
+    'config',             # 技能/插件统一配置加载（默认关闭插件）：只依赖 console
+    'plugin',             # 通用插件框架（注册表/发现/自检）：依赖 config、console
 }
 
 # 模块层：流水线上的工位，各有自己的产物；只许依赖公共层。
@@ -70,6 +72,7 @@ MODULE = {
     'render_html',    # → <流程名>-flow.html
     'render_drawio',  # → <流程名>-flow.drawio
     'render_svg',     # → <流程名>-flow.svg（W7b 起；可编辑中间态）
+    'render_mermaid', # → <流程名>-flow.mmd（无坐标、下游自动布局的文本产物）
     'validate',       # → 几何报告（stdout / --dump）
     'shot',           # → *.shot.png
     'probe',          # → materials[] 骨架（材料探测分档，PIPELINE-SPEC §1.2）
@@ -90,7 +93,7 @@ MODULE = {
 # 编排层：驱动整条流水线，允许依赖上面两层。
 # `parse` = 解析分派器：按固定顺序跑各适配器（子进程 + 产物，判据不在它那里，见 PIPELINE-SPEC §1.4）。
 # **没有 `build_all`**：并发批量出图起草过一版最小形态，2026-09-19 裁决撤销（PIPELINE-SPEC §7 / D-126）。
-ORCH = {'build', 'sync', 'parse'}
+ORCH = {'build', 'sync', 'parse', 'serve', 'env_probe'}   # serve=技能调用网关（无 LLM、不连飞书长连接），被宿主智能体调用；env_probe=环境自述（告诉操作者站在托管还是本地）
 
 
 def short(p):

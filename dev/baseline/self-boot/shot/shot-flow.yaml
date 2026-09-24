@@ -10,7 +10,7 @@ layout:
   - 400
   channel_step: 40
   width: 680
-  origin_x: -120
+  origin_x: -60
 nodes:
 - id: '01'
   name: 开始
@@ -22,93 +22,57 @@ nodes:
   row: 0
   col: 0
   stage: 入口
-  route: 1→09
+  route: 1→06
   desc: 流程起点（结构性节点，不是函数） · 入口：1→main
 - id: '02'
-  name: find_browser
-  lines:
-  - find_browser
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 2
-  col: 0
-  stage: 模块级
-  route: →10
-  desc: ★ 显式路径也要**验存在**（G55）：原样返回的话，`subprocess.run` 会抛 · L27 · 函数
-- id: '03'
   name: build_crop_page
   lines:
   - build_crop_page
   type: task
   subject: 脚本
   executor: selfboot
-  row: 3
+  row: 2
   col: 0
   stage: 模块级
-  route: →10
-  desc: ★ 把 flow.html 的内联 SVG 裁到 [y0,y1) 区间，保留原 <style>（否则 class 失效全变… · L39 · 函数
-- id: '04'
+  route: →07
+  desc: ★ 把 flow.html 的内联 SVG 裁到 [y0,y1) 区间，保留原 <style>（否则 class 失效全变… · L27 · 函数
+- id: '03'
   name: _parse_args
   lines:
   - _parse_args
   type: task
   subject: 脚本
   executor: selfboot
-  row: 4
+  row: 3
   col: 0
   stage: 模块级
-  route: →10
-  desc: ★ 解析命令行参数。 · L63 · 函数
-- id: '05'
+  route: →07
+  desc: ★ 解析命令行参数（历史参数全保留，后端开关为新增可选项）。 · L51 · 函数
+- id: '04'
   name: _output_path
   lines:
   - _output_path
   type: task
   subject: 脚本
   executor: selfboot
-  row: 5
+  row: 4
   col: 0
   stage: 模块级
-  route: →10
-  desc: ★ 输出 PNG 路径（默认同目录同名 .shot.png），父目录不存在则先建。 · L74 · 函数
-- id: '06'
+  route: →07
+  desc: ★ 输出 PNG 路径（默认同目录同名 .shot.png），父目录不存在则先建。 · L68 · 函数
+- id: '05'
   name: _parse_crop
   lines:
   - _parse_crop
   type: task
   subject: 脚本
   executor: selfboot
-  row: 6
-  col: 0
-  stage: 模块级
-  route: →10
-  desc: ★ --crop 形如 0:1200 → (y0, y1)；非法时第三项为错误文案。 · L82 · 函数
-- id: '07'
-  name: _unlink_quiet
-  lines:
-  - _unlink_quiet
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 8
-  col: 0
-  stage: 模块级
-  route: →10
-  desc: ★ 删文件；不存在或删不掉都静默忽略。 · L106 · 函数
-- id: 08
-  name: _capture_screenshot
-  lines:
-  - _capture_screenshot
-  type: task
-  subject: 脚本
-  executor: selfboot
-  row: 7
+  row: 5
   col: 0
   stage: 模块级
   route: →07
-  desc: ★ 起无头浏览器对裁剪页截图并轮询等文件落盘；成功返回 True。 · L114 · 函数
-- id: 09
+  desc: ★ --crop 形如 0:1200 → (y0, y1)；非法时第三项为错误文案。 · L76 · 函数
+- id: '06'
   name: main
   lines:
   - main
@@ -118,87 +82,59 @@ nodes:
   row: 1
   col: 0
   stage: 模块级
-  route: 1→02｜2→03｜3→04｜4→05｜5→06｜6→07｜7→08
-  desc: L134 · 函数 · 分支：1→find_browser 2→build_crop_page 3→_parse_args 4→_output_path
-    5→_parse_crop 6→_unlink_quiet 7→_capture_screenshot
-- id: '10'
+  route: 1→02｜2→03｜3→04｜4→05
+  desc: L97 · 函数 · 分支：1→build_crop_page 2→_parse_args 3→_output_path 4→_parse_crop
+- id: '07'
   name: 结束
   lines:
   - 结束
   type: end
   subject: 脚本
   executor: selfboot
-  row: 9
+  row: 6
   col: 0
   stage: 出口
   route: —
   desc: 流程终点（结构性节点，不是函数）
 edges:
 - from: '01'
-  to: 09
+  to: '06'
   kind: spine
   polarity: main
   label: '1'
 - from: '02'
-  to: '10'
+  to: '07'
   kind: jumpR
   polarity: main
 - from: '03'
-  to: '10'
+  to: '07'
   kind: jumpR
   polarity: main
 - from: '04'
-  to: '10'
+  to: '07'
   kind: jumpR
   polarity: main
 - from: '05'
-  to: '10'
-  kind: jumpR
-  polarity: main
-- from: '06'
-  to: '10'
-  kind: jumpR
-  polarity: main
-- from: '07'
-  to: '10'
-  kind: spine
-  polarity: main
-- from: 08
   to: '07'
   kind: spine
   polarity: main
-- from: 09
+- from: '06'
   to: '02'
   kind: spine
   polarity: main
   label: '1'
-- from: 09
+- from: '06'
   to: '03'
   kind: jumpR
   polarity: main
   label: '2'
-- from: 09
+- from: '06'
   to: '04'
   kind: jumpR
   polarity: main
   label: '3'
-- from: 09
+- from: '06'
   to: '05'
   kind: jumpR
   polarity: main
   label: '4'
-- from: 09
-  to: '06'
-  kind: jumpR
-  polarity: main
-  label: '5'
-- from: 09
-  to: '07'
-  kind: jumpR
-  polarity: main
-  label: '6'
-- from: 09
-  to: 08
-  kind: jumpR
-  polarity: main
-  label: '7'

@@ -35,7 +35,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: ★ 读 flow.yaml 里的节点 id 集合；读不动（文件坏/不存在/缺 id 键）返回空集。 · L42 · 函数
+  desc: ★ 读 flow.yaml 里的节点 id 集合；读不动（文件坏/不存在/缺 id 键）返回空集。 · L47 · 函数
 - id: '03'
   name: _rollback
   lines:
@@ -47,7 +47,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: ★ 审核未过 → 把刚写下的产物还原成审核前的样子（原本不存在的就删掉）。 · L53 · 函数
+  desc: ★ 审核未过 → 把刚写下的产物还原成审核前的样子（原本不存在的就删掉）。 · L58 · 函数
 - id: '04'
   name: _rollback_manifest
   lines:
@@ -59,7 +59,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: ★ 渲染契约跟产物**同进同退**：失败时还原成上一版（原本不存在的就删掉）。见 D-81。 · L66 · 函数 · ⇢ 依赖 manifest.manifest_path_for
+  desc: ★ 渲染契约跟产物**同进同退**：失败时还原成上一版（原本不存在的就删掉）。见 D-81。 · L71 · 函数 · ⇢ 依赖 manifest.manifest_path_for
 - id: '05'
   name: _prepare_child
   lines:
@@ -71,7 +71,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: ★ 给一张后代子表补上 DSL（结构校验 → 转 DSL）。见 D-52。 · L81 · 函数 · ⇢ 依赖 artifact.artifact_name、artifact.artifact_stem、table_to_dsl.main
+  desc: ★ 给一张后代子表补上 DSL（结构校验 → 转 DSL）。见 D-52。 · L86 · 函数 · ⇢ 依赖 artifact.artifact_name、artifact.artifact_stem、table_to_dsl.main
 - id: '06'
   name: _gate_child_view
   lines:
@@ -83,7 +83,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: ★ 对一张**会内嵌的子表**跑几何门禁；只警告不阻断（见 D-52）。 · L108 · 函数 · ⇢ 依赖 engine.load、validate.check
+  desc: ★ 对一张**会内嵌的子表**跑几何门禁；只警告不阻断（见 D-52）。 · L113 · 函数 · ⇢ 依赖 engine.load、validate.check
 - id: '07'
   name: _find_parent
   lines:
@@ -95,7 +95,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: ★ 这张流程表是不是别人的下钻子图？是则返回 (父图相对链接, 父节点名)，不是返回 None。 · L131 · 函数 · ⇢ 依赖 artifact.artifact_name、artifact.artifact_stem、flowtable.find_parent_table
+  desc: ★ 这张流程表是不是别人的下钻子图？是则返回 (父图相对链接, 父节点名)，不是返回 None。 · L136 · 函数 · ⇢ 依赖 artifact.artifact_name、artifact.artifact_stem、flowtable.find_parent_table
 - id: 08
   name: _parse_args
   lines:
@@ -107,7 +107,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: ★ 解析 build 的命令行参数。 · L148 · 函数
+  desc: ★ 解析 build 的命令行参数。 · L153 · 函数
 - id: 09
   name: _check_structure
   lines:
@@ -119,7 +119,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: ★ 跑结构校验；未过则报错并返回 1。 · L164 · 函数 · ⇢ 依赖 table_to_dsl.main
+  desc: ★ 跑结构校验；未过则报错并返回 1。 · L169 · 函数 · ⇢ 依赖 table_to_dsl.main
 - id: '10'
   name: _gen_dsl
   lines:
@@ -131,7 +131,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →02
-  desc: ★ 生成 DSL（可复用已有 flow.yaml 几何）；复用时提示新增节点，失败返回 1。 · L174 · 函数 · ⇢ 依赖 table_to_dsl.main
+  desc: ★ 生成 DSL（可复用已有 flow.yaml 几何）；复用时提示新增节点，失败返回 1。 · L179 · 函数 · ⇢ 依赖 table_to_dsl.main
 - id: '11'
   name: _validate_geometry
   lines:
@@ -143,7 +143,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: ★ 跑碰撞检测；未过则报错并返回 1。 · L201 · 函数 · ⇢ 依赖 validate.main
+  desc: ★ 跑碰撞检测；未过则报错并返回 1。 · L206 · 函数 · ⇢ 依赖 validate.main
 - id: '12'
   name: _prepare_views
   lines:
@@ -155,7 +155,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→05｜2→06
-  desc: ★ 备齐后代子表的 DSL（BFS 至多 5 轮），报告内嵌/缺失并返回视图计划。 · L212 · 函数 · 分支：1→_prepare_child
+  desc: ★ 备齐后代子表的 DSL（BFS 至多 5 轮），报告内嵌/缺失并返回视图计划。 · L217 · 函数 · 分支：1→_prepare_child
     2→_gate_child_view · ⇢ 依赖 render_html.collect_views
 - id: '13'
   name: _render_products
@@ -168,7 +168,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→03｜2→23｜3→25
-  desc: ★ 按**注册表**渲染全部产物；任一失败即还原旧产物并返回 None。 · L273 · 函数 · 分支：1→_rollback 2→_renderer
+  desc: ★ 按**注册表**渲染全部产物；任一失败即还原旧产物并返回 None。 · L278 · 函数 · 分支：1→_rollback 2→_renderer
     3→_render_ctx
 - id: '14'
   name: _audit_contract
@@ -181,7 +181,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→03｜2→22
-  desc: ★ 拿自检产出的契约反查**注册表里的每一份产物**；不过则还原产物并返回 1。 · L310 · 函数 · 分支：1→_rollback 2→_bind
+  desc: ★ 拿自检产出的契约反查**注册表里的每一份产物**；不过则还原产物并返回 1。 · L315 · 函数 · 分支：1→_rollback 2→_bind
     · ⇢ 依赖 manifest.check、manifest.manifest_path_for、manifest.summary
 - id: '15'
   name: _lane_source
@@ -194,7 +194,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: ★ 底稿是不是泳道布局。 · L349 · 函数 · ⇢ 依赖 engine.load
+  desc: ★ 底稿是不是泳道布局。 · L354 · 函数 · ⇢ 依赖 engine.load
 - id: '16'
   name: _audit_geometry
   lines:
@@ -206,7 +206,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→03｜2→22
-  desc: ★ 反解**注册表里每一份产物**的真实坐标再跑几何门禁；不过则还原产物并返回 1。 · L359 · 函数 · 分支：1→_rollback 2→_bind
+  desc: ★ 反解**注册表里每一份产物**的真实坐标再跑几何门禁；不过则还原产物并返回 1。 · L364 · 函数 · 分支：1→_rollback 2→_bind
     · ⇢ 依赖 manifest.artifact_geometry、validate.check_artifact
 - id: '17'
   name: _write_layer_index
@@ -219,7 +219,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: ★ 从各表 ▣ 声明派生层级索引，写 <stem>-index.md 并报告表数与层级。 · L384 · 函数 · ⇢ 依赖 layer_index.build_layer_index、layer_index.format_index_md
+  desc: ★ 从各表 ▣ 声明派生层级索引，写 <stem>-index.md 并报告表数与层级。 · L393 · 函数 · ⇢ 依赖 layer_index.build_layer_index、layer_index.format_index_md
 - id: '18'
   name: _product_note
   lines:
@@ -231,7 +231,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: ★ 每类产物在交付清单里那句"它是干嘛的"（与 `_render_ctx` 同理：每类一处，集中放）。 · L400 · 函数
+  desc: ★ 每类产物在交付清单里那句"它是干嘛的"（与 `_render_ctx` 同理：每类一处，集中放）。 · L409 · 函数
 - id: '19'
   name: _report_receipt
   lines:
@@ -243,7 +243,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →18
-  desc: ★ 留存被覆盖旧版为 .bak，并打印交付清单与 sha256 回执。 · L412 · 函数
+  desc: ★ 留存被覆盖旧版为 .bak，并打印交付清单与 sha256 回执。 · L423 · 函数
 - id: '20'
   name: _report_pending
   lines:
@@ -255,7 +255,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: ★ 汇总图上 AI 推断处（虚线标出），提醒用户重点核对。 · L440 · 函数 · ⇢ 依赖 semantics.is_pending、semantics.pending_kind
+  desc: ★ 汇总图上 AI 推断处（虚线标出），提醒用户重点核对。 · L451 · 函数 · ⇢ 依赖 semantics.is_pending、semantics.pending_kind
 - id: '21'
   name: build_registry
   lines:
@@ -267,7 +267,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: ★ 按**可用性**装注册表，返回 `(RENDERERS, 缺的可选件, 缺的必需件)`。 · L498 · 函数
+  desc: ★ 按**可用性**装注册表，返回 `(RENDERERS, 缺的可选件, 缺的必需件)`。 · L511 · 函数
 - id: '22'
   name: _bind
   lines:
@@ -279,7 +279,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: ★ 按名字现查 `globals()` 取函数——渲染器与两个**反解器**都走这里。 · L521 · 函数
+  desc: ★ 按名字现查 `globals()` 取函数——渲染器与两个**反解器**都走这里。 · L534 · 函数
 - id: '23'
   name: _renderer
   lines:
@@ -291,7 +291,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →22
-  desc: ★ 按注册表取渲染器实例。**调用时现查 `globals()`**（理由见上面 RENDERERS 的注释）。 · L534 · 函数
+  desc: ★ 按注册表取渲染器实例。**调用时现查 `globals()`**（理由见上面 RENDERERS 的注释）。 · L547 · 函数
 - id: '24'
   name: _product_paths
   lines:
@@ -303,7 +303,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →27
-  desc: ★ 产物路径由注册表派生（W5）：`<流程名>-flow<ext>`。 · L539 · 函数
+  desc: ★ 产物路径由注册表派生（W5）：`<流程名>-flow<ext>`。 · L552 · 函数
 - id: '25'
   name: _render_ctx
   lines:
@@ -315,7 +315,7 @@ nodes:
   col: 0
   stage: 模块级
   route: →07
-  desc: ★ 每类渲染器自己的私有选项（经 `ctx` 传，见 ARCHITECTURE.md 第九节）。 · L548 · 函数 · ⇢ 依赖 render_drawio.discover_pages
+  desc: ★ 每类渲染器自己的私有选项（经 `ctx` 传，见 ARCHITECTURE.md 第九节）。 · L561 · 函数 · ⇢ 依赖 render_drawio.discover_pages
 - id: '26'
   name: main
   lines:
@@ -327,7 +327,7 @@ nodes:
   col: 0
   stage: 模块级
   route: 1→03｜2→04｜3→08｜4→09｜5→10｜6→11｜7→12｜8→13｜9→14｜10→15｜11→16｜12→17｜13→19｜14→20｜15→24
-  desc: L562 · 函数 · 分支：1→_rollback 2→_rollback_manifest 3→_parse_args 4→_check_structure
+  desc: L575 · 函数 · 分支：1→_rollback 2→_rollback_manifest 3→_parse_args 4→_check_structure
     5→_gen_dsl 6→_validate_geometry 7→_prepare_views 8→_render_products 9→_audit_contract
     10→_lane_source 11→_audit_geometry 12→_write_layer_index 13→_report_receipt 14→_report_pending
     15→_product_paths · ⇢ 依赖 artifact.artifact_name、artifact.artifact_stem、manifest.manifest_path_for

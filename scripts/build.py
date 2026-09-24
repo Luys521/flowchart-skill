@@ -37,6 +37,11 @@ try:
     from render_svg import render as render_svg
 except ImportError:
     render_svg = None
+# Mermaid：无坐标文本产物，模块在就多产出一份 .mmd；缺了同样降级（不影响 html 主干）。
+try:
+    from render_mermaid import render as render_mermaid, read_mermaid
+except ImportError:
+    render_mermaid = read_mermaid = None
 
 
 def _ids(yaml_path):
@@ -368,7 +373,11 @@ def _audit_geometry(products, prev, expect_lanes=None):
     """
     print('--- 产物几何自检（反解各产物的真实坐标）---')
     for kind, p in products.items():
-        reader = _bind(RENDERERS[kind]['geom'])
+        meta = RENDERERS[kind]
+        if 'geom' not in meta:
+            # 无坐标产物（Mermaid，由下游自动布局）不做几何自检，只在契约反查里比节点/边
+            continue
+        reader = _bind(meta['geom'])
         errs = check_artifact(artifact_geometry(p, reader=reader), expect_lanes=expect_lanes)
         if errs:
             print(f'✗ {p.name} 几何自检未过（{len(errs)} 项）：')
@@ -406,6 +415,8 @@ def _product_note(kind, embedded):
         return ' （微调几何：每层各一份，靠多页承载层级）'
     if kind == 'svg':
         return ' （朴素可编辑中间态：浏览器/Inkscape 直接开，不依赖专用软件）'
+    if kind == 'mermaid':
+        return ' （平台无关文本：丢进任意 Mermaid 工具 / 飞书画板即可编辑，自动布局）'
     return ''
 
 
@@ -492,6 +503,8 @@ _RENDERER_SPECS = (
      'geom': 'geometry_from_drawio', 'label': 'flow.drawio', 'required': False},
     {'kind': 'svg', 'fn': 'render_svg', 'ext': '.svg', 'ids': 'read_svg',
      'geom': 'geometry_from_svg', 'label': 'flow.svg', 'required': False},
+    {'kind': 'mermaid', 'fn': 'render_mermaid', 'ext': '.mmd', 'ids': 'read_mermaid',
+     'label': 'flow.mmd', 'required': False},
 )
 
 

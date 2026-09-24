@@ -1,0 +1,54 @@
+# config.example.yaml — 飞书插件配置模板
+# ----------------------------------------------------------------
+# 用法：复制本文件为同目录 config.yaml，按需修改；或直接用环境变量而不建 config.yaml。
+#   cmd /c "copy config.example.yaml config.yaml"
+# 注意：config.yaml 与 .token-cache.json 都不应提交（已在 .gitignore 约定中）。
+# ----------------------------------------------------------------
+
+# 插件总开关。出厂默认关闭；可改为 true，或用环境变量 FLOWCHART_PLUGIN_FEISHU=1 启用。
+enabled: false
+
+# 应用凭证（开发者后台 → 凭证与基础信息）。
+app_id: "cli_xxxxxxxxxxxxxxxx"
+# app_secret 属于敏感信息，**建议只走环境变量 FEISHU_APP_SECRET**，不要写进文件：
+#   cmd /c "set FEISHU_APP_SECRET=xxxx&& python ..."
+# app_secret: ""
+
+# 端点（中国版默认值，海外版需改）
+domain: "https://open.feishu.cn"
+# accounts_domain: "https://accounts.feishu.cn"
+
+# 租户访问域名（用于拼云文档链接；开放平台域名 open.feishu.cn 不能直接打开文档）。
+# 在飞书工作台/浏览器地址栏可见，形如 xxxxx.feishu.cn；也可用环境变量 FEISHU_TENANT_DOMAIN。
+tenant_domain: "wcnpy9i9n1g9.feishu.cn"
+
+# 用户 OAuth：本地回调监听地址。
+# 必须把下面 redirect_uri 对应的完整地址加入开发者后台「安全设置 → 重定向 URL」白名单：
+#   http://127.0.0.1:8765/callback
+redirect_host: "127.0.0.1"
+redirect_port: 8765
+
+# 用户授权 scope（空格分隔）：
+#   offline_access        拿 refresh_token，用于自动续期（需在权限管理开通 offline_access）
+#   docs:document:export  云文档导出（用户身份，已开通）
+scopes: "offline_access docs:document:export"
+
+# token 缓存位置（缺省 = 本目录 .token-cache.json；一般无需修改）
+# token_cache: ""
+
+# ----------------------------------------------------------------
+# 交付偏好（全局一份，由使用者按需编辑；CLI 参数 / 环境变量可临时覆盖）
+# ----------------------------------------------------------------
+delivery:
+  # 首选交付：html = 单文件 HTML 传云盘、发 /file/ 链接（默认，在线渲染）；
+  #           doc  = 直接发云文档（含可协同编辑画板）
+  primary: html
+  # HTML 是否上传云盘在线渲染；false 则作为 IM 文件发送（群里收文件）
+  html_to_drive: true
+  # 发 HTML 后是否主动追问“需要我提供可编辑的画板吗？”
+  offer_board: true
+  # 画板是否仅在你明确要求时才创建 / 发送（默认 true：不主动给）
+  board_on_request: true
+  # 多维表格（流程表 12 列在线编辑、可反向喂回）：默认关闭的可选开关
+  enable_bitable: false
+

@@ -1,0 +1,136 @@
+meta:
+  title: config.py 函数流程表
+  subjects:
+    脚本:
+      fill: '#dae8fc'
+      stroke: '#6c8ebf'
+  layout: flow
+layout:
+  col_x:
+  - 400
+  channel_step: 40
+  width: 680
+  origin_x: -80
+nodes:
+- id: '01'
+  name: 开始
+  lines:
+  - 开始
+  type: start
+  subject: 脚本
+  executor: selfboot
+  row: 0
+  col: 0
+  stage: 入口
+  route: 1→05｜2→06
+  desc: 流程起点（结构性节点，不是函数） · 入口：1→plugin_enabled 2→env_or_config
+- id: '02'
+  name: _read_yaml
+  lines:
+  - _read_yaml
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 5
+  col: 0
+  stage: 模块级
+  route: →07
+  desc: ★ 读一个 yaml → dict；文件不存在返回 {}；读不动留痕并返回 {}。 · L30 · 函数 · ⇢ 依赖 console.warn
+- id: '03'
+  name: global_config
+  lines:
+  - global_config
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 4
+  col: 0
+  stage: 模块级
+  route: →02
+  desc: '★ 技能根全局配置（含 `integrations: {name: {enabled: ...}}` 开关）。 · L46 · 函数'
+- id: '04'
+  name: plugin_config
+  lines:
+  - plugin_config
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 3
+  col: 0
+  stage: 模块级
+  route: 1→02｜2→03
+  desc: ★ 插件私有配置：`integrations/<name>/config.yaml`，再叠全局里该插件的段与环境变量。 · L51 · 函数 · 分支：1→_read_yaml
+    2→global_config
+- id: '05'
+  name: plugin_enabled
+  lines:
+  - plugin_enabled
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 1
+  col: 0
+  stage: 模块级
+  route: →04
+  desc: ★ 该插件是否启用。**默认关闭**（缺省即 False，保证零凭证可跑、不误连平台）。 · L64 · 函数
+- id: '06'
+  name: env_or_config
+  lines:
+  - env_or_config
+  type: task
+  subject: 脚本
+  executor: selfboot
+  row: 2
+  col: 0
+  stage: 模块级
+  route: →04
+  desc: ★ 插件取一个值：先环境变量（keys 依次试），再配置 dict，最后默认。 · L86 · 函数
+- id: '07'
+  name: 结束
+  lines:
+  - 结束
+  type: end
+  subject: 脚本
+  executor: selfboot
+  row: 6
+  col: 0
+  stage: 出口
+  route: —
+  desc: 流程终点（结构性节点，不是函数）
+edges:
+- from: '01'
+  to: '05'
+  kind: spine
+  polarity: main
+  label: '1'
+- from: '01'
+  to: '06'
+  kind: jumpR
+  polarity: main
+  label: '2'
+- from: '02'
+  to: '07'
+  kind: spine
+  polarity: main
+- from: '03'
+  to: '02'
+  kind: spine
+  polarity: main
+- from: '04'
+  to: '02'
+  kind: jumpR
+  polarity: main
+  label: '1'
+- from: '04'
+  to: '03'
+  kind: spine
+  polarity: main
+  label: '2'
+- from: '05'
+  to: '04'
+  kind: jumpR
+  polarity: main
+- from: '06'
+  to: '04'
+  kind: spine
+  polarity: main

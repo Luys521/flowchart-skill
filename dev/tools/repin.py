@@ -46,7 +46,8 @@ ROOT = Path(__file__).resolve().parents[2]          # dev/tools/ → 仓库根�
 PY = sys.executable
 SKIP = ('.bak',)                                    # 点开头的备份不进基线（门⑥ 的整树口径也不含它们）
 #: 基线认的产物后缀（见 `_is_baseline_artifact`；名字来自 D-51 的 `<流程名>-flow.<ext>`）。
-PRODUCT_NAMES = ('-flow.yaml', '-flow.manifest.json', '-flow.html', '-flow.drawio', '-flow.svg')
+PRODUCT_NAMES = ('-flow.yaml', '-flow.manifest.json', '-flow.html', '-flow.drawio', '-flow.svg',
+                 '-flow.mmd')
 
 
 def _md5(p):

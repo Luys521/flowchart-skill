@@ -13,6 +13,10 @@ r"""hygiene.py — 「有什么是白写的」静态裁决器：没人用的 imp
      动态挂上，静态求值解不出接收者，`self.grid.Y()` 落进 `unresolved`。
   ③ **按名查表**：`build.RENDERERS` 用**字符串**指定反解器（`'ids': 'read_svg'`、
      `'geom': 'geometry_from_svg'`），函数确实被调到，但调用点在静态图里不可见。
+  ④ **插件调用**（2026-09-24）：`integrations/` 下的插件会调公共层的函数
+     （`feishu_client` 调 `config.env_or_config`），而**依赖图只扫 `scripts/`** ⇒ 调用边不进图。
+     处置**不是**把插件塞进图（那会让插件模块进覆盖率的表树），而是把**插件的名字表并进排除名单**
+     （`_plugin_called_names`）—— 与 ③ 同一个姿势：名字在别处出现过就整类排除，宁可漏报不误报。
 
 因此本工具**只判"方法之外的模块级函数"**，并把上述三类**整类排除**——宁可漏报，不可把
 `Grid.Y`、`read_svg` 这种真在用的东西报成死代码（实测：不加这条纪律，510 个函数里会误报 40 个）。
@@ -161,13 +165,38 @@ def _registry_names(scripts_dir):
     return names
 
 
-def find_dead_functions(graph, scripts_dir):
+def _plugin_called_names(extra_dirs):
+    """插件目录里**被读取过的名字**集合（`Name(Load)` / `Attribute` 根名）。
+
+    为什么必须收（2026-09-24）：`config.py` 的 `env_or_config()` 调用者是
+    `integrations/feishu/feishu_client.py` —— **插件不在依赖图里**（`fn_graph.py` 只扫 `scripts/`），
+    于是它看起来"没人调"。但**插件是合法调用者**：看不见是仪器的射程问题，不是代码的问题。
+
+    判据与 `_registry_names` 同一个姿势：**只要名字在别处出现过，就整类排除**——宁可漏报不误报。
+    （不作弊成"凡是在 scripts 之外的调用都不算"——那条会让真死代码藏进插件里。）
+    """
+    names = set()
+    for d in extra_dirs:
+        base = Path(d)
+        if not base.exists():
+            continue
+        for p in sorted(base.rglob('*.py')):
+            try:
+                names |= used_names(ast.parse(p.read_text(encoding='utf-8')))
+            except (OSError, SyntaxError):
+                continue
+    return names
+
+
+def find_dead_functions(graph, scripts_dir, extra_dirs=()):
     """模块级函数里"没人调"的（已按 docstring 的 ①②③ 整类排除）。
 
     返回 [(文件, qualname, 行号, 行数)]，按文件、行号排序。
+    `extra_dirs` 是**图外但合法**的调用者目录（插件），见 `_plugin_called_names`。
     """
     ind = call_indegree(graph)
-    lookup = _is_lookup_only(graph) | _registry_names(scripts_dir)
+    lookup = (_is_lookup_only(graph) | _registry_names(scripts_dir)
+              | _plugin_called_names(extra_dirs))
     out = []
     for f, v in (graph.get('files') or {}).items():
         p = ROOT / f
@@ -194,8 +223,8 @@ def _fmt_file(f):
     return f.replace('scripts/', '').replace('dev/tools/', 'dev/tools/')
 
 
-def report(graph, scripts_dir):
-    """打印报告；返回发现总数。"""
+def report(graph, scripts_dir, extra_dirs=()):
+    """打印报告；返回发现总数。`extra_dirs` 见 `_plugin_called_names`。"""
     unused, dead = [], []
     for p in sorted(Path(scripts_dir).glob('*.py')):
         try:
@@ -206,9 +235,10 @@ def report(graph, scripts_dir):
         rel = f'scripts/{p.name}'
         for lineno, name, raw in find_unused_imports(p, tree):
             unused.append((rel, lineno, name, raw))
-    dead = find_dead_functions(graph, scripts_dir)
+    dead = find_dead_functions(graph, scripts_dir, extra_dirs)
 
-    print('卫生检查（只看 scripts/*.py；判据与排除项见本文件 docstring）')
+    print('卫生检查（扫 scripts/*.py；`integrations/` 作为**图外合法调用者**纳入判定；'
+          '判据与排除项见本文件 docstring）')
     print(f'  依赖图：{_fmt_file(str(GRAPH.relative_to(ROOT)))}'
           f'  函数/方法 {sum(len(v.get("functions") or []) for v in graph.get("files", {}).values())} 个')
     print()
@@ -237,8 +267,14 @@ def main(argv=None):
         description='白写检查：没人引用的 import + 没人调的模块级函数',
         epilog='退出码：0 干净 / 1 有发现 / 2 仪器故障（依赖图缺失或读不动）')
     ap.add_argument('--graph', default=str(GRAPH), help=f'依赖图（默认 {GRAPH.name}）')
+    ap.add_argument('--plugins-dir', action='append', default=None,
+                    help='**图外但合法**的调用者目录（可重复；默认 integrations/）——'
+                         '插件会调公共层的函数，而依赖图只扫 scripts/，不补这一眼会误报死代码')
     ap.add_argument('--json', action='store_true', help='以 JSON 透出（供自动化消费）')
     a = ap.parse_args(argv)
+
+    extra = [Path(d) for d in (a.plugins_dir if a.plugins_dir is not None
+                               else [ROOT / 'integrations'])]
 
     try:
         graph = load_graph(a.graph)
@@ -257,12 +293,12 @@ def main(argv=None):
                 unused.append({'file': f'scripts/{p.name}', 'line': lineno,
                                'name': name, 'source': raw})
         dead = [{'file': f, 'fn': q, 'line': ln, 'span': s}
-                for f, q, ln, s in find_dead_functions(graph, SCRIPTS)]
+                for f, q, ln, s in find_dead_functions(graph, SCRIPTS, extra)]
         print(json.dumps({'unused_imports': unused, 'dead_functions': dead},
                          ensure_ascii=False, indent=1))
         return 0 if not (unused or dead) else 1
 
-    return 0 if report(graph, SCRIPTS) == 0 else 1
+    return 0 if report(graph, SCRIPTS, extra) == 0 else 1
 
 
 if __name__ == '__main__':

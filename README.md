@@ -73,8 +73,9 @@
 
 ```text
 SKILL.md              主入口：触发方式、标准处理流程、输出契约
-scripts/              渲染与校验脚本（48 模块 = 30 个带 CLI 的入口 + 18 个纯库）
+scripts/              渲染与校验脚本（53 模块 = 33 个带 CLI 的入口 + 20 个纯库）
   dictionary.yaml     布局/配色/文字的数值字典
+integrations/         可插拔平台插件（**默认关闭**）：feishu/ 飞书适配（取材料 / 发布 / 调用网关，见其 HOST_CONTRACT.md）
 references/           出图时按需读的规范（7 份）
 templates/            3 份模板（其中 2 份由 init.py 拷进 output/<名称>/：流程表骨架 + 自检清单；
                       另一份 flowtable-template.md 是**格式基准**，与 examples/workflow 逐字一致）
@@ -129,6 +130,7 @@ python dev/tools/accept.py      # 十二道门必须全过（含 API 面与审�
 
 只记"它在动"，不记细节（细节在 `dev/DECISIONS.md`）。
 
+- 2026-09-24　插拔改造：统一配置 / 插件框架 + 飞书插件（默认关闭）；新增 serve 调用网关与宿主交接契约
 - 2026-09-22　补齐 `⊞` 子表声明的两条校验；README 改版并加截图
 - 2026-09-21　盲审清场收口；门禁补上 API 面
 - 2026-09-19　审美三条（主轴 / 臂 / 就近）接进验收；撤掉"并行出图"

@@ -2,15 +2,15 @@
  "title": "self-boot — 模块索引",
  "layout": "flow",
  "source": "flowtable.md",
- "dsl_sha256": "f1e73c3bc3a2fb7f",
- "source_sha256": "fd45c1d706566d87",
+ "dsl_sha256": "0a1a07a0da392919",
+ "source_sha256": "91b352494ec6975f",
  "counts": {
-  "nodes": 50,
-  "edges": 49,
+  "nodes": 55,
+  "edges": 54,
   "by_type": {
    "end": 1,
    "start": 1,
-   "task": 48
+   "task": 53
   },
   "labeled_edges": 0,
   "loop_edges": 0,
@@ -66,7 +66,12 @@
   "47",
   "48",
   "49",
-  "50"
+  "50",
+  "51",
+  "52",
+  "53",
+  "54",
+  "55"
  ],
  "edges": [
   [
@@ -264,6 +269,26 @@
   [
    "49",
    "50"
+  ],
+  [
+   "50",
+   "51"
+  ],
+  [
+   "51",
+   "52"
+  ],
+  [
+   "52",
+   "53"
+  ],
+  [
+   "53",
+   "54"
+  ],
+  [
+   "54",
+   "55"
   ]
  ]
 }
