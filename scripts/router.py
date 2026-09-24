@@ -23,6 +23,22 @@ _L_PORT_PAIRS = (
     ('top', 'left'), ('top', 'right'),
 )
 
+#: 一折 L 的**入口错峰档数**（每档 1×细格）。折点 x 由入口锚点决定，撞上同通道的边原先只能整个
+#: 放弃；而列间通道族有 `_alt_xs` 一族可挪 —— 这就是"一去一回"两条边必然互斥的根因（D-164）。
+_L_STAGGER_TRIES = 3
+
+
+def _stagger_ks(n=_L_STAGGER_TRIES):
+    """入口错峰档：`0 → +1 → −1 → +2 → −2 …`。
+
+    **0 档必须排最前**：不冲突时选中的仍是 D-163 那条（列中心）路径，语料产物因此一字不变；
+    偏移档只在 0 档被 `_chan_conflict` 拒掉之后才轮上。
+    """
+    ks = [0]
+    for i in range(1, n + 1):
+        ks += [i, -i]
+    return ks
+
 
 class Router(RectCache):
     def __init__(self, model, grid):
@@ -131,7 +147,7 @@ class Router(RectCache):
             xs.append(start - step * i)
         return xs
 
-    def _one_bend(self, e, fx, tx, ex, en, g):
+    def _one_bend(self, e, fx, tx, ex, en, g, dye=None):
         """一条边在 (`exit`,`entry`) 下的「一折 L」→ `(ex, en, 折点x)`；方向不合法则 None。
 
         判据只有两条，都写在**方向**上（不写"源在左还是右"）：
@@ -140,13 +156,16 @@ class Router(RectCache):
         ② 就是 D-17/D-27 那条"端点段必须沿端口法线"——此前它只被 `col_from < col_to` 这类
         **布局前提**间接保证，反向对角因此无路可走；改成方向判据后两者走同一套（D-163）。
 
+        `dye` 是**入口沿边偏移的提议值**（None = 用边自己的）：出口水平时折点 x 就等于目标锚点 x，
+        所以**错峰必须同时改 dye 与 xg**——只挪其中一个，形状就不再是 L 了（D-164）。
+
         折点 x 就是 `gapx`（`path()` 拿它拼 [(sx,sy),(xg,sy),(xg,ty),(tx,ty)]，退化段被 `_dedup` 吃掉）。
         穿不穿节点、段够不够长**不在这里判**——那是 `_path_rejects` 的活，几何的事交给几何。
         """
         if (ex in ('left', 'right')) == (en in ('left', 'right')):
             return None                      # 同轴凑不出单折点（Z 形/直线归通道族）
         sx, sy = g.anchor(fx, ex, e.get('sdye', 0))
-        tx_, ty = g.anchor(tx, en, e.get('dye', 0))
+        tx_, ty = g.anchor(tx, en, e.get('dye', 0) if dye is None else dye)
         if ex in ('left', 'right'):
             xg = tx_
             if (xg - sx) * _PORT_NORMAL[ex][0] <= 0:
@@ -170,16 +189,24 @@ class Router(RectCache):
         为什么是**推导**而不是按"源在左/右"分两支行（D-163）：枚举写法漏过一档——D-162 的
         `13d→13f` 就是这么落到 Z 形的，而它正下方明明是空的。推导式下新增一种 L 不必改这里，
         改 `_L_PORT_PAIRS` 或方向判据即可。
+
+        **入口错峰（D-164）**：同一组端口再按 `_stagger_ks()` 给几档偏移（改 `dye`，折点 x 随之变）。
+        原先 L 的折点只有"列中心"一个值，撞上同通道的边就只能整个放弃；列间通道族却有一族可挪的
+        x —— 这就是"一去一回"两条边必然互斥的根因。0 档排最前，不冲突时选择与 D-163 一字不变。
         """
         cands = []
+        GL = g.lattice
+        base = e.get('dye', 0) or 0
         for ex, en in _L_PORT_PAIRS:
             if self._anchor_taken(e, fx, ex, e.get('sdye', 0), False):
                 continue
-            if self._anchor_taken(e, tx, en, e.get('dye', 0), True):
-                continue
-            c = self._one_bend(e, fx, tx, ex, en, g)
-            if c:
-                cands.append(c)
+            for k in _stagger_ks():
+                dye = base + k * GL
+                if self._anchor_taken(e, tx, en, dye, True):
+                    continue
+                c = self._one_bend(e, fx, tx, ex, en, g, dye)
+                if c:
+                    cands.append(c + (dye,))
         return cands
 
     def _cross_gap_cands(self, lay, col_from, col_to, limit, GL):
@@ -276,7 +303,14 @@ class Router(RectCache):
         # 列的左沿"（贴列），并把旧走廊降级为末位兜底。
         if e.get('kind') != 'loop':
             cands += left_family
-        return [(ex, en, snap(x, GL)) for ex, en, x in cands if x >= margin]
+        # 4 元组：`(exit, entry, 通道x, 提议的 dye)`。只有一折 L 带 dye（入口错峰，D-164），
+        # 其余候选族给 None ⇒ 原样透传，`_route_pending_edges` 只在非 None 时写回边对象。
+        out = []
+        for c in cands:
+            if c[2] < margin:
+                continue
+            out.append((c[0], c[1], snap(c[2], GL), c[3] if len(c) > 3 else None))
+        return out
 
     def _seg_hits_rects(self, p1, p2, ignore, m=NODE_CLEARANCE):
         """轴向线段是否穿过某节点矩形。矩形**外扩** m 像素：通道与节点边沿至少留 m 的间隙。"""
@@ -299,7 +333,7 @@ class Router(RectCache):
                 return True
         return False
 
-    def _path_rejects(self, e, ch, ex, en):
+    def _path_rejects(self, e, ch, ex, en, dye=None):
         """这一档通道算出来的三段路，踩没踩**硬**规矩：(d1) 任一段穿节点或横穿自身端点；
         (d2) 任一段短于一格粗格（产物自检会报"转角挤在箭头上"）。
 
@@ -307,10 +341,13 @@ class Router(RectCache):
         放宽。此前这段判断只写在 `_chan_conflict` 里，而 `_fallback_channel` 的"最后一招"
         （只避开已占通道）**绕过**了它——于是单列的自举树漏出 0px 短段（`18→11` 就是这么来的），
         多列的表漏出穿节点的折线。
+
+        `dye` 与 `_chan_conflict` 同义（候选提议的入口偏移）。**必须一路传进来**：拿旧 dye 算，
+        错峰档的末段会被算成 `k×细格` 的残段直接拒掉——错峰就白加了（D-164）。
         """
         g = self.grid
         sx, sy = g.anchor(e['from'], ex, e.get('sdye', 0))
-        tx, ty = g.anchor(e['to'], en, e.get('dye', 0))
+        tx, ty = g.anchor(e['to'], en, e.get('dye', 0) if dye is None else dye)
         ign = (e['from'], e['to'])
         floor = g.node_grid        # 最短段 = 一格粗格（与 `validate._artifact_short_segment_errors` 同口径）
         for p1, p2 in ((sx, sy), (ch, sy)), ((ch, sy), (ch, ty)), ((ch, ty), (tx, ty)):
@@ -325,13 +362,16 @@ class Router(RectCache):
                 return True
         return False
 
-    def _chan_conflict(self, e, ch, ex, en, assigned):
+    def _chan_conflict(self, e, ch, ex, en, assigned, dye=None):
         """通道 ch 是否可用。四类约束，缺一条就出叠线或穿节点：
         a) 同通道上无竖直跨度重叠的边  b) 本边水平段不穿更内侧已占通道的竖直段
-        c) 已占边的水平段不穿本边竖直段  d) 本边任一段不穿节点、不短于一格粗格（见 `_path_rejects`）"""
+        c) 已占边的水平段不穿本边竖直段  d) 本边任一段不穿节点、不短于一格粗格（见 `_path_rejects`）
+
+        `dye` 是**候选提议的入口偏移**（None = 用边自己的）：一折 L 的错峰档要靠它算真实锚点，
+        拿旧 dye 判等于在判另一个形状（D-164）。"""
         sx, sy = self.grid.anchor(e['from'], ex, e.get('sdye', 0))   # 手填 sdye 也算进锚点，否则 y 失真
-        tx, ty = self.grid.anchor(e['to'], en, e.get('dye', 0))
-        if self._path_rejects(e, ch, ex, en):
+        tx, ty = self.grid.anchor(e['to'], en, e.get('dye', 0) if dye is None else dye)
+        if self._path_rejects(e, ch, ex, en, dye):
             return True
         lo, hi = min(sy, ty), max(sy, ty)
         myh = self._hsegs(ex, sx, tx, ch, sy, ty)
@@ -428,14 +468,16 @@ class Router(RectCache):
         pend.sort(key=lambda e: (self._hs(e)[1] - self._hs(e)[0], self._hs(e)[0]))
         for e in pend:
             got = None
-            for (ex, en, x) in self._candidates(e, lay):
-                if not self._chan_conflict(e, x, ex, en, assigned):
-                    got = (ex, en, x)
+            for (ex, en, x, dye) in self._candidates(e, lay):
+                if not self._chan_conflict(e, x, ex, en, assigned, dye):
+                    got = (ex, en, x, dye)
                     break
             if got is None:
-                got = self._fallback_channel(e, lay, assigned, limit)
-            ex, en, x = got
+                got = self._fallback_channel(e, lay, assigned, limit) + (None,)
+            ex, en, x, dye = got
             e['exit'], e['entry'] = ex, en
+            if dye is not None:                   # 一折 L 的入口错峰（D-164）
+                e['dye'] = dye
             if ex == en:                          # 左侧或右侧通道族
                 e['gutter' if ex == 'left' else 'channel'] = x
             else:                                 # 列间通道

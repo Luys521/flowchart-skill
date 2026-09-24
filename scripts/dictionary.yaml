@@ -96,6 +96,10 @@ label_badge:
   height: 20               # 徽章高（保持 20 的倍数，勿填 22 这类离格值）
 
 # 端口方向默认值（DSL 未指定时按 kind 取用）
+# 各 kind 的**兜底**端口：边自己没有 `exit`/`entry` 时用它。
+# ⚠ **它不是硬规则**：干净的一折 L（`router._clean_l_cands`）按端口法线推导更优组合并覆盖它，
+# 所以 `loop` 实际不一定是"左进左出"——入口也可能是 `top`/`bottom`（D-163/D-164）。
+# 读这张表时别把下面的值当成"回环必须走左边"的约定。
 default_ports:
   spine: {exit: bottom, entry: top}
   horiz: {exit: right,  entry: left}
