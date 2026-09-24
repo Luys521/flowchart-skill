@@ -10,6 +10,19 @@ from geometry import RectCache, lane_step, seg_rect_hit, snap, stagger_source_an
 NODE_CLEARANCE = 6         # 通道/折线与节点边沿的最小间隙（px）
 FALLBACK_CHANNEL_TRIES = 16   # 兜底通道最多右移步数（防死循环；全失败退回旧兜底由 validate 拦截）
 
+#: 端口法线（朝外）。一折 L 的判据是"首段沿**出口**法线、中间段沿**入口**法线的反向"——
+#: 用**方向**判，而不是"源在左还是右"，于是正向对角与反向对角（回环）能走同一套推导（D-163）。
+_PORT_NORMAL = {'bottom': (0, 1), 'top': (0, -1), 'left': (-1, 0), 'right': (1, 0)}
+
+#: 一折 L 的全部 8 种端口组合，**元组序即优先序**：侧出+顶入 → 底出+侧入 → 反向对角的四组。
+#: 同轴的两个端口（水平×水平 / 垂直×垂直）凑不出单折点——那是 Z 形或直线，归通道族，不在此列。
+_L_PORT_PAIRS = (
+    ('right', 'top'), ('left', 'top'),
+    ('bottom', 'left'), ('bottom', 'right'),
+    ('right', 'bottom'), ('left', 'bottom'),
+    ('top', 'left'), ('top', 'right'),
+)
+
 
 class Router(RectCache):
     def __init__(self, model, grid):
@@ -118,39 +131,55 @@ class Router(RectCache):
             xs.append(start - step * i)
         return xs
 
-    def _clean_l_cands(self, e, fx, tx, row_from, row_to, col_from, col_to, g):
-        """前向对角的干净 L 候选（右下=右出顶入、左下=左出顶入，两侧镜像）；端口被占了就跳过。"""
+    def _one_bend(self, e, fx, tx, ex, en, g):
+        """一条边在 (`exit`,`entry`) 下的「一折 L」→ `(ex, en, 折点x)`；方向不合法则 None。
+
+        判据只有两条，都写在**方向**上（不写"源在左还是右"）：
+          ① 出口水平 ⇒ 折点取**目标**锚点 x（横-竖，末段零长）；出口垂直 ⇒ 取**源**锚点 x（竖-横，首段零长）；
+          ② 首段方向 = 出口的朝外法线；中间段方向 = 入口朝外法线的**反向**（线是"进去"不是"出来"）。
+        ② 就是 D-17/D-27 那条"端点段必须沿端口法线"——此前它只被 `col_from < col_to` 这类
+        **布局前提**间接保证，反向对角因此无路可走；改成方向判据后两者走同一套（D-163）。
+
+        折点 x 就是 `gapx`（`path()` 拿它拼 [(sx,sy),(xg,sy),(xg,ty),(tx,ty)]，退化段被 `_dedup` 吃掉）。
+        穿不穿节点、段够不够长**不在这里判**——那是 `_path_rejects` 的活，几何的事交给几何。
+        """
+        if (ex in ('left', 'right')) == (en in ('left', 'right')):
+            return None                      # 同轴凑不出单折点（Z 形/直线归通道族）
+        sx, sy = g.anchor(fx, ex, e.get('sdye', 0))
+        tx_, ty = g.anchor(tx, en, e.get('dye', 0))
+        if ex in ('left', 'right'):
+            xg = tx_
+            if (xg - sx) * _PORT_NORMAL[ex][0] <= 0:
+                return None                  # 首段掉头（从右口出却往左走）
+            if (ty - sy) * (-_PORT_NORMAL[en][1]) <= 0:
+                return None                  # 中间段没"朝着入口进去" ⇒ 箭头横着顶进端口
+        else:
+            xg = sx
+            if (ty - sy) * _PORT_NORMAL[ex][1] <= 0:
+                return None
+            if (tx_ - xg) * (-_PORT_NORMAL[en][0]) <= 0:
+                return None
+        return ex, en, xg
+
+    def _clean_l_cands(self, e, fx, tx, g):
+        """**一折 L** 候选：由端口法线推导 `_L_PORT_PAIRS` 里的 8 种组合，逐条过两类守卫。
+
+        守卫①端口被别的边占了就跳过（叠锚点的重叠段过不了 validate 的共享端点豁免）；
+        守卫②`_one_bend` 的方向判据。
+
+        为什么是**推导**而不是按"源在左/右"分两支行（D-163）：枚举写法漏过一档——D-162 的
+        `13d→13f` 就是这么落到 Z 形的，而它正下方明明是空的。推导式下新增一种 L 不必改这里，
+        改 `_L_PORT_PAIRS` 或方向判据即可。
+        """
         cands = []
-        # ① 前向对角的干净 L：折点 x 就记在 gapx 里，**两侧都取目标列中心**——取源列中心只有右向
-        #    才碰巧退化成 L，左向会变成"底出竖落再横插"。
-        #    端口被别的边占了就跳过（叠锚点的重叠段过不了 validate 的共享端点豁免）。
-        if row_from < row_to and col_from != col_to:
-            if col_from < col_to:
-                if (not self._anchor_taken(e, tx, 'top', e.get('dye', 0), True)
-                        and not self._anchor_taken(e, fx, 'right', e.get('sdye', 0), False)):
-                    cands.append(('right', 'top', g.col_x[col_to]))
-                # 右向的次选（D-162）：目标的**顶**端口被别的边占了时，退到「底出 + 侧入」的 L。
-                # 占掉它的通常就是同槽位的主干入边（`bottom`→`top` 的 spine）——实测 `13d→13f`
-                # 因此落到 Z 形，而它正下方明明是空的。折点取**源列中心**（首段零长，被 `_dedup`
-                # 吃掉，得 [(sx,sy),(sx,ty),(tx,ty)]）；"源正下方没有别的节点"由 `_path_rejects`
-                # 的穿节点检查隐式保证，不必另写判据。别删——它兜的正是右出/顶入两路都被占的那一半。
-                if (not self._anchor_taken(e, tx, 'left', e.get('dye', 0), True)
-                        and not self._anchor_taken(e, fx, 'bottom', e.get('sdye', 0), False)):
-                    cands.append(('bottom', 'left', g.col_x[col_from]))
-            else:
-                # **左向必须镜像右向**（D-161）：原先只有 (`bottom`,`right`)——源出**底边**、目标进
-                # **右侧**。它与右向的 (`right`,`top`) 不是镜像，于是"A 居中分叉到左右两侧"时，
-                # A 的两条出边一条走底边、一条走侧沿（实测 (bottom,right) × (right,top)）。
-                if (not self._anchor_taken(e, tx, 'top', e.get('dye', 0), True)
-                        and not self._anchor_taken(e, fx, 'left', e.get('sdye', 0), False)):
-                    cands.append(('left', 'top', g.col_x[col_to]))
-                # 旧走法降为**次选**，不是删掉：左端口被别的边占了（`_anchor_taken` 挡），或左出
-                # 首段撞上同行的并行节点（`_chan_conflict` → `_seg_hits_rects` 挡）时，
-                # 这条边仍有一条 L 可走，不至于退到 Z 形绕行甚至画布外缘。
-                # 别按"更对称"把这段也删了——它兜的正是左出被挡的那一半。
-                if (not self._anchor_taken(e, tx, 'right', e.get('dye', 0), True)
-                        and not self._anchor_taken(e, fx, 'bottom', e.get('sdye', 0), False)):
-                    cands.append(('bottom', 'right', g.col_x[col_from]))
+        for ex, en in _L_PORT_PAIRS:
+            if self._anchor_taken(e, fx, ex, e.get('sdye', 0), False):
+                continue
+            if self._anchor_taken(e, tx, en, e.get('dye', 0), True):
+                continue
+            c = self._one_bend(e, fx, tx, ex, en, g)
+            if c:
+                cands.append(c)
         return cands
 
     def _cross_gap_cands(self, lay, col_from, col_to, limit, GL):
@@ -227,7 +256,7 @@ class Router(RectCache):
         left_family = near_left + far_left
 
         cands = []
-        cands += self._clean_l_cands(e, fx, tx, row_from, row_to, col_from, col_to, g)
+        cands += self._clean_l_cands(e, fx, tx, g)
         if self._cross_adj(e) and row_from != row_to:
             cands += self._cross_gap_cands(lay, col_from, col_to, limit, GL)
         if e.get('kind') == 'loop':

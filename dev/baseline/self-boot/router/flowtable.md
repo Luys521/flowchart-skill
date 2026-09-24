@@ -25,7 +25,7 @@ parent: ../flowtable.md
 | Router | 11 | Router._cross_adj | 任务 | — | — | — | 脚本 | selfboot | — | →33 | ★ 是否需要走相邻列之间的空隙：同行直线(horiz)除外。 · L87 · 方法 |
 | Router | 12 | Router._anchor_taken | 任务 | — | — | — | 脚本 | selfboot | — | →33 | ★ nid 的 side 端口（切向偏移 off）是否会被**其他边**占用——按显式字段或 kind 默认端口推。 · L95 · 方法 |
 | Router | 13 | Router._alt_xs | 任务 | — | — | — | 脚本 | selfboot | — | →33 | ★ 以 start 为中心左右交替展开的候选 x（窄空隙里也能榨出多条通道）。 · L113 · 方法 |
-| Router | 14 | Router._clean_l_cands | 任务 | — | — | — | 脚本 | selfboot | — | →12 | ★ 前向对角的干净 L 候选（右下=右出顶入、左下=左出顶入，两侧镜像）；端口被占了就跳过。 · L121 · 方法 |
+| Router | 14 | Router._clean_l_cands | 任务 | — | — | — | 脚本 | selfboot | — | →12 | ★ **一折 L** 候选：由端口法线推导 `_L_PORT_PAIRS` 里的 8 种组合，逐条过两类守卫。 · L121 · 方法 |
 | Router | 15 | Router._cross_gap_cands | 任务 | — | — | — | 脚本 | selfboot | — | 1→10｜2→13 | ★ 列间通道候选（Z 形，L 走不通时的次选，折点取两列空隙中心）。 · L137 · 方法 · 分支：1→Router._col_gap 2→Router._alt_xs · ⇢ 依赖 geometry.snap |
 | Router | 16 | Router._col_edge | 任务 | — | — | — | 脚本 | selfboot | — | →33 | ★ 第 col 列的**最外沿** → `(左沿, 右沿)`。没有节点时退回该列的配置中心。 · L145 · 方法 |
 | Router | 17 | Router._right_family_cands | 任务 | — | — | — | 脚本 | selfboot | — | →16 | ★ 右族长跳候选：以本边涉及列中更靠右列的**右沿**为局部基准，只向外展开（D-91）。 · L157 · 方法 · ⇢ 依赖 geometry.lane_step、geometry.snap |
