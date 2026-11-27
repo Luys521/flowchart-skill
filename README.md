@@ -59,13 +59,38 @@
 
 ---
 
+## 📦 安装
+
+**方式一：skills CLI**（[skills.sh](https://skills.sh) 生态，自动放进对应 agent 的 skills 目录）
+
+```sh
+npx skills add Luys521/flowchart-skill
+```
+
+**方式二：手动放置**
+
+```sh
+git clone https://github.com/Luys521/flowchart-skill
+```
+
+把整个目录放进 agent 的 skills 目录——根目录的 `SKILL.md` 必须在。DSH 的项目级路径是 `.dsh/skills/` 或 `.agents/skills/`；Claude Code 是 `~/.claude/skills/`。
+
+**Python 依赖**（两种方式都要装，脚本用它读 docx / xlsx / PDF）
+
+```sh
+cd flowchart-skill
+python -m pip install -r requirements.txt
+```
+
 ## 🚀 快速开始
 
-安装本 SKILL 并在提示词中触发使用。例如：
+装好后在对话里说一句话即可触发（何时触发由 `SKILL.md` 的 `description` 决定）。例如：
 
 ```text
 请帮我将“D:\XXX.doc”转化成流程图
 ```
+
+产物落在 `output/<流程名>/`，三份：`-flow.html`（给老板看，单文件）、`-flow.drawio`（微调几何）、`-flow.svg`。
 
 ---
 
