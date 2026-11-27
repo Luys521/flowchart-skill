@@ -61,11 +61,13 @@
 
 ## 📦 安装
 
-**方式一：skills CLI**（[skills.sh](https://skills.sh) 生态，自动放进对应 agent 的 skills 目录）
+**方式一：skills CLI**（需 Node.js 22.20+）
 
 ```sh
 npx skills add Luys521/flowchart-skill
 ```
+
+默认装进**当前项目**的 `.agents/skills/`（DSH 也读取这个目录）；加 `-g` 装到全局，跨项目可用。CLI 支持 Claude Code、Codex、Cursor、OpenCode 等。
 
 **方式二：手动放置**
 
@@ -73,7 +75,7 @@ npx skills add Luys521/flowchart-skill
 git clone https://github.com/Luys521/flowchart-skill
 ```
 
-把整个目录放进 agent 的 skills 目录——根目录的 `SKILL.md` 必须在。DSH 的项目级路径是 `.dsh/skills/` 或 `.agents/skills/`；Claude Code 是 `~/.claude/skills/`。
+把整个目录放进 agent 的 skills 目录——根目录的 `SKILL.md` 必须在。DSH 的路径是项目的 `.agents/skills/` 或 `.dsh/skills/`；Claude Code 是 `~/.claude/skills/`。
 
 **Python 依赖**（两种方式都要装，脚本用它读 docx / xlsx / PDF）
 
